@@ -2,8 +2,8 @@ import { toMillis } from './shared.mjs';
 
 function readConsultInfo(patient) {
   const info = patient && patient.consultInfo;
-  if (!info || typeof info !== 'object') return { followUpStatus: '' };
-  return { followUpStatus: String(info.followUpStatus || '') };
+  if (!info || typeof info !== 'object') return { followUpStatus: '', triage: '' };
+  return { followUpStatus: String(info.followUpStatus || ''), triage: String(info.triage || '') };
 }
 
 function isCreatedToday(patient, now) {
@@ -33,7 +33,9 @@ export function classifyInterconsultaBoardBucket(patient, opts) {
 
   if (isGuardiaTeam) {
     if (String(patient.interconsult_type || '') === 'Ephemeral_VPO') return 'preop';
-    const { followUpStatus } = readConsultInfo(patient);
+    const { followUpStatus, triage } = readConsultInfo(patient);
+    if (triage === 'vpo') return 'preop';
+    // Old data: the desktop no longer sets followUpStatus.
     if (followUpStatus === 'pendiente' && isCreatedToday(patient, now)) return 'preop';
   }
 

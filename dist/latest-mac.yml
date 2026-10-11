@@ -1,29 +1,39 @@
-version: 8.4.9
+version: 8.5.0
 files:
-  - url: R+-8.4.9-autoupdate-mac-arm64.zip
-    sha512: AMz8OpChK6HEkuPY266j/kt1Dvl8m0NEVtw8ivsvnEinNvfw7KrKRCP12cot/7XqImfy5/Kxy35w7vYcCJAtYQ==
-    size: 141647049
-  - url: R+-8.4.9-arm64.dmg
-    sha512: XpF+hoqbq47XiBW/+ErRJEdpgX1L4pGub1qdZ8xVwK0//eL3CS0+Xq6prdi9qF4IXbfABhG7YCjtKU8uI04h/w==
-    size: 142321716
-  - url: R+-8.4.9-autoupdate-mac-x64.zip
-    sha512: L10gF8/7tJ9FKfx0HWryk+pBCgHDepJMON8B2g79JbqDkFQx7NLYFaeAAbuhuuhop7c6CBt4jYKWGKMlQNa6kg==
-    size: 150316290
-  - url: R+-8.4.9-x64.dmg
-    sha512: igqulOzorUQrZ1o4b0eyoAWqZvxT/Cm4C8p93ypkApStP00pI6ala1LPvzccmglFDgmO6Ct5btBf63RKALY6UQ==
-    size: 150976759
-path: R+-8.4.9-autoupdate-mac-arm64.zip
-sha512: AMz8OpChK6HEkuPY266j/kt1Dvl8m0NEVtw8ivsvnEinNvfw7KrKRCP12cot/7XqImfy5/Kxy35w7vYcCJAtYQ==
-releaseDate: '2026-10-06T18:26:48.000Z'
+  - url: R+-8.5.0-autoupdate-mac-arm64.zip
+    sha512: 903QlL/ZpgNQf6UuWtjiNv60LlOHBdiNJINInvyU+LV3JpAtTwvYPBi9vvyRsE0O94nLV3WXeueo8++/RHzzlA==
+    size: 141688913
+  - url: R+-8.5.0-arm64.dmg
+    sha512: R953qDgu99FvuQUzoa5JIcLiCXoRp9NfxNuczaOJ26qAMYwgZ1sDgZ4plSqwGxQfTYkpnxyAcghRkHe+jJnIDg==
+    size: 142374527
+  - url: R+-8.5.0-autoupdate-mac-x64.zip
+    sha512: MaGy/0TstI4r00jZK0b3WruiGz4s5ZF1mbRlXLwNlwBedCNAZVoCsjtecJ2Ksv6YgoFIU7V5C3g8o68fB3NvcA==
+    size: 150358112
+  - url: R+-8.5.0-x64.dmg
+    sha512: g/q/vghUUnVaHOXgvXoEgdhoNhGVSX/Aw5sKg+amfnapXUJvDVY+WmTeCihUBZ4PSUcTPcqdYZvvhKuD37040A==
+    size: 150987328
+path: R+-8.5.0-autoupdate-mac-arm64.zip
+sha512: 903QlL/ZpgNQf6UuWtjiNv60LlOHBdiNJINInvyU+LV3JpAtTwvYPBi9vvyRsE0O94nLV3WXeueo8++/RHzzlA==
+releaseDate: '2026-10-09T18:16:40.000Z'
 releaseNotes: |
-  Los residentes que rotan fuera de Medicina Interna eligen UCI, PostQx o Subespecialidad, cada una con su sala Nube. En Windows el instalador crea siempre el acceso directo.
+  Las sugerencias de interconsulta se pegan directo en Indicaciones, y el estado actual acepta el turno en curso. Los cambios de nota por labs y receta ahora llegan al equipo por Nube.
   
-  Nuevo (Perfil): tres salas para rotaciones fuera de MI: UCI, PostQx y Subespecialidad. Al registrarte eliges «Otra rotación (fuera de MI)» y luego tu servicio. Cada una tiene su propia sala Nube.
+  Nuevo (Interconsulta): pega un texto «SUGERENCIAS POR …» en cualquier parte y R+ lo pasa a las Indicaciones del paciente abierto. Dieta, cuidados, estudios, medicamentos e interconsultas van a su casilla; los demás apartados quedan en «Otros», sin perder líneas.
   
-  Nuevo (Equipos): si un equipo se archivó y sus pacientes quedaron sin equipo, R+ te avisa al abrir.
+  Nuevo (Estado actual): pastilla «Turno en curso». El registro cierra esta noche a las 00:00 y se ve como de hoy. El balance no cuenta el turno en curso hasta medianoche.
   
-  Cambio (Windows): el instalador se llama «Instalar-R+-…-Windows.exe» y crea siempre el acceso directo en el escritorio, también al reinstalar.
+  Nuevo (Interconsulta): las tarjetas grandes muestran el «Motivo de IC». Al admitir hay que elegir el servicio solicitante, y ese servicio queda como Área. «Grupo» y «Seguimiento» ahora son un solo control.
   
-  Cambio (Signos vitales): Guardia, Inicio de turno y la gráfica marcan solo los signos fuera de rango.
+  Nuevo (Administración): el panel de admin muestra la actividad clínica del equipo.
   
-  Cambio (Móvil): los cultivos se quedan en el teléfono después de la ventana de labs, porque el resultado y el antibiograma llegan días después.
+  Corrección (Nube): la nota ahora se sincroniza al pegar labs, al usar «Enviar labs» y «Añadir a Tratamiento». Antes el compañero no recibía esos cambios aunque Conexión dijera «Sincronizado».
+  
+  Corrección (Nube): copias viejas de pacientes ya no regresan a las salas.
+  
+  Corrección (Nube): el aviso «algunos datos aún no están protegidos» sale solo cuando de verdad quedan datos sin cifrar.
+  
+  Cambio (Velocidad): cambiar de paciente es más rápido; se quitó una espera de 120 ms al hacer clic.
+  
+  Cambio (Mi perfil): cabe en una sola pantalla, sin desplazarse, en Sala y en Interconsulta.
+  
+  Corrección: los botones dentro de los avisos responden al primer clic.

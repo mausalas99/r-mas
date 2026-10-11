@@ -15,7 +15,10 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { FEATURE_HINTS } from '../../public/js/feature-hints.mjs';
 
-export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+/** App under test. E2E_APP_ROOT=packages/hf (or packages/neumo) runs a spec against a companion app. */
+export const repoRoot = process.env.E2E_APP_ROOT
+  ? path.resolve(process.env.E2E_APP_ROOT)
+  : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 /** Poll fn until it returns truthy or the timeout passes; returns the last value. */
 export const until = async (fn, timeout = 30000, step = 500) => {
@@ -41,6 +44,8 @@ export function createRun(name, { hints: runHints = false } = {}) {
   const downloadsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-e2e-dl-'));
   fs.mkdirSync(artifactDir, { recursive: true });
   const checks = [];
+  // Speed numbers a scenario records (name → ms); printed and saved in report.json.
+  const timings = {};
   let shotN = 0;
   let lastPage = null;
 
@@ -104,6 +109,8 @@ export function createRun(name, { hints: runHints = false } = {}) {
       globalThis.localStorage.setItem('rplus-sala-view', 'bar');
       // The full-record side panel opens by itself for a patient with no vitals; specs keep it closed.
       globalThis.localStorage.setItem('rpc-registro-autoopen', 'off');
+      // Specs click tabs a lot; the «¿Muchos clics entre pestañas?» tip would cover the lab bar.
+      globalThis.localStorage.setItem('rpc-keyboard-tab-shortcuts-adopted', '1');
       if (hintIds) globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(hintIds));
       // The 8.4.5 choice modal asks once; specs answer it up front (hints on only when a spec wants them).
       globalThis.localStorage.setItem('rpc-feature-hints-enabled', hintIds ? '0' : '1');
@@ -127,15 +134,19 @@ export function createRun(name, { hints: runHints = false } = {}) {
     const a11yCheck = a11y.verdict();
     if (a11yCheck) check(a11yCheck.name, a11yCheck.ok, a11yCheck.detail);
     const passed = checks.filter((c) => c.ok).length;
-    const report = { scenario, runId, passed, failed: checks.length - passed, checks, a11y: a11y.screens };
+    const report = { scenario, runId, passed, failed: checks.length - passed, checks, timings, a11y: a11y.screens };
     fs.writeFileSync(path.join(artifactDir, 'report.json'), JSON.stringify(report, null, 2) + '\n');
     for (const dir of Object.values(userDataDirs)) fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(downloadsDir, { recursive: true, force: true });
+    if (Object.keys(timings).length) {
+      console.log('\nTimings (ms):');
+      console.table(timings);
+    }
     console.log(`\n${passed}/${checks.length} checks passed. Artifact: ${path.relative(repoRoot, artifactDir)}`);
     process.exit(report.failed === 0 ? 0 : 1);
   }
 
-  return { artifactDir, downloadsDir, check, shot, launch, finish };
+  return { artifactDir, downloadsDir, check, shot, launch, finish, timings };
 }
 
 /**
@@ -163,10 +174,17 @@ export async function goArea(page, id) {
   await tab.click();
 }
 
-/** Fresh install → "Solo este equipo" → app ready, help sheet closed. */
+/**
+ * Fresh install → "Solo este equipo" → app ready, help sheet closed. An app
+ * that opens without onboarding (R+ Neumo) goes straight to the ready check.
+ */
 export async function onboardLocalOnly(page) {
-  await page.locator('[data-sync-mode="local"]').click();
-  await page.locator('#clinical-onboard-local-confirm-btn').click();
+  const local = page.locator('[data-sync-mode="local"]');
+  await local.or(page.locator('.topbar-area-btn')).first().waitFor({ state: 'visible' });
+  if (await local.isVisible()) {
+    await local.click();
+    await page.locator('#clinical-onboard-local-confirm-btn').click();
+  }
   await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
   await dismissLearnHub(page);
 }

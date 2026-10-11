@@ -219,6 +219,9 @@ export function classifyCloudOpPath(path) {
   if (p === 'clinicalOps') return 'clinicalOps';
   if (p.startsWith('todos/')) return 'pendientes';
   if (p.includes('/monitoreo')) return 'signos';
+  if (p.includes('/cardioDaily')) return 'ronda';
+  if (p.includes('/cardioSummary')) return 'cardio';
+  if (p.includes('/neumoStudies')) return 'neumo';
   if (p.includes('/eventualidades')) return 'eventualidades';
   if (p.includes('/fields')) return 'censo';
   if (p.startsWith('agenda/')) return 'agenda';

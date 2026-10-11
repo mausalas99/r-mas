@@ -29,6 +29,7 @@ import {
   parseBombaFromForm,
 } from './estado-actual-panel-parse-form.mjs';
 import { validateVitalSeriesTurnLimits } from './estado-actual-panel-vitals.mjs';
+import { isOpenShiftRow, openShiftDefaultHm } from './estado-actual-registro-defaults.mjs';
 import { liveHistorial } from './estado-actual-data-model.mjs';
 import { estadoActualTextToClipboardPayload } from './estado-actual-clipboard.mjs';
 import { MAX_VITAL_READINGS_PER_DAY } from './estado-actual-vital-series.mjs';
@@ -85,9 +86,10 @@ function parseFormMedicion() {
 
   var recordedLocal = /** @type {HTMLInputElement | null} */ (document.getElementById('ea-recorded-at'));
   var recordedAt = datetimeLocalToIso(recordedLocal ? recordedLocal.value : '');
-  var defaultTime = isoToHHmm(recordedAt);
+  var openShift = isOpenShiftRow({ recordedAt: recordedAt });
+  var defaultTime = openShift ? openShiftDefaultHm() : isoToHHmm(recordedAt);
 
-  var vitalBlock = parseVitalsFromForm(form, defaultTime);
+  var vitalBlock = parseVitalsFromForm(form, defaultTime, openShift);
   var bombaToggle = /** @type {HTMLInputElement | null} */ (document.getElementById('ea-bomba-enabled'));
   var bombaOn = !!(bombaToggle && bombaToggle.checked);
   var glucometrias = bombaOn ? [] : parseGlucometriasFromForm(form, defaultTime);
@@ -152,7 +154,8 @@ export function registrarEstadoActualMedicion() {
   var limitHist = liveHistorial(patient.monitoreo.historial).filter(function (r) {
     return !editId || !r || r.id !== editId;
   });
-  var vitalLimit = validateVitalSeriesTurnLimits(limitHist, medicion.vitalSeries || {});
+  // Turno = el del cierre elegido (hoy 00:00 o «Turno en curso» esta noche), no el de `now`.
+  var vitalLimit = validateVitalSeriesTurnLimits(limitHist, medicion.vitalSeries || {}, new Date(medicion.recordedAt));
   if (!vitalLimit.ok) {
     getEaPanelRuntime().showToast(
       'Máximo ' + MAX_VITAL_READINGS_PER_DAY + ' lecturas de ' + vitalLimit.label + ' en el turno',

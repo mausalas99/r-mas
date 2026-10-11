@@ -12,6 +12,7 @@ import { isGlucometriaMarkedAltered, isVitalAltered } from './estado-actual-rang
 import {
   formatEaVitalStampDateOnly,
   formatEaVitalStampForSnapshot,
+  isOpenShiftRow,
 } from './estado-actual-registro-defaults.mjs';
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-constants.mjs';
@@ -465,10 +466,12 @@ export function renderSnapshotIoHtml(snapshot, balGlobal) {
 
 /**
  * @param {string | undefined} recordedAt
+ * @param {Date} [now]
  */
-export function formatHistorialWhen(recordedAt) {
+export function formatHistorialWhen(recordedAt, now) {
   var d = new Date(recordedAt || '');
   if (isNaN(d.getTime())) return '—';
+  if (isOpenShiftRow({ recordedAt: recordedAt }, now)) return 'Turno en curso (hoy)';
   return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
 }
 

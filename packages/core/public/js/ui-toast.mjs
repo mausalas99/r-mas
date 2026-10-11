@@ -221,6 +221,8 @@ function wireSwipeDismiss(el) {
 
   function onPointerDown(ev) {
     if (ev.button !== 0) return;
+    // Pointer capture would retarget the click to the toast, so buttons never fire.
+    if (ev.target && ev.target.closest && ev.target.closest('.toast-action, .toast-close')) return;
     dragging = true;
     startX = ev.clientX;
     dragX = 0;

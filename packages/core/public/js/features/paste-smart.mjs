@@ -17,6 +17,10 @@ import {
   isPasteTargetEditable,
 } from './paste-smart-model.mjs';
 import { procesarRecetaFromText } from './medications-receta-processing.mjs';
+import { applyIcSugerenciasPaste } from './notes-indicaciones.mjs';
+import { looksLikeIcSugerenciasPaste } from '../ic-sugerencias-parse.mjs';
+import { isModeSala } from '../mode-features.mjs';
+import { settingsRef } from './profile-runtime.mjs';
 import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
 
 var wired = false;
@@ -97,6 +101,16 @@ export function processSmartPaste(text, opts) {
     return plan;
   }
 
+  if (plan.kind === 'ic-sugerencias') {
+    // Sala has no Indicaciones tab: the paste would be saved out of sight.
+    if (isModeSala(settingsRef())) {
+      if (opts && opts.force) showToast('Las sugerencias de interconsulta se pegan en modo Interconsulta', 'error');
+      return plan;
+    }
+    void applyIcSugerenciasPaste(plan.sourceText);
+    return plan;
+  }
+
   if (plan.kind === 'ambiguous' || plan.kind === 'confirm-single') {
     openSmartPasteConfirm(plan, plan.kind);
     return plan;
@@ -168,7 +182,7 @@ function processDroppedPdfText(text, target) {
     quickLabOutput: getQuickLabOutput(),
   });
   var main = plan.primaryPatient;
-  var readable = plan.kind !== 'empty' && plan.kind !== 'not-some' && plan.kind !== 'indicas';
+  var readable = plan.kind !== 'empty' && plan.kind !== 'not-some' && plan.kind !== 'indicas' && plan.kind !== 'ic-sugerencias';
   if (!target || !readable || (main && String(main.id) === String(target.id))) {
     return processSmartPaste(text, { force: true });
   }
@@ -229,6 +243,7 @@ function onDocumentPaste(ev) {
     return;
   }
   if (!looksLikeSmartPasteCandidate(text)) return;
+  if (isModeSala(settingsRef()) && looksLikeIcSugerenciasPaste(text)) return;
   ev.preventDefault();
   ev.stopPropagation();
   processSmartPaste(text, { force: true });

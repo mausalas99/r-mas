@@ -26,6 +26,7 @@ import { isGuardiaMode } from './chrome.mjs';
 import { settingsRef } from './profile-runtime.mjs';
 import { getPatients, persistClinicalState } from '../app-state.mjs';
 import { getConsultInfo, setConsultInfo, renderConsultBandHtml } from './patient-dashboard/consult-band.mjs';
+import { IC_OWN_SERVICE } from './patient-dashboard/interconsult-catalog.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import { getClinicalScopeContextForEvaluate } from '../clinical-access-runtime.mjs';
 import { resolvePatientCensusTeamId } from './patients-clinical-filter.mjs';
@@ -321,7 +322,6 @@ function handleConsultBandChange(ev) {
   patient.lanUpdatedAt = cloudSyncNowIso();
   persistClinicalState();
   scheduleCloudSyncPush();
-  if (field === 'followUpStatus') renderConsultBandForActivePatient();
 }
 
 /** Local-only reassignment for demo patients — they have no real DB row, so
@@ -401,9 +401,9 @@ function handleConsultBandClick(ev) {
     trigger: trigger,
     onSelect: function (name) {
       setConsultInfo(patient, { requestingService: name });
-      // Keep the card meta chip (patients-card-html.mjs's p.servicio) in
-      // sync with the requesting specialty picked here.
-      patient.servicio = name;
+      // In IC the requesting service is the área; the servicio is us.
+      patient.area = name;
+      patient.servicio = IC_OWN_SERVICE;
       patient.lanUpdatedAt = cloudSyncNowIso();
       persistClinicalState();
       scheduleCloudSyncPush();

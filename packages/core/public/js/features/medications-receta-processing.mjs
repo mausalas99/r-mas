@@ -11,6 +11,7 @@ import {
 } from "../med-receta-core.mjs";
 import { getPatients, getMedRecetaByPatient, getMedNotaSelectionByPatient, getNotes, persistClinicalState } from "../app-state.mjs";
 import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
+import { stampDocUpdatedAt } from "../patient-merge.mjs";
 import { storage } from "../storage.js";
 import { addTodoWithFields } from "./todos-mutations.mjs";
 import { ensureMonitoreo, MED_FIELD_KEYS } from "./estado-actual-data.mjs";
@@ -134,6 +135,7 @@ export function mediAnadirATratamiento() {
     });
     getNotes()[activeId].tratamiento = tx;
   }
+  stampDocUpdatedAt(getNotes()[activeId]);
   persistClinicalState();
   switchInnerTab("notas");
   showNotaEvolucionClassicView();

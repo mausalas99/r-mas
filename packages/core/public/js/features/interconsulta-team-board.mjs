@@ -11,9 +11,8 @@
 import { getInterconsultaTeamRoles } from '../../../lib/clinical-scope/interconsulta-team-roles.mjs';
 import { classifyInterconsultaBoardBucket } from '../../../lib/clinical-scope/interconsulta-board-buckets.mjs';
 import { requestingServiceHue } from './patients-card-html.mjs';
-import { getConsultInfo } from './patient-dashboard/consult-band.mjs';
+import { getConsultInfo, triageRank } from './patient-dashboard/consult-band.mjs';
 import { bedLine, cardTagsHtml, cornerBtnHtml } from './sala-view-variants.mjs';
-import { ensurePatientDiagnosticos } from '../patient-diagnosticos.mjs';
 import { escHtml } from '../dom-escape.mjs';
 
 const BUCKET_LABELS = {
@@ -26,10 +25,15 @@ function teamLabel(team, fallback) {
   return String(team?.name || team?.service || fallback || 'Equipo').trim() || 'Equipo';
 }
 
+/** Triage order (VPO, Críticos, IC, Seguimiento, no group). Stable sort. */
+function byTriage(patients) {
+  return (patients || []).slice().sort((a, b) => triageRank(a) - triageRank(b));
+}
+
 function groupByBucket(patients, isGuardiaTeam, now) {
   /** @type {Record<string, object[]>} */
   const groups = { preop: [], pendientes: [], under: [], archivado: [] };
-  for (const p of patients || []) {
+  for (const p of byTriage(patients)) {
     const bucket = classifyInterconsultaBoardBucket(p, { isGuardiaTeam, now });
     (groups[bucket] || groups.pendientes).push(p);
   }
@@ -38,7 +42,7 @@ function groupByBucket(patients, isGuardiaTeam, now) {
 
 /** Sala card (`.sv-card`) plus what only interconsultas has: the requesting
  * service chip. `compact` (team rows, tray) is three short lines: bed, name,
- * service. Full cards (Mi equipo) add diagnósticos. `archivable` adds the Sala
+ * service. Full cards (Mi equipo) add the motivo de IC. `archivable` adds the Sala
  * archive corner. */
 export function icCardHtml(p, compact, archivable) {
   const id = escHtml(String(p.id));
@@ -47,15 +51,12 @@ export function icCardHtml(p, compact, archivable) {
   const svc = svcName
     ? '<span class="svc" style="--h:' + (hue == null ? 220 : hue) + '">' + escHtml(svcName) + '</span>'
     : '<span class="sv-none">Sin servicio</span>';
-  let dx = '';
+  let motivo = '';
   if (!compact) {
-    ensurePatientDiagnosticos(p);
-    const list = p.diagnosticosList.filter(Boolean);
-    dx =
-      '<span class="sv-label">Diagnósticos</span>' +
-      (list.length
-        ? '<ul class="sv-dx">' + list.map((d) => '<li>' + escHtml(d) + '</li>').join('') + '</ul>'
-        : '<span class="sv-none">Sin diagnóstico</span>');
+    const reason = String(getConsultInfo(p).reason || '').trim();
+    motivo =
+      '<span class="sv-label">Motivo de IC</span>' +
+      (reason ? '<span class="sv-motivo">' + escHtml(reason) + '</span>' : '<span class="sv-none">Sin motivo</span>');
   }
   return (
     '<div class="sv-card-wrap">' +
@@ -64,7 +65,7 @@ export function icCardHtml(p, compact, archivable) {
     '<span class="sv-card-top"><span class="sv-bed">' + escHtml(bedLine(p)) + '</span>' + cardTagsHtml(p) + '</span>' +
     '<span class="sv-name" title="' + escHtml([p.registro].filter(Boolean).join(' · ')) + '">' + escHtml(p.nombre || 'Sin nombre') + '</span>' +
     (compact ? '<span class="sv-ic">' + svc + '</span>' : '<span class="sv-label">Servicio solicitante</span><span class="sv-ic">' + svc + '</span>') +
-    dx +
+    motivo +
     '</button>' +
     (archivable ? cornerBtnHtml(p) : '') +
     '</div>'
@@ -135,7 +136,7 @@ function renderTeamRowHtml({ role, team, title, pill, note, emptyText, patients,
 
 function renderTrayHtml(patients) {
   const body = patients.length
-    ? '<div class="sv-grid">' + patients.map((p) => icCardHtml(p, true, true)).join('') + '</div>'
+    ? '<div class="sv-grid">' + byTriage(patients).map((p) => icCardHtml(p, true, true)).join('') + '</div>'
     : '<p class="ic-board-empty">Todos tienen equipo.</p>';
   return (
     '<section class="ic-board-lane ic-tray' + (patients.length ? '' : ' ic-tray--empty') + '" data-role="sin-equipo" data-drop-team-id="">' +

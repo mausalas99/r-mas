@@ -511,6 +511,8 @@ html.censo-preview-open {
   flex: 1 1 200px;
   font-size: 11px;
 }
+/* --text-muted at 11px fails contrast on the preview bar. */
+.profile-hint.censo-preview-hint { color: var(--text-secondary); }
 .modal.censo-export-dialog {
   max-width: 440px;
   width: min(420px, calc(100vw - 32px));

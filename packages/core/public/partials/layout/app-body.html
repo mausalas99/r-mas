@@ -596,6 +596,7 @@
                 <p class="settings-perfil-meta" data-perfil-meta></p>
               </div>
               <span class="settings-perfil-saved" data-perfil-saved role="status" aria-live="polite">Se guarda solo</span>
+              <button type="button" class="wb-btn wb-btn-ghost wb-btn-sm" data-onclick="closeSettingsDropdown" data-onclick-2="resetAndStartOnboarding">Ver tutorial de inicio</button>
             </div>
             <section class="profile-row" id="profile-nube-session" hidden>
               <div class="profile-row-head">
@@ -606,8 +607,10 @@
                 <div class="profile-actions"><button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" data-onclick="openNubeLogin">Entrar a Nube →</button></div>
               </div>
             </section>
-            <div class="settings-perfil-sala-host" data-perfil-sala-host></div>
-            <div class="settings-perfil-sala-host" data-perfil-equipo-host></div>
+            <div class="settings-perfil-hosts">
+              <div class="settings-perfil-sala-host" data-perfil-sala-host></div>
+              <div class="settings-perfil-sala-host" data-perfil-equipo-host></div>
+            </div>
             <div class="settings-perfil-col">
             <div data-perfil-clinical-host></div>
             </div>
@@ -671,9 +674,6 @@
                 <div class="settings-card"><div class="settings-card__copy"><label class="settings-card__title" for="settings-medico-r1a">R1</label></div><div class="settings-card__action"><input class="profile-input" id="settings-medico-r1a" type="text" placeholder="Nombre" data-onblur="onMedicoTemplateBlur"></div></div>
                 <div class="settings-card"><div class="settings-card__copy"><label class="settings-card__title" for="settings-medico-r1b">R1 (2)</label></div><div class="settings-card__action"><input class="profile-input" id="settings-medico-r1b" type="text" placeholder="Nombre" data-onblur="onMedicoTemplateBlur"></div></div>
               </div>
-            </div>
-            <div class="settings-perfil-foot">
-              <button type="button" class="wb-btn wb-btn-ghost wb-btn-sm" data-onclick="closeSettingsDropdown" data-onclick-2="resetAndStartOnboarding">Ver tutorial de inicio</button>
             </div>
           </div>
                 </div>

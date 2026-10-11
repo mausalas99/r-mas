@@ -138,6 +138,17 @@ function ensureAppTabForInner(tab) {
   }
 }
 
+/**
+ * The post-paint repaint must not replace a note / indicaciones form the user is already typing in:
+ * the focused field is swapped for a new node and the keystrokes aimed at it vanish (they were never
+ * in the doc). The tab stays stale, so the next tab switch repaints it.
+ */
+function repaintUnlessTyping(tab, opts) {
+  var el = document.activeElement;
+  if (el && /^(INPUT|TEXTAREA)$/.test(el.tagName) && el.closest('#note-form, #indica-form')) return;
+  renderGranularInnerTab(tab, opts);
+}
+
 function scheduleInnerTabPaint(tab, settings, opts, prevInner, prevComposite, nextComposite) {
   var mountNeedsRender = granularMountIsEmpty(tab);
   var needsContentRender =
@@ -166,7 +177,7 @@ function scheduleInnerTabPaint(tab, settings, opts, prevInner, prevComposite, ne
     }
     scheduleAfterPaint(function () {
       if (migrateGranularInner(rt.getActiveInner() || 'resumen', settings) !== targetTab) return;
-      renderGranularInnerTab(targetTab, forceRender ? { force: true } : undefined);
+      repaintUnlessTyping(targetTab, forceRender ? { force: true } : undefined);
       syncExpedienteSegmentIndicators(settings, targetTab);
       syncInnerTabIndicator(targetTab, { consolidated: true, settings: settings });
     });
@@ -182,7 +193,7 @@ function scheduleInnerTabPaint(tab, settings, opts, prevInner, prevComposite, ne
   invalidateInnerTabRenderCache(tab);
   scheduleAfterPaint(function () {
     if (migrateGranularInner(rt.getActiveInner() || 'resumen', settings) !== tab) return;
-    renderGranularInnerTab(tab, { force: true });
+    repaintUnlessTyping(tab, { force: true });
     syncExpedienteSegmentIndicators(settings, tab);
   });
 }

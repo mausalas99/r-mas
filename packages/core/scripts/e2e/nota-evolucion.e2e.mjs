@@ -285,14 +285,14 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
     (await page.locator('#ic-board-mount').isHidden()) && (await band.count()) === 1);
   await band.locator('[data-consult-field="reason"]').fill('DEMO valoración por deterioro');
   await band.locator('[data-consult-field="reason"]').dispatchEvent('change');
-  await band.locator('[data-consult-field="followUpStatus"]').selectOption('en_curso');
+  await band.locator('[data-consult-field="triage"]').selectOption('seguimiento');
   await page.waitForTimeout(300);
   await pickPatient(page, P2);
   await pickPatient(page, P1);
   band = page.locator('.ic-consult-band');
   check('Motivo de consulta / Seguimiento written in the consult band survive a patient switch',
     (await band.locator('[data-consult-field="reason"]').inputValue()) === 'DEMO valoración por deterioro' &&
-    (await band.locator('[data-consult-field="followUpStatus"]').inputValue()) === 'en_curso');
+    (await band.locator('[data-consult-field="triage"]').inputValue()) === 'seguimiento');
 
   await band.locator('[data-ic-req-trigger]').click();
   const svcPanel = page.locator('#patient-svc-pick-panel');

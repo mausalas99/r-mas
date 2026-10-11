@@ -9,11 +9,12 @@ import {
   markCloudDocOversize,
   FP_FIELDS,
 } from './cloud-med-receta-index.mjs';
+import { hasNeumoStudies, neumoStudiesUpdatedAt } from './neumo-studies-sync.mjs';
 
 /** @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} CloudSyncOp */
 
 /** Packed into dedicated LWW paths — must not ride along on `fields` with a fresh batch clock. */
-export const FIELD_SKIP = new Set(['historiaClinica', 'id', 'monitoreo', 'eventualidades', 'medReceta']);
+export const FIELD_SKIP = new Set(['historiaClinica', 'id', 'monitoreo', 'eventualidades', 'medReceta', 'neumoStudies']);
 
 /**
  * Floor clock for content with no clock of its own and a patient with no census clock.
@@ -122,6 +123,17 @@ export function pushCloudLiveClinicalOps(ops, patientId, patient, actorId) {
         value: patient.eventualidades,
         actorId,
         updatedAt: eventualidadesOpUpdatedAt(patient.eventualidades, stableAt),
+      })
+    );
+  }
+  // R+ Neumo studies (core never has them). Full union; clock = newest study, never "now".
+  if (hasNeumoStudies(patient.neumoStudies)) {
+    ops.push(
+      cloudOp({
+        path: `entries/${patientId}/neumoStudies`,
+        value: patient.neumoStudies,
+        actorId,
+        updatedAt: neumoStudiesUpdatedAt(patient.neumoStudies),
       })
     );
   }

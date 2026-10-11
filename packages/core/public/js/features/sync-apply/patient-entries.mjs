@@ -30,6 +30,7 @@ import {
   shouldApplyMobileLabHistoryWindow,
 } from '../cloud-mobile/lab-history-window.mjs';
 import { cloudSyncNowIso } from '../cloud-sync/cloud-sync-clock.mjs';
+import { applyNeumoStudiesToPatient } from '../cloud-sync/neumo-studies-sync.mjs';
 
 /** @type {{
  *   runtime?: object,
@@ -363,6 +364,10 @@ function applyLanPatientNested(existing, entry, p) {
     censusRepushNeeded = true;
   }
   if (JSON.stringify(existing) !== monBefore) changed = true;
+  // R+ Neumo studies: union by id, never drop a local one; re-push when we hold studies the room lacks.
+  var neumo = applyNeumoStudiesToPatient(existing, p.neumoStudies);
+  if (neumo.changed) changed = true;
+  if (neumo.repush) censusRepushNeeded = true;
   return changed;
 }
 
@@ -533,6 +538,7 @@ function attachOptionalPatientFields(newPat, patient) {
   if (patient.eventualidades && typeof patient.eventualidades === 'object') {
     newPat.eventualidades = patient.eventualidades;
   }
+  if (patient.neumoStudies) applyNeumoStudiesToPatient(newPat, patient.neumoStudies);
 }
 
 function createNewPatientShell(entry) {

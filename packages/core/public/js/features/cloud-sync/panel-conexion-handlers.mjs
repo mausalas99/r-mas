@@ -39,7 +39,7 @@ async function persistRoomDeks() {
 export async function ensureRoomEncryptionBackfill(deps, room) {
   if (!room?.id || !NUBE_E2EE_ENABLED) return;
   const result = await ensureOwnerRoomKey(deps.getApi(), room, getCloudSyncClientId()).catch(() => null);
-  if (result && (result.failed > 0 || result.remaining !== 0)) {
+  if (result && result.remaining > 0) {
     deps.toast('Sala ' + (room.code || room.id) + ': algunos datos aún no están protegidos. Reintenta más tarde.', 'error');
   }
   await persistRoomDeks();

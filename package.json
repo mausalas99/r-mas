@@ -1,6 +1,6 @@
 {
   "name": "r-plus",
-  "version": "8.4.9",
+  "version": "8.5.0",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "packages/im/main.js",
   "workspaces": [
@@ -50,10 +50,15 @@
     "dev:lan-peer-fresh": "node scripts/dev-lan-peer-app.mjs --fresh",
     "dev:nube-test": "node scripts/dev-nube-test-app.mjs",
     "e2e": "node scripts/e2e/run-all.mjs",
+    "e2e:hf": "E2E_APP_ROOT=packages/hf node scripts/e2e/patients.e2e.mjs",
+    "e2e:neumo": "E2E_APP_ROOT=packages/neumo node scripts/e2e/patients.e2e.mjs",
+    "drift:hf": "node scripts/core-drift-report.mjs packages/hf",
+    "drift:neumo": "node scripts/core-drift-report.mjs packages/neumo",
     "e2e:labs-to-docx": "node scripts/e2e/labs-to-docx.e2e.mjs",
     "e2e:lab-paste-rules": "node scripts/e2e/lab-paste-rules.e2e.mjs",
     "e2e:lab-trends": "node scripts/e2e/lab-trends.e2e.mjs",
     "e2e:lab-patient-switch": "node scripts/e2e/lab-patient-switch.e2e.mjs",
+    "e2e:speed": "node scripts/e2e/speed.e2e.mjs",
     "e2e:cultivos": "node scripts/e2e/cultivos.e2e.mjs",
     "e2e:lab-repo-update": "node scripts/e2e/lab-repo-update.e2e.mjs",
     "e2e:manejo-receta": "node scripts/e2e/manejo-receta.e2e.mjs",
@@ -89,7 +94,8 @@
     "e2e:patients": "node scripts/e2e/patients.e2e.mjs",
     "e2e:paste-smart": "node scripts/e2e/paste-smart.e2e.mjs",
     "dev:nube-test-fresh": "node scripts/dev-nube-test-app.mjs --fresh",
-    "ci:forbid-lan": "node scripts/ci/forbid-lan-imports.mjs"
+    "ci:forbid-lan": "node scripts/ci/forbid-lan-imports.mjs",
+    "bench:flow": "node scripts/run-with-electron-node.mjs scripts/metrics/flow-timer.mjs"
   },
   "author": "Mauricio Salas",
   "license": "ISC",

@@ -138,7 +138,9 @@ describe('Nube client gate: desktop vs ios (NUBE_VERSION_GATE_ENABLED on)', () =
   };
 
   it('desktop with an old version is still blocked', async () => {
-    await assert.rejects(reg({ appVersion: '8.2.0' }).run(), { code: 'update_required' });
+    // 0.0.1 sits below every app's floor (IM 8.2.1, HF and Neumo 1.0.x) —
+    // this test is vendored into those packages with their own auth-util.js.
+    await assert.rejects(reg({ appVersion: '0.0.1' }).run(), { code: 'update_required' });
   });
 
   it('desktop with no version is still blocked', async () => {

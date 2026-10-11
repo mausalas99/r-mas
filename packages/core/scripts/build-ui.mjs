@@ -24,7 +24,7 @@ export function concatenateStylesheets(html, publicDir) {
     try {
       const css = fs.readFileSync(filePath, 'utf8');
       bundledCss += `/* --- ${hrefClean.slice(1)} --- */\n${css}\n\n`;
-    } catch (e) {
+    } catch {
       // file not found, skip
     }
   }

@@ -7,7 +7,6 @@
  * the require('./argon2.win32-x64-msvc.node') call in @node-rs/argon2/index.js
  * can find it at runtime.
  */
-import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

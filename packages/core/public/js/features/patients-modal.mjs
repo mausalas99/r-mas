@@ -44,7 +44,7 @@ import {
 } from '../patient-registro-modal-ui.mjs';
 import { cloudSyncNowIso } from './cloud-sync/cloud-sync-clock.mjs';
 import { getConsultInfo, setConsultInfo } from './patient-dashboard/consult-band.mjs';
-import { INTERCONSULT_SERVICES, REQUESTING_SERVICE_IDS } from './patient-dashboard/interconsult-catalog.mjs';
+import { INTERCONSULT_SERVICES, REQUESTING_SERVICE_IDS, IC_OWN_SERVICE } from './patient-dashboard/interconsult-catalog.mjs';
 import { accesoFechaToDateInputValue, dateInputValueToAccesoFecha } from '../patient-date-fields.mjs';
 
 function _prefillServicioForSala() {
@@ -219,7 +219,7 @@ function syncIcAdmitBlock() {
 }
 
 function pickIcService(name) {
-  document.getElementById('m-servicio').value = name;
+  document.getElementById('m-servicio').value = IC_OWN_SERVICE;
   document.getElementById('m-area').value = name;
   document.querySelectorAll('#m-ic-svc button').forEach(function (b) {
     var on = b.textContent === name;
@@ -520,6 +520,11 @@ function saveCompleteAdmissionModal() {
     return p && String(p.id) === String(patientId);
   });
   if (!patient) return false;
+  var picked = isInterconsultaAdmit() ? document.querySelector('#m-ic-svc [aria-pressed="true"]') : null;
+  if (isInterconsultaAdmit() && !picked) {
+    rt.showToast('Elige el servicio solicitante', 'error');
+    return false;
+  }
   var loc = readPatientLocationFields(rt.getSettings());
   if (!validatePatientLocationFields(loc, true)) return false;
   _rememberAdmissionLocation(loc.cuarto, loc.cama);
@@ -527,10 +532,10 @@ function saveCompleteAdmissionModal() {
   patient.servicio = loc.servicio;
   patient.cuarto = loc.cuarto;
   patient.cama = loc.cama;
-  if (isInterconsultaAdmit()) {
-    var picked = document.querySelector('#m-ic-svc [aria-pressed="true"]');
-    var svcName = picked ? picked.textContent : loc.servicio;
-    patient.servicio = svcName;
+  if (picked) {
+    var svcName = picked.textContent;
+    patient.area = svcName;
+    patient.servicio = IC_OWN_SERVICE;
     setConsultInfo(patient, {
       requestingService: svcName,
       reason: (document.getElementById('m-ic-motivo').value || '').trim(),

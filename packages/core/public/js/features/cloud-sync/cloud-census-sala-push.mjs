@@ -169,6 +169,171 @@ export async function mirrorPatientCensusToOperationalSala(patient, opts = {}) {
 }
 
 /**
+ * A patient moved to another sala's team: mark it in the room it left. Census
+ * fields carry the new sala, stamped now so they beat the room's old copy
+ * (LWW), then the room's assignment rows are re-pushed. No delete.
+ * @param {object} patient @param {string} prevSala @param {string} [actorId]
+ * @param {{ syncOps?: boolean }} [opts] syncOps false: caller re-pushes the room's assignment rows itself
+ */
+export async function markPatientMovedInSalaRoom(patient, prevSala, actorId, { syncOps = true } = {}) {
+  const from = normalizeCloudSala(prevSala);
+  const to = normalizeCloudSala(patient?.sala);
+  if (!patient?.id || !isCloudSala(from) || from === to) return { ok: false, reason: 'not_moved' };
+  /** @type {import('./mutate-bridge-ops.mjs').CloudSyncOp[]} */
+  const ops = [];
+  pushCensusFieldsOp(ops, String(patient.id), { ...patient, lanUpdatedAt: cloudSyncNowIso() }, actorId || 'local');
+  const res = await pushOpsToSalaRoom(from, ops);
+  console.info(`[R+] moved push room=${from} roomId=${getSalaRoomCache(from).roomId || '-'} pid=${patient.id} own=${to || '-'} → ${JSON.stringify(res)}`);
+  if (!syncOps) return res;
+  const { syncClinicalOpsForSala } = await import('./cloud-clinical-ops-sala.mjs');
+  await syncClinicalOpsForSala(from).catch(() => null);
+  return res;
+}
+
+/**
+ * Team sala or the chart's own sala — never a sala guessed from servicio: an
+ * Interconsultas consult often names «Sala 1» and must stay in its room.
+ * @param {object} patient @param {object|null|undefined} context
+ */
+function hasKnownSala(patient, context) {
+  if (String(patient?.sala || '').trim()) return true;
+  const assignments = Array.isArray(context?.assignments) ? context.assignments : [];
+  const now = context?.now || new Date().toISOString();
+  return !!resolvePatientTeamIdFromAssignments(String(patient?.id || ''), assignments, now);
+}
+
+/**
+ * The patient's own cloud sala when the room copy is stale (other sala than the
+ * room and than the copy's fields.sala); else '' plus the skip reason.
+ * @param {object} patient @param {string} copySala @param {string} roomSala @param {object|null|undefined} ctx
+ * @returns {{ own: string, reason?: string }}
+ */
+function staleCopyOwnSala(patient, copySala, roomSala, ctx) {
+  if (!hasKnownSala(patient, ctx)) return { own: '', reason: 'no_known_sala' };
+  const own = resolveOperationalPatientSala(patient, ctx);
+  if (!isCloudSala(own)) return { own: '', reason: 'own_not_cloud' };
+  if (own === roomSala) return { own: '', reason: 'belongs_here' };
+  if (normalizeCloudSala(copySala) === own) return { own: '', reason: 'already_marked' };
+  return { own };
+}
+
+/** Logged so a live run shows each heal decision. Ids and sala names only, never registro. */
+function logHeal(roomSala, entryPid, localPid, copySala, own, verdict) {
+  const ids = localPid && localPid !== entryPid ? `entry=${entryPid} local=${localPid} (same registro)` : `pid=${entryPid}`;
+  console.info(`[R+] heal room=${roomSala} ${ids} copy=${copySala || '-'} own=${own || '-'} → ${verdict}`);
+}
+
+/** `${roomSala}|${entryPid}` already healed this session — one try per copy, no push loop. */
+const healedRoomCopies = new Set();
+
+/** Local charts by id and by registro: a room entry can carry another id for the same patient. */
+function indexLocalPatients() {
+  const byId = new Map();
+  const byRegistro = new Map();
+  for (const p of getSyncablePatients() || []) {
+    byId.set(String(p?.id || ''), p);
+    const registro = String(p?.registro || '').trim();
+    if (registro && !byRegistro.has(registro)) byRegistro.set(registro, p);
+  }
+  return { byId, byRegistro };
+}
+
+/**
+ * @param {string} entryPid @param {{ sala: string, registro: string }} copy
+ * @param {{ byId: Map<string, object>, byRegistro: Map<string, object> }} local
+ * @param {string} roomSala @param {object|null|undefined} ctx
+ * @returns {{ patient: object|null, own: string, reason?: string }}
+ */
+function healDecision(entryPid, copy, local, roomSala, ctx) {
+  const patient = local.byId.get(entryPid) || (copy.registro ? local.byRegistro.get(copy.registro) : null) || null;
+  if (!patient) return { patient: null, own: '', reason: 'not_held' };
+  return { patient, ...staleCopyOwnSala(patient, copy.sala, roomSala, ctx) };
+}
+
+/**
+ * Self-heal for copies left in the active room before moves were marked: a
+ * room entry whose fields.sala differs from the local patient's operational
+ * sala gets the local sala, stamped now (LWW), on the room entry's own id
+ * (matched by id, else registro). No delete. Patients not held locally are
+ * skipped. Assignment rows are not added: any peer's clinicalOps push replaces
+ * the room copy whole, so fields.sala is the durable signal.
+ * @param {Map<string, { sala: string, registro: string }>} roomCopies from roomCopySalasFromPull
+ * @param {string} [actorId]
+ */
+export async function markStaleRoomCopiesMoved(roomCopies, actorId) {
+  const roomSala = getActiveCloudSala();
+  if (!roomCopies?.size || !isCloudSala(roomSala)) return { ok: false, reason: 'nothing' };
+  const { getClinicalScopeContextForEvaluate } = await import('../../clinical-access-runtime.mjs');
+  const actor = actorId || (await import('./mutate-bridge.mjs')).resolveCloudActorId?.() || 'local';
+  const { ops, keys } = collectHealOps(roomCopies, roomSala, getClinicalScopeContextForEvaluate(), actor);
+  if (!ops.length) return { ok: true, healed: 0 };
+  const res = await pushOpsToSalaRoom(roomSala, ops);
+  const roomId = getSalaRoomCache(roomSala).roomId || String(getCloudSyncRoomSnapshot()?.id || '');
+  console.info(`[R+] heal push room=${roomSala} roomId=${roomId} ops=${ops.length} → ${JSON.stringify(res)}`);
+  // A failed push may try again on the next pull.
+  if (!res?.ok || res.pushed?.staleRejected) keys.forEach((k) => healedRoomCopies.delete(k));
+  return { ...res, healed: ops.length };
+}
+
+/**
+ * @param {Map<string, { sala: string, registro: string }>} roomCopies
+ * @param {string} roomSala @param {object|null|undefined} ctx @param {string} actor
+ */
+function collectHealOps(roomCopies, roomSala, ctx, actor) {
+  const local = indexLocalPatients();
+  const at = cloudSyncNowIso();
+  /** @type {import('./mutate-bridge-ops.mjs').CloudSyncOp[]} */
+  const ops = [];
+  const keys = [];
+  for (const [entryPid, copy] of roomCopies) {
+    const key = `${roomSala}|${entryPid}`;
+    if (healedRoomCopies.has(key)) continue;
+    const { patient, own, reason } = healDecision(entryPid, copy, local, roomSala, ctx);
+    if (!patient) continue; // not held here: no log, the room holds other devices' charts
+    const localPid = String(patient.id || '');
+    if (!own) {
+      logHeal(roomSala, entryPid, localPid, copy.sala, resolveOperationalPatientSala(patient, ctx), `skip(${reason})`);
+      continue;
+    }
+    logHeal(roomSala, entryPid, localPid, copy.sala, own, 'push');
+    healedRoomCopies.add(key);
+    keys.push(key);
+    pushCensusFieldsOp(ops, entryPid, { ...patient, sala: own, lanUpdatedAt: at }, actor);
+  }
+  return { ops, keys };
+}
+
+/** Room ids whose full state was already checked this session. */
+const fullHealDoneForRoom = new Set();
+
+/**
+ * Incremental pulls carry only changed entries, so an old stale copy never
+ * shows up in one. Once per session per active room (or when forced from the
+ * repair button): pull the whole room from revision 0 — decrypted by the api,
+ * main cursor untouched — and heal from it.
+ * @param {{ force?: boolean }} [opts]
+ */
+export async function healActiveRoomStaleCopies(opts = {}) {
+  const room = getCloudSyncRoomSnapshot();
+  const roomId = String(room?.id || '');
+  if (!roomId || !isCloudSyncActive() || !getCloudSyncToken()) return { ok: false, reason: 'inactive' };
+  if (!opts.force && fullHealDoneForRoom.has(roomId)) return { ok: true, reason: 'done' };
+  fullHealDoneForRoom.add(roomId);
+  try {
+    const api = createCloudSyncApi({ getBaseUrl: getCloudSyncUrl, getToken: getCloudSyncToken });
+    const pull = await api.pull(roomId, 0);
+    const { roomCopySalasFromPull } = await import('./pull-apply.mjs');
+    const copies = roomCopySalasFromPull(pull);
+    console.info(`[R+] heal room=${getActiveCloudSala()} full pull: ${copies.size} entries with readable fields`);
+    return await markStaleRoomCopiesMoved(copies);
+  } catch (err) {
+    fullHealDoneForRoom.delete(roomId);
+    console.warn('[R+] heal full pull failed:', err?.message || err);
+    return { ok: false, reason: 'pull_failed' };
+  }
+}
+
+/**
  * Ops that bring back a patient whose delete was undone locally. The room's
  * delete tombstone wiped the chart and its labs, and it only clears for an
  * identity op newer than `deletedAt`, while every entityVersion from before the
@@ -235,26 +400,37 @@ export function partitionPatientEntriesByOperationalSala(entries, activeSala, co
  * @param {object} patient
  * @param {{ teams: object[], assignments: object[], now: string, user: object, actorId: string, context: object }} rctx
  * @param {Set<string>} clinicalOpsSalas
- * @returns {Promise<{ stamped: boolean, mirrored: boolean }>}
+ * @returns {Promise<{ stamped: boolean, mirrored: boolean, moved?: boolean }>}
  */
 async function repairOnePatientCensusSala(patient, rctx, clinicalOpsSalas) {
   const { teams, assignments, now, user, actorId, context } = rctx;
   const teamId = resolvePatientTeamIdFromAssignments(String(patient.id), assignments, now);
-  if (!teamId) return { stamped: false, mirrored: false };
-  const team = teams.find((t) => String(t?.team_id || '') === teamId);
-  const prev = String(patient.sala || '').trim();
-  stampPatientClinicalSala(patient, user, { team, teams });
-  const stamped = String(patient.sala || '').trim() !== prev;
-
-  const teamSala = normalizeCloudSala(team?.sala);
-  if (teamSala) clinicalOpsSalas.add(teamSala);
+  let stamped = false;
+  // No team: keep the chart's own sala (a patient added while on another sala).
+  if (teamId) {
+    const team = teams.find((t) => String(t?.team_id || '') === teamId);
+    const prev = String(patient.sala || '').trim();
+    stampPatientClinicalSala(patient, user, { team, teams });
+    stamped = String(patient.sala || '').trim() !== prev;
+    const teamSala = normalizeCloudSala(team?.sala);
+    if (teamSala) clinicalOpsSalas.add(teamSala);
+  }
 
   let mirrored = false;
+  let moved = false;
   if (!patientBelongsToActiveCloudRoom(patient, context)) {
     const res = await mirrorPatientCensusToOperationalSala(patient, { actorId, context });
     mirrored = !!res?.ok;
+    // A copy left in the active room from before moves were marked: mark it now.
+    const active = getActiveCloudSala();
+    const markRes = hasKnownSala(patient, context)
+      ? await markPatientMovedInSalaRoom(patient, active, actorId, { syncOps: false })
+      : { ok: false, reason: 'no_known_sala' };
+    moved = !!markRes?.ok;
+    console.info(`[R+] repair room=${active} pid=${patient.id} own=${patient.sala || '-'} → ${JSON.stringify(markRes)}`);
+    if (moved) clinicalOpsSalas.add(active);
   }
-  return { stamped, mirrored };
+  return { stamped, mirrored, moved };
 }
 
 /** @param {Iterable<string>} clinicalOpsSalas */
@@ -277,18 +453,20 @@ async function scheduleCloudSyncPushAfterRepair() {
 /**
  * @param {{ teams: object[], assignments: object[], now: string, user: object, actorId: string, context: object }} rctx
  * @param {Set<string>} clinicalOpsSalas
- * @returns {Promise<{ stamped: number, mirrored: number }>}
+ * @returns {Promise<{ stamped: number, mirrored: number, moved: number }>}
  */
 async function repairAllPatientsCensusSalas(rctx, clinicalOpsSalas) {
   let stamped = 0;
   let mirrored = 0;
+  let moved = 0;
   for (const patient of getSyncablePatients() || []) {
     if (!patient?.id || String(patient.id).indexOf('demo-') === 0) continue;
     const result = await repairOnePatientCensusSala(patient, rctx, clinicalOpsSalas);
     if (result.stamped) stamped += 1;
     if (result.mirrored) mirrored += 1;
+    if (result.moved) moved += 1;
   }
-  return { stamped, mirrored };
+  return { stamped, mirrored, moved };
 }
 
 /**
@@ -312,11 +490,12 @@ export async function repairCensusSalasFromTeamAssignments(opts = {}) {
 
   /** @type {Set<string>} */
   const clinicalOpsSalas = new Set();
-  const { stamped, mirrored } = await repairAllPatientsCensusSalas(rctx, clinicalOpsSalas);
+  const { stamped, mirrored, moved } = await repairAllPatientsCensusSalas(rctx, clinicalOpsSalas);
 
   if (stamped > 0) persistClinicalState({ immediate: true });
+  const healed = await healActiveRoomStaleCopies({ force: true });
   await pushClinicalOpsForRepairedSalas(clinicalOpsSalas);
   await scheduleCloudSyncPushAfterRepair();
 
-  return { ok: true, stamped, mirrored, salas: [...clinicalOpsSalas] };
+  return { ok: true, stamped, mirrored, moved: moved + (Number(healed?.healed) || 0), salas: [...clinicalOpsSalas] };
 }

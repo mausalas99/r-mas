@@ -9,7 +9,6 @@ import { fileURLToPath } from 'node:url';
 import { cacheElectronBinaryIfValid } from './lib/sqlcipher-native.mjs';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const pkgDir = path.join(root, 'node_modules', 'better-sqlite3-multiple-ciphers');
 
 const NATIVE_PROBE = [
   "const D = require('better-sqlite3-multiple-ciphers');",

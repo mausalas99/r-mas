@@ -3124,9 +3124,11 @@ select.profile-input.profile-select {
   outline: 2px solid color-mix(in oklab, var(--action) 55%, transparent);
 }
 /* Mi perfil: its own window. Two columns of form + live preview, sized to fit without scrolling. */
-.profile-modal--perfil {
+#profile-modal .profile-modal--perfil {
   width: min(1180px, calc(100vw - 28px));
-  max-height: min(94vh, 900px);
+  max-height: min(900px, calc(var(--app-height, 100vh) - 32px));
+  /* A long form: solid surface, so muted labels keep AA contrast over the dimmed app. */
+  background: var(--color-elevated);
 }
 .settings-perfil-form {
   display: grid;
@@ -3137,9 +3139,18 @@ select.profile-input.profile-select {
 }
 .settings-perfil-form > .settings-perfil-id,
 .settings-perfil-form > .profile-row,
-.settings-perfil-form > .settings-perfil-sala-host,
-.settings-perfil-form > .settings-perfil-foot {
+.settings-perfil-form > .settings-perfil-hosts {
   grid-column: 1 / -1;
+}
+/* Sala de guardia and Mi equipo side by side, so the window fits one screen. */
+.settings-perfil-hosts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  align-items: start;
+}
+.settings-perfil-hosts > :empty {
+  display: none;
 }
 .settings-perfil-col {
   display: flex;
@@ -3161,6 +3172,7 @@ select.profile-input.profile-select {
   }
 }
 @media (max-width: 640px) {
+  .settings-perfil-hosts,
   .settings-perfil-form,
   .settings-perfil-form:has(> .settings-perfil-col[hidden]) {
     grid-template-columns: minmax(0, 1fr);
@@ -3243,9 +3255,6 @@ select.profile-input.profile-select {
   width: 100%;
   min-width: 0;
 }
-.settings-perfil-foot {
-  margin-top: 14px;
-}
 [data-settings-db-only][hidden] {
   display: none;
 }
@@ -3260,8 +3269,7 @@ select.profile-input.profile-select {
 .settings-perfil-form .settings-section-head {
   justify-content: space-between;
 }
-.settings-perfil-form .settings-section-head .wb-btn,
-.settings-perfil-foot .wb-btn {
+.settings-perfil-form .settings-section-head .wb-btn {
   padding-inline: 0;
 }
 

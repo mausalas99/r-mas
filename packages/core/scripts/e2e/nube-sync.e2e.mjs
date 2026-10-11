@@ -582,7 +582,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await C.page.getByRole('button', { name: 'Siguiente' }).click();
   await C.page.locator('#onboard-clinical-name').fill('Dr. Demo Charlie');
   await C.page.getByRole('button', { name: 'Siguiente' }).click();
-  const cSalaValues = await C.page.locator('#onboard-sala option').evaluateAll((els) => els.map((e) => e.value).filter(Boolean));
+  const cSalaValues = await C.page.locator('#onboard-sala option').evaluateAll((els) => els.map((e) => e.value).filter((v) => v && v !== 'Rotación')); // «Otra rotación» picker (8.4.9), not a ward
   check('C: onboarding sala select only offers allowed Nube wards (sala-allowlist, 8 wards)',
     CLOUD_SALAS.length === cSalaValues.length && CLOUD_SALAS.every((s) => cSalaValues.includes(s)), cSalaValues);
   await C.page.locator('#onboard-rank').selectOption('R2');
@@ -644,7 +644,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await undoBtn.evaluate((el) => el.click());
   await A2.page.locator('.wb-confirm-modal [data-wb-confirm-ok]').click();
   await A2.page.waitForLoadState('domcontentloaded');
-  await A2.page.locator('#apptab-lab').waitFor({ timeout: 30000 });
+  await A2.page.locator('.topbar-area-btn').waitFor({ timeout: 30000 });
   await backToLabs(A2.page);
   check('fixes: A keeps P4 after the undo reload (one pull holds delete + undo: pull-apply-state fold)',
     await until(async () => patientVisible(A2.page, P4), 30000));
@@ -1298,18 +1298,6 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
         return (await page.locator('.patient-team-assign-block strong').first().innerText({ timeout: 3000 })).trim();
       } catch { return null; } finally { await closeDatos(page).catch(() => {}); }
     };
-    const assignTeam = async (page, name) => {
-      await openDatos(page);
-      const sel = page.locator('#patient-team-assign-select');
-      if (!(await until(async () => (await sel.isVisible()) && (await sel.isEnabled()), 8000))) {
-        throw new Error(`team select not usable for ${name}: ` + (await page.locator('#patient-data-form').evaluate((e) => e.innerText.slice(0, 500)).catch(() => 'no form')) + ' | ' + (await sel.evaluate((e) => e.outerHTML.slice(0, 600) + ' vis=' + (e.offsetWidth) + ' disabled=' + e.disabled).catch(() => 'no select')));
-      }
-      const opts = await sel.evaluate((e) => [...e.options].map((o) => ({ v: o.value, t: o.textContent.trim(), d: o.disabled })));
-      const want = opts.find((o) => o.t.includes(name));
-      if (!want) throw new Error(`no option ${name} in team select: ` + JSON.stringify(opts));
-      await sel.selectOption({ value: want.v }, { timeout: 5000 });
-      await closeDatos(page);
-    };
     const openEA = async (page) => {
       await goArea(page, 'nota');
       await page.locator('.exp-group-pill[data-group="clinico"]').hover();
@@ -1360,7 +1348,6 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
     check('estado actual: P2 got none of those mediciones', !/TAS (121|137)/.test(await (async () => { await openPatient(B.page, P2); return historialTexts(B.page); })()));
     await openPatient(B.page, P1);
 
-    const teamOpts = async (page) => { try { await openDatos(page); return await page.locator('#patient-team-assign-select').evaluate((e) => [...e.options].map((o) => o.textContent.trim())); } catch (e) { return String(e.message).slice(0, 100); } finally { await closeDatos(page).catch(() => {}); } };
     // ── 78: an open Resumen/estado actual view repaints on pull (no navigation on B) ──
     await openPatient(B.page, P1);
     await openEA(B.page);

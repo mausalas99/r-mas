@@ -39,11 +39,12 @@ export function vitalAlteredTimeForDisplay(time) {
  * @param {string | undefined} timeHm
  * @returns {string}
  */
-export function formatEaVitalStampForSnapshot(recordedAt, timeHm) {
+export function formatEaVitalStampForSnapshot(recordedAt, timeHm, now) {
   var rec = recordedAt != null ? String(recordedAt) : '';
   if (!rec) return vitalAlteredTimeForDisplay(timeHm);
   if (isTurnCloseHm(timeHm) || !String(timeHm || '').trim()) {
-    var ms = gluPointMs(rec, '');
+    // Turno en curso: el cierre es esta noche; se lee como hoy, no como mañana.
+    var ms = isOpenShiftRow({ recordedAt: rec }, now) ? refDate(now).getTime() : gluPointMs(rec, '');
     if (!ms) return '';
     var d = new Date(ms);
     if (isNaN(d.getTime())) return '';
@@ -75,6 +76,47 @@ export function startOfLocalDay(d) {
 }
 
 /**
+ * @param {Date} [now]
+ * @returns {Date}
+ */
+function refDate(now) {
+  return now instanceof Date && !isNaN(now.getTime()) ? now : new Date();
+}
+
+/**
+ * Fila del turno en curso: cierre a medianoche local que todavía no llega
+ * (iPhone «Turno en curso (hoy)» manda `recordedAt` = esta noche 00:00).
+ * @param {{ recordedAt?: unknown } | null | undefined} row
+ * @param {Date} [now]
+ * @returns {boolean}
+ */
+export function isOpenShiftRow(row, now) {
+  var d = parseRecordedAt(row && row.recordedAt != null ? String(row.recordedAt) : '');
+  return !!d && isStartOfLocalDay(d) && d.getTime() > refDate(now).getTime();
+}
+
+/**
+ * Cierre del turno en curso: esta noche 00:00 (mañana a la medianoche local).
+ * @param {Date} [now]
+ * @returns {Date}
+ */
+export function getOpenShiftCloseAt(now) {
+  var d = startOfLocalDay(refDate(now));
+  d.setDate(d.getDate() + 1);
+  return d;
+}
+
+/**
+ * Hora de hoja por defecto en turno en curso: la última ya pasada (04 · 08 · 12 · 16 · 20).
+ * @param {Date} [now]
+ * @returns {string}
+ */
+export function openShiftDefaultHm(now) {
+  var h = refDate(now).getHours();
+  return pad2(Math.max(4, h - (h % 4))) + ':00';
+}
+
+/**
  * Última toma del turno: medianoche del día local actual.
  * @param {Date} [now]
  * @returns {Date}
@@ -85,16 +127,15 @@ export function getDefaultRegistroRecordedAt(now) {
 }
 
 /**
- * Ventana de glucometrías: desde ayer 08:00 hasta la toma de cierre (hoy 00:00, inclusive).
+ * Ventana del turno: desde el cierre previo (exclusivo) hasta el cierre (inclusive).
+ * `now` = cierre elegido o cualquier momento del día: el cierre es su medianoche local.
  * @param {Date} [now]
  * @returns {{ start: Date, end: Date }}
  */
 export function getGlucometriaRegistroWindow(now) {
-  var ref = now instanceof Date && !isNaN(now.getTime()) ? now : new Date();
-  var end = startOfLocalDay(ref);
+  var end = startOfLocalDay(refDate(now));
   var start = new Date(end);
   start.setDate(start.getDate() - 1);
-  start.setHours(8, 0, 0, 0);
   return { start: start, end: end };
 }
 
@@ -122,13 +163,14 @@ function isStartOfLocalDay(d) {
 }
 
 /**
- * Instantánea local de una glucometría (fecha del registro + hora de la toma).
- * En cierre de turno (recordedAt a las 00:00 locales), 08:00 y 16:00 son del día previo.
+ * Instantánea local de una toma (fecha del registro + hora de la hoja).
+ * En cierre de turno (recordedAt a las 00:00 locales) toda hora distinta de 00:00
+ * es del día previo (el día del turno), igual que `ChartSeries.pointDate` en iOS.
  * @param {string} recordedAt
  * @param {string | undefined} timeHm
  * @returns {number}
  */
-export function gluPointMs(recordedAt, timeHm, anyHourPrevDay) {
+export function gluPointMs(recordedAt, timeHm) {
   var base = parseRecordedAt(recordedAt);
   if (!base) return 0;
   if (!timeHm || !String(timeHm).trim()) return base.getTime();
@@ -138,13 +180,7 @@ export function gluPointMs(recordedAt, timeHm, anyHourPrevDay) {
   if (!Number.isFinite(h)) return base.getTime();
   var d = new Date(base);
   d.setHours(h, Number.isFinite(m) ? m : 0, 0, 0);
-  if (isStartOfLocalDay(base)) {
-    var hm = String(timeHm).trim();
-    // Signos vitales: el turno cierra 00:00, así que toda hora distinta es del día previo.
-    if (hm === '08:00' || hm === '16:00' || (anyHourPrevDay && (h > 0 || m > 0))) {
-      d.setDate(d.getDate() - 1);
-    }
-  }
+  if (isStartOfLocalDay(base) && (h > 0 || m > 0)) d.setDate(d.getDate() - 1);
   return d.getTime();
 }
 
@@ -157,7 +193,7 @@ export function gluPointMs(recordedAt, timeHm, anyHourPrevDay) {
 export function formatEaVitalPointShorthand(recordedAt, timeHm) {
   var rec = recordedAt != null ? String(recordedAt) : '';
   if (!rec) return '';
-  var ms = gluPointMs(rec, timeHm != null ? String(timeHm) : '', true);
+  var ms = gluPointMs(rec, timeHm != null ? String(timeHm) : '');
   if (!ms) return '';
   var d = new Date(ms);
   if (isNaN(d.getTime())) return '';
@@ -201,7 +237,7 @@ export function sortGlucometriasChronologically(glus, recordedAt) {
 export function isGluPointInRegistroWindow(ms, now) {
   if (!ms) return false;
   var win = getGlucometriaRegistroWindow(now);
-  return ms >= win.start.getTime() && ms <= win.end.getTime();
+  return ms > win.start.getTime() && ms <= win.end.getTime();
 }
 
 /**
@@ -237,7 +273,7 @@ function collectGluFromHistRow(row, ref, seen) {
 }
 
 export function collectGlucometriasForRegistroWindow(historial, now) {
-  var ref = now instanceof Date && !isNaN(now.getTime()) ? now : new Date();
+  var ref = refDate(now);
   var hist = Array.isArray(historial) ? historial : [];
   /** @type {Array<{ value: unknown, time: string, recordedAt: string }>} */
   var out = [];

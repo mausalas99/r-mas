@@ -1231,7 +1231,8 @@ await r.finish('SOME paste rules', async () => {
     bhAt('Mar 26 2026 8:00AM', '9.8'), gasAt('Mar 26 2026 8:30AM', '7.37'), hemo('Mar 26 2026 8:45AM'), bhAt('Mar 27 2026 8:00AM', '9.9'),
   ].join('\n\n'));
   const S = async (d) => daySets(OCHO, d);
-  const s20 = await S('20/03/2026'), s21 = await S('21/03/2026'), s22 = await S('22/03/2026'), s23 = await S('23/03/2026');
+  const s20 = await S('20/03/2026'), s21 = await S('21/03/2026'), s22 = await S('22/03/2026');
+  await S('23/03/2026');
   const s24 = await S('24/03/2026'), s25 = await S('25/03/2026'), s26 = await S('26/03/2026'), s27 = await S('27/03/2026');
   check('labs-only reports 5 h apart → 2 sets', s20.length === 2, s20);
   check('labs exactly 2 h apart → 1 set', s21.length === 1, s21);
@@ -1775,7 +1776,7 @@ await r.finish('SOME paste rules', async () => {
   await page.locator('#lab-some-tables-btn').click();
   const tb = page.locator('#lab-some-tables-modal-body');
   await tb.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-  const tbText = await tb.innerText().catch(() => '');
+  await tb.innerText().catch(() => '');
   await page.locator('#lab-some-tables-backdrop [data-wb-close]').click().catch(() => {});
   // fecha-hora + heces pairs (rows 31, 41)
   await pasteAndSave(hdr(VW, '06/03/2026 03:06:21 p. m.') +
@@ -1863,11 +1864,11 @@ await r.finish('SOME paste rules', async () => {
   await openPaste(page);
   await page.locator('#lab-input').focus();
   await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(250);
-  const kTyping = await selDay();
+  await selDay();
   await page.keyboard.press('Escape'); await page.waitForTimeout(250);
   await goArea(page, 'paciente').catch(() => {});
   await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(250);
-  const kHidden = await selDay();
+  await selDay();
   await goArea(page, 'lab');
 
   // ── Row 53 consolidate from the "…" menu ────────────────────────────────
@@ -1900,7 +1901,7 @@ await r.finish('SOME paste rules', async () => {
   check('ascitis + serum Alb 3.4 → Liq "Alb 2.1 TGL 20 GASA 1.3"; interpretation says portal HTN; Liq row has no portal/quilosa',
     /Alb 2\.1/.test(liqRow(d)) && /TGL 20/.test(liqRow(d)) && /GASA 1\.3/.test(liqRow(d)) && /hipertensi[oó]n portal/.test(interp(d)) && !/portal|quilosa/i.test(liqRow(d)), d.rows);
   await page.locator('#lab-copy-fab').click(); await page.waitForTimeout(500);
-  const liqClip = await clip();
+  await clip();
   await closeToasts(page);
   d = await liq('Apr 2 2026 8:00AM', asc({ rec: '500', pmn: '84', tgl: null }), '02/04/2026');
   check('ascitic PMN 420 (Leu 500 × 84 %) → PBE', /PMN 420 ≥250/.test(interp(d)) && /peritonitis bacteriana/i.test(interp(d)), d.rows);
@@ -1989,7 +1990,7 @@ await r.finish('SOME paste rules', async () => {
   check('CSF portal → "PMN 26% Linf 74%", Gram MODERADOS LEUCOCITOS, Tinta NEGATIVO; no BH row',
     /PMN 26%/.test(d.all) && /Linf 74%/.test(d.all) && /MODERADOS LEUCOCITOS/.test(d.all) && /Tinta NEGATIVO/.test(d.all) && !d.rows.some((l) => /^BH/.test(l)), d.rows);
   await page.locator('#lab-copy-fab').click(); await page.waitForTimeout(500);
-  const csfClip = await clip();
+  await clip();
   await closeToasts(page);
   d = await liq('May 2 2026 8:00AM', lcr({ glu: 50, prot: 40 }), '02/05/2026');
   check('chemistry-only LCR → no PMN/Linf', /LCR/.test(d.all) && !/PMN|Linf/.test(d.all), d.rows);
@@ -2128,7 +2129,7 @@ await r.finish('SOME paste rules', async () => {
   const urine = qs([['SODIO EN ORINA', '*', '40', 'mmol/L', ''], ['POTASIO EN ORINA', '*', '22', 'mmol/L', ''], ['CLORO EN ORINA', '*', '34', 'mmol/L', ''], ['CREATININA EN ORINA', '*', '53.99', 'mg/dL', '']]) +
     'URIANALISIS\nEXAMEN GENERAL DE ORINA\n' + TABLE + 'PH\t\nA\n7.0\n5.5 - 6.5\n';
   d = await ga('Jul 11 2026 8:00AM', urine, '11/07/2026');
-  const dSer = await ga('Jul 12 2026 8:00AM', urine + qs([['SODIO', '*', '140', 'mmol/L', '135.0 - 145.0']]), '12/07/2026');
+  await ga('Jul 12 2026 8:00AM', urine + qs([['SODIO', '*', '140', 'mmol/L', '135.0 - 145.0']]), '12/07/2026');
   d = await ga('Jul 13 2026 8:00AM', gasS({ extra: 'OBSERVACIONES\t*\tCa++ IONIZADO: 0.92 mmol/L\t&\n' }), '13/07/2026');
   const iAlt = await altered();
   const dI2 = await ga('Jul 14 2026 8:00AM', gasS({ extra: 'OBSERVACIONES\t*\tCa++ IONIZADO: 1.20 mmol/L\t&\n' }), '14/07/2026');

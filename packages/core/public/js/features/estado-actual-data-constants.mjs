@@ -1,22 +1,4 @@
-export const MED_FIELD_KEYS = /** @type {const} */ ([
-  'analgesia',
-  'antiemeticos',
-  'sedacion',
-  'antiepilepticos',
-  'antiparkinsonianos',
-  'antidotos',
-  'viaAerea',
-  'vasop',
-  'antihta',
-  'antitromboticos',
-  'anticoagulacion',
-  'antiarritmicos',
-  'diureticos',
-  'estatinas',
-  'abx',
-  'transfusiones',
-  'nm',
-]);
+export { MED_FIELD_KEYS } from '../../../lib/monitoreo-merge.mjs';
 
 /** @type {readonly string[]} */
 export const VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat'];

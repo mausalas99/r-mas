@@ -51,9 +51,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.4.9](https://github.com/mausalas99/r-mas/releases/tag/v8.4.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.5.0](https://github.com/mausalas99/r-mas/releases/tag/v8.5.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.5.0 (estable — release 8.5.0)
+
+- **Interconsulta:** pegar «SUGERENCIAS POR …» llena las Indicaciones del paciente.
+- **Estado actual:** pastilla «Turno en curso» (cierra esta noche, se ve como hoy).
+- **Interconsulta:** «Motivo de IC» en tarjetas; servicio solicitante obligatorio; Grupo + Seguimiento en un control.
+- **Nube:** la nota se sincroniza tras pegar labs, «Enviar labs» y «Añadir a Tratamiento».
+- **Velocidad:** cambio de paciente sin la espera de 120 ms.
+
+Notas: `docs/RELEASE_NOTES_8.5.0.txt`.
 
 ## R+ 8.4.9 (estable — release 8.4.9)
 

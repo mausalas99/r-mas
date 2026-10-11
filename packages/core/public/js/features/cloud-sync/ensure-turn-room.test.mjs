@@ -104,3 +104,16 @@ describe('«Salir de la sala» sticks', () => {
     assert.equal(getLeftTurnRoom(), null);
   });
 });
+
+describe('cachedTurnRoomSalas', () => {
+  it('lists only rooms cached for the current turn', async () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    const { cachedTurnRoomSalas, rememberSalaRoom } = await import('./cloud-clinical-ops-sala.mjs');
+    const { setCloudSyncRoomSnapshot } = await import('./settings.mjs');
+    setCloudSyncRoomSnapshot({ id: 'room-home', code: 'ABC123', sala: 'Sala 1', turnKey: '2026-10' });
+    rememberSalaRoom('Sala 2', { id: 'room-s2', turnKey: '2026-10' });
+    rememberSalaRoom('Torre HU', { id: 'room-old', turnKey: '2026-09' });
+    assert.deepEqual(cachedTurnRoomSalas(), ['Sala 2']);
+  });
+});

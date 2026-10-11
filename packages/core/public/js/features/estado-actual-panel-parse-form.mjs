@@ -10,12 +10,15 @@ import { vitalSeriesToLegacyFields } from './estado-actual-vital-series.mjs';
 /**
  * @param {HTMLFormElement} form
  * @param {string} defaultTime
+ * @param {boolean} [stampUntimed] turno en curso: lectura sin hora toma `defaultTime` (si no, caería al cierre de esta noche)
  */
-export function parseVitalsFromForm(form, defaultTime) {
+export function parseVitalsFromForm(form, defaultTime, stampUntimed) {
   /** @type {Record<string, Array<{ value: number, time?: string }>>} */
   var vitalSeries = {};
   VITAL_KEYS.forEach(function (key) {
-    vitalSeries[key] = readVitalSeriesFromStack(form, key);
+    vitalSeries[key] = readVitalSeriesFromStack(form, key).map(function (rd) {
+      return stampUntimed && !rd.time ? Object.assign({}, rd, { time: defaultTime }) : rd;
+    });
   });
   var legacy = vitalSeriesToLegacyFields(vitalSeries);
   var vitals = legacy.vitals;

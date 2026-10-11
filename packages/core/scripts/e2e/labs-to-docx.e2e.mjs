@@ -14,6 +14,9 @@
  *   6. Open the .docx and check its content.
  *   7. Restart the app on the same userData → patients and lab dates persist.
  *
+ * Every user-facing step is also timed (click → result on screen) and the ms
+ * go in report.json under `timings`, so speed work has a number to beat.
+ *
  * Artifact: e2e-artifacts/labs-to-docx/<run-id>/ with report.json, the .docx,
  * and one screenshot per step. Exit code 0 = every check passed.
  *
@@ -32,7 +35,7 @@ import {
   DEMO_GARCIA_LAB_REPORT,
 } from '../../public/js/tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
-import { goArea } from './harness.mjs';
+import { goArea, quietHints } from './harness.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const runId = new Date().toISOString().replace(/[:.]/g, '-');
@@ -42,6 +45,8 @@ const downloadsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-e2e-dl-'));
 fs.mkdirSync(artifactDir, { recursive: true });
 
 const checks = [];
+const timings = {};
+const since = (t0) => Math.round(performance.now() - t0);
 let shotN = 0;
 const a11y = createA11yRecorder('labs-to-docx');
 
@@ -92,6 +97,7 @@ async function launch() {
   const page = await app.firstWindow();
   // Sala opens in the card view by default; these scenarios drive the sidebar.
   await page.waitForLoadState('domcontentloaded');
+  await quietHints(page);
   const salaCards = await page.evaluate(() => { globalThis.localStorage.setItem('rplus-sala-view', 'bar'); globalThis.localStorage.setItem('rpc-registro-autoopen', 'off'); return !!globalThis.document.body.dataset.salaView; });
   if (salaCards) await page.reload();
   const pageErrors = [];
@@ -137,7 +143,10 @@ async function docxText(file) {
 
 async function run() {
   // ── Boot 1: fresh install ────────────────────────────────────────────────
+  let t0 = performance.now();
   let { app, page, pageErrors } = await launch();
+  await page.locator('[data-sync-mode="local"]').waitFor({ state: 'visible' });
+  timings['launch (fresh install) → onboarding'] = since(t0);
   await page.locator('[data-sync-mode="local"]').click();
   await page.locator('#clinical-onboard-local-confirm-btn').click();
   await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
@@ -156,18 +165,21 @@ async function run() {
   await closeToasts(page);
 
   // ── Paste with separator → preview → admit both ─────────────────────────
+  t0 = performance.now();
   await pasteAndProcess(
     page,
     DEMO_TOUR_LAB_PASTE + '\n\n' + LAB_BULK_PATIENT_SEPARATOR + '\n\n' + DEMO_GARCIA_LAB_REPORT
   );
   const preview = page.locator('#lab-bulk-preview-confirm');
   await preview.waitFor({ state: 'visible' });
+  timings['paste 2 patients → preview'] = since(t0);
   const previewText = await page.locator('.modal-backdrop.open', { has: preview }).innerText();
   await shot(page, 'preview');
   check('preview lists Pérez', previewText.includes('DEMO PÉREZ JUAN'));
   check('preview lists García', previewText.includes('DEMO GARCÍA ANA'));
   check('preview counts 3 reports', /3 reportes/.test(previewText), previewText.split('\n')[1]);
 
+  t0 = performance.now();
   for (let i = 0; i < 2; i++) {
     await page.getByRole('button', { name: 'Agregar al censo' }).first().click();
     await page.locator('#patient-registro-tunnel-confirm').click();
@@ -175,6 +187,7 @@ async function run() {
   }
   const saved = page.locator('.toast', { hasText: 'conjuntos guardados' });
   await saved.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+  timings['admit 2 patients → labs saved'] = since(t0);
   await shot(page, 'both-admitted');
   check('3 lab sets saved', /3 conjuntos guardados/.test(await saved.innerText().catch(() => '')));
   check('2 patients in the list', (await sidebarCount(page)) === 2);
@@ -183,14 +196,18 @@ async function run() {
   await closeToasts(page);
 
   // ── Pérez: two lab days, complete admission ─────────────────────────────
+  t0 = performance.now();
   await page.locator('.p-name', { hasText: 'DEMO JUAN' }).locator('visible=true').first().click();
   await page.locator('#m-servicio').waitFor({ state: 'visible' });
+  timings['open patient → admission form'] = since(t0);
   // "&" and "<" must reach the .docx escaped, or Word refuses to open it.
   await page.locator('#m-servicio').fill('MEDICINA INTERNA & URGENCIAS <A>');
   await page.locator('#m-cuarto').fill('412');
   await page.locator('#m-cama').fill('02');
+  t0 = performance.now();
   await page.getByRole('button', { name: 'Agregar Paciente' }).click();
   await page.locator('#m-servicio').waitFor({ state: 'hidden' });
+  timings['complete admission → labs screen'] = since(t0);
   const dates = await page.locator('#lab-history-date-select option').allTextContents();
   await shot(page, 'perez-labs');
   check('Pérez keeps both lab days', dates.includes('11/04/2026') && dates.includes('05/03/2026'), dates);
@@ -208,11 +225,16 @@ async function run() {
   await page.waitForTimeout(500); // let the IC screen settle
   await shot(page, 'interconsulta');
   // With a patient already open, IC mode may skip its team board.
-  const boardCard = page.getByText('DEMO JUAN', { exact: true }).locator('visible=true').first();
+  // The board card shows the full name (DEMO PÉREZ JUAN), the sidebar the short one.
+  await page.mouse.move(0, 600); // close the area menu goArea left open
+  const boardCard = page.getByText(/^DEMO (PÉREZ )?JUAN$/).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
+  t0 = performance.now();
   await page.locator('.exp-group-section[data-section="notas"]').click();
-  await page.getByRole('button', { name: 'Generar Nota (.docx)' }).waitFor({ state: 'visible' });
+  // "Generar nota (.docx)" now lives in the board's ⋯ menu; wait for the note itself.
+  await page.locator('#itab-content-notas').waitFor({ state: 'visible' });
+  timings['open note'] = since(t0);
   await shot(page, 'note');
   const noteScroll = await page.evaluate(() => {
     const el = document.getElementById('itab-content-notas');
@@ -223,13 +245,15 @@ async function run() {
 
   await page.locator('#btn-header-cmdk').click();
   const exportItem = page.getByText('Exportar nota', { exact: true }).locator('visible=true').first();
+  t0 = performance.now();
   await exportItem.click();
   const deadline = Date.now() + 20000;
   let docs = [];
   while (Date.now() < deadline && docs.length === 0) {
     docs = fs.readdirSync(downloadsDir).filter((f) => f.endsWith('.docx'));
-    if (!docs.length) await page.waitForTimeout(250);
+    if (!docs.length) await page.waitForTimeout(20);
   }
+  if (docs.length) timings['export note → .docx on disk'] = since(t0);
   await shot(page, 'exported');
   check('one .docx exported', docs.length === 1, docs);
   const pastBtn = page.getByRole('button', { name: 'Anteriores (1)' });
@@ -264,8 +288,10 @@ async function run() {
   await app.close();
 
   // ── Boot 2: same userData → data persists ───────────────────────────────
+  t0 = performance.now();
   ({ app, page, pageErrors } = await launch());
   await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
+  timings['launch (with data) → app ready'] = since(t0);
   const onboardAgain = page.locator('#clinical-onboard-local-confirm-btn');
   await onboardAgain.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
   const settingsAfter = await page.evaluate(() => globalThis.localStorage.getItem('rpc-settings'));
@@ -275,8 +301,9 @@ async function run() {
   check('restart does not repeat onboarding', !askedAgain);
   if (askedAgain) await onboardAgain.click();
   await dismissLearnHub(page);
-  const juan = page.getByText('DEMO JUAN', { exact: true }).locator('visible=true').first();
-  const ana = page.getByText('DEMO ANA', { exact: true }).locator('visible=true').first();
+  // The app reopens in Interconsulta: its board shows full names, the sidebar short ones.
+  const juan = page.getByText(/^DEMO (PÉREZ )?JUAN$/).locator('visible=true').first();
+  const ana = page.getByText(/^DEMO (GARCÍA )?ANA$/).locator('visible=true').first();
   await juan.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
   check('both patients survive restart', (await juan.isVisible()) && (await ana.isVisible()));
   await juan.click();
@@ -305,10 +332,13 @@ const report = {
   passed,
   failed: checks.length - passed,
   checks,
+  timings,
   userDataDir,
 };
 fs.writeFileSync(path.join(artifactDir, 'report.json'), JSON.stringify(report, null, 2) + '\n');
 fs.rmSync(userDataDir, { recursive: true, force: true });
 fs.rmSync(downloadsDir, { recursive: true, force: true });
+console.log('\nScreen step timings (ms):');
+console.table(timings);
 console.log(`\n${passed}/${checks.length} checks passed. Artifact: ${path.relative(repoRoot, artifactDir)}`);
 process.exit(report.failed === 0 ? 0 : 1);

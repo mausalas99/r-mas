@@ -9,6 +9,7 @@ import {
   mixedExpedienteWarning,
 } from '../lab-bulk-paste.mjs';
 import { looksLikeSomeIndicacionesPaste } from '../med-receta-parse.mjs';
+import { looksLikeIcSugerenciasPaste } from '../ic-sugerencias-parse.mjs';
 
 export { significantNameTokens, scoreNombreAgainstPatient, matchPatientsByNombre };
 
@@ -91,7 +92,7 @@ export function assignPatientToBulkBlock(block, patient) {
 }
 
 /**
- * @typedef {'not-some'|'empty'|'ready'|'confirm-single'|'ambiguous'|'preview'|'indicas'|'mixed-expediente'} SmartPasteKind
+ * @typedef {'not-some'|'empty'|'ready'|'confirm-single'|'ambiguous'|'preview'|'indicas'|'ic-sugerencias'|'mixed-expediente'} SmartPasteKind
  */
 
 /**
@@ -130,6 +131,9 @@ export function planSmartPaste(text, opts) {
 
   if (looksLikeIndicasPasteCandidate(sourceText)) {
     return Object.assign(emptyPlan('indicas', ''), { sourceText: sourceText });
+  }
+  if (looksLikeIcSugerenciasPaste(sourceText)) {
+    return Object.assign(emptyPlan('ic-sugerencias', ''), { sourceText: sourceText });
   }
 
   var blocks = buildBulkLabPreview(sourceText, { findPatientByRegistro: findByReg });
@@ -269,6 +273,7 @@ export function looksLikeSmartPasteCandidate(text) {
   var s = String(text || '');
   if (s.length < 40) return false;
   if (looksLikeIndicasPasteCandidate(s)) return true;
+  if (looksLikeIcSugerenciasPaste(s)) return true;
   if (!/Expediente\s*:/i.test(s)) return false;
   return /Nombre\s*:/i.test(s) || /GASOMETR|BIOMETRIA|QUIMICA|HEMOGLOBINA|BH\b|EGO\b/i.test(s);
 }

@@ -141,6 +141,7 @@ function runDiagnosticsRepairTeamSalas(host, deps) {
     const parts = [];
     if (result.stamped > 0) parts.push(`${result.stamped} sala(s) local actualizada(s)`);
     if (result.mirrored > 0) parts.push(`${result.mirrored} expediente(s) reempujado(s)`);
+    if (result.moved > 0) parts.push(`${result.moved} paciente(s) marcado(s) como movido(s) en tu sala`);
     deps?.toast?.(
       parts.length ? parts.join(' · ') : 'Nada pendiente — censo ya alineado con equipos.',
       parts.length ? 'success' : 'info'

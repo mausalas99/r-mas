@@ -11,7 +11,7 @@ function activeBit(p, ctx) {
 
 function servicioCardBit(p, ctx) {
   if (!ctx.showServicioInCard) return '';
-  return String(p.servicio || '');
+  return String(p.servicio || '') + '|' + String(p.area || '');
 }
 
 /** @param {object} p @param {{ activeId?: string|null, isRonda?: boolean, isRoundSeen?: (id: string) => boolean, showServicioInCard?: boolean }} ctx */

@@ -223,7 +223,7 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
   const unknownToastP = warnLoc.waitFor({ timeout: 20000 })
     .then(async () => { await shot(page, '400-rows-unknown-warning'); return warnLoc.innerText(); })
     .catch(() => '');
-  const bigToast = await pasteAndSave(page, header(BIG, some(d0)) + 'QUIMICA CLINICA\nQUIMICA SANGUINEA\n' + TABLE + rows + bh('7.9').split(TABLE)[1]);
+  await pasteAndSave(page, header(BIG, some(d0)) + 'QUIMICA CLINICA\nQUIMICA SANGUINEA\n' + TABLE + rows + bh('7.9').split(TABLE)[1]);
   timings.paste400ms = Date.now() - t;
   const unknownToast = await unknownToastP;
   await shot(page, '400-rows-unknown-analytes');

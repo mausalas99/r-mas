@@ -1,11 +1,81 @@
 /**
- * monitoreo (vitals + estado actual) merge, one copy for the renderer and the Sync Worker
- * (cloud/sync-worker/src/lww.js). A whole-blob LWW replace would wipe whichever side loses
- * the updatedAt race, so rows, confirmed meds, diet and manualMeds merge field by field.
- * Pure: the two renderer imports below are plain data (no DOM), so the Worker can bundle them.
+ * monitoreo (vitals + estado actual) merge, shared by the renderer
+ * (public/js/features/estado-actual-data.mjs) and the Sync Worker LWW (cloud/sync-worker/src/lww.js).
+ * A whole-blob LWW replace would wipe whichever side loses the updatedAt race, so rows,
+ * confirmed meds, diet and manualMeds merge field by field. Pure: no DOM, no Worker APIs.
  */
-import { MED_FIELD_KEYS } from '../public/js/features/estado-actual-data-constants.mjs';
-import { emptyEstadoClinico, emptyPendienteReceta } from '../public/js/features/estado-actual-data-model.mjs';
+
+export const MED_FIELD_KEYS = /** @type {const} */ ([
+  'analgesia',
+  'antiemeticos',
+  'sedacion',
+  'antiepilepticos',
+  'antiparkinsonianos',
+  'antidotos',
+  'viaAerea',
+  'vasop',
+  'antihta',
+  'antitromboticos',
+  'anticoagulacion',
+  'antiarritmicos',
+  'diureticos',
+  'estatinas',
+  'abx',
+  'transfusiones',
+  'nm',
+]);
+
+/** @returns {Record<string, string>} */
+export function emptyEstadoClinico() {
+  return {
+    four: '',
+    esferas: '',
+    analgesia: '',
+    antiemeticos: '',
+    sedacion: '',
+    antiepilepticos: '',
+    antiparkinsonianos: '',
+    antidotos: '',
+    viaAerea: '',
+    abx: '',
+    transfusiones: '',
+    antihta: '',
+    diureticos: '',
+    antitromboticos: '',
+    anticoagulacion: '',
+    antiarritmicos: '',
+    estatinas: '',
+    vasop: '',
+    nm: '',
+    soporte: '',
+    soporteLitros: '',
+    soporteFlujoLmin: '',
+    soporteFio2: '',
+    vmModo: '',
+    vmPeep: '',
+    vmVt: '',
+    vmFlujo: '',
+    vmPmeseta: '',
+    vmPsoporte: '',
+    pao2: '',
+    tempContext: '',
+    dieta: '',
+    kcalKg: '',
+    kcal: '',
+    proteinG: '',
+    pesoRef: '',
+  };
+}
+
+/** @returns {Record<string, string>} */
+export function emptyPendienteReceta() {
+  /** @type {Record<string, string>} */
+  const o = {};
+  for (var k of Object.keys(emptyEstadoClinico())) {
+    o[k] = '';
+  }
+  return o;
+}
 
 const DIET_KEYS = ['dieta', 'kcal', 'proteinG'];
 const EC_SCALAR_KEYS = ['four', 'esferas', 'soporte', 'kcalKg', 'tempContext', 'pesoRef'];
@@ -216,7 +286,7 @@ function unionManualMeds(a, b) {
 }
 
 /**
- * @param {unknown} localIn stored monitoreo
+ * @param {unknown} localIn currently stored monitoreo
  * @param {unknown} remoteIn incoming monitoreo
  */
 export function mergeMonitoreo(localIn, remoteIn) {

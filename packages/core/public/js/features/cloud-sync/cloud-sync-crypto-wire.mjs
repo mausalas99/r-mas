@@ -38,6 +38,8 @@ const ENTRY_CONTENT_FIELDS = [
   'vpo',
   'listadoProblemas',
   'medPharmProfile',
+  // R+ Neumo only (core never sends it); clients merge by id before push — see neumo-studies-sync.mjs.
+  'neumoStudies',
 ];
 
 /**

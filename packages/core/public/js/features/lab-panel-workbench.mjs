@@ -29,6 +29,8 @@ import {
   notifyTourAfterBulkLabStore,
   isMultiBulkLabPaste,
 } from './lab-panel-workbench-finalize.mjs';
+import { stampDocUpdatedAt } from '../patient-merge.mjs';
+import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 
 function clearLabInputAfterSuccessfulParse() {
   var ta = document.getElementById('lab-input');
@@ -263,7 +265,9 @@ function insertLabsAsRecent(_lines) {
     activeLab.refsBySection
   );
   finalizeLabHistoryImport(rt.getActiveId());
+  stampDocUpdatedAt(getNotes()[rt.getActiveId()]);
   persistClinicalState({ immediate: true });
+  scheduleCloudSyncPush();
   rt.refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
   var el = document.querySelector('#note-form textarea[data-oninput-args*=\'"estudios"\']');
@@ -287,7 +291,9 @@ function insertLabsAsAnteriorThenRecent(_newLines) {
     activeLab.refsBySection
   );
   finalizeLabHistoryImport(rt.getActiveId());
+  stampDocUpdatedAt(getNotes()[rt.getActiveId()]);
   persistClinicalState({ immediate: true });
+  scheduleCloudSyncPush();
   rt.refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
   var el = document.querySelector('#note-form textarea[data-oninput-args*=\'"estudios"\']');
@@ -331,7 +337,9 @@ function showLabConflictModal(newLines, existingDate) {
       activeLab.refsBySection
     );
     finalizeLabHistoryImport(rt.getActiveId());
+    stampDocUpdatedAt(getNotes()[rt.getActiveId()]);
     persistClinicalState({ immediate: true });
+    scheduleCloudSyncPush();
     rt.refreshTendenciasOrCultivosPanel();
     renderLabHistoryPanel();
     var el = document.querySelector('#note-form textarea[data-oninput-args*=\'"estudios"\']');
