@@ -36,12 +36,12 @@ export const INTERCONSULT_SERVICES = [
 /** Our own service. In Interconsultas the requesting service is the área. */
 export const IC_OWN_SERVICE = 'Medicina Interna';
 
-export const REQUESTING_SERVICE_IDS = ['tyo', 'cxgen', 'gine', 'ncx', 'cxplas'];
+export const REQUESTING_SERVICE_IDS = ['tyo', 'cxgen', 'gine', 'ncx', 'cxplas', 'uro', 'orl'];
 
 /** Per-service hues for the requesting-service picker — deliberately not
  * the category hues above (Sala's interconsultantes picker colors by
  * médicas/quirúrgicas/soporte; this one needs each service to read apart). */
-export const REQUESTING_SERVICE_HUES = { tyo: 210, cxgen: 265, gine: 335, ncx: 150, cxplas: 20 };
+export const REQUESTING_SERVICE_HUES = { tyo: 210, cxgen: 265, gine: 335, ncx: 150, cxplas: 20, uro: 190, orl: 95 };
 
 const SERVICE_BY_ID = new Map(INTERCONSULT_SERVICES.map((svc) => [svc.id, svc]));
 

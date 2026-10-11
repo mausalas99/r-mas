@@ -25,18 +25,19 @@ import { isModeSala } from '../mode-features.mjs';
 import { isGuardiaMode } from './chrome.mjs';
 import { settingsRef } from './profile-runtime.mjs';
 import { getPatients, persistClinicalState } from '../app-state.mjs';
-import { getConsultInfo, setConsultInfo, renderConsultBandHtml } from './patient-dashboard/consult-band.mjs';
+import { getConsultInfo, setConsultInfo, renderConsultBandHtml, isoFromTimeInput, icTimerStatsHtml, formatElapsed } from './patient-dashboard/consult-band.mjs';
 import { IC_OWN_SERVICE } from './patient-dashboard/interconsult-catalog.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import { getClinicalScopeContextForEvaluate } from '../clinical-access-runtime.mjs';
 import { resolvePatientCensusTeamId } from './patients-clinical-filter.mjs';
 import { patientsVisibleInSidebar } from './patients-scope.mjs';
 import { mountInterconsultaTeamBoard, interconsultaTeamOptions } from './interconsulta-team-board.mjs';
-import { sortPatientsForCensus, formatCamaCellForCenso } from '../censo-build.mjs';
 import { openServicePickerModal } from './patient-dashboard/ic-modal.mjs';
 import { openAddModal, openCompleteAdmissionModal } from './patients-modal.mjs';
 import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
-import { renderPatientCardHtml } from './patients-card-html.mjs';
+import { openConfirm } from './workbench/confirm.mjs';
+import { canDeletePatientChart } from '../patient-delete-auth.mjs';
+import { bedLine } from './sala-view-variants.mjs';
 import { patientCardIdFromEvent, shouldHandleTouchPointerUp } from './patients-list-click.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
 import { isInterconsultaDemoActive } from './interconsulta-demo-state.mjs';
@@ -266,7 +267,9 @@ export function renderConsultBandForActivePatient() {
     removeConsultBandRow();
     return;
   }
-  var html = renderConsultBandHtml(getConsultInfo(patient), consultBandTeamCtx(patient));
+  var raw = patient.consultInfo || {};
+  var info = Object.assign(getConsultInfo(patient), { receivedAt: raw.receivedAt, answeredAt: raw.answeredAt });
+  var html = renderConsultBandHtml(info, consultBandTeamCtx(patient));
   var existing = host.querySelector('.ic-consult-band');
   if (existing) {
     existing.outerHTML = html;
@@ -312,16 +315,22 @@ function handleConsultBandChange(ev) {
     handleConsultTeamChange(ev);
     return;
   }
-  var field = ev.target.getAttribute && ev.target.getAttribute('data-consult-field');
+  var timeKey = ev.target.getAttribute && ev.target.getAttribute('data-consult-time');
+  var field = timeKey || (ev.target.getAttribute && ev.target.getAttribute('data-consult-field'));
   if (!field) return;
   var patient = activeInterconsultaPatient();
   if (!patient) return;
   var patch = {};
-  patch[field] = ev.target.value;
+  patch[field] = timeKey
+    ? isoFromTimeInput(ev.target.value, patient.consultInfo && patient.consultInfo[timeKey])
+    : ev.target.value;
+  var wasFollowUp = getConsultInfo(patient).triage === 'seguimiento';
   setConsultInfo(patient, patch);
   patient.lanUpdatedAt = cloudSyncNowIso();
   persistClinicalState();
   scheduleCloudSyncPush();
+  // Time fields appear / disappear with the Seguimiento group.
+  if (field === 'triage' && wasFollowUp !== (patch.triage === 'seguimiento')) renderConsultBandForActivePatient();
 }
 
 /** Local-only reassignment for demo patients — they have no real DB row, so
@@ -444,23 +453,56 @@ function refreshPatients() {
 
 function icArchivedToggleHtml(collapsed, count) {
   return (
-    '<button type="button" class="patient-list-section-toggle" data-ic-archived-toggle aria-expanded="' +
+    '<button type="button" class="ic-arch__toggle" data-ic-archived-toggle aria-expanded="' +
     (!collapsed ? 'true' : 'false') +
-    '">Archivados <span>(' +
+    '"><span class="ic-arch__title">Archivados</span><span class="ic-arch__count">' +
     count +
-    ')</span> <span class="rp-dot" aria-hidden="true"></span></button>'
+    '</span></button>'
+  );
+}
+
+/** One archived patient: name opens the chart, ↩ restores, × deletes (after a confirm). */
+function icArchivedChipHtml(p) {
+  var id = escHtml(String(p.id));
+  var name = escHtml(p.nombre || 'Sin nombre');
+  var canDelete = canDeletePatientChart(clinicalSessionContext.user, p.id, getClinicalScopeContextForEvaluate());
+  return (
+    '<div class="ic-arch__chip">' +
+    '<button type="button" class="ic-arch__name" data-ic-open="' + id + '">' + name +
+    '<span class="ic-arch__bed">' + escHtml(bedLine(p)) + '</span></button>' +
+    '<button type="button" class="ic-arch__restore" aria-label="Restaurar ' + name +
+    '" data-onclick="togglePatientArchived" data-onclick-args=\'' + escHtml(JSON.stringify([p.id])) +
+    '\' data-onclick-pass="event">Restaurar</button>' +
+    (canDelete
+      ? '<button type="button" class="ic-arch__del" aria-label="Eliminar ' + name + '" data-ic-arch-del="' + id + '">×</button>'
+      : '') +
+    '</div>'
   );
 }
 
 function renderIcArchivedSectionHtml(archivedPatients) {
   if (!archivedPatients.length) return '';
-  var parts = [icArchivedToggleHtml(_icArchivedCollapsed, archivedPatients.length)];
+  var parts = ['<section class="ic-arch">', icArchivedToggleHtml(_icArchivedCollapsed, archivedPatients.length)];
   if (!_icArchivedCollapsed) {
-    parts.push('<div class="patient-sort-zone" data-ic-archived-zone>');
-    parts.push(archivedPatients.map(renderPatientCardHtml).join(''));
-    parts.push('</div>');
+    parts.push('<div class="ic-arch__chips">' + archivedPatients.map(icArchivedChipHtml).join('') + '</div>');
   }
+  parts.push('</section>');
   return parts.join('');
+}
+
+function confirmDeleteArchived(id) {
+  var p = getPatients().find(function (x) { return String(x.id) === String(id); });
+  if (!p) return;
+  void openConfirm({
+    weight: 'destructive',
+    title: '¿Eliminar a ' + (p.nombre || 'este paciente') + '?',
+    message: 'Se borra el expediente completo.',
+    confirmLabel: 'Eliminar',
+    cancelLabel: 'Cancelar',
+    onConfirm: function () {
+      Promise.resolve(patientsBridge.deletePatient(p.id, { stopPropagation: function () {} })).then(renderInterconsultaBoardView);
+    },
+  });
 }
 
 function icBoardMount() {
@@ -511,7 +553,7 @@ function ensureIcBoardClickDelegation(mount) {
   // The archive corner's global handler (document capture) stops the click before it reaches the
   // mount and only redraws the sidebar list: redraw the board once that handler is done.
   document.addEventListener('click', function (ev) {
-    if (mount.contains(ev.target) && ev.target.closest('.sv-card-archive, .sv-card-restore, .btn-archive-clean')) {
+    if (mount.contains(ev.target) && ev.target.closest('.sv-card-archive, .sv-card-restore, .btn-archive-clean, .ic-arch__restore')) {
       setTimeout(renderInterconsultaBoardView, 0);
     }
   }, true);
@@ -521,10 +563,20 @@ function ensureIcBoardClickDelegation(mount) {
       renderInterconsultaBoardView();
       return;
     }
+    var delBtn = ev.target.closest('[data-ic-arch-del]');
+    if (delBtn) {
+      confirmDeleteArchived(delBtn.getAttribute('data-ic-arch-del'));
+      return;
+    }
     var modeBtn = ev.target.closest('[data-ic-mode]');
     if (modeBtn) {
       writeLs(IC_MODE_LS, modeBtn.getAttribute('data-ic-mode'));
       renderInterconsultaBoardView();
+      return;
+    }
+    var timerBtn = ev.target.closest('[data-ic-timer]');
+    if (timerBtn) {
+      stampIcTimer(timerBtn.getAttribute('data-ic-timer-id'), timerBtn.getAttribute('data-ic-timer'));
       return;
     }
     // The archive corner is a sibling of the card and has its own global handler.
@@ -536,6 +588,12 @@ function ensureIcBoardClickDelegation(mount) {
     }
     selectPatientFromIcBoardEvent(ev);
   });
+  // Running timers show whole minutes: refresh the text once a minute, no re-render.
+  setInterval(function () {
+    mount.querySelectorAll('[data-ic-since]').forEach(function (el) {
+      el.textContent = formatElapsed(Date.now() - Number(el.getAttribute('data-ic-since')));
+    });
+  }, 60000);
   mount.addEventListener('change', function (ev) {
     var sel = ev.target.closest && ev.target.closest('[data-ic-my-team]');
     if (!sel) return;
@@ -546,6 +604,20 @@ function ensureIcBoardClickDelegation(mount) {
     if (!shouldHandleTouchPointerUp(ev)) return;
     selectPatientFromIcBoardEvent(ev);
   });
+}
+
+/** "Recibida" / "Respondida" tap on a board card: stamp now on the real patient record. */
+function stampIcTimer(id, kind) {
+  var patient = getPatients().find(function (p) { return String(p.id) === String(id); });
+  if (!patient) return;
+  var patch = {};
+  if (kind === 'followup') patch.triage = 'seguimiento';
+  else patch[kind === 'start' ? 'receivedAt' : 'answeredAt'] = new Date().toISOString();
+  setConsultInfo(patient, patch);
+  patient.lanUpdatedAt = cloudSyncNowIso();
+  persistClinicalState();
+  scheduleCloudSyncPush();
+  renderInterconsultaBoardView();
 }
 
 /** Teams, archived and active patients (each with `censusTeamId`) for the board and the rail. */
@@ -581,7 +653,7 @@ function icBoardData() {
   return { teams: teams, now: now, active: active, archived: archived };
 }
 
-function icHeaderHtml(mode, options, teamId, count) {
+function icHeaderHtml(mode, options, teamId, count, statsHtml) {
   function seg(key, label) {
     return (
       '<button type="button" class="ic-mode-btn' + (mode === key ? ' is-on' : '') + '" data-ic-mode="' + key +
@@ -591,7 +663,7 @@ function icHeaderHtml(mode, options, teamId, count) {
   return (
     '<div class="ic-board-header">' +
     '<strong class="ic-board-title">Interconsultas</strong>' +
-    '<span class="ic-board-count">' + count + ' pacientes</span>' +
+    '<span class="ic-board-count">' + count + ' pacientes</span>' + (statsHtml || '') +
     '<div class="ic-mode-seg" role="group" aria-label="Modo del tablero">' + seg('asignar', 'Asignar') + seg('equipo', 'Mi equipo') + '</div>' +
     (mode === 'equipo' && options.length
       ? '<select class="ic-team-select" data-ic-my-team aria-label="Mi equipo">' +
@@ -622,8 +694,13 @@ export function renderInterconsultaBoardView() {
   var count = mode === 'equipo'
     ? data.active.filter(function (p) { return String(p.censusTeamId || '') === String(teamId); }).length
     : data.active.length;
+  // Sync repaints rebuild the board. The scroller is often a child (.ic-team-view, .ic-rows, tray body)
+  // that the rebuild replaces, so keep children by class and ancestors by node.
+  var kept = [];
+  for (var el = mount; el; el = el.parentElement) if (el.scrollTop) kept.push([el, el.scrollTop]);
+  mount.querySelectorAll('*').forEach(function (d) { if (d.scrollTop && d.className) kept.push([String(d.className), d.scrollTop]); });
   mount.innerHTML =
-    icHeaderHtml(mode, options, teamId, count) +
+    icHeaderHtml(mode, options, teamId, count, icTimerStatsHtml(data.active.concat(data.archived))) +
     '<div id="ic-team-board-mount"></div><div id="ic-archived-mount"></div>';
   mount.querySelector('[data-ic-board-refresh]').addEventListener('click', refreshPatients);
   mount.querySelector('[data-ic-board-add]').addEventListener('click', openAddModal);
@@ -639,51 +716,10 @@ export function renderInterconsultaBoardView() {
     },
   });
   mount.querySelector('#ic-archived-mount').innerHTML = renderIcArchivedSectionHtml(data.archived);
-}
-
-/** Slim bed rail (same look as Sala's) while a patient is open: the active
- * patient's team, or everyone when they have no team. "Tablero" goes back. */
-function syncIcRail(show) {
-  var app = document.querySelector('.app');
-  var main = document.querySelector('.main-col');
-  var rail = document.getElementById('ic-team-rail');
-  var open = !!(show && app && main);
-  document.documentElement.classList.toggle('ic-rail-open', open);
-  if (!open) {
-    if (rail) rail.remove();
-    return;
-  }
-  if (!rail) {
-    rail = document.createElement('nav');
-    rail.id = 'ic-team-rail';
-    rail.setAttribute('aria-label', 'Camas');
-    rail.addEventListener('click', function (ev) {
-      var btn = ev.target.closest('button');
-      if (!btn) return;
-      if (btn.hasAttribute('data-ic-rail-home')) showInterconsultaBoardView();
-      else if (btn.hasAttribute('data-ic-rail-open')) openIcPatient(btn.getAttribute('data-ic-rail-open'));
-    });
-    app.insertBefore(rail, main);
-  }
-  var data = icBoardData();
-  var activeId = String(rt.getActiveId() == null ? '' : rt.getActiveId());
-  var current = data.active.find(function (p) { return String(p.id) === activeId; });
-  var teamId = current && current.censusTeamId;
-  var list = sortPatientsForCensus(
-    teamId ? data.active.filter(function (p) { return p.censusTeamId === teamId; }) : data.active
-  );
-  rail.innerHTML =
-    '<button type="button" class="sv-rail-home" data-ic-rail-home aria-label="Volver al tablero" title="Volver al tablero (Esc)">' +
-    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Tablero</span></button>' +
-    list
-      .map(function (p) {
-        return (
-          '<button type="button" data-ic-rail-open="' + escHtml(String(p.id)) + '" title="' + escHtml(p.nombre || '') + '"' +
-          (String(p.id) === activeId ? ' class="is-active" aria-current="true"' : '') + '>' +
-          escHtml(formatCamaCellForCenso(p)) + '</button>'
-        );
-      })
-      .join('');
+  kept.forEach(function (k) {
+    var t = typeof k[0] === 'string' ? mount.getElementsByClassName(k[0])[0] : k[0];
+    if (t) t.scrollTop = k[1];
+  });
 }
 
 /** Resumen (#empty-state/#patient-view) already manage their own inline
@@ -710,7 +746,8 @@ function syncIcViewVisibility() {
     'ic-board-view-open',
     onBoard && isInterconsultaModeActive()
   );
-  syncIcRail(!onBoard && isInterconsultaModeActive());
+  // Full Sala sidebar shows while a patient is open; only the board hides it.
+  document.documentElement.classList.toggle('ic-board-mode', onBoard && isInterconsultaModeActive());
   var barMount = document.getElementById('interconsulta-mode-frame');
   syncBackButtonVisibility(barMount);
   // The per-patient consult-info band (SERVICIO SOLICITANTE / MOTIVO DE
@@ -769,7 +806,6 @@ function restorePatientViewAfterInterconsulta() {
 /** @param {HTMLElement | null} boardMount */
 function deactivateInterconsultaModeChrome(boardMount) {
   document.documentElement.classList.remove('ic-board-view-open');
-  syncIcRail(false);
   if (boardMount) boardMount.hidden = true;
   removeConsultBandRow();
   removeBackToBoardRow();
@@ -799,7 +835,7 @@ export function syncInterconsultaModeChrome() {
   var boardMount = icBoardMount();
   var active = isInterconsultaModeActive();
   if (barMount) barMount.hidden = true;
-  document.documentElement.classList.toggle('ic-board-mode', active);
+  document.documentElement.classList.toggle('ic-board-mode', active && _icView === 'board');
   if (!active) {
     deactivateInterconsultaModeChrome(boardMount);
     return;

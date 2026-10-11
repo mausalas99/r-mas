@@ -11,8 +11,8 @@
 import { getInterconsultaTeamRoles } from '../../../lib/clinical-scope/interconsulta-team-roles.mjs';
 import { classifyInterconsultaBoardBucket } from '../../../lib/clinical-scope/interconsulta-board-buckets.mjs';
 import { requestingServiceHue } from './patients-card-html.mjs';
-import { getConsultInfo, triageRank } from './patient-dashboard/consult-band.mjs';
-import { bedLine, cardTagsHtml, cornerBtnHtml } from './sala-view-variants.mjs';
+import { getConsultInfo, triageRank, icTriageTagHtml, icTimerHtml } from './patient-dashboard/consult-band.mjs';
+import { cardTagsHtml, cornerBtnHtml } from './sala-view-variants.mjs';
 import { escHtml } from '../dom-escape.mjs';
 
 const BUCKET_LABELS = {
@@ -25,9 +25,11 @@ function teamLabel(team, fallback) {
   return String(team?.name || team?.service || fallback || 'Equipo').trim() || 'Equipo';
 }
 
-/** Triage order (VPO, Críticos, IC, Seguimiento, no group). Stable sort. */
+/** Received (Recibida stamped, not yet Respondida) first, then triage order
+ * (VPO, Críticos, IC, Seguimiento, no group). Stable sort. */
+const isReceivedOpen = (p) => (p?.consultInfo?.receivedAt && !p.consultInfo.answeredAt ? 0 : 1);
 function byTriage(patients) {
-  return (patients || []).slice().sort((a, b) => triageRank(a) - triageRank(b));
+  return (patients || []).slice().sort((a, b) => isReceivedOpen(a) - isReceivedOpen(b) || triageRank(a) - triageRank(b));
 }
 
 function groupByBucket(patients, isGuardiaTeam, now) {
@@ -40,6 +42,23 @@ function groupByBucket(patients, isGuardiaTeam, now) {
   return groups;
 }
 
+const LOWER_WORDS = new Set(['de', 'del', 'la', 'las', 'los', 'y', 'e']);
+
+/** "JOSE JUAN LEAL GALLEGOS" → "Jose Juan Leal Gallegos". Charts store names in capitals. */
+function titleCaseName(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/(^|[\s'-])(\S)/g, (m, sep, ch, off) => {
+      const word = m.trim() && String(name).toLowerCase().slice(off + sep.length).split(/\s/)[0];
+      return sep + (sep && LOWER_WORDS.has(word) ? ch : ch.toUpperCase());
+    });
+}
+
+/** "Cto. 432 · Cama 3" → "432 · 3". */
+function shortBed(p) {
+  return [p.cuarto, p.cama].map((x) => String(x || '').trim()).filter(Boolean).join(' · ') || 'Sin cama';
+}
+
 /** Sala card (`.sv-card`) plus what only interconsultas has: the requesting
  * service chip. `compact` (team rows, tray) is three short lines: bed, name,
  * service. Full cards (Mi equipo) add the motivo de IC. `archivable` adds the Sala
@@ -49,7 +68,7 @@ export function icCardHtml(p, compact, archivable) {
   const svcName = String(getConsultInfo(p).requestingService || '').trim();
   const hue = requestingServiceHue(p);
   const svc = svcName
-    ? '<span class="svc" style="--h:' + (hue == null ? 220 : hue) + '">' + escHtml(svcName) + '</span>'
+    ? '<span class="ic-svc"><i class="ic-svc__dot" style="--h:' + (hue == null ? 220 : hue) + '"></i>' + escHtml(svcName) + '</span>'
     : '<span class="sv-none">Sin servicio</span>';
   let motivo = '';
   if (!compact) {
@@ -58,16 +77,24 @@ export function icCardHtml(p, compact, archivable) {
       '<span class="sv-label">Motivo de IC</span>' +
       (reason ? '<span class="sv-motivo">' + escHtml(reason) + '</span>' : '<span class="sv-none">Sin motivo</span>');
   }
+  // Compact cards sit under a heading or a team, which already say Críticos / Seguimiento.
+  const triageTag = compact && ['critico', 'seguimiento'].includes(getConsultInfo(p).triage) ? '' : icTriageTagHtml(p);
+  // A red dot stands in for the "Lab crítico" tag.
+  const tags = cardTagsHtml(p).replace(
+    '<span class="sv-tag sv-tag--dnr">Lab crítico</span>',
+    '<span class="ic-crit-dot" title="Lab crítico" role="img" aria-label="Lab crítico"></span>'
+  );
   return (
     '<div class="sv-card-wrap">' +
     '<button type="button" class="sv-card ic-card' + (compact ? ' ic-card--compact' : '') +
     '" title="' + escHtml(p.nombre || '') + '" draggable="true" data-ic-open="' + id + '" data-patient-id="' + id + '">' +
-    '<span class="sv-card-top"><span class="sv-bed">' + escHtml(bedLine(p)) + '</span>' + cardTagsHtml(p) + '</span>' +
-    '<span class="sv-name" title="' + escHtml([p.registro].filter(Boolean).join(' · ')) + '">' + escHtml(p.nombre || 'Sin nombre') + '</span>' +
+    '<span class="sv-card-top"><span class="sv-bed">' + escHtml(shortBed(p)) + '</span>' + triageTag + tags + '</span>' +
+    '<span class="sv-name" title="' + escHtml([p.registro].filter(Boolean).join(' · ')) + '">' + escHtml(titleCaseName(p.nombre) || 'Sin nombre') + '</span>' +
     (compact ? '<span class="sv-ic">' + svc + '</span>' : '<span class="sv-label">Servicio solicitante</span><span class="sv-ic">' + svc + '</span>') +
     motivo +
     '</button>' +
     (archivable ? cornerBtnHtml(p) : '') +
+    icTimerHtml(p) +
     '</div>'
   );
 }
@@ -101,11 +128,29 @@ function computeKnownTeamIds(roles, slots) {
 }
 
 /** A team row. `team` null = empty slot: a slim, non-droppable placeholder. */
-function renderTeamRowHtml({ role, team, title, pill, note, emptyText, patients, buckets, isGuardiaTeam, now }) {
+const MAX_CHIP_BEDS = 3;
+
+/** Team chip body: a fixed-height line of bed pills ("+4 más" for the rest). Each pill opens the chart. */
+function chipBedsHtml(patients) {
+  const sorted = byTriage(patients);
+  const pills = sorted
+    .slice(0, MAX_CHIP_BEDS)
+    .map((p) => {
+      const bed = [p.cuarto, p.cama].map((x) => String(x || '').trim()).filter(Boolean).join(' · ') || 'Sin cama';
+      return '<button type="button" class="ic-bed" data-ic-open="' + escHtml(String(p.id)) + '" title="' + escHtml(p.nombre || '') + '">' + escHtml(bed) + '</button>';
+    })
+    .join('');
+  const more = sorted.length > MAX_CHIP_BEDS ? '<span class="ic-bed-more">+' + (sorted.length - MAX_CHIP_BEDS) + ' más</span>' : '';
+  return pills + more || '<p class="ic-board-empty">Suelta un paciente aquí</p>';
+}
+
+function renderTeamRowHtml({ role, team, title, pill, note, emptyText, patients, buckets, isGuardiaTeam, now, chip }) {
   const count = team ? '<span class="sv-tag ic-row__count">' + patients.length + '</span>' : '';
   let body;
   if (!team) {
     body = '<p class="ic-board-empty">' + escHtml(emptyText) + '</p>';
+  } else if (chip) {
+    body = chipBedsHtml(patients);
   } else {
     const groups = groupByBucket(patients, isGuardiaTeam, now);
     body =
@@ -134,9 +179,27 @@ function renderTeamRowHtml({ role, team, title, pill, note, emptyText, patients,
   );
 }
 
+/** Tray groups: Urgentes = triage "Críticos"; everything else is Seguimiento. */
+const TRAY_GROUPS = [
+  { key: 'urgente', title: 'Urgentes', test: (p) => getConsultInfo(p).triage === 'critico' },
+  { key: 'seguimiento', title: 'Seguimiento', test: (p) => getConsultInfo(p).triage !== 'critico' },
+];
+
+function renderTrayGroupHtml(group, patients) {
+  const list = byTriage(patients.filter(group.test));
+  if (!list.length) return '';
+  return (
+    '<div class="ic-tray__group"><div class="ic-tray__group-head">' +
+    '<span class="ic-tray__dot ic-tray__dot--' + group.key + '"></span>' +
+    '<h4 class="ic-tray__group-title">' + group.title + '</h4>' +
+    '<span class="ic-tray__group-count">' + list.length + '</span></div>' +
+    '<div class="sv-grid">' + list.map((p) => icCardHtml(p, true, true)).join('') + '</div></div>'
+  );
+}
+
 function renderTrayHtml(patients) {
   const body = patients.length
-    ? '<div class="sv-grid">' + byTriage(patients).map((p) => icCardHtml(p, true, true)).join('') + '</div>'
+    ? TRAY_GROUPS.map((g) => renderTrayGroupHtml(g, patients)).join('')
     : '<p class="ic-board-empty">Todos tienen equipo.</p>';
   return (
     '<section class="ic-board-lane ic-tray' + (patients.length ? '' : ' ic-tray--empty') + '" data-role="sin-equipo" data-drop-team-id="">' +
@@ -172,14 +235,20 @@ export function renderInterconsultaTeamBoardHtml(patients, teams, now = new Date
     return '<div class="ic-team-board ic-team-board--filtered">' + row({ ...guardia, buckets: ['preop'] }) + '</div>';
   }
 
-  const active = { isGuardiaTeam: false, buckets: ['pendientes', 'under'] };
-  const rows = [
-    row(guardia),
+  // While patients wait in the tray, teams stay one-line chips; once all are assigned they expand to full cards.
+  const known = computeKnownTeamIds(roles, slots);
+  const unassigned = (patients || []).filter((p) => !known.has(String(p?.censusTeamId || '')));
+  const chip = unassigned.length > 0;
+  const active = { isGuardiaTeam: false, buckets: ['pendientes', 'under'], chip };
+  // Weekends: only the on-call team is present, so only its chip shows.
+  const weekend = [0, 6].includes(new Date(now).getDay());
+  const rows = weekend ? [row({ ...guardia, chip })] : [
+    row({ ...guardia, chip }),
     ...slots.activo.map((team, i) =>
       row({ ...active, role: 'activo', team, title: teamLabel(team, 'Activo ' + (i + 1)), emptyText: 'Sin equipo asignado.' })
     ),
   ];
-  if (!hidePostguardia) {
+  if (!hidePostguardia && !weekend) {
     rows.push(
       row({
         ...active, role: 'postguardia', team: roles.postguardia,
@@ -188,13 +257,11 @@ export function renderInterconsultaTeamBoardHtml(patients, teams, now = new Date
       })
     );
   }
-  for (const team of slots.overflow) {
+  for (const team of weekend ? [] : slots.overflow) {
     rows.push(row({ ...active, role: 'activo', team, title: teamLabel(team), emptyText: '' }));
   }
 
-  const known = computeKnownTeamIds(roles, slots);
-  const unassigned = (patients || []).filter((p) => !known.has(String(p?.censusTeamId || '')));
-  return '<div class="ic-team-board' + (unassigned.length ? ' ic-team-board--sorting' : '') + '"><div class="ic-rows">' + rows.join('') + '</div>' + renderTrayHtml(unassigned) + '</div>';
+  return '<div class="ic-team-board' + (unassigned.length ? ' ic-team-board--sorting' : ' ic-team-board--expanded') + '"><div class="ic-rows">' + rows.join('') + '</div>' + renderTrayHtml(unassigned) + '</div>';
 }
 
 /** Teams that can be "mine", in board order: [{ id, label }]. Empty when no real team exists. */

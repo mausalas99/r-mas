@@ -5388,20 +5388,6 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   font-style: italic;
 }
 
-/* Slim bed rail while a patient is open in interconsulta mode (look shared
-   with Sala's rail in sala-views.css). */
-html.ic-rail-open #ic-team-rail {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 60px;
-  flex-shrink: 0;
-  padding: 8px 6px;
-  overflow-y: auto;
-  border-radius: var(--radius-shell, 12px);
-  background: var(--surface);
-}
-
 /* "← Tablero" back button (interconsulta-mode-chrome.mjs top bar) — .wb-btn's
    `display: inline-flex` ties with the UA [hidden] rule on specificity, and
    author styles always win that tie, so [hidden] alone never hides it. */
@@ -5702,11 +5688,6 @@ dialog.clinical-teams-dialog[open] {
   width: 100%;
 }
 
-/* Active bed keeps the tint but uses body text: the action colour fails contrast on it. */
-html #ic-team-rail button.is-active {
-  color: var(--text);
-}
-
 .ic-tray .ic-board-lane__title {
   flex-basis: auto;
 }
@@ -5718,4 +5699,408 @@ html #ic-team-rail button.is-active {
 .ic-tray .ic-row__note {
   flex-basis: auto;
   margin-left: auto;
+}
+
+/* Asignar: teams are a strip of chips on top; the tray gets the room. */
+.ic-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  align-items: start;
+  flex: none;
+}
+
+.ic-rows .ic-row {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.4rem;
+}
+
+.ic-rows .ic-row:not(:has(.ic-card)) {
+  border-style: dashed;
+}
+
+.ic-rows .ic-board-lane__title {
+  flex-basis: auto;
+  font-size: 0.95rem;
+}
+
+.ic-rows .ic-row__count {
+  margin-left: auto;
+}
+
+/* Tray groups: Urgentes, then Seguimiento. */
+.ic-tray__group + .ic-tray__group {
+  margin-top: 1rem;
+}
+
+.ic-tray__group-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ic-tray__group-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.ic-tray__group-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.ic-tray__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.ic-tray__dot--urgente {
+  background: var(--color-danger);
+}
+
+/* Tray cards stay quiet: Recibida / Es seguimiento / archive appear on hover or focus. */
+.ic-tray .sv-card-wrap {
+  position: relative;
+}
+
+.ic-tray .ic-timer:has(.ic-timer__btn--go),
+.ic-rows .ic-timer:has(.ic-timer__btn--go) {
+  padding-top: 6px;
+  gap: 8px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+
+.ic-tray .ic-timer__link,
+.ic-rows .ic-timer__link {
+  font-size: 11px;
+}
+
+.ic-tray .sv-grid {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+
+.ic-tray .sv-card-archive {
+  opacity: 0;
+}
+
+.ic-rows .sv-card-wrap:hover .ic-timer,
+.ic-rows .sv-card-wrap:focus-within .ic-timer,
+.ic-tray .sv-card-wrap:hover .ic-timer,
+.ic-tray .sv-card-wrap:focus-within .ic-timer,
+.ic-tray .sv-card-wrap:hover .sv-card-archive,
+.ic-tray .sv-card-wrap:focus-within .sv-card-archive {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* IC response timer: triage tag on the card + timer footer + header averages. */
+.ic-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font: 700 11px/1 var(--font-ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--chip-bg);
+  color: var(--color-ink);
+}
+.ic-tag--vpo {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+.ic-tag--ic {
+  background: var(--action);
+  color: #fff;
+}
+.ic-tag--critico {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+.sv-card-wrap:has(> .ic-timer) {
+  grid-template-rows: 1fr auto;
+}
+.ic-timer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 30px;
+  padding: 10px 4px 0;
+}
+/* Keep the archive corner (bottom right of the wrap) clear of the footer. */
+.sv-card-wrap:has(> .sv-card-archive) .ic-timer {
+  padding-right: 44px;
+}
+.ic-timer__t {
+  font: 600 16px/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+}
+.ic-timer__t.is-done,
+.ic-timer__s {
+  color: var(--color-ink-muted);
+}
+.ic-timer__s {
+  font: 500 12px/1 var(--font-ui);
+}
+.ic-timer__btn {
+  height: 30px;
+  padding: 0 14px;
+  border: 1px solid var(--action);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--action);
+  font: 600 13px/1 var(--font-ui);
+  cursor: pointer;
+}
+.ic-timer__btn--go {
+  background: var(--action);
+  color: #fff;
+}
+.ic-stats {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ic-stat {
+  display: inline-flex;
+  gap: 6px;
+  height: 26px;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font: 600 12px/1 var(--font-ui);
+}
+.ic-stat i {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+}
+.ic-timer__link {
+  border: 0;
+  background: none;
+  padding: 4px 2px;
+  color: var(--color-ink-muted);
+  font: 500 12px/1 var(--font-ui);
+  cursor: pointer;
+}
+.ic-timer__link:hover {
+  color: var(--color-ink);
+  text-decoration: underline;
+}
+
+/* Archivados (interconsulta board): one line of pills. */
+.ic-arch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.ic-arch__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ic-arch__count {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.ic-arch__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ic-arch__chip {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 44px;
+  padding: 4px 6px 4px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.ic-arch__name {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ic-arch__bed {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.ic-arch__restore,
+.ic-arch__del {
+  min-height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.ic-arch__restore {
+  padding: 0 12px;
+  margin-left: 0.4rem;
+}
+
+.ic-arch__del {
+  width: 32px;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.ic-arch__del:hover {
+  color: var(--color-danger);
+}
+
+/* Team chips: fixed height, bed pills on one line, so a busy team never pushes the tray down. */
+.ic-rows {
+  align-items: stretch;
+}
+
+.ic-row--chip {
+  min-height: 92px;
+  align-content: start;
+}
+
+.ic-row--chip .ic-row__body {
+  flex-wrap: nowrap;
+  align-items: center;
+  align-content: center;
+  gap: 6px;
+  overflow: hidden;
+  min-height: 30px;
+}
+
+.ic-bed {
+  flex: none;
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+  color: var(--text-muted);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.ic-bed:hover {
+  color: var(--text);
+}
+
+.ic-bed-more {
+  flex: none;
+  padding: 0 4px;
+  font-size: 0.75rem;
+  color: var(--action);
+}
+
+/* Everyone assigned: team chips grow into full rows with their cards. */
+.ic-team-board--expanded .ic-rows {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  flex: 1;
+  min-height: 0;
+}
+
+.ic-team-board--expanded .ic-rows .ic-row {
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.ic-team-board--expanded .ic-rows .ic-board-lane__title {
+  flex-basis: 100%;
+}
+
+/* Mi equipo: the cards scroll in their own box, so Archivados below never gets covered. */
+#ic-team-board-mount > .ic-team-view {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px;
+  margin: -4px;
+}
+
+#ic-archived-mount {
+  flex: none;
+}
+
+.ic-arch__chips {
+  max-height: 25vh;
+  overflow-y: auto;
+}
+
+/* IC card: calm bed line, normal-case name, service as a coloured dot plus text, red dot for a critical lab. */
+.ic-card .sv-bed {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.ic-card .sv-name {
+  font-weight: 600;
+}
+
+.ic-svc {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.ic-svc__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: oklch(0.7 0.13 var(--h, 220));
+}
+
+.ic-crit-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-danger);
 }

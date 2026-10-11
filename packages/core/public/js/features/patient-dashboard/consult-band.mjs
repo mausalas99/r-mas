@@ -16,7 +16,7 @@ import { buildTeamSelectOptions } from '../clinical-teams/team-select-options.mj
 /** Triage group, set on desktop and on the iOS app. Order = board order. */
 export var TRIAGE_GROUPS = ['vpo', 'critico', 'ic', 'seguimiento'];
 
-var TRIAGE_LABELS = {
+export var TRIAGE_LABELS = {
   vpo: 'VPO',
   critico: 'Críticos',
   ic: 'IC',
@@ -125,7 +125,99 @@ export function renderConsultBandHtml(info, teamCtx) {
     renderTriageOptionsHtml(String(c.triage || '')) +
     '</select>' +
     '</div>' +
+    (c.triage === 'seguimiento' ? '' : timeFieldHtml('Recibida', 'receivedAt', c.receivedAt) + timeFieldHtml('Respondida', 'answeredAt', c.answeredAt)) +
     teamFieldHtml(teamCtx) +
     '</div>'
   );
+}
+
+/** Local HH:MM of an ISO string, '' when empty or invalid. */
+function hhmm(iso) {
+  var d = new Date(iso || '');
+  if (!iso || isNaN(d.getTime())) return '';
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
+function timeFieldHtml(label, key, iso) {
+  return (
+    '<div class="ic-cf" data-label="' + label + '">' +
+    '<input type="time" class="ic-consult-input" data-consult-time="' + key + '" aria-label="' + label + '" value="' + hhmm(iso) + '">' +
+    '</div>'
+  );
+}
+
+/** HH:MM typed in the band → ISO UTC, on the day of the old value (else today). '' clears. */
+export function isoFromTimeInput(value, oldIso) {
+  var m = /^(\d{2}):(\d{2})$/.exec(String(value || ''));
+  if (!m) return '';
+  var d = new Date(oldIso || Date.now());
+  if (isNaN(d.getTime())) d = new Date();
+  d.setHours(Number(m[1]), Number(m[2]), 0, 0);
+  return d.toISOString();
+}
+
+// --- Interconsulta response timer ---
+// The user taps "Recibida" then "Respondida"; both times live in `patient.consultInfo` as
+// ISO UTC strings (`receivedAt`, `answeredAt`), the same contract the iOS app writes.
+
+const WEEK_MS = 7 * 24 * 3600 * 1000;
+
+function toMs(iso) {
+  const t = Date.parse(String(iso || ''));
+  return Number.isFinite(t) ? t : null;
+}
+
+export function icTimes(patient) {
+  const raw = (patient && patient.consultInfo) || {};
+  return { received: toMs(raw.receivedAt), answered: toMs(raw.answeredAt) };
+}
+
+export function formatElapsed(ms) {
+  const m = Math.max(0, Math.floor(ms / 60000));
+  return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
+}
+
+/** Text tag for the triage group (VPO / IC / ...). Empty when no group is set. */
+export function icTriageTagHtml(patient) {
+  const key = getConsultInfo(patient).triage;
+  const label = TRIAGE_LABELS[key];
+  return label ? '<span class="ic-tag ic-tag--' + key + '">' + escHtml(label) + '</span>' : '';
+}
+
+/** Footer of a board card. Buttons sit beside the card button, never inside it. */
+export function icTimerHtml(patient, nowMs = Date.now()) {
+  const id = escHtml(String(patient.id));
+  if (getConsultInfo(patient).triage === 'seguimiento') return '';
+  const { received, answered } = icTimes(patient);
+  if (received == null) {
+    return (
+      '<div class="ic-timer"><button type="button" class="ic-timer__btn ic-timer__btn--go" data-ic-timer="start" data-ic-timer-id="' + id + '">Recibida</button>' +
+      '<button type="button" class="ic-timer__link" data-ic-timer="followup" data-ic-timer-id="' + id + '">Es seguimiento</button></div>'
+    );
+  }
+  if (answered == null) {
+    return (
+      '<div class="ic-timer"><span class="ic-timer__t" data-ic-since="' + received + '">' + formatElapsed(nowMs - received) + '</span>' +
+      '<button type="button" class="ic-timer__btn" data-ic-timer="stop" data-ic-timer-id="' + id + '">Respondida</button></div>'
+    );
+  }
+  return '<div class="ic-timer"><span class="ic-timer__t is-done">' + formatElapsed(answered - received) + '</span><span class="ic-timer__s">Respondida</span></div>';
+}
+
+/** Header pills: average minutes answered in the last 7 days, overall + VPO + IC. */
+export function icTimerStatsHtml(patients, nowMs = Date.now()) {
+  const sums = { all: [0, 0], vpo: [0, 0], ic: [0, 0] };
+  for (const p of patients || []) {
+    const { received, answered } = icTimes(p);
+    if (getConsultInfo(p).triage === 'seguimiento' || received == null || answered == null || answered < received || answered < nowMs - WEEK_MS) continue;
+    const keys = ['all'].concat(sums[getConsultInfo(p).triage] ? [getConsultInfo(p).triage] : []);
+    for (const k of keys) {
+      sums[k][0] += answered - received;
+      sums[k][1] += 1;
+    }
+  }
+  if (!sums.all[1]) return '';
+  const pill = (label, [total, n]) =>
+    n ? '<span class="ic-stat"><i>' + label + '</i> ' + formatElapsed(total / n) + '</span>' : '';
+  return '<span class="ic-stats">' + pill('Promedio 7 días', sums.all) + pill('VPO', sums.vpo) + pill('IC', sums.ic) + '</span>';
 }
