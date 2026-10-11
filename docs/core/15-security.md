@@ -190,9 +190,8 @@ Unchanged by Nube. No device unlock: the DB opens without a key (owner decision 
 
 ## Implemented (clinical)
 
-- Calculator caps and high-risk rules (`lib/clinical-safety-rules/`)
 - Human confirmation before persisting flagged actions
-- Forensic audit hooks on DB (`lib/db/audit-hooks.mjs`, `forensic-audit.mjs`)
+- Forensic audit log on DB (`lib/db/forensic-audit.mjs`)
 
 ## LAN (retired)
 

@@ -12,3 +12,4 @@ public/js/med-receta-core.test.mjs
 scripts/lib/electron-pack-files.test.js
 # Golden corpus: reads input/expected data files under scripts/golden/corpus/, never source.
 scripts/golden/golden-corpus.test.mjs
+public/js/ui-toast.test.mjs
