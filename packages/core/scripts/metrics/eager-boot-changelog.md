@@ -6,6 +6,7 @@ Measured by `collectEagerBundleSet` in `app-boot-imports.test.mjs` (unminified `
 
 | Date | Version | Bytes | Files | Why |
 |------|---------|------:|------:|-----|
+| 2026-10-11 | 8.5.0 | 3,403,000 | 136 | Byte budget raised 3,395,000→3,403,000 (measured 3,398,914 B). Estado Actual paste parser reads prose (vitals, DXT, I/E, evac, ~5.8 KB); it loads at boot through `censo-signos-format.mjs`. Owner approved. |
 | 2026-10-06 | 8.4.9 prep | 3,395,000 | 136 | Owner-approved raise of the file count only (measured 3,368,060 B, 136 files; byte budget unchanged). The new sala picker (`sala-picker.mjs`, 3.2 KB) is shared by the onboarding and registration modules, and `isVitalKeyAltered` in `estado-actual-ranges.mjs` (1.8 KB) is now shared by the Guardia census and Inicio de turno, so esbuild gives each its own small chunk. |
 | 2026-10-02 | 8.4.7 prep | 3,395,000 | 135 | Byte budget raised 3,342,000→3,395,000 (measured 3,392,081 B, 135 files). Interconsultas board button now opens the Actualizar labs window for the shown team (`interconsulta-mode-chrome.mjs`), on top of the other 8.4.7 edits in eager modules. Owner approved the raise. |
 | 2026-10-02 | 8.4.7 prep | 3,342,000 | 135 | Byte budget raised 3,333,000→3,342,000 (measured 3,340,380 B, 135 files). Equipo pills in Mi perfil (`perfil-equipo.mjs`), team cycle letter, and the Interconsultas complete-admission modal grew already-eager modules. Owner asked for everything in 8.4.7. |

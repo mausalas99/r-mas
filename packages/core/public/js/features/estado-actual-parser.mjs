@@ -10,7 +10,11 @@ import {
   diuresisValueFromParts,
   toEaSalidaText,
 } from './estado-actual-io.mjs';
-import { parseSatLineVariants, stripVitalUnitSuffix } from './estado-actual-parse-variants.mjs';
+import {
+  parseNarrativeVitals,
+  parseSatLineVariants,
+  stripVitalUnitSuffix,
+} from './estado-actual-parse-variants.mjs';
 
 export { parseIoIngresoField } from './estado-actual-io.mjs';
 
@@ -176,7 +180,7 @@ function parseDxtLine(trimmed, result) {
 }
 
 function parseIoLine(trimmed, result) {
-  var ing = trimmed.match(/^(?:I|ING(?:RESOS)?)\s*:?\s*(.+)$/i);
+  var ing = trimmed.match(/^(?:I\b|ING(?:RESOS)?)\s*:?\s*(.+)$/i);
   if (ing) {
     result.io.ing = parseIoIngresoField(ing[1]);
     result.recognized.push('ing');
@@ -190,7 +194,7 @@ function parseIoLine(trimmed, result) {
     return true;
   }
 
-  var egr = trimmed.match(/^(?:E(?!VAC)|EGR(?:ESOS)?)\s*:?\s*(.+)$/i);
+  var egr = trimmed.match(/^(?:E\b(?!VAC)|EGR(?:ESOS)?)\s*:?\s*(.+)$/i);
   if (egr) {
     var egrBody = String(egr[1]).trim();
     if (/^(?:NC|NO\s+CUANTIFICADA)$/i.test(egrBody)) {
@@ -203,7 +207,7 @@ function parseIoLine(trimmed, result) {
     return true;
   }
 
-  var bal = trimmed.match(/^(?:B|BAL(?:ANCE)?)\s*:?\s*(.+)$/i);
+  var bal = trimmed.match(/^(?:B\b|BAL(?:ANCE)?)\s*:?\s*(.+)$/i);
   if (bal) {
     result.recognized.push('balance-ignored');
     return true;
@@ -322,6 +326,90 @@ function scanInlinePatterns(text, result) {
   scanInlineEvac(text, result);
 }
 
+const NARR_NC = '(NC|NO\\s+CUANTIFIC\\w*)';
+
+function narrativeDxt(text, result) {
+  var gre =
+    /\b(?:GLUCOMETR[ÍI]AS?|DXT|DESTROX(?:IAS)?|CAPILARES?)(?:\s+(?:CAPILARES?|CENTRAL(?:ES)?))?\s*:?\s*(\d{2,3}(?:\s*(?:,|Y)\s*\d{2,3})*)\s*MG\s*\/?\s*DL/gi;
+  var gm;
+  while ((gm = gre.exec(text))) {
+    gm[1].split(/\s*(?:,|Y)\s*/i).forEach(function (n) {
+      var v = Number(n);
+      if (v >= 20 && v <= 800) result.glucometrias.push({ value: v });
+    });
+  }
+  return result.glucometrias.length > 0;
+}
+
+function narrativeIng(text, result) {
+  var m = text.match(new RegExp('\\bINGRESOS?\\s*:?\\s*(?:DE\\s*)?(?:(\\d[\\d.,]*)\\s*(?:CC|ML)|' + NARR_NC + ')', 'i'));
+  if (!m) return false;
+  result.io.ing = m[1] ? parseIoIngresoField(m[1]) : 'NC';
+  return true;
+}
+
+function narrativeEgr(text, result) {
+  var m = text.match(
+    new RegExp('\\b(?:EGRESOS?|DIURESIS)\\s*:?\\s*(?:DE\\s*)?(?:(\\d[\\d.,]*)\\s*(?:CC|ML)|' + NARR_NC + ')', 'i')
+  );
+  if (!m) return false;
+  result.io.egrParts = m[1] ? parseIoEgresoLine(m[1]) : [{ kind: 'diuresis', label: 'DIURESIS', value: 'NC' }];
+  result.io.egr = diuresisValueFromParts(result.io.egrParts);
+  return true;
+}
+
+function narrativeEvac(text, result) {
+  var m = text.match(
+    /\bSIN\s+EVACUACIONES\b|\bEVAC(?:UACIONES)?\s*:?\s*(?:NC|NO\s+(?:REPORTADAS|CUANTIFICADAS?)|\d+\s*(?:CC|ML)?)/i
+  );
+  if (!m) return false;
+  result.io.evac = parseIoEvacField(m[0].replace(/^\s*EVAC(?:UACIONES)?\s*:?\s*/i, '') || m[0]);
+  return true;
+}
+
+/** [etiqueta, ya-leído?, lector]. Solo llena lo que las líneas "I: 800" no dieron. */
+const NARRATIVE_IO = [
+  ['dxt', (r) => r.glucometrias.length > 0, narrativeDxt],
+  ['ing', (r) => r.io.ing != null, narrativeIng],
+  ['egr', (r) => r.io.egrParts.length > 0, narrativeEgr],
+  ['evac', (r) => r.io.evac != null, narrativeEvac],
+];
+
+/** DXT, ingresos, egresos, evacuaciones y balance dichos en prosa. Devuelve cuántos campos leyó. */
+function applyNarrativeIo(text, result) {
+  var found = 0;
+  NARRATIVE_IO.forEach(function (e) {
+    if (result.recognized.indexOf(e[0]) >= 0 || e[1](result) || !e[2](text, result)) return;
+    result.recognized.push(e[0]);
+    found++;
+  });
+  if (result.recognized.indexOf('balance-ignored') < 0 && /\bBALANCE\b/i.test(text)) {
+    result.recognized.push('balance-ignored');
+    found++;
+  }
+  return found;
+}
+
+/** Estado actual en prosa: completa los signos que las líneas "FC: 90" no dieron. */
+function applyNarrativeVitals(text, result) {
+  var narr = parseNarrativeVitals(text, function (k) {
+    return result.vitals[k] != null;
+  });
+  var narrKeys = Object.keys(narr.vitals);
+  var ioFound = applyNarrativeIo(text, result);
+  narrKeys.forEach(function (k) {
+    result.vitals[k] = narr.vitals[k];
+    var tag = k === 'tas' || k === 'tad' ? 'ta' : k;
+    if (result.recognized.indexOf(tag) < 0) result.recognized.push(tag);
+  });
+  if (narr.soporteHint && !result.soporteHint) result.soporteHint = narr.soporteHint;
+  if (narrKeys.length || ioFound) {
+    result.warnings = result.warnings.filter(function (w) {
+      return w.indexOf('Línea no reconocida') !== 0;
+    });
+  }
+}
+
 /**
  * @param {unknown} raw
  * @returns {{
@@ -391,6 +479,8 @@ export function parseEstadoActualPaste(raw) {
   for (var i = 0; i < nonEmpty.length; i++) {
     parseLine(nonEmpty[i], result);
   }
+
+  applyNarrativeVitals(text, result);
 
   if (!result.recognized.length) {
     scanInlinePatterns(text, result);
