@@ -2054,3 +2054,159 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 .exp-datos-list.exp-datos-list--chips .exp-datos-q {
   margin-left: 0;
 }
+
+/* Cultivos: estilo R3 (tarjetas por sitio, borde cero, banner de alerta). */
+#cultivos-table-container .cultivos-toolbar {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  background: none;
+  border: 0;
+}
+#cultivos-table-container .cultivos-title {
+  margin: 0;
+  font-size: var(--fs-20);
+  font-weight: var(--fw-strong);
+}
+#cultivos-table-container .cultivos-summary {
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+}
+#cultivos-table-container .cultivo-refresh-repo-btn {
+  margin-left: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--color-accent);
+  font-weight: var(--fw-strong);
+}
+#cultivos-table-container .cultivos-alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--danger) 12%, transparent);
+  color: var(--text);
+  font-size: var(--fs-14);
+}
+#cultivos-table-container .cultivos-alert svg {
+  flex: none;
+  color: var(--danger);
+}
+#cultivos-table-container .cultivos-alert-org {
+  font-style: italic;
+  font-weight: var(--fw-strong);
+}
+#cultivos-table-container .cult-sites-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+@media (max-width: 720px) {
+  #cultivos-table-container .cult-sites-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+#cultivos-table-container .cult-site {
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  border: 0;
+  border-radius: 16px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-1);
+}
+#cultivos-table-container .cult-site-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 0 0 var(--space-2);
+  border-bottom: 0;
+}
+#cultivos-table-container .cult-site[open] > .cult-site-head {
+  border-bottom: 0;
+}
+#cultivos-table-container .cult-site-head .rp-dot,
+#cultivos-table-container .cult-site-dots,
+#cultivos-table-container .cult-site-last {
+  display: none;
+}
+#cultivos-table-container .cult-site-title {
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+  letter-spacing: 0;
+  text-transform: lowercase;
+}
+#cultivos-table-container .cult-site-title::first-letter {
+  text-transform: uppercase;
+}
+#cultivos-table-container .cult-site-tipo {
+  margin-left: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-regular);
+  text-transform: none;
+}
+#cultivos-table-container .cult-site .cultivos-table {
+  width: 100%;
+  font-size: var(--fs-14);
+}
+#cultivos-table-container .cult-site .cultivos-table td {
+  padding: var(--space-2) 0;
+  border: 0;
+  vertical-align: middle;
+}
+#cultivos-table-container .cult-site .cultivos-cell-fecha {
+  width: 56px;
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+  white-space: nowrap;
+}
+#cultivos-table-container .cult-site .cultivos-cell-atb {
+  width: 1%;
+  white-space: nowrap;
+}
+#cultivos-table-container .cult-site .cultivos-row-neg td,
+#cultivos-table-container .cult-site .cult-row-muted td {
+  color: var(--text-muted);
+}
+#cultivos-table-container .cult-site .atb-chip {
+  height: 24px;
+  min-width: 24px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: 6px;
+  font-size: var(--fs-12);
+  font-weight: var(--fw-strong);
+}
+#cultivos-table-container .cult-site .atb-chip--r {
+  background: color-mix(in oklab, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+#cultivos-table-container .cult-site .atb-chip--i {
+  background: color-mix(in oklab, #c98a00 16%, transparent);
+  color: #9a6700;
+}
+#cultivos-table-container .cult-site .atb-chip--s {
+  background: color-mix(in oklab, var(--success) 14%, transparent);
+  color: var(--success);
+}
+#cultivos-table-container .cultivos-neg-fold {
+  margin-top: var(--space-4);
+}
+#cultivos-table-container .cultivos-neg-head {
+  display: inline-block;
+  color: var(--color-accent);
+  font-size: var(--fs-13);
+  cursor: pointer;
+}
+#cultivos-table-container .cultivos-neg-fold[open] > .cultivos-neg-head {
+  margin-bottom: var(--space-3);
+}

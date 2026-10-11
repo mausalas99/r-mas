@@ -205,12 +205,12 @@ await r.finish('Cultivos table + Actualizar', async () => {
   check('glued "UROCULTIVOPOR SONDA" shows spaced', !!glued && /UROCULTIVO POR SONDA/i.test(glued.cells[1] + ' ' + (await container.innerText())) &&
     !/UROCULTIVOPOR/i.test(await container.innerText()), glued);
 
-  // Left and right periférico share one "Hemocultivo · PERIFÉRICO" site. That site has a
+  // Left and right periférico share one "Periférico · Hemocultivo" site. That site has a
   // positive (11/04), so the 20/04 negative stays in it as a negative row, not in the
   // "Sin aislamientos" fold (which only holds sites with no isolate at all).
   const hemoNeg = byDate('20/04');
   check('negative hemocultivo sits as a negative row in the periférico hemocultivo site',
-    hemoNeg.length === 1 && hemoNeg[0].neg && /Hemocultivo · PERIF[EÉ]RICO/i.test(hemoNeg[0].cells[1]), hemoNeg);
+    hemoNeg.length === 1 && hemoNeg[0].neg && /PERIF[EÉ]RICO · Hemocultivo/i.test(hemoNeg[0].cells[1]), hemoNeg);
   check('negative is not a positive row', !rows.some((x) => !x.neg && x.cells[0].startsWith('20/04')), byDate('20/04'));
 
   // Positive hemocultivo, periférico site, BLEE Pseudomonas.
@@ -290,7 +290,7 @@ await r.finish('Cultivos table + Actualizar', async () => {
   const copro13 = byDate('13/05');
   check('coprocultivo preliminar (no organism) still shows a row', copro13.length === 1, copro13);
   check('13/05 coprocultivo row: type cell (Sitio / muestra) shows COPROCULTIVO',
-    copro13.length === 1 && /· COPROCULTIVO$/.test(copro13[0].cells[1]), copro13);
+    copro13.length === 1 && /^COPROCULTIVO$/i.test(copro13[0].cells[1]), copro13);
   check('coprocultivo text keeps MICROBIOTA COLIBACILAR NORMAL AUSENTE, no trailing comma',
     copro13.length === 1 && /MICROBIOTA COLIBACILAR NORMAL AUSENTE/i.test(copro13[0].cells.join(' ')) &&
     !/PRELIMINAR,\s*(<|$)/i.test(copro13[0].cells.join(' ')), copro13);
@@ -507,7 +507,7 @@ await r.finish('Cultivos table + Actualizar', async () => {
     byDate('18/06').length === 1 && !/TINCION/i.test(byDate('18/06')[0].cells[1]), byDate('18/06'));
   // Catheter-drawn hemocultivos group under the "CENTRAL" site; the raw sample name stays on the row.
   check('HEMOCULTIVO (CATETER NIAGARA): a row in the central site that keeps the sample name',
-    byDate('19/06').length === 1 && /Hemocultivo · CENTRAL/i.test(byDate('19/06')[0].cells[1]) &&
+    byDate('19/06').length === 1 && /CENTRAL · Hemocultivo/i.test(byDate('19/06')[0].cells[1]) &&
     /CATETER NIAGARA/i.test(byDate('19/06')[0].cells[2]), byDate('19/06'));
   check('CATETER (PUNTA CVC): a row with that site',
     byDate('20/06').length === 1 && /PUNTA CVC/i.test(byDate('20/06')[0].cells[1]), byDate('20/06'));

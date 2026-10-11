@@ -50,6 +50,7 @@ import { patientRegistroModalWindowHandlers } from '../patient-registro-modal-ui
 
 patientsBridge.renderPatientList = renderPatientList;
 patientsBridge.selectPatient = selectPatient;
+patientsBridge.deletePatient = deletePatient;
 
 export { rt };
 export {

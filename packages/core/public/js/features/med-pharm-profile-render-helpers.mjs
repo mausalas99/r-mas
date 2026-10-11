@@ -76,7 +76,7 @@ function medPharmRowKeysAttr(group) {
   return group.rowKeys.join('\t');
 }
 
-function buildMedPharmNameRow(group, current, stats, columns, profile, windowLabel) {
+function buildMedPharmNameRow(group) {
   var multiRegimen = group.variants.length > 1;
   var nameRow = document.createElement('div');
   nameRow.className = 'med-pharm-name-row';
@@ -85,22 +85,28 @@ function buildMedPharmNameRow(group, current, stats, columns, profile, windowLab
   nameEl.textContent = group.med || '';
   nameEl.title = group.med || '';
   nameRow.appendChild(nameEl);
-  var catEl = document.createElement('span');
-  catEl.className = 'med-pharm-cat-badge';
-  catEl.textContent = rowSomePharmCategory(current);
-  nameRow.appendChild(catEl);
   if (multiRegimen) {
     var regEl = document.createElement('span');
     regEl.className = 'med-pharm-regimen-badge';
-    regEl.textContent = '×' + group.variants.length;
+    regEl.textContent = group.variants.length + ' tomas';
     regEl.title = group.variants.length + ' regímenes — ver en Días';
     nameRow.appendChild(regEl);
   }
+  return { nameRow: nameRow, multiRegimen: multiRegimen };
+}
+
+function buildMedPharmGroupCell(current) {
+  var catEl = document.createElement('span');
+  catEl.className = 'med-pharm-cat-badge';
+  catEl.textContent = rowSomePharmCategory(current);
+  return catEl;
+}
+
+function buildMedPharmAdhCell(group, stats, columns, profile, windowLabel) {
   var adhEl = document.createElement('div');
   adhEl.className = 'med-cell-adh';
   adhEl.innerHTML = buildAdhTriggerHtmlForGroup(group, stats, columns, profile, windowLabel);
-  nameRow.appendChild(adhEl);
-  return { nameRow: nameRow, multiRegimen: multiRegimen };
+  return adhEl;
 }
 
 function buildMedPharmRowActions(group, isHidden, multiRegimen) {
@@ -150,10 +156,11 @@ function buildMedPharmSummaryRow(group, columns, profile, windowLabel) {
   summary.title = medGroupListTooltip(group);
   var main = document.createElement('div');
   main.className = 'med-pharm-main med-pharm-main--compact';
-  var nameParts = buildMedPharmNameRow(group, current, stats, columns, profile, windowLabel);
+  var nameParts = buildMedPharmNameRow(group);
   main.appendChild(nameParts.nameRow);
   summary.appendChild(main);
-  summary.appendChild(buildMedPharmRowActions(group, isHidden, nameParts.multiRegimen));
+  summary.appendChild(buildMedPharmGroupCell(current));
+  summary.appendChild(buildMedPharmAdhCell(group, stats, columns, profile, windowLabel));
   var freqEl = document.createElement('span');
   freqEl.className = 'med-pharm-freq-cell';
   freqEl.textContent = formatFreqShort(current.freq);
@@ -164,6 +171,7 @@ function buildMedPharmSummaryRow(group, columns, profile, windowLabel) {
   viaEl.textContent = formatViaListAbbrev(current.via);
   viaEl.title = formatViaShort(current.via);
   summary.appendChild(viaEl);
+  summary.appendChild(buildMedPharmRowActions(group, isHidden, nameParts.multiRegimen));
   wrap.appendChild(summary);
   return wrap;
 }

@@ -2,19 +2,36 @@
 import { getLabHistory } from '../../app-state.mjs';
 import {
   buildAtbRisSummaryHtml,
+  classifyAtbInterp,
   extractSensCrudasForGermFromSource,
 } from '../../labs.js';
 import { esc } from './expediente-runtime.mjs';
 import { escAttr } from '../../dom-escape.mjs';
 
-export function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
-  if (!patientId) return '<pre class="cultivos-atb-fallback">—</pre>';
+function cultivoSetAndSens(r, patientId) {
   var sets = getLabHistory()[patientId] || [];
   var set = sets.find(function (s) {
     return String(s.id) === String(r.labSetId);
   });
   var sens =
     set && set.sourceText ? extractSensCrudasForGermFromSource(set.sourceText, r.organismo) : null;
+  return { set: set, sens: sens };
+}
+
+/** How many antibiotics this isolate is resistant to (0 when no antibiogram). */
+export function cultivoResistantCount(r, patientId) {
+  if (!patientId) return 0;
+  var sens = cultivoSetAndSens(r, patientId).sens || [];
+  return sens.filter(function (s) {
+    return classifyAtbInterp(s.interp) === 'r';
+  }).length;
+}
+
+export function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
+  if (!patientId) return '<pre class="cultivos-atb-fallback">—</pre>';
+  var found = cultivoSetAndSens(r, patientId);
+  var set = found.set;
+  var sens = found.sens;
   var copyBtn =
     set && r.labSetId != null && String(r.labSetId) !== ''
       ? '<button type="button" class="cultivos-copy-full-btn" data-onclick="copyCultivoCondensado" data-onclick-args=\'' +

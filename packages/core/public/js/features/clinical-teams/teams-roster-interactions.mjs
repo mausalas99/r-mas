@@ -308,8 +308,8 @@ function renderPerfilEquipo(host) {
   if (!perfilFilter) perfilFilter = home || PERFIL_ALL;
   const shown = perfilTeams.filter((t) => perfilFilter === PERFIL_ALL || String(t.sala || '') === perfilFilter);
   const mine = perfilTeams.find((t) => t.isMember);
-  const chip = (v, label) =>
-    `<button type="button" class="settings-perfil-chip settings-perfil-chip--sm" data-perfil-equipo-filter="${escapeAttr(v)}" aria-pressed="${perfilFilter === v}">${escapeHtml(label)}</button>`;
+  const opt = (v, label) =>
+    `<option value="${escapeAttr(v)}"${perfilFilter === v ? ' selected' : ''}>${escapeHtml(label)}</option>`;
   const pills = shown
     .map((t) => {
       const off = !t.isMember && !t.joinEligible;
@@ -322,9 +322,7 @@ function renderPerfilEquipo(host) {
       <div class="settings-perfil-equipo-head">
         <span class="settings-perfil-sala-title">Equipo</span>
         <span class="settings-perfil-sala-current">${escapeHtml(mine ? String(mine.name || 'Equipo').trim() : 'Sin equipo')}</span>
-      </div>
-      <div class="settings-perfil-equipo-filter" role="group" aria-label="Filtrar por sala">
-        ${chip(PERFIL_ALL, 'Todas')}${CLINICAL_SALAS.map((s) => chip(s, s)).join('')}
+        <label class="settings-perfil-equipo-pick"><span>Ver equipos de</span><select class="profile-input" data-perfil-equipo-select>${opt(PERFIL_ALL, 'Todas las salas')}${CLINICAL_SALAS.map((s) => opt(s, s)).join('')}</select></label>
       </div>
       ${pills ? `<div class="settings-perfil-equipo-grid" role="group" aria-label="Equipo">${pills}</div>` : '<p class="settings-acc-hint settings-acc-hint--tight">Sin equipos en esta sala.</p>'}
       <div class="settings-perfil-chips">
@@ -351,14 +349,14 @@ export async function mountPerfilEquipo(host) {
   if (!(host instanceof HTMLElement)) return;
   if (!host.dataset.equipoWired) {
     host.dataset.equipoWired = '1';
+    host.addEventListener('change', (ev) => {
+      const sel = ev.target instanceof HTMLSelectElement ? ev.target : null;
+      if (!sel?.matches('[data-perfil-equipo-select]')) return;
+      perfilFilter = sel.value || PERFIL_ALL;
+      renderPerfilEquipo(host);
+    });
     host.addEventListener('click', async (ev) => {
       const el = ev.target instanceof Element ? ev.target : null;
-      const f = el?.closest('[data-perfil-equipo-filter]');
-      if (f) {
-        perfilFilter = f.getAttribute('data-perfil-equipo-filter') || PERFIL_ALL;
-        renderPerfilEquipo(host);
-        return;
-      }
       if (el?.closest('[data-perfil-equipo-open]')) {
         const { openClinicalTeamsPanel } = await import('./teams-roster-shell.mjs');
         await openClinicalTeamsPanel();

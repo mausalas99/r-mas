@@ -1484,6 +1484,33 @@
   font-size: var(--fs-12);
   font-weight: var(--fw-regular);
 }
+/* Rows sit on the card itself: no sunken box around the sunken inputs. */
+.nota-fit-grid .fit-list {
+  background: transparent;
+  padding: 0;
+}
+.nota-fit-grid .fit-block h4 {
+  min-height: 32px;
+}
+.nota-fit-grid .fit-block h4 .wb-btn {
+  min-height: 32px;
+  padding-block: 0;
+}
+.nota-fit-grid .btn-add-row,
+.nota-fit-grid .btn-add-row:hover {
+  height: 32px;
+  margin-left: calc(-1 * var(--space-3));
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--action);
+  font-weight: var(--fw-strong);
+}
+.nota-fit-grid .btn-add-row:hover {
+  background: var(--chip-bg);
+}
 
 /* Anteriores — read-only copies saved at each .docx export. */
 .past-docs-modal.wb-modal {

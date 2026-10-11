@@ -569,7 +569,7 @@ html.dark .patient-dash .svc.is-on {
 
 .patient-dash .draw-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
   gap: 6px;
 }
 
@@ -612,7 +612,7 @@ html.dark .patient-dash .draw-value.abn {
 .patient-dash .draw-delta {
   font: var(--type-wb-mono);
   color: var(--color-ink-muted);
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .patient-dash .draw-trend.is-up,

@@ -9,6 +9,7 @@ import {
 } from './expediente-cultivos-parse.mjs';
 import {
   buildCultivoAntibiogramCellHtmlForPatient,
+  cultivoResistantCount,
   wireAtbRisHoverPanels,
   removeAtbRisPanelsFromBody,
 } from './expediente-cultivos-atb-ui.mjs';
@@ -193,7 +194,32 @@ var _cultivosTableCacheKey = '';
 var _cultivoRefreshBusy = false;
 var _cultivoToolbarWired = false;
 
-function buildCultivosToolbarHtml(patientId) {
+/** Título, resumen y botón Actualizar (texto). */
+function buildCultivosToolbarHtml(patientId, rows) {
+  var isoOrgs = Object.create(null);
+  var nOrg = 0;
+  rows.forEach(function (r) {
+    if (!cultivoRowIsIsolate(r)) return;
+    var k = String(r.organismo || '').split(/\s*·\s*/)[0].toUpperCase();
+    if (!isoOrgs[k]) {
+      isoOrgs[k] = 1;
+      nOrg++;
+    }
+  });
+  var nSites = groupCultivoRowsBySite(rows).filter(function (s) {
+    return s.positive;
+  }).length;
+  var last = rows.reduce(function (a, r) {
+    return cultivoRowMs(r) > cultivoRowMs(a) ? r : a;
+  }, rows[0]);
+  var summary =
+    nOrg +
+    (nOrg === 1 ? ' microorganismo' : ' microorganismos') +
+    ' en ' +
+    nSites +
+    (nSites === 1 ? ' sitio' : ' sitios') +
+    ' · último ' +
+    rowFechaDisplay(last);
   var pending = pendingAtbCultivoItemsForPatient(patientId).length;
   var title =
     pending > 0
@@ -206,7 +232,9 @@ function buildCultivosToolbarHtml(patientId) {
   var btnClass = 'tend-toolbar-btn cultivo-refresh-repo-btn';
   if (pending === 0) btnClass += ' cultivo-refresh-idle';
   return (
-    '<div class="cultivos-toolbar">' +
+    '<div class="cultivos-toolbar"><h2 class="cultivos-title">Cultivos</h2><span class="cultivos-summary">' +
+    esc(summary) +
+    '</span>' +
     '<button type="button" class="' +
     btnClass +
     '"' +
@@ -336,14 +364,17 @@ function cultivoSiteHtml(site) {
       );
     })
     .join('');
+  var siteName = String(cultivoSiteLabel(last) || '');
+  var tipo = String(last.tipoLabel || 'Otros cultivos');
   return (
     '<details class="cult-site' +
     (site.positive ? ' cult-site--pos" open>' : '">') +
     '<summary class="cult-site-head"><span class="rp-dot" aria-hidden="true"></span>' +
-    '<span class="cult-site-title"><span class="cult-site-tipo">' +
-    esc(last.tipoLabel || 'Otros cultivos') +
-    '</span> · ' +
-    esc(cultivoSiteLabel(last)) +
+    '<span class="cult-site-title">' +
+    esc(siteName) +
+    (tipo.toUpperCase() === siteName.toUpperCase()
+      ? ''
+      : ' · <span class="cult-site-tipo">' + esc(tipo) + '</span>') +
     '</span><span class="cult-site-dots" aria-hidden="true">' +
     cultivoSiteDotsHtml(site.rows) +
     '</span><span class="cult-site-last">' +
@@ -356,6 +387,43 @@ function cultivoSiteHtml(site) {
 }
 
 /** Sitios con algún positivo abiertos arriba; sitios solo negativos plegados abajo. */
+/** Banner rojo: aislamiento con marcador de resistencia (BLEE, MRSA...). */
+function resistantSentence(n) {
+  if (!n) return '';
+  return ' Resistente a ' + n + (n === 1 ? ' antibiótico.' : ' antibióticos.');
+}
+
+function buildCultivoAlertBannerHtml(rows) {
+  var lines = [];
+  rows.forEach(function (r) {
+    if (!cultivoRowIsIsolate(r)) return;
+    var parts = String(r.organismo || '').split(/\s*·\s*/);
+    var tag = parts.slice(1).filter(function (t) {
+      return CULTIVO_TAG_ALERT_RE.test(t);
+    })[0];
+    if (!tag) return;
+    lines.push(
+      '<span><b class="cultivos-alert-org">' +
+        esc(parts[0] + ' ' + tag) +
+        '</b> en ' +
+        esc(cultivoSiteLabel(r)) +
+        ', ' +
+        esc(rowFechaDisplay(r)) +
+        '.' +
+        resistantSentence(cultivoResistantCount(r, aid())) +
+        '</span>'
+    );
+  });
+  if (!lines.length) return '';
+  return (
+    '<div class="cultivos-alert" role="status">' +
+    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>' +
+    '<div class="cultivos-alert-body">' +
+    lines.join('<br>') +
+    '</div></div>'
+  );
+}
+
 function buildCultivoSitesHtml(rows) {
   var sites = groupCultivoRowsBySite(rows);
   var pos = sites.filter(function (s) {
@@ -364,22 +432,19 @@ function buildCultivoSitesHtml(rows) {
   var neg = sites.filter(function (s) {
     return !s.positive;
   });
-  var negCount = neg.reduce(function (n, s) {
-    return n + s.rows.length;
-  }, 0);
   var negHtml = neg.length
     ? '<details class="cultivos-neg-fold"' +
       (pos.length ? '' : ' open') +
-      '><summary class="cultivos-neg-head"><span class="rp-dot" aria-hidden="true"></span>Sin aislamientos <span class="cultivos-neg-count">' +
-      negCount +
-      '</span><span class="cultivos-neg-sites">' +
+      '><summary class="cultivos-neg-head">' +
       neg.length +
       (neg.length === 1 ? ' sitio' : ' sitios') +
-      '</span></summary>' +
+      ' sin aislamientos</summary>' +
+      '<div class="cult-sites-grid">' +
       neg.map(cultivoSiteHtml).join('') +
+      '</div>' +
       '</details>'
     : '';
-  return pos.map(cultivoSiteHtml).join('') + negHtml;
+  return '<div class="cult-sites-grid">' + pos.map(cultivoSiteHtml).join('') + '</div>' + negHtml;
 }
 
 function renderCultivosTable() {
@@ -407,7 +472,10 @@ function renderCultivosTable() {
       '<p class="tend-empty">No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinción Gram y cultivos de catéter enviados desde Laboratorio.</p>';
     return;
   }
-  container.innerHTML = buildCultivosToolbarHtml(pid) + buildCultivoSitesHtml(flatRows);
+  container.innerHTML =
+    buildCultivosToolbarHtml(pid, flatRows) +
+    buildCultivoAlertBannerHtml(flatRows) +
+    buildCultivoSitesHtml(flatRows);
   wireAtbRisHoverPanels(container);
 }
 

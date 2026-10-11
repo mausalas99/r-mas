@@ -63,7 +63,7 @@ export function buildVpoPanelInnerHtml(
     '<textarea id="vpo-ekg" class="ea-input" data-vpo-field="ekgText" rows="3">' +
     esc(state.ekgText) +
     '</textarea>' +
-    '<label class="ea-label" for="vpo-rx">Rx tórax</label>' +
+    '<label class="ea-label" for="vpo-rx">Rx de tórax</label>' +
     '<textarea id="vpo-rx" class="ea-input" data-vpo-field="rxText" rows="3">' +
     esc(state.rxText) +
     '</textarea>';
@@ -82,7 +82,7 @@ export function buildVpoPanelInnerHtml(
     '</div>' +
     '<div class="vpo-col">' +
     vpoSection(
-      'EKG y Rx tórax',
+      'EKG y Rx de tórax',
       ekgBody,
       '<button type="button" class="ea-io-link" data-vpo-action="copy-ekg">Copiar EKG</button>' +
         '<button type="button" class="ea-io-link" data-vpo-action="copy-rx">Copiar Rx</button>'
@@ -91,7 +91,6 @@ export function buildVpoPanelInnerHtml(
       'Fármacos perioperatorios',
       '<div class="vpo-farm-list">' + renderFarmacosList(state.farmacos) + '</div>',
       '<button type="button" class="ea-io-link" data-vpo-action="tomar-meds">Tomar de SOME</button>' +
-        '<button type="button" class="ea-io-link" data-vpo-action="ir-med">Ir a Medicamentos</button>' +
         '<button type="button" class="ea-io-link" data-vpo-action="copy-farm">Copiar</button>'
     ) +
     '</div>' +

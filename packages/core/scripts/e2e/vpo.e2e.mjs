@@ -40,7 +40,7 @@ import { fileURLToPath } from 'node:url';
 import { createA11yRecorder, acceptAbxDias } from './harness.mjs';
 import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT } from '../../public/js/tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
-import { goArea } from './harness.mjs';
+import { goArea, onboardLocalOnly, quietHints } from './harness.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const runId = new Date().toISOString().replace(/[:.]/g, '-');
@@ -95,8 +95,9 @@ async function launch() {
   const page = await app.firstWindow();
   // Sala opens in the card view by default; these scenarios drive the sidebar.
   await page.waitForLoadState('domcontentloaded');
-  const salaCards = await page.evaluate(() => { globalThis.localStorage.setItem('rplus-sala-view', 'bar'); globalThis.localStorage.setItem('rpc-registro-autoopen', 'off'); return !!globalThis.document.body.dataset.salaView; });
-  if (salaCards) await page.reload();
+  await page.evaluate(() => globalThis.localStorage.setItem('rplus-sala-view', 'bar'));
+  await quietHints(page);
+  await page.reload();
   await page.setViewportSize({ width: 1440, height: 902 });
   const pageErrors = [];
   page.on('pageerror', (err) => pageErrors.push(err.message));
@@ -108,12 +109,7 @@ async function closeToasts(page) {
 }
 
 async function admitDemoPatient(page) {
-  await page.locator('[data-sync-mode="local"]').click();
-  await page.locator('#clinical-onboard-local-confirm-btn').click();
-  await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
-  const hub = page.locator('#learn-hub-backdrop.open');
-  await hub.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
-  if (await hub.count()) await page.keyboard.press('Escape');
+  await onboardLocalOnly(page);
   await goArea(page, 'lab');
   if (!(await page.locator('#lab-input').isVisible())) {
     await page.locator('#lab-bar-more > summary').click(); await page.locator('#btn-lab-paste').click();
@@ -163,7 +159,7 @@ async function openVpo(page) {
   await closeToasts(page);
   await goArea(page, 'nota');
   await page.waitForTimeout(500);
-  const boardCard = page.getByText('DEMO JUAN', { exact: true }).locator('visible=true').first();
+  const boardCard = page.locator('.ic-card .sv-name', { hasText: 'DEMO PÉREZ JUAN' }).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section', { hasText: 'VPO' }).click();
@@ -251,8 +247,10 @@ async function fillBusyVpo(page) {
   await page.waitForTimeout(200);
 }
 
+let lastPage = null;
 async function run() {
   const { app, page, pageErrors } = await launch();
+  lastPage = page;
   await admitDemoPatient(page);
   await importSomeMeds(page);
   await openVpo(page);
@@ -281,9 +279,9 @@ async function run() {
       inputHeight: i && i.height,
     };
   });
-  check('section titles are uppercase/bold', style.titleUppercase && Number(style.titleWeight) >= 700, style);
+  check('section titles are sentence case, semibold', !style.titleUppercase && Number(style.titleWeight) >= 600, style);
   check('secondary actions are borderless text links', style.linkNoBorder && style.linkNoBg, style);
-  check('inputs share one 32px flat height', style.inputHeight === '32px', style);
+  check('inputs share one 40px flat height', style.inputHeight === '40px', style);
 
   const twoCol = await page.evaluate(() => {
     const cols = document.querySelectorAll('.vpo-col');
@@ -337,6 +335,8 @@ try {
 } catch (err) {
   crash = String((err && err.stack) || err).split('\n').slice(0, 6).join('\n');
   check('scenario ran to the end', false, crash);
+  if (lastPage) await shot(lastPage, 'crash').catch(() => {});
+  console.log(String(err && err.stack).split('\n').filter((l) => l.includes('vpo.e2e')).join('\n'));
 }
 
 const a11yCheck = a11y.verdict();

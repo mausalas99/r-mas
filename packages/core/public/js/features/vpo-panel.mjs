@@ -18,8 +18,8 @@ import {
   buildFarmacosCopyText,
   formatRiskLines,
   renderEkgWithFc,
-  VPO_OFFICIAL_CALCULATOR_DISCLAIMER,
   VPO_SUGGESTED_SCALES,
+  VPO_OFFICIAL_CALCULATOR_DISCLAIMER,
 } from '../vpo-text.mjs';
 import { copyToClipboardSafe } from './soap-estado.mjs';
 import {
@@ -64,6 +64,9 @@ function copyText(label, text) {
   });
 }
 
+/* UI copy only. Copy-output labels stay in vpo-text.mjs. */
+var VPO_SCALE_UI_LABEL = { rcri: 'RCRI (Lee)' };
+
 function renderRiskScalesOnlyBody(state) {
   ensureScaleResults(state);
   var sr = state.scaleResults;
@@ -71,11 +74,10 @@ function renderRiskScalesOnlyBody(state) {
     '<p class="vpo-disclaimer">' +
     esc(VPO_OFFICIAL_CALCULATOR_DISCLAIMER) +
     '</p>' +
-    '<label class="ea-label" for="vpo-intro">Introducción (texto previo a escalas)</label>' +
+    '<label class="ea-label" for="vpo-intro">Introducción</label>' +
     '<textarea id="vpo-intro" class="ea-input" data-vpo-field="valoracionIntro" rows="2">' +
     esc(state.valoracionIntro) +
     '</textarea>' +
-    '<p class="ea-label vpo-scales-grid-title">Resultado por escala (calculadora externa)</p>' +
     '<div class="vpo-scales-results">' +
     VPO_SUGGESTED_SCALES.map(function (s) {
       return (
@@ -83,7 +85,7 @@ function renderRiskScalesOnlyBody(state) {
         esc(s.hint) +
         '">' +
         '<span class="vpo-scale-label">' +
-        esc(s.label) +
+        esc(VPO_SCALE_UI_LABEL[s.key] || s.label) +
         '</span>' +
         '<input type="text" class="ea-input" data-vpo-scale="' +
         esc(s.key) +
@@ -207,9 +209,6 @@ function wireVpoImportActions(mount, state, patientId) {
     rt.showToast('Fármacos actualizados desde SOME', 'success');
   });
 
-  mount.querySelector('[data-vpo-action="ir-med"]')?.addEventListener('click', function () {
-    rt.switchAppTab('med');
-  });
 }
 
 function wireForm(mount, state, patientId) {
@@ -246,7 +245,7 @@ function wireForm(mount, state, patientId) {
 
 function renderFarmacosList(farmacos) {
   if (!farmacos || !farmacos.length) {
-    return '<p class="vpo-empty-hint">Sin fármacos en VPO. Usa «Tomar de SOME».</p>';
+    return '<p class="vpo-empty-hint">Aún no hay fármacos. «Tomar de SOME» trae los de hoy.</p>';
   }
   return farmacos
     .map(function (f, idx) {
@@ -321,12 +320,14 @@ function renderDiagnosticosSection(state) {
     '<div class="vpo-dx-list">' +
     renderDxListHtml(state) +
     '</div>' +
-    '<button type="button" class="ea-io-link" data-vpo-action="dx-add-row">+ Agregar diagnóstico</button>' +
+    '<div class="vpo-dx-actions">' +
+    '<button type="button" class="ea-io-link" data-vpo-action="dx-add-row">+ Agregar</button>' +
     '<details class="vpo-dx-paste">' +
-    '<summary class="ea-io-link">Pegar lista con «+» entre diagnósticos</summary>' +
+    '<summary class="ea-io-link">Pegar lista</summary>' +
     '<textarea class="ea-input vpo-dx-paste-input" data-vpo-dx-paste placeholder="DX1 + DX2 + DX3…"></textarea>' +
     '<button type="button" class="ea-io-link" data-vpo-action="dx-split-plus">Separar por +</button>' +
-    '</details>'
+    '</details>' +
+    '</div>'
   );
 }
 

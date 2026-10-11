@@ -1,7 +1,5 @@
-/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
-/* VPO — one screen, no scroll: hairlines instead of cards, flat inputs,
-   secondary actions as text links. Same visual language as the "Registrar
-   medición" modal (see estado-actual.css .ea-registro-modal / .ea-io-link). */
+/* VPO — borderless cards in two columns (board R1). Tokens from
+   workbench-tokens.css. No borders, no dividers, no side stripes. */
 
 #exp-pane-vpo,
 #exp-pane-vpo-inter {
@@ -13,78 +11,77 @@
 .vpo-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 0 0 10px;
-  /* Columns follow the panel's width, not the window (sidebar + 125 % text
-     left ~540 px at a 1024 px window and cut the right column). */
+  gap: var(--space-5);
+  padding: 0 0 var(--space-4);
+  /* Columns follow the panel's width, not the window. */
   container-type: inline-size;
 }
 
 .vpo-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0 24px;
+  gap: var(--space-5);
   align-items: start;
 }
 
 .vpo-col {
   display: flex;
   flex-direction: column;
+  gap: var(--space-5);
   min-width: 0;
 }
 
 @container (max-width: 600px) {
   .vpo-columns {
     grid-template-columns: 1fr;
-    gap: 0;
   }
 }
 
-/* ── Sections: whitespace + a hairline, no card ─────────────────────── */
+/* ── Cards ───────────────────────────────────────────────────────────── */
 
 .vpo-section {
-  padding: 10px 0;
-}
-
-.vpo-col > .vpo-section + .vpo-section {
-  border-top: 1px solid var(--divider);
-}
-
-.vpo-col > .vpo-section:first-child {
-  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border: 0;
+  border-radius: 16px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-1);
 }
 
 .vpo-section-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 4px 12px;
-  margin-bottom: 8px;
+  gap: var(--space-2);
+  min-height: 36px;
 }
 
 .vpo-section-title {
   margin: 0;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  flex-grow: 1;
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
 }
 
 .vpo-section-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 14px;
+  gap: var(--space-2);
 }
 
 .vpo-section-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
-/* ── Secondary actions: text links, no border/background ───────────── */
+/* ── Card actions: text buttons only ─────────────────────────────────── */
 
 .vpo-panel .ea-io-link {
   white-space: nowrap;
@@ -92,14 +89,15 @@
 
 .vpo-dx-list + .ea-io-link {
   align-self: flex-start;
-  margin-top: 2px;
 }
 
-/* ── Inputs: one flat recipe everywhere in VPO ──────────────────────── */
+/* ── Inputs: sunken, no border ───────────────────────────────────────── */
 
 .vpo-panel .ea-label {
   display: block;
-  margin-bottom: 2px;
+  margin: 0;
+  font-size: var(--fs-12);
+  color: var(--text-muted);
 }
 
 .vpo-panel input.ea-input,
@@ -107,82 +105,65 @@
 .vpo-panel textarea.ea-input {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--radius-control, 8px);
-  background: var(--input-fill);
-  padding: 4px 10px;
-  font-size: 13px;
+  background: var(--sunken-bg);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-14);
   color: var(--text);
-  transition: border-color 0.12s, background 0.12s;
 }
 
 .vpo-panel input.ea-input,
 .vpo-panel select.ea-input,
 .vpo-panel .vpo-farm-nota.ea-input,
 .vpo-panel .vpo-dx-row input.ea-input {
-  height: 32px;
-  min-height: 32px;
+  height: 40px;
+  min-height: 40px;
   resize: none;
 }
 
 .vpo-panel textarea.ea-input {
-  min-height: 32px;
-  line-height: 1.4;
+  min-height: 40px;
+  line-height: 1.5;
 }
 
 .vpo-panel input.ea-input:focus,
 .vpo-panel select.ea-input:focus,
 .vpo-panel textarea.ea-input:focus {
   outline: none;
-  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
-  background: var(--surface);
-  box-shadow: none;
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--action) 45%, transparent);
 }
 
 .vpo-disclaimer,
 .vpo-empty-hint {
   margin: 0;
-  font-size: 11.5px;
-  line-height: 1.4;
+  font-size: var(--fs-12);
+  line-height: 1.5;
   color: var(--text-muted);
-}
-
-.vpo-empty-hint {
-  padding: 4px 0;
 }
 
 /* ── Riesgo preoperatorio ────────────────────────────────────────────── */
 
-.vpo-scales-grid-title {
-  margin: 4px 0 0;
-}
-
 .vpo-scales-results {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-  gap: 6px 10px;
+  gap: var(--space-2) var(--space-3);
 }
 
 .vpo-scale-cell {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--space-1);
   min-width: 0;
 }
 
 .vpo-scale-label {
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: var(--fs-12);
   line-height: 1.2;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.vpo-scale-cell input.ea-input {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 
 /* ── EKG / Rx ────────────────────────────────────────────────────────── */
@@ -191,13 +172,11 @@
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 2px;
+  gap: var(--space-3);
 }
 
 .vpo-inline-row .ea-label {
   flex: 0 0 auto;
-  margin: 0;
   white-space: nowrap;
 }
 
@@ -217,7 +196,7 @@
 .vpo-dx-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-2);
   max-height: 168px;
   overflow-y: auto;
 }
@@ -225,7 +204,7 @@
 .vpo-dx-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .vpo-dx-row input {
@@ -243,27 +222,24 @@
   opacity: 1;
 }
 
-.vpo-dx-paste {
-  margin-top: 2px;
-}
-
-.vpo-dx-paste[open] summary {
-  margin-bottom: 6px;
-}
-
 .vpo-dx-paste summary {
   list-style: none;
   cursor: pointer;
+  display: inline-block;
 }
 
 .vpo-dx-paste summary::-webkit-details-marker {
   display: none;
 }
 
+.vpo-dx-paste[open] summary {
+  margin-bottom: var(--space-2);
+}
+
 .vpo-dx-paste-input {
   width: 100%;
   min-height: 48px;
-  margin-bottom: 6px;
+  margin-bottom: var(--space-2);
   text-transform: uppercase;
 }
 
@@ -272,7 +248,7 @@
 .vpo-farm-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-2);
   max-height: 200px;
   overflow-y: auto;
 }
@@ -283,14 +259,14 @@
 .vpo-farm-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .vpo-farm-name {
   flex: 0 0 38%;
   min-width: 0;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-13);
+  font-weight: var(--fw-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -301,11 +277,20 @@
   min-width: 0;
 }
 
-/* ── Bottom actions ──────────────────────────────────────────────────── */
+/* ── Bottom action: the only filled button ───────────────────────────── */
 
 .vpo-actions {
   display: flex;
   justify-content: flex-end;
-  padding-top: 6px;
-  border-top: 1px solid var(--divider);
+}
+
+/* «+ Agregar» and «Pegar lista» on one line; an open paste box takes the full row. */
+.vpo-dx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+.vpo-dx-actions .vpo-dx-paste[open] {
+  flex-basis: 100%;
 }

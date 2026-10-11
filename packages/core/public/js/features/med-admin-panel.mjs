@@ -84,9 +84,13 @@ function prnCriterion(dosisRaw) {
   return esc(String(dosisRaw || '').split('//').pop().trim());
 }
 
-export function buildMedAdminGridHtml(scheduledItems, times, medAdmin, fechaActualizacion) {
+export function buildMedAdminGridHtml(scheduledItems, times, medAdmin, fechaActualizacion, prnFabHtml) {
   var html =
-    '<div class="med-pharm-grid-scope med-admin-panel"><div class="some-grid-wrap med-pharm-scroll">' +
+    '<div class="med-pharm-grid-scope med-admin-panel">' +
+    '<div class="med-admin-head"><span class="med-admin-title">Administración</span>' +
+    '<span class="med-admin-sub">hoy · ' + scheduledItems.length + ' medicamentos</span>' +
+    (prnFabHtml || '') + '</div>' +
+    '<div class="some-grid-wrap med-pharm-scroll">' +
     '<table class="some-grid-unified"><colgroup><col class="col-med med-admin-col-med">' +
     times.map(function () { return '<col class="col-day">'; }).join('') +
     '</colgroup><thead><tr class="hdr-row-1"><th class="col-meta-hdr col-med">Medicamento</th>' +
@@ -100,7 +104,7 @@ export function buildMedAdminGridHtml(scheduledItems, times, medAdmin, fechaActu
     html += '<tr><td class="col-med"><div class="med-admin-row-head">' +
       '<span class="med-cell-name" title="' + esc(item.nombreRaw) + '">' + esc(extractMedBaseName(item.nombreRaw)) + '</span>' +
       (diaDisplay != null
-        ? '<span class="med-admin-dia-pill">Día ' + esc(String(diaDisplay)) + '</span>'
+        ? '<span class="med-admin-dia-pill">día ' + esc(String(diaDisplay)) + '</span>'
         : '') +
       '<button type="button" class="med-admin-hide-btn" data-med-admin-hide="' + esc(String(item.id)) + '" ' +
       'aria-label="Ocultar ' + esc(item.nombreRaw) + ' de la lista">×</button>' +
@@ -123,8 +127,8 @@ export function buildMedAdminGridHtml(scheduledItems, times, medAdmin, fechaActu
   html += '</tbody></table></div></div>';
 
   html += '<div class="med-admin-legend">' +
-    '<span><span class="med-admin-legend-swatch med-admin-legend-swatch--on"></span>Administrado (por defecto)</span>' +
-    '<span><span class="med-admin-legend-swatch med-admin-legend-swatch--off"></span>No administrado (clic en la celda)</span>' +
+    '<span><span class="med-admin-legend-swatch med-admin-legend-swatch--on"></span>Dado (por defecto)</span>' +
+    '<span><span class="med-admin-legend-swatch med-admin-legend-swatch--off"></span>No dado · clic en la toma</span>' +
     '</div>';
   return html;
 }
@@ -243,15 +247,15 @@ export function renderMedAdminPanel(mountEl) {
   var hiddenItems = scheduled.filter(function (it) { return !!medAdmin.hidden[it.id]; });
   var times = allDoseTimesSorted(visible);
   var expanded = mountEl.dataset.medAdminHiddenExpanded === '1';
+  var prnFabHtml = prn.length
+    ? '<button type="button" class="med-admin-prn-fab" data-med-admin-open-prn>PRN' +
+      '<span class="med-admin-prn-fab-count">' + prn.length + '</span></button>'
+    : '';
   mountEl.innerHTML =
     (visible.length
-      ? buildMedAdminGridHtml(visible, times, medAdmin, fechaActualizacion)
-      : '<div class="med-admin-panel med-admin-empty">Todos los medicamentos con horario están ocultos.</div>') +
-    buildMedAdminHiddenFooterHtml(hiddenItems, expanded) +
-    (prn.length
-      ? '<button type="button" class="med-admin-prn-fab" data-med-admin-open-prn>PRN' +
-        '<span class="med-admin-prn-fab-count">' + prn.length + '</span></button>'
-      : '');
+      ? buildMedAdminGridHtml(visible, times, medAdmin, fechaActualizacion, prnFabHtml)
+      : '<div class="med-admin-panel med-admin-empty">Todos los medicamentos con horario están ocultos.</div>' + prnFabHtml) +
+    buildMedAdminHiddenFooterHtml(hiddenItems, expanded);
   wireMedAdminClicks(mountEl);
   wireMedAdminResize(mountEl);
   fitMedAdminRows(mountEl);

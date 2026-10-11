@@ -1,7 +1,7 @@
 /** Bloques de texto copiables para nota externa VPO. */
 
 export const VPO_OFFICIAL_CALCULATOR_DISCLAIMER =
-  'R+ no calcula puntajes ni porcentajes de riesgo preoperatorio. Usa calculadoras médicas oficiales validadas (institucional o publicadas) para RCRI (Lee), Gupta MICA, ARISCAT, Caprini y clasificación ASA antes de documentar riesgo en la nota.';
+  'R+ no calcula riesgo. Pon el resultado de una calculadora validada.';
 
 /** Escalas a documentar manualmente (sin cálculo en R+). */
 export const VPO_SUGGESTED_SCALES = [

@@ -106,6 +106,33 @@ await r.finish('Refactoring UI R1 tour: light + dark', async () => {
   await tour(page, 'light');
   await tour(page, 'dark');
 
+  // Nota de evolución lives in Interconsulta mode.
+  const setMode = async (mode) => {
+    await closeToasts(page);
+    await page.locator('#header-mode-seg').hover();
+    const btn = page.locator(`#header-mode-seg button[data-mode="${mode}"]`);
+    await btn.waitFor({ state: 'visible' });
+    await page.waitForTimeout(400);
+    await btn.click();
+    await page.waitForTimeout(500);
+    await closeToasts(page);
+  };
+  await setMode('interconsulta');
+  await goArea(page, 'nota');
+  await page.waitForTimeout(500);
+  const icCard = page.locator('.ic-card .sv-name', { hasText: P.name }).locator('visible=true').first();
+  if (await icCard.isVisible().catch(() => false)) await icCard.click();
+  await page.locator('.exp-group-pill[data-group="clinico"]').hover({ timeout: 5000 }).catch(() => {});
+  await page.locator('.exp-group-section[data-section="notas"]').click().catch(() => {});
+  const nota = await page.locator('.nota-fit-grid').waitFor({ state: 'visible', timeout: 8000 }).then(() => true, () => false);
+  check('Nota de evolución form is visible', nota);
+  for (const dark of [false, true]) {
+    await setTheme(page, dark);
+    await page.waitForTimeout(300);
+    await r.shot(page, `${dark ? 'dark' : 'light'}-nota`);
+  }
+  await setMode('sala');
+
   // Labs vacío: delete this patient's labs, then look at the empty state.
   await setTheme(page, false);
   await goArea(page, 'lab');

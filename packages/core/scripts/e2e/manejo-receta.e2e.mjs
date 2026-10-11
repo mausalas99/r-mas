@@ -535,7 +535,7 @@ await r.finish('Manejo + Perfil histórico', async () => {
     times.amlo.join() === '06:00' && times.enal.join() === '06:00,18:00' && times.mero.join() === '06:00,14:00,22:00' && times.nist.join() === '00:00,06:00,12:00,18:00', times);
   check('single-dose insulin rows (UNICA VEZ) sit at 08:00; the Día pill shows on dated meds',
     (await adminRow('INSULINA HUMANA').locator('td.indicated').evaluateAll((els) => els.map((e) => e.dataset.medAdminKey.split('|')[1]))).join() === '08:00' &&
-    /Día 6/.test(await adminRow('MEROPENEM').innerText()));
+    /día 6/i.test(await adminRow('MEROPENEM').innerText()));
   await adminRow('AMLODIPINO').locator('td.indicated').first().click();
   await adminRow('ENALAPRIL').locator('td.indicated').first().click();
   await page.waitForTimeout(300);

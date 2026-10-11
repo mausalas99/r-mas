@@ -240,6 +240,14 @@ function renderPatientDataPane(patientIdOverride) {
     wrap.innerHTML = '';
     return;
   }
+  // Background sync/team events re-render this pane; rebuilding it under a focused
+  // field drops the caret and cuts the typing off. Same patient + focus inside → leave it.
+  var focused = document.activeElement;
+  if (wrap.dataset.patientId === String(patient.id) && focused && wrap.contains(focused) && wrap.querySelector('.exp-datos-fields')) {
+    var slot = wrap.querySelector('#exp-datos-team-slot');
+    if (slot && !slot.contains(focused)) slot.innerHTML = buildPatientTeamAssignSectionHtml(patient);
+    return;
+  }
   wrap.dataset.patientId = String(patient.id);
   var datosMount = wrap.closest('.exp-datos-modal-body') || wrap.closest('#exp-datos-modal-mount');
   if (datosMount) datosMount.dataset.patientId = String(patient.id);

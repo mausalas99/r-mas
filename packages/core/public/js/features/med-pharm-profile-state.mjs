@@ -235,7 +235,8 @@ export function renderFilterSelect(filtro) {
   var html = labels
     .map(function (lab) {
       var sel = lab === mp.listFilter ? ' selected' : '';
-      return '<option value="' + esc(lab) + '"' + sel + '>' + esc(lab) + '</option>';
+      var text = lab === 'TODOS' ? 'Todos los grupos' : lab;
+      return '<option value="' + esc(lab) + '"' + sel + '>' + esc(text) + '</option>';
     })
     .join('');
   if (filtro.innerHTML !== html) filtro.innerHTML = html;

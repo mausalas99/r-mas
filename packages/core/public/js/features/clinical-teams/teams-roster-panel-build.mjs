@@ -177,12 +177,12 @@ export function buildPerfilSalaHtml(ctx) {
     <details class="settings-perfil-sala" data-collapse-key="${PERFIL_SALA_COLLAPSE_KEY}"${open ? ' open' : ''}>
       <summary>
         <span class="settings-perfil-sala-title">Sala de guardia</span>
+        <span class="settings-perfil-sala-note">Al cambiar de sala se guarda tu perfil y pasas a la sala en Nube.</span>
         <span class="settings-perfil-sala-current">${escapeHtml(ctx.sala || 'Sin sala')}</span>
       </summary>
       ${hint}
       <div class="settings-perfil-chips" role="group" aria-label="Sala de guardia">${chips}</div>
       <input type="hidden" id="clinical-profile-sala" form="clinical-profile-form" value="${escapeAttr(ctx.sala)}">
-      <p class="settings-acc-hint settings-acc-hint--tight">Al cambiar de sala se guarda tu perfil y pasas a la sala en Nube.</p>
     </details>`;
 }
 

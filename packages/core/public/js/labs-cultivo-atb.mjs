@@ -200,7 +200,7 @@ export function buildAtbRisSummaryHtml(sensCrudas) {
       '<span class="atb-chip atb-chip--' +
       o.key +
       '" tabindex="0" role="button">' +
-      escTxt(o.label) +
+      escTxt(o.label + ' ' + list.length) +
       '</span>' +
       '<div class="atb-ris-hover-panel atb-ris-hover-panel--' +
       o.key +

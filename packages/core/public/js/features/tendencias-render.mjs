@@ -223,13 +223,10 @@ function buildTendenciaSectionHtml(sectionKey, list, seriesIndex) {
     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' +
     '</span><span class="tend-section-title">' +
     tc.esc(secLabel) +
-    '</span></button><span class="tend-section-count">' +
-    list.length +
-    (list.length === 1 ? ' analito' : ' analitos') +
-    '</span>' +
+    '</span></button>' +
     (oor
       ? '<span class="tend-oor-pill">' + oor + ' fuera de rango</span>'
-      : '') +
+      : '<span class="tend-section-count">' + list.length + (list.length === 1 ? ' analito' : ' analitos') + '</span>') +
     '<span class="tend-head-spacer"></span>' +
     (list.length > 0
       ? '<button type="button" class="tend-section-chart-btn" title="Abrir gráfica y tabla del estudio" aria-label="Gráfica de ' +
