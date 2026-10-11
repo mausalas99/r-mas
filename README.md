@@ -51,9 +51,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.5.0](https://github.com/mausalas99/r-mas/releases/tag/v8.5.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.5.1](https://github.com/mausalas99/r-mas/releases/tag/v8.5.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.5.1 (estable — release 8.5.1)
+
+- **Interconsulta:** tarjetas con «Recibida» / «Respondida» y promedio de 7 días; los tiempos del teléfono llegan por Nube.
+- **Estado actual:** el parser lee texto corrido (glucometrías, ingresos, egresos, evacuaciones, signos vitales).
+- **Diseño:** pantallas principales con un solo estilo. Mi perfil se guarda al cambiarlo.
+- **Sistema:** Electron 44.
+
+Notas: `docs/RELEASE_NOTES_8.5.1.txt`.
 
 ## R+ 8.5.0 (estable — release 8.5.0)
 

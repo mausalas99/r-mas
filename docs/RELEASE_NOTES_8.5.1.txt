@@ -1,0 +1,28 @@
+R+ 8.5.1 (estable — release 8.5.1)
+======================================
+
+Fecha: 2026-10-11
+
+## Resumen
+
+Pantallas renovadas con un solo estilo, y el tiempo de respuesta de interconsulta en el tablero. El estado actual entiende texto corrido, y R+ pasa a Electron 44.
+
+## Nuevo / mejorado
+
+- **Nuevo (Interconsulta):** las tarjetas del tablero muestran «Recibida» y «Respondida», la etiqueta de triage y el promedio de 7 días.
+- **Corrección (Nube):** los tiempos de «Recibida» y «Respondida» tomados en el teléfono ahora llegan al escritorio. Antes el contador quedaba viejo.
+- **Nuevo (Estado actual):** el parser lee texto corrido: glucometrías, ingresos, egresos, evacuaciones y signos vitales. Las letras sueltas I, E y B ya no confunden otras palabras.
+- **Cambio (Diseño):** Resumen, Barra, Labs, Manejo, Datos, Egreso, Nota de evolución, Agenda, Ajustes, Mi perfil, Nube y equipo, la paleta ⌘K y el tema claro usan el mismo estilo: tarjetas con sombra en vez de bordes, títulos en minúscula y un solo botón lleno por pantalla.
+- **Cambio (Mi perfil):** el perfil se guarda al cambiarlo. Ya no hay botón «Guardar perfil».
+- **Cambio (Actualizaciones):** R+ revisa si hay módulos nuevos de forma periódica.
+- **Cambio (Sistema):** R+ usa Electron 44 y una base cifrada actualizada. Copiar texto al portapapeles se adaptó a la nueva versión.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.5.1-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.5.1-Mac-Intel.dmg`
+- Windows: `Instalar-R+-8.5.1-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

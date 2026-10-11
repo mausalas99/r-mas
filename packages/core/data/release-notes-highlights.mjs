@@ -4,31 +4,27 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_850 = [
+var RELEASE_NOTES_851 = [
   {
-    title: 'Sugerencias de interconsulta',
-    body: 'Pega un texto <strong>«SUGERENCIAS POR …»</strong> y R+ lo pasa a las Indicaciones del paciente abierto, cada apartado en su casilla.',
+    title: 'Pantallas con un solo estilo',
+    body: 'Resumen, Labs, Manejo, Datos, Agenda, Ajustes y más usan tarjetas con sombra, títulos más claros y un solo botón lleno por pantalla.',
   },
   {
-    title: 'Turno en curso',
-    body: 'En Estado actual, la pastilla <strong>Turno en curso</strong> guarda el registro que cierra esta noche. Se ve como de hoy y el balance lo cuenta a medianoche.',
+    title: 'Tiempo de respuesta de interconsulta',
+    body: 'Las tarjetas del tablero muestran <strong>Recibida</strong> y <strong>Respondida</strong>, con el promedio de 7 días. Los tiempos marcados en el teléfono llegan por Nube.',
   },
   {
-    title: 'Motivo de IC en las tarjetas',
-    body: 'Las tarjetas grandes muestran el <strong>Motivo de IC</strong>. «Grupo» y «Seguimiento» ahora son un solo control.',
+    title: 'Estado actual con texto corrido',
+    body: 'Pega glucometrías, ingresos, egresos, evacuaciones y signos vitales escritos en una frase, y R+ los lee.',
   },
   {
-    title: 'La nota llega al equipo',
-    body: 'Pegar labs, <strong>Enviar labs</strong> y <strong>Añadir a Tratamiento</strong> ahora sincronizan la nota por Nube con tu equipo.',
-  },
-  {
-    title: 'Cambio de paciente más rápido',
-    body: 'Se quitó una espera al hacer clic. Pasar de un paciente a otro se siente inmediato.',
+    title: 'Mi perfil se guarda solo',
+    body: 'Cambia un dato y queda guardado. Ya no existe el botón «Guardar perfil».',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_850;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_851;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.5.0': RELEASE_NOTES_850,
+  '8.5.1': RELEASE_NOTES_851,
 };
