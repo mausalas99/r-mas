@@ -3,9 +3,9 @@
  * CI gate: rules that are written twice (renderer vs lib/db vs the Nube Worker) must agree.
  *
  * Each pair below is a hand-kept copy. When one side changes and the other doesn't, the app
- * and the Worker (or the UI and the DB) quietly disagree — e.g. the Worker's monitoreo merge
- * knowing only 12 of the client's 17 med fields. Constants are read as text, so no module is
- * loaded (renderer files expect a browser).
+ * and the Worker (or the UI and the DB) quietly disagree — e.g. the Worker's old monitoreo
+ * merge copy knew only 12 of the client's 17 med fields (now one copy, lib/monitoreo-merge.mjs).
+ * Constants are read as text, so no module is loaded (renderer files expect a browser).
  *
  * KNOWN_DRIFT lists differences that exist today and are tracked as open questions
  * (docs/wiki/13-open-questions-and-doc-drift.md). New drift fails; fixed drift that is still
@@ -18,12 +18,7 @@ import { fileURLToPath } from 'node:url';
 const CORE = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 /** @type {Record<string, { onlyLeft?: string[], onlyRight?: string[], note: string }>} */
-export const KNOWN_DRIFT = {
-  'monitoreo MED_FIELD_KEYS': {
-    onlyLeft: ['vasop', 'anticoagulacion', 'antiarritmicos', 'estatinas', 'nm'],
-    note: 'Worker merge lacks 5 med fields — open question A11',
-  },
-};
+export const KNOWN_DRIFT = {};
 
 /** @param {string} rel */
 function read(rel) {
@@ -137,20 +132,6 @@ export function runChecks() {
       const missing = stringArray(read('cloud/sync-worker/src/sala-allowlist.js'), 'CLOUD_SALAS').filter((s) => !known.has(s));
       return missing.length ? [`Nube allows salas that lib/clinical-salas.mjs (and the DB CHECK) does not: ${missing.join(', ')}`] : [];
     });
-
-  check('monitoreo MED_FIELD_KEYS',
-    'public/js/features/estado-actual-data-constants.mjs', 'cloud/sync-worker/src/monitoreo-lww.js',
-    () => compareSets('monitoreo MED_FIELD_KEYS',
-      stringArray(read('public/js/features/estado-actual-data-constants.mjs'), 'MED_FIELD_KEYS'),
-      stringArray(read('cloud/sync-worker/src/monitoreo-lww.js'), 'MED_FIELD_KEYS')));
-
-  for (const name of ['EC_SCALAR_KEYS', 'DIET_KEYS']) {
-    check(`monitoreo ${name}`,
-      'public/js/features/estado-actual-data-merge.mjs', 'cloud/sync-worker/src/monitoreo-lww.js',
-      () => compareSets(`monitoreo ${name}`,
-        stringArray(read('public/js/features/estado-actual-data-merge.mjs'), name),
-        stringArray(read('cloud/sync-worker/src/monitoreo-lww.js'), name)));
-  }
 
   check('clinical blob keys (renderer vs DB)',
     'public/js/db-storage-bridge.mjs', 'lib/db/clinical-blob-keys.mjs',

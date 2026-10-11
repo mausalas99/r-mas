@@ -101,19 +101,15 @@ HD label: `resolveHemodynamicLabel(v, vasop)` returns **`¿INESTABLE?`** when `i
 5. Stamp, persist, push, navigate to Notas.
 
 ### How EA syncs (field-wise, not whole-value)
-`mergeMonitoreo()` (`feat/estado-actual-data-merge.mjs`):
+`mergeMonitoreo()` (`lib/monitoreo-merge.mjs`):
 
 - `historial`: **union by row id**; if both sides have a row, the newer `savedAt` wins. Deletes are markers (`{id, deleted:true}`), so a delete spreads instead of being resurrected.
 - Scalars (FOUR, esferas, soporte…): LWW on `estadoClinicoUpdatedAt`, and **an empty side never clobbers a filled one**.
 - Confirmed meds: a remote confirmation fills an unconfirmed local field.
 
-The Worker has its **own copy** of this merge (`cloud/sync-worker/src/monitoreo-lww.js`), and the copies have drifted:
+- `manualMeds`: union of both sides' hand-typed lines.
 
-| | Client | Worker |
-|---|---|---|
-| Med fields merged | 17 | **12**: missing vasop, anticoagulacion, antiarritmicos, estatinas, nm |
-| Historial winner | `savedAt` | `recordedAt` only |
-| `manualMeds` union | yes | no |
+The client and the Sync Worker (`cloud/sync-worker/src/lww.js`) import this **same module**, so they merge the same 17 med fields, pick historial winners the same way, and both union `manualMeds`. Encrypted rooms skip the Worker merge (opaque envelope, whole-value replace).
 
 ---
 

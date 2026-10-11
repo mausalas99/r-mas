@@ -151,12 +151,13 @@ Some connections don't show up as imports, because the same rule is **written tw
 |---|---|---|
 | Ward list for Nube | `public/js/features/cloud-sync/sala-allowlist.mjs` ("Keep in sync with…") and `cloud/sync-worker/src/sala-allowlist.js` | same salas on both sides |
 | Nube salas ⊆ clinical salas | Worker allowlist vs `lib/clinical-salas.mjs` (which also drives the DB CHECK) | every Nube sala exists locally |
-| Estado actual merge fields | `features/estado-actual-data-constants.mjs` / `-data-merge.mjs` and `cloud/sync-worker/src/monitoreo-lww.js` | `MED_FIELD_KEYS`, `EC_SCALAR_KEYS`, `DIET_KEYS` match |
 | Clinical blob keys | `public/js/db-storage-bridge.mjs` and `lib/db/clinical-blob-keys.mjs` | same blob keys |
 | Username format | `lib/db/clinical-username.mjs` and `public/js/clinical-username.mjs` | files identical (comments ignored) |
 | Who may do what | `lib/db/clinical-privileges.mjs` and `public/js/clinical-privileges.mjs` ("Renderer mirror") | the 8 shared functions have identical bodies |
 
-**Known drift** that exists today is listed in `KNOWN_DRIFT` inside the guard, so CI stays green while it's being fixed. Right now that's the 5 med fields the Worker lacks ([13](./13-open-questions-and-doc-drift.md), A11). New drift fails the build. Fixed drift that is still listed also fails, so the list can only shrink. When you fix A11, delete its entry.
+**Known drift** that exists today is listed in `KNOWN_DRIFT` inside the guard, so CI stays green while it's being fixed. Right now the list is empty. New drift fails the build. Fixed drift that is still listed also fails, so the list can only shrink.
+
+The Estado actual merge used to be a pair here (client vs Worker copy). It is now one module, `lib/monitoreo-merge.mjs`, imported by both, so there is nothing to check.
 
 > 💡 If you add a new hand-kept copy, add a check for it to the guard in the same PR.
 

@@ -19,7 +19,7 @@ import { vitalSeriesToLegacyFields } from './estado-actual-vital-series.mjs';
 import { MED_FIELD_KEYS, DIET_CALORIC_KEYS } from './estado-actual-data-constants.mjs';
 import { buildEaMonitoreoRevision } from './estado-actual-data-revision.mjs';
 import { medicionHasCoreData } from './estado-actual-data-core-check.mjs';
-import { mergeMonitoreo } from './estado-actual-data-merge.mjs';
+import { mergeMonitoreo } from '../../../lib/monitoreo-merge.mjs';
 import { monitoreoHasLanPayload } from '../patient-merge.mjs';
 import { emptyEstadoClinico, emptyMonitoreo, emptyPendienteReceta, liveHistorial } from './estado-actual-data-model.mjs';
 

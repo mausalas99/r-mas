@@ -1,5 +1,11 @@
-import { MED_FIELD_KEYS } from './estado-actual-data-constants.mjs';
-import { emptyEstadoClinico, emptyPendienteReceta } from './estado-actual-data-model.mjs';
+/**
+ * monitoreo (vitals + estado actual) merge, one copy for the renderer and the Sync Worker
+ * (cloud/sync-worker/src/lww.js). A whole-blob LWW replace would wipe whichever side loses
+ * the updatedAt race, so rows, confirmed meds, diet and manualMeds merge field by field.
+ * Pure: the two renderer imports below are plain data (no DOM), so the Worker can bundle them.
+ */
+import { MED_FIELD_KEYS } from '../public/js/features/estado-actual-data-constants.mjs';
+import { emptyEstadoClinico, emptyPendienteReceta } from '../public/js/features/estado-actual-data-model.mjs';
 
 const DIET_KEYS = ['dieta', 'kcal', 'proteinG'];
 const EC_SCALAR_KEYS = ['four', 'esferas', 'soporte', 'kcalKg', 'tempContext', 'pesoRef'];
@@ -195,10 +201,6 @@ function applyEstadoClinicoUpdatedAt(result, localEcAt, remoteEcAt) {
   }
 }
 
-/**
- * @param {unknown} localIn
- * @param {unknown} remoteIn
- */
 /** Hand-typed med lines from both sides, so neither device's Receta prune drops them. */
 function unionManualMeds(a, b) {
   /** @type {Record<string, string[]>} */
@@ -213,7 +215,13 @@ function unionManualMeds(a, b) {
   return out;
 }
 
+/**
+ * @param {unknown} localIn stored monitoreo
+ * @param {unknown} remoteIn incoming monitoreo
+ */
 export function mergeMonitoreo(localIn, remoteIn) {
+  if (!localIn || typeof localIn !== 'object') return remoteIn;
+  if (!remoteIn || typeof remoteIn !== 'object') return localIn;
   var local = /** @type {any} */ (structuredClone(localIn));
   var remote = /** @type {any} */ (structuredClone(remoteIn));
 

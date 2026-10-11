@@ -15,7 +15,6 @@
 | A3 | **"Exportar copia cifrada" was not encrypted.** | **fixed 8.5.1 (copy)** | Dialog, Ajustes card and confirm now say "sin cifrar". The file itself is still a plain copy (A1). | `lib/db/ipc-handlers-register-core.mjs`, `public/index.html`, `features/platform/audit.mjs` |
 | A4 | **`users.encrypted_private_key` holds a plaintext RSA PEM.** | **documented 8.5.1** | Never synced (merged rows get `''`). Name kept to avoid a schema migration; a code comment explains it. | `lib/db/clinical-access-users.mjs` |
 | A6 | **The legacy recovery code `r+123` is still accepted** for `recovery_version < 2`. | **kept, documented 8.5.1** | Harmless while A1 stays off: it only opens an old pre-v2 encrypted DB, e.g. an archived backup (A2). Remove it if encryption returns. | `lib/db/crypto.mjs` |
-| A11 | **The Worker's monitoreo merge has drifted from the client's.** The Worker knows 12 med fields (the client knows 17: it is missing vasop, anticoagulacion, antiarritmicos, estatinas and nm). It picks historial winners by `recordedAt` instead of `savedAt`, and it has no `manualMeds` union. | verified | On plaintext rooms, confirmations of those 5 med groups don't merge on the server, and a back-dated edit can lose to an older one. | `cloud/sync-worker/src/monitoreo-lww.js` vs `features/estado-actual-data-merge.mjs`, `estado-actual-data-constants.mjs` |
 | A17 | **CI on `main` has been red since 8.4.9.** `metrics:check` reports `MODULE-COUNT REGRESSION: 1299 > baseline 1297`. Releases 8.4.8 and 8.4.9 added modules without raising the baseline. The `claude/codebase-wiki` branch raises it to 1300 (those two, plus the new drift guard). | verified (CI log of run 37512037761) | While `metrics:check` fails, CI stops there and the unit tests never run on `main`. | `packages/core/scripts/metrics/baseline.json` |
 
 ---
@@ -32,7 +31,7 @@
 
 ## C. Guarded by CI now
 
-`scripts/ci/mirror-drift.mjs` (part of `npm run metrics:check`) fails when the hand-kept copies listed in [05](./05-codebase-map.md#hidden-connections-mirrored-and-repeated-code) drift apart. A11 is listed there as known drift until it's fixed.
+`scripts/ci/mirror-drift.mjs` (part of `npm run metrics:check`) fails when the hand-kept copies listed in [05](./05-codebase-map.md#hidden-connections-mirrored-and-repeated-code) drift apart.
 
 ## D. How to keep this wiki honest
 

@@ -1,6 +1,6 @@
 import { QUOTAS } from './quotas.js';
 import { mergeClinicalOpsLww } from './clinical-ops-lww.js';
-import { mergeMonitoreoLww } from './monitoreo-lww.js';
+import { mergeMonitoreo } from '../../../lib/monitoreo-merge.mjs';
 
 /** @returns {import('./lww.js').RoomSyncState} */
 export function emptyState() {
@@ -189,7 +189,7 @@ function setMonitoreoField(state, patientId, value) {
   const current = state.entries[idx].monitoreo;
   const merged =
     current && !isEncryptedEnvelope(value) && !isEncryptedEnvelope(current)
-      ? mergeMonitoreoLww(current, value)
+      ? mergeMonitoreo(current, value)
       : value;
   state.entries[idx] = { ...state.entries[idx], monitoreo: merged };
 }
@@ -218,9 +218,9 @@ function mergeStaleMonitoreo(state, op) {
   if (idx < 0) return null;
   const current = state.entries[idx].monitoreo;
   if (!current || isEncryptedEnvelope(current) || isEncryptedEnvelope(op.value)) return null;
-  const merged = mergeMonitoreoLww(current, op.value);
+  const merged = mergeMonitoreo(current, op.value);
   // merge fills defaults, so compare against current merged with itself, not raw current
-  const baseline = mergeMonitoreoLww(current, current);
+  const baseline = mergeMonitoreo(current, current);
   if (JSON.stringify(canonical(merged)) === JSON.stringify(canonical(baseline))) return null;
   state.entries[idx] = { ...state.entries[idx], monitoreo: merged };
   return { ...op, value: merged };
