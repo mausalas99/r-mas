@@ -6,7 +6,7 @@ if (process.env.NODE_ENV !== 'production' && !process.env.ELECTRON_DISABLE_SECUR
   process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 }
 
-const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard, safeStorage, session, protocol, net } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard, ClipboardItem, safeStorage, session, protocol, net } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { execFile } = require('child_process');
@@ -1109,21 +1109,23 @@ ipcMain.handle('select-output-dir', async () => {
   return chosen;
 });
 
-ipcMain.handle('clipboard-write-text', (_e, text) => {
+ipcMain.handle('clipboard-write-text', async (_e, text) => {
   try {
-    clipboard.writeText(String(text == null ? '' : text));
+    await clipboard.writeText(String(text == null ? '' : text));
     return true;
   } catch (_err) {
     return false;
   }
 });
 
-ipcMain.handle('clipboard-write-html', (_e, text, html) => {
+ipcMain.handle('clipboard-write-html', async (_e, text, html) => {
   try {
-    clipboard.write({
-      text: String(text == null ? '' : text),
-      html: String(html == null ? '' : html),
-    });
+    await clipboard.write([
+      new ClipboardItem({
+        'text/plain': String(text == null ? '' : text),
+        'text/html': String(html == null ? '' : html),
+      }),
+    ]);
     return true;
   } catch (_err) {
     return false;
