@@ -217,9 +217,20 @@ function scalarKeyTakesIncoming(existing, p, key, takeIncoming) {
   return cmp == null ? takeIncoming : cmp === 1;
 }
 
+/** Phone taps (receivedAt / answeredAt) arrive in consultInfo. Merge by key: desktop-only keys stay; '' means cleared. */
+function applyLanConsultInfo(existing, p) {
+  var inc = p.consultInfo;
+  if (!inc || typeof inc !== 'object') return false;
+  var cur = existing.consultInfo || {};
+  if (Object.keys(inc).every(function (k) { return cur[k] === inc[k]; })) return false;
+  existing.consultInfo = Object.assign(cur, inc);
+  return true;
+}
+
 /** Fields only the authoritative (incoming) side may overwrite. */
 function applyLanIncomingOnlyFields(existing, p) {
   var changed = applyLanGuardiaMarks(existing, p);
+  if (applyLanConsultInfo(existing, p)) changed = true;
   if (p.lanUpdatedAt && String(p.lanUpdatedAt) !== String(existing.lanUpdatedAt || '')) {
     existing.lanUpdatedAt = p.lanUpdatedAt;
     changed = true;
@@ -561,6 +572,7 @@ function createNewPatientShell(entry) {
     lanUpdatedAt: p.lanUpdatedAt || cloudSyncNowIso(),
     interconsultServiceIds: Array.isArray(p.interconsultServiceIds) ? p.interconsultServiceIds.slice() : [],
   };
+  if (p.consultInfo && typeof p.consultInfo === 'object') newPat.consultInfo = Object.assign({}, p.consultInfo);
   mergePatientMonitoreoFromImported(newPat, p);
   mergeCensoPatientFields(newPat, p);
   mergeFieldClocks(newPat, p);

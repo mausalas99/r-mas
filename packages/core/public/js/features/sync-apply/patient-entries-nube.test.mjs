@@ -31,6 +31,18 @@ describe('applyLanPatientEntries on Nube path', () => {
     resetLabHistoryCacheForTests();
   });
 
+  it('phone consultInfo.answeredAt merges in on a newer clock and keeps desktop-only keys', () => {
+    getPatients().push({ id: 'ci1', lanUpdatedAt: '2026-10-11T10:00:00.000Z', consultInfo: { triage: 'urgente', receivedAt: '2026-10-11T09:00:00.000Z' } });
+    applyLanPatientEntries(
+      [{ patient: { id: 'ci1', lanUpdatedAt: '2026-10-11T11:00:00.000Z', consultInfo: { answeredAt: '2026-10-11T10:30:00.000Z' } } }],
+      { skipTeamScopeFilter: true }
+    );
+    const ci = getPatients()[0].consultInfo;
+    assert.equal(ci.answeredAt, '2026-10-11T10:30:00.000Z');
+    assert.equal(ci.triage, 'urgente');
+    assert.equal(ci.receivedAt, '2026-10-11T09:00:00.000Z');
+  });
+
   it('eventualidades equal to the room copy keep the room clock (no re-push ping-pong)', () => {
     const row = { id: 'ev-a', at: '2026-09-25T10:00:00.000Z', text: 'DEMO' };
     getPatients().push({ id: 'e2', eventualidades: { entries: [row], updatedAt: '2026-09-25T10:00:00.000Z' } });
