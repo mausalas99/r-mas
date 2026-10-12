@@ -17,6 +17,7 @@ Versión de correcciones. La línea HD de la nota ya no marca «ESTABLE» a un p
 - **Corrección (Interno):** en salas cifradas, el teléfono del interno no podía abrir el tablero ni mandar signos. Monitoreo y operaciones clínicas ahora usan la llave de Interno.
 - **Corrección (Permisos):** «Nueva rotación» solo la puede usar un R4 o un admin del programa. El código de admin se bloquea tras 5 intentos fallidos en 15 minutos. Solo el dueño de una sala puede fijar su primera llave.
 - **Corrección (Nube):** el servidor combina los signos con el mismo código que la app. Antes ignoraba 5 grupos de medicamentos (vasopresor, anticoagulación, antiarrítmicos, estatinas, NM).
+- **Corrección (Nube):** R+ podía calcular mal la hora del servidor y mandar cambios con fecha vieja. Nube los rechazaba, y un paciente agregado en otro equipo podía no aparecer tras reiniciar.
 - **Corrección:** una lectura de signos del interno refresca de inmediato la guardia y Estado actual.
 - **Corrección:** el KPI de PaFi aparece en el Resumen cuando aplica.
 - **Corrección:** la pista «Cambiar de área» ya no tapa el menú de áreas.

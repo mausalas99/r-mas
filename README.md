@@ -60,6 +60,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 - **Seguridad clínica:** la línea HD marca «¿INESTABLE?» con TA baja, FC anormal o vasopresor; el balance cuenta todos los egresos.
 - **Protección de datos:** sesión de Nube cerrada con el llavero; una base cifrada antigua se respalda, no se borra; «Exportar copia» dice «sin cifrar».
 - **Interno:** en salas cifradas el teléfono vuelve a abrir el tablero y mandar signos.
+- **Nube:** los cambios ya no se rechazan por una hora del servidor mal calculada; un paciente agregado en otro equipo aparece tras reiniciar.
 - **Permisos:** «Nueva rotación» solo R4/admin; límite de intentos al código de admin; solo el dueño fija la primera llave de la sala.
 
 Notas: `docs/RELEASE_NOTES_8.5.1.txt`.
