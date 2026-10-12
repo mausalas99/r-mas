@@ -2,7 +2,7 @@
 
 The rest of `docs/` is **reference**: short and terse, written for people who already know the system. This wiki is **teaching material**. Each page explains a part of R+ from first principles, follows real examples through the code, and ends with self-check questions.
 
-Written against **v8.4.9** (`291a02b`). Pages point to files and function names, not line numbers, so they keep working when the code moves. Every claim that matters was checked in the code. Where something was only reported by a research pass, the page says so.
+Written against **v8.5.1**. Pages point to files and function names, not line numbers, so they keep working when the code moves. Every claim that matters was checked in the code. Where something was only reported by a research pass, the page says so.
 
 ## Three maps, one base
 

@@ -4,31 +4,27 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_850 = [
+var RELEASE_NOTES_851 = [
   {
-    title: 'Sugerencias de interconsulta',
-    body: 'Pega un texto <strong>«SUGERENCIAS POR …»</strong> y R+ lo pasa a las Indicaciones del paciente abierto, cada apartado en su casilla.',
+    title: 'HD: R+ avisa, tú decides',
+    body: 'Con TA baja, FC anormal o un vasopresor, la línea HD dice <strong>¿INESTABLE?</strong> para que lo confirmes. Antes decía siempre ESTABLE.',
   },
   {
-    title: 'Turno en curso',
-    body: 'En Estado actual, la pastilla <strong>Turno en curso</strong> guarda el registro que cierra esta noche. Se ve como de hoy y el balance lo cuenta a medianoche.',
+    title: 'Balance con todos los egresos',
+    body: 'Las gráficas de balance cuentan drenajes, gastrostomía, nefrostomía y UF, no solo la diuresis.',
   },
   {
-    title: 'Motivo de IC en las tarjetas',
-    body: 'Las tarjetas grandes muestran el <strong>Motivo de IC</strong>. «Grupo» y «Seguimiento» ahora son un solo control.',
+    title: 'Tu sesión de Nube, protegida',
+    body: '«Recuérdame» guarda la sesión cerrada con el llavero del equipo. Una base cifrada antigua se respalda en una carpeta, ya no se borra.',
   },
   {
-    title: 'La nota llega al equipo',
-    body: 'Pegar labs, <strong>Enviar labs</strong> y <strong>Añadir a Tratamiento</strong> ahora sincronizan la nota por Nube con tu equipo.',
-  },
-  {
-    title: 'Cambio de paciente más rápido',
-    body: 'Se quitó una espera al hacer clic. Pasar de un paciente a otro se siente inmediato.',
+    title: 'Interno en salas cifradas',
+    body: 'El teléfono del interno vuelve a abrir el tablero y a mandar signos en salas cifradas.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_850;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_851;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.5.0': RELEASE_NOTES_850,
+  '8.5.1': RELEASE_NOTES_851,
 };
