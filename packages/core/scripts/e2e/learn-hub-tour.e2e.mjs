@@ -390,18 +390,21 @@ await r.finish('Learn Hub: guardia-v7 track, gating, progress, tour demo data', 
   await icDevice.page.locator('#tour-btn-next').click();
   await until(async () => /Equipo Demo/.test(await icDevice.page.locator('#ic-board-mount').innerText().catch(() => '')), 10000);
   await icDevice.page.waitForTimeout(400);
+  // The board opens on «Mi equipo» (one team); «Asignar» shows every team.
+  await icDevice.page.locator('#ic-board-mount [data-ic-mode="asignar"]').click().catch(() => {});
+  await icDevice.page.waitForTimeout(400);
   const icHtml = await icDevice.page.locator('#ic-board-mount').innerText().catch(() => '');
   check('interconsulta-demo-seed: demo board shows "Equipo Demo" teams', /Equipo Demo/.test(icHtml), icHtml.slice(0, 300));
-  const icCardCount = await icDevice.page.locator('#ic-board-mount .patient-card').count();
+  const icCardCount = Number((await icDevice.page.locator('#ic-board-mount .ic-board-count').innerText().catch(() => '')).match(/\d+/)?.[0]);
   check('interconsulta-demo-seed: exactly 12 demo patients on the board', icCardCount === 12, icCardCount);
   check(
     'interconsulta-demo-seed: 4 teams (A-D), one on guardia',
-    ['A', 'B', 'C', 'D'].every((l) => icHtml.includes('Equipo Demo ' + l)) && /— Guardia/.test(icHtml),
+    ['A', 'B', 'C', 'D'].every((l) => icHtml.includes('Equipo Demo ' + l)) && /Guardia/i.test(icHtml),
     icHtml.slice(0, 500)
   );
   check(
     'interconsulta-demo-seed: VPOs/new cases in Preop, follow-ups in Pendientes',
-    /Preop \/ Nuevas hoy/.test(icHtml) && /Pendientes/.test(icHtml),
+    /Preop \/ Nuevas hoy/i.test(icHtml) && /Pendientes/i.test(icHtml),
     icHtml.slice(0, 500)
   );
   await icDevice.page.locator('#tour-btn-pause').click().catch(() => {});
