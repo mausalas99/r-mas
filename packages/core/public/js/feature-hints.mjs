@@ -349,8 +349,17 @@ function placeBubble() {
   const bh = bubble.offsetHeight;
   let top = r.bottom + 12;
   if (top + bh > innerHeight - 8) top = Math.max(8, r.top - bh - 12);
+  let left = Math.max(8, r.left);
+  // Area pill or a tab in its menu: sit beside the menu, never over the tabs it drops down.
+  const area = flow.el.closest('.topbar-area');
+  const menu = area && area.querySelector('.app-tabs');
+  if (menu) {
+    const a = area.getBoundingClientRect();
+    top = r.top;
+    left = Math.max(r.right, a.left + menu.offsetWidth) + 12;
+  }
   bubble.style.top = top + 'px';
-  bubble.style.left = Math.min(Math.max(8, r.left), innerWidth - bw - 8) + 'px';
+  bubble.style.left = Math.min(left, innerWidth - bw - 8) + 'px';
 }
 
 /**
