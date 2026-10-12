@@ -8,8 +8,15 @@ were idle when this was written.
 ## Update 2026-10-11 — 8.5.1 ready to publish
 
 - `release/8.5.1` has `main` (8.5.0) merged in, all 6 fix tasks, the version
-  bump, notes, README and in-app highlights. PR `release/8.5.1` → `main`.
-  Publish from the owner's Mac after merge: `npm run release:publish -- --yes`.
+  bump, notes, README and in-app highlights. PR mausalas99/r-mas#1 merged
+  into `main` on 2026-10-11 (merge commit `f604f718`). Not published yet.
+  Publish from the owner's Mac: `npm run release:publish -- --yes`.
+- Diagnóstico fix (`acabeb93`): with monitoreo queued, the pre-push pull
+  failed first and no «Envío a Nube» error was logged. Now it is.
+  `nube-sync` 198/200: the 2 leave checks failed under load only;
+  `nube-leave` alone 13/13.
+- Owner's local `main` (`~/R+`) is 12 commits ahead of origin with
+  uncommitted edits. Merge `origin/main` there before the next push.
 - Gates: `build:ui`, lint, `metrics:check` and 1728/1728 unit tests green.
   CI fix: `ui-toast.test.mjs` allowlisted (owner OK); module baseline 1301.
 - E2E: stale specs updated to the current UI; 2 app fixes (area hint over the
