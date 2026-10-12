@@ -29,8 +29,8 @@ description: "Primary happy-path flows from the clinician's perspective."
 
 ## Happy path — Turn sync (team)
 
-1. R4/admin or elected host runs R+ with LiveSync active.
-2. Residents join via **PIN del turno** or invitation link.
+1. Sala Nube: the monthly room for the sala exists (`ensure-turn`). The first user creates it and becomes owner.
+2. Residents join the room with its **6-character join code**.
 3. Census, clinical-ops, HC deltas sync without silent overwrite (LWW + diagnostics).
 4. Handoff via **Modo Entrega** / guardia phase bar when shift changes.
 
@@ -38,11 +38,11 @@ description: "Primary happy-path flows from the clinician's perspective."
 
 | Situation | User action |
 |-----------|-------------|
-| Lost host | ⇄ → Reconectar / Restablecer conexión / paste host URL |
+| Lost Nube connection | ⇄ → Reconectar / Restablecer conexión |
 | Conflict | LWW toast; optional draft review in Ajustes → LAN |
 | Offline | Local edits queue in SQL outbox; flush on reconnect |
 
 ## Related
 
 - Feature map: [features/features-index.md](../features/features-index.md)
-- LAN architecture: [08-core-architecture.md](./08-core-architecture.md)
+- Nube sync: [wiki 10 · Nube sync](../wiki/10-nube-sync.md)

@@ -8,7 +8,6 @@ import {
 import { openLabBulkPreviewModal } from './lab-bulk-preview-modal.mjs';
 import { finalizeBulkLabPaste } from './lab-panel-workbench.mjs';
 import { filterProcessableBulkBlocks, storeProcessableBulkBlocks } from './lab-panel-workbench-finalize.mjs';
-import { autosendLabsEventualidadForStored } from './lab-eventualidad-autosend.mjs';
 
 export function countBlocksOkAndPatients(blocks) {
   var totalOk = 0;
@@ -84,13 +83,7 @@ export function classifyPatientStudyGroup(g, rt) {
 /** Save one patient's labs without switching away from the open patient. */
 function storePatientTextInBackground(text, rt) {
   var blocks = previewBlocksFromBulkText(text, rt);
-  var summary = storeProcessableBulkBlocks(blocks, filterProcessableBulkBlocks(blocks), { replaceOnMatch: true });
-  if (!summary.storedSets && !summary.mergedSets) return;
-  void autosendLabsEventualidadForStored(summary.storedByPatient, {
-    showToast: function (msg, type) {
-      rt.showToast(msg, type);
-    },
-  });
+  storeProcessableBulkBlocks(blocks, filterProcessableBulkBlocks(blocks), { replaceOnMatch: true });
 }
 
 /**

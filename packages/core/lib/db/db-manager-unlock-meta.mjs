@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { clinicalDbPath, clinicalUnlockMetaPath } from './db-path.mjs';
 
 export function readUnlockMeta(userDataPath) {
@@ -27,6 +28,22 @@ export function removeClinicalDbFiles(userDataPath) {
       /* file may be locked */
     }
   }
+}
+
+/**
+ * Moves the clinical DB files and the unlock meta into a timestamped folder in userData
+ * instead of deleting them, so an old encrypted DB can still be recovered by hand.
+ * @returns {string} the backup folder
+ */
+export function archiveClinicalDbFiles(userDataPath) {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const dir = path.join(userDataPath, `rplus-clinical-encrypted-backup-${stamp}`);
+  fs.mkdirSync(dir, { recursive: true });
+  const base = clinicalDbPath(userDataPath);
+  for (const filePath of [base, base + '-wal', base + '-shm', clinicalUnlockMetaPath(userDataPath)]) {
+    if (fs.existsSync(filePath)) fs.renameSync(filePath, path.join(dir, path.basename(filePath)));
+  }
+  return dir;
 }
 
 export function removeUnlockMetaFile(userDataPath) {

@@ -5,6 +5,20 @@ Per-session notes from the two sessions that were still running sit next to
 this file (`hf-neumo-design.md`, `hf-ios-lab-ocr.md`). All other sessions
 were idle when this was written.
 
+## Update 2026-10-11 — 8.5.1 ready to publish
+
+- `release/8.5.1` has `main` (8.5.0) merged in, all 6 fix tasks, the version
+  bump, notes, README and in-app highlights. PR `release/8.5.1` → `main`.
+  Publish from the owner's Mac after merge: `npm run release:publish -- --yes`.
+- Gates: `build:ui`, lint, `metrics:check` and 1728/1728 unit tests green.
+  CI fix: `ui-toast.test.mjs` allowlisted (owner OK); module baseline 1301.
+- E2E: stale specs updated to the current UI; 2 app fixes (area hint over the
+  area menu, Mi perfil sala label). The Nube join-code restart stall is fixed:
+  cached `/ping`/`/meta` Date headers skewed the client clock and the Worker
+  rejected pushes as stale (`api-client.mjs`).
+- `nube-session-expired` needs `STAGING_URL`; not run.
+- `min-version.json` stays at 8.4.6 (owner, 2026-10-11).
+
 ## Update 2026-10-09 — 8.5.0 ready to publish
 
 - Version 8.5.0 bumped; notes, README and in-app highlights filled. All

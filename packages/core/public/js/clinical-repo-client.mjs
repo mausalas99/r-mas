@@ -84,7 +84,7 @@ export async function executeClinicalCommand(command, meta = {}) {
   if (meta.echoSnapshot !== false) {
     const snapshot = pickSnapshotFields(res);
     if (Object.keys(snapshot).length) {
-      _applyRepoSnapshot(snapshot, { source: 'clinical-command' });
+      _applyRepoSnapshot(snapshot);
       Object.assign(out, snapshot);
     }
   }

@@ -54,7 +54,7 @@ public/js/            Renderer modules (pre-bundle)
 
 public/interno/       Mobile web client (guardia/interno board)
 scripts/              build-ui, bundle-renderer, release, native rebuild, graph-memory, graph-memory
-cloud/                equipos-worker (CF Worker+D1+R2), equipos-pages (static UI)
+cloud/                sync-worker (Nube), equipos-worker (CF Worker+D1+R2), update-worker, landing, sync-pages
 cloudflare/           setup guide + `setup.mjs` for one-command deploy
 docs/
   core/               Agent hub: 00-system-index, 01-vision-north-star, architecture
@@ -85,7 +85,7 @@ docs/
 | Labs / tendencias | `public/js/labs*.mjs`, `labs-default-refs.mjs` (rangos estándar / previos si SOME sin refs), `labs-reslabs-sanitize.mjs` (whitelist paneles en resLabs), `labs-panel-defs.mjs` / `labs-panel-parse.mjs` / `labs-panel-overlay*.mjs` (paneles + overlay LAN; **FEB** febriles), `lab-history-day-*.mjs` (historial por día), `cultivo-block-core.mjs`, `features/tendencias.mjs`, `lab-panel.mjs`, paste-anywhere `features/paste-smart*.mjs` |
 | Lab repo scraper | `lib/lab-repo/` (`portal-client.mjs`, `portal-html.mjs`, fixtures); spec `docs/superpowers/specs/2026-06-27-lab-repo-scraper-design.md` |
 | VPO (documentación) | `public/js/features/vpo.mjs`, `vpo-panel.mjs`, `vpo-data.mjs`, `vpo-text.mjs` |
-| Document export | `lib/doc-generators/`, `lib/doc-export-http.js` |
+| Document export | `lib/doc-generators/`, `lib/doc-export-service.js` (desktop, over IPC) |
 | Updates / downgrade | `lib/update-downgrade.mjs`, `stable-versions.json`, `min-version.json`, `main.js`, Ajustes; opportunistic silent check `features/platform/updater/silent-check.mjs` (labs batch + patient select, 30 min throttle) |
 | Debt metrics | `scripts/metrics/` (`lint-tier1.mjs`, `check.mjs`, `boot-graph.mjs`, `baseline.json`); `npm run lint:tier1` (changed paths), `npm run metrics:check` |
 | Agent graph memory | `scripts/graph-memory/` (cached extract + validate + JSON graph; not shipped); `docs/core/19-agent-graph-memory.md` |

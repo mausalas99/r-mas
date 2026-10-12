@@ -334,13 +334,17 @@ export async function openPatient(page, p) {
   }
   await page.locator(`.p-name[title*="${p.exp}"], .ic-card .sv-name[title*="${p.exp}"]`).locator('visible=true').first().click();
   const servicio = page.locator('#m-servicio');
-  await servicio.waitFor({ state: 'visible', timeout: 1500 }).catch(() => {});
-  if (await servicio.isVisible()) {
-    await servicio.fill('MEDICINA INTERNA');
+  // Interconsulta «Completar ingreso» (8.5.0) asks for the servicio solicitante instead.
+  const icSvc = page.locator('#m-ic-svc button').first();
+  await servicio.or(icSvc).first().waitFor({ state: 'visible', timeout: 1500 }).catch(() => {});
+  const icAdmit = await icSvc.isVisible();
+  if (icAdmit || (await servicio.isVisible())) {
+    if (icAdmit) await icSvc.click();
+    else await servicio.fill('MEDICINA INTERNA');
     await page.locator('#m-cuarto').fill(p.room || '301');
     await page.locator('#m-cama').fill('01');
     await page.getByRole('button', { name: 'Agregar Paciente' }).click();
-    await servicio.waitFor({ state: 'hidden' });
+    await page.locator('#m-cuarto').waitFor({ state: 'hidden' });
   }
 }
 

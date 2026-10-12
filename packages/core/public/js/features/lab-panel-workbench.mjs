@@ -29,7 +29,6 @@ import {
   notifyTourAfterBulkLabStore,
   isMultiBulkLabPaste,
 } from './lab-panel-workbench-finalize.mjs';
-import { autosendLabsEventualidadForStored } from './lab-eventualidad-autosend.mjs';
 import { stampDocUpdatedAt } from '../patient-merge.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 
@@ -427,17 +426,6 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports, opts) {
   clearLabInputAfterSuccessfulParse();
   closeLabPasteModal();
   notifyTourAfterBulkLabStore(blocks, true);
-
-  if (
-    (storeSummary.storedSets > 0 || storeSummary.mergedSets > 0) &&
-    storeSummary.storedByPatient
-  ) {
-    void autosendLabsEventualidadForStored(storeSummary.storedByPatient, {
-      showToast: function (msg, type) {
-        rt.showToast(msg, type);
-      },
-    });
-  }
 }
 
 export { finalizeBulkLabPaste, clearLabInputAfterSuccessfulParse, openLabPatientPicker, copiarLabsAlPortapapeles };

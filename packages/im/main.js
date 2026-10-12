@@ -1165,18 +1165,18 @@ function cloudSyncRememberUserData() {
 
 ipcMain.on('cloud-sync-remember-get-sync', (event) => {
   try {
-    event.returnValue = readCloudSyncRememberStore(cloudSyncRememberUserData());
+    event.returnValue = readCloudSyncRememberStore(cloudSyncRememberUserData(), safeStorage);
   } catch {
     event.returnValue = null;
   }
 });
 
 ipcMain.handle('cloud-sync-remember-get', () => {
-  return readCloudSyncRememberStore(cloudSyncRememberUserData());
+  return readCloudSyncRememberStore(cloudSyncRememberUserData(), safeStorage);
 });
 
 ipcMain.handle('cloud-sync-remember-set', (_e, snapshot) => {
-  return writeCloudSyncRememberStore(cloudSyncRememberUserData(), snapshot || null);
+  return writeCloudSyncRememberStore(cloudSyncRememberUserData(), snapshot || null, safeStorage);
 });
 
 ipcMain.handle('cloud-sync-remember-clear', () => {

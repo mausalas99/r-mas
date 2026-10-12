@@ -28,7 +28,6 @@ import {
   remapIncomingTeamMembershipUserIds,
   reconcileExclusiveMembershipFromIncoming,
 } from './clinical-ops-sync-merge-membership.mjs';
-import { mergeEntregaTemplateUser, mergeEntregaTemplateTeam } from './clinical-ops-sync-merge-entrega.mjs';
 import {
   mergePatientTeamAssignments,
   mergeTeamGuardiaToday,
@@ -161,8 +160,6 @@ function mergeAssignmentsAndGuardiasPhase(
   deletedSet,
   stats
 ) {
-  mergeEntregaTemplateUser(db, local.entrega_template_user || [], incoming.entrega_template_user || []);
-  mergeEntregaTemplateTeam(db, local.entrega_template_team || [], incoming.entrega_template_team || []);
   // Remap before filtering: removalKeys hold local user_ids, so a peer's row for
   // the same @usuario under its own user_id would slip past the leave tombstone
   // and the exclusive reconcile below would then drop the user's new team.

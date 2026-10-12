@@ -84,7 +84,9 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 
-    noteServerDate(res.headers.get('Date'));
+    // The Worker edge-caches /ping and /meta: a hit carries the Date of when it was stored,
+    // which would read as a clock skew of minutes and make every push look stale to the Worker.
+    if (path !== '/ping' && path !== '/meta') noteServerDate(res.headers.get('Date'));
     const data = await res.json().catch(() => ({}));
     if (token) noteNubeAuthResponse(res.status, data, token);
     if (!res.ok) throw httpErrorFromResponse(res, data);

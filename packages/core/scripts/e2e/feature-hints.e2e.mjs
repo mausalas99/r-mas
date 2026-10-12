@@ -137,7 +137,10 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await until(async () => (await page.evaluate(() => globalThis.localStorage.getItem('rpc-feature-hints-enabled'))) === '1', 3000, 100);
   check('switch on → stored', (await page.evaluate(() => globalThis.localStorage.getItem('rpc-feature-hints-enabled'))) === '1');
   await page.keyboard.press('Escape');
-  // Fresh install: the first «Guía» hint opens by itself on the Laboratorio tab, no click needed.
+  // Fresh install: «Cambiar de área» (g-areas) opens first; «Entendido» closes it and g-labs follows.
+  check('g-areas opens first on the area pill', await visible(bubbleOf(page, 'g-areas'), 8000));
+  await bubbleOf(page, 'g-areas').locator('.fh-next').click();
+  // Then the first labs «Guía» hint opens by itself on the Laboratorio tab, no click needed.
   check('g-labs opens by itself on the Laboratorio tab', await visible(bubbleOf(page, 'g-labs'), 8000) &&
     (await page.locator('#apptab-lab.fh-target').count()) === 1);
   check('fresh install does not pop the Learn Hub open', (await page.locator('#learn-hub-backdrop.open').count()) === 0);
@@ -207,7 +210,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   check('no hint bubble over the «Preparando R+» boot screen', overBoot === 0, { samplesOverBoot: overBoot });
   await goArea(page, 'lab');
   check('updating user (registered, no done list) gets the «Guía» hints',
-    await visible(bubbleOf(page, 'g-labs'), 8000), await hintState(page));
+    await visible(page.locator('.fh-bubble[data-hint^="g-"]:not([hidden])'), 8000), await hintState(page));
   await shot(page, 'updating-user-guia');
   await page.evaluate(([a]) => globalThis.localStorage.setItem('rpc-feature-hints-done', JSON.stringify(a)), [ALL]);
   await page.locator('.fh-close').click().catch(() => {});
@@ -294,7 +297,8 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await m.waitFor({ state: 'detached' });
   // Interconsultas: the team board.
   await setMode(page, 'interconsulta');
-  await walkHint(page, 'g-interconsultas', 3);
+  // No cards yet, so the card step is skipped; the empty «Por asignar» tray still shows.
+  await walkHint(page, 'g-interconsultas', 4);
   await setMode(page, 'sala');
   check('8.4.2 «Nuevo» hints are retired in 8.4.3', !ALL.some((id) => id.endsWith('-842')), ALL);
 

@@ -23,7 +23,7 @@ App-wide map of every screen, control and flow in R+. Built 2026-10-05 from the 
 
 Each file ends with its own gap list. Some line numbers marked `~` are approximate. Re-check before you rely on them.
 
-Related: [03-user-journey.md](../03-user-journey.md), [06-design-system.md](../06-design-system.md).
+Related: [03-user-journey.md](../../core/03-user-journey.md), [06-design-system.md](../../core/06-design-system.md).
 
 ## Live check (2026-10-05)
 

@@ -21,8 +21,8 @@
  *   placeholder N/V/HD/HI/NM labels (those are SOAP objective-by-system
  *   sections inside one patient's note
  *   — not a ward/zone assignment model).
- * - "Internos del turno" has no backing data at all (R+ has no "interno" role
- *   and no intern↔zone/bed assignment model) — rendered as an empty state.
+ * - "Internos del turno" has no backing data at all (Interno MIP phones exist,
+ *   but there is no intern↔zone/bed assignment model) — rendered as an empty state.
  * - The outgoing resident's free-text handoff paragraph has no data model in
  *   R+ (entrega tracks who covers whom, not a shift-wide prose note) —
  *   rendered as an empty state instead of a fabricated paragraph. Its bed-

@@ -95,7 +95,7 @@ async function launch() {
   const page = await app.firstWindow();
   // Sala opens in the card view by default; these scenarios drive the sidebar.
   await page.waitForLoadState('domcontentloaded');
-  const salaCards = await page.evaluate(() => { globalThis.localStorage.setItem('rplus-sala-view', 'bar'); globalThis.localStorage.setItem('rpc-registro-autoopen', 'off'); return !!globalThis.document.body.dataset.salaView; });
+  const salaCards = await page.evaluate(() => { globalThis.localStorage.setItem('rplus-sala-view', 'bar'); globalThis.localStorage.setItem('rpc-registro-autoopen', 'off'); globalThis.localStorage.setItem('rpc-feature-hints-enabled', '0'); globalThis.localStorage.setItem('rpc-keyboard-tab-shortcuts-adopted', '1'); return !!globalThis.document.body.dataset.salaView; });
   if (salaCards) await page.reload();
   await page.setViewportSize({ width: 1440, height: 902 });
   const pageErrors = [];
@@ -163,7 +163,7 @@ async function openVpo(page) {
   await closeToasts(page);
   await goArea(page, 'nota');
   await page.waitForTimeout(500);
-  const boardCard = page.getByText('DEMO JUAN', { exact: true }).locator('visible=true').first();
+  const boardCard = page.getByText(/^DEMO (PÉREZ )?JUAN$/).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section', { hasText: 'VPO' }).click();

@@ -1,6 +1,6 @@
-# Base de datos cifrada (SQLCipher)
+# Base de datos local (driver SQLCipher, sin clave)
 
-R+ guarda datos clínicos en una base SQLite cifrada con SQLCipher (`rplus-clinical.db`), en el proceso principal de Electron. Esta nota es para operaciones y soporte **en el Mac**.
+R+ guarda datos clínicos en `rplus-clinical.db`, en el proceso principal de Electron, con el driver `better-sqlite3-multiple-ciphers`. **Desde 8.4.2 la base se abre sin clave**: es un archivo SQLite normal. La protección real es la cuenta del sistema y el cifrado de disco (FileVault/BitLocker). Decisión 2026-10-09: sigue así en 8.5.1 (ver `core/18-knowledge-capture.md`). Esta nota es para operaciones y soporte **en el Mac**.
 
 **Nube (Cloudflare D1) no usa SQLCipher.** Room snapshots there are plaintext JSON over HTTPS. See [docs/core/15-security.md](./core/15-security.md).
 
@@ -24,25 +24,20 @@ npm approve-scripts better-sqlite3-multiple-ciphers@12.10.0
 
 En `package.json` ya está en `allowScripts` para esa versión. Sin el binario `.node` compilado, la app muestra error de ABI y cierra (no hay respaldo en JSON plano).
 
-## Olvidé la contraseña
+## Base cifrada antigua (antes de 8.4.2)
 
-**No hay recuperación** desde la app. La clave deriva de la frase de acceso del usuario (Argon2id + SQLCipher). Sin ella, el archivo `.db` no se puede abrir.
+No hay contraseña que olvidar: la base actual no tiene clave. Argon2id, el código de recuperación y `wrapped_dek` siguen en el código pero no se usan.
 
-Opciones únicas:
-
-1. **Copia de seguridad `.db`** hecha con la misma contraseña (Configuración → respaldo cifrado).
-2. **Exportación JSON** previa (texto plano con PHI; solo si se guardó cuando la sesión estaba desbloqueada).
-
-Mantén respaldos periódicos en un medio seguro fuera del equipo compartido.
+Si al arrancar existe una base cifrada antigua (meta con `kdf_salt`, sin clave recordada), R+ la **mueve** (no la borra) a `userData/rplus-clinical-encrypted-backup-<fecha>/`, abre una base vacía y avisa con un toast. Los pacientes de Nube vuelven al sincronizar. Para recuperar datos solo-locales hace falta la frase o el código de recuperación de esa instalación.
 
 ## Tipos de respaldo
 
 | Tipo | Contenido | Cuándo usarlo |
 |------|-----------|---------------|
-| **Export JSON** | Datos clínicos en texto plano (desbloqueado) | Migrar a otra instalación, auditoría legible, recuperación si se pierde solo el `.db` |
-| **Copia `.db`** | Archivo SQLCipher completo (`VACUUM INTO`) | Restauración rápida idéntica; requiere la **misma** contraseña |
+| **Export JSON** | Datos clínicos en texto plano | Migrar a otra instalación, auditoría legible |
+| **Copia `.db`** | Archivo SQLite completo (`VACUUM INTO`), **sin cifrar** | Restauración rápida idéntica |
 
-La exportación JSON muestra advertencia de PHI. La copia `.db` permanece cifrada.
+Las dos copias contienen PHI sin cifrar. Guárdalas solo en medios seguros.
 
 ## Prueba rápida con archivo en disco
 

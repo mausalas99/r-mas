@@ -1,6 +1,6 @@
 /**
  * Renderer clinical read model (P5 — clinical domains).
- * Cache + pub/sub; writes go through clinical-repo commands.
+ * Cache; writes go through clinical-repo commands.
  * Do not export mutable `let` bindings.
  */
 
@@ -20,9 +20,6 @@ const MAP_KEYS = new Set(DOMAIN_KEYS.filter((k) => k !== 'patients'));
 
 /** @type {Record<string, unknown>} */
 const _cache = emptyCache();
-
-/** @type {Set<(detail?: { source?: string }) => void>} */
-const _listeners = new Set();
 
 function emptyCache() {
   return {
@@ -48,16 +45,6 @@ function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function notify(detail) {
-  for (const fn of _listeners) {
-    try {
-      fn(detail);
-    } catch (err) {
-      console.warn('[clinical-read-model] subscriber error', err);
-    }
-  }
-}
-
 /**
  * @param {string} key
  * @param {string} [patientId]
@@ -70,18 +57,6 @@ function getMapDomain(key, patientId) {
   const id = String(patientId);
   if (!Object.prototype.hasOwnProperty.call(map, id)) return undefined;
   return cloneValue(map[id]);
-}
-
-/**
- * @param {(detail?: { source?: string }) => void} fn
- * @returns {(() => void)|null} unsubscribe
- */
-export function subscribeClinicalReadModel(fn) {
-  if (typeof fn !== 'function') return null;
-  _listeners.add(fn);
-  return () => {
-    _listeners.delete(fn);
-  };
 }
 
 /** @returns {object[]} defensive copy */
@@ -143,14 +118,11 @@ export function getMedNotaSelectionByPatient(patientId) {
 /**
  * @internal — repo client / hydrate after command success
  * @param {Record<string, unknown>} partial
- * @param {{ source?: string }} [meta]
  */
-export function _applyRepoSnapshot(partial, meta = {}) {
+export function _applyRepoSnapshot(partial) {
   if (!partial || typeof partial !== 'object') return;
-  let changed = false;
   if (Array.isArray(partial.patients)) {
     _cache.patients = cloneValue(partial.patients);
-    changed = true;
   }
   for (const key of MAP_KEYS) {
     if (partial[key] === undefined) continue;
@@ -160,10 +132,7 @@ export function _applyRepoSnapshot(partial, meta = {}) {
     } else {
       _cache[key] = cloneValue(value);
     }
-    changed = true;
   }
-  if (!changed) return;
-  notify({ source: meta.source || 'snapshot' });
 }
 
 /**
@@ -171,7 +140,7 @@ export function _applyRepoSnapshot(partial, meta = {}) {
  * @param {Record<string, unknown>} snapshot
  */
 export function hydrateClinicalReadModel(snapshot) {
-  _applyRepoSnapshot(snapshot, { source: 'hydrate' });
+  _applyRepoSnapshot(snapshot);
 }
 
 /**
@@ -179,9 +148,8 @@ export function hydrateClinicalReadModel(snapshot) {
  * @param {string} patientId
  * @param {Record<string, unknown>} patch
  * @param {object} [seed] used when patient is not yet in cache
- * @param {{ source?: string }} [meta]
  */
-export function _applyPatientPatch(patientId, patch, seed, meta = {}) {
+export function _applyPatientPatch(patientId, patch, seed) {
   const id = String(patientId || '').trim();
   if (!id) return;
   const patchObj = patch && typeof patch === 'object' ? cloneValue(patch) : {};
@@ -192,7 +160,6 @@ export function _applyPatientPatch(patientId, patch, seed, meta = {}) {
     const base = seed && typeof seed === 'object' ? { ...seed } : { id };
     _cache.patients = [..._cache.patients, { ...base, ...patchObj, id }];
   }
-  notify({ source: meta.source || 'patient-patch' });
 }
 
 /** @internal — tests only */
@@ -201,5 +168,4 @@ export function resetClinicalReadModelForTests() {
   for (const key of DOMAIN_KEYS) {
     _cache[key] = next[key];
   }
-  _listeners.clear();
 }

@@ -205,7 +205,7 @@ async function submitAdminCodeVerify(api) {
   const code = adminCodeValue('clinical-admin-code-input');
   const res = await api?.adminCodeVerify?.({ code });
   if (!res?.valid) {
-    showAdminCodeError('Código incorrecto.');
+    showAdminCodeError(res?.error || 'Código incorrecto.');
     adminCodeField('clinical-admin-code-input')?.focus();
     return;
   }

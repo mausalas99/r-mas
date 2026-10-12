@@ -122,7 +122,7 @@ await r.finish('Nube: join by code pulls what happened while away', async () => 
   await until(async () => /--(idle|live)\b/.test((await B.page.locator('#btn-header-team-sync').getAttribute('class')) || ''), 20000);
   await B.page.waitForTimeout(2000);
   const A2 = await launchDevice('a', 3791);
-  await A2.page.locator('#apptab-lab').waitFor({ state: 'visible', timeout: 30000 });
+  await A2.page.locator('.topbar-area-btn').waitFor({ state: 'visible', timeout: 30000 });
   await dismissLearnHub(A2.page);
   await goArea(A2.page, 'lab');
   check('A restarted: P3, added on B while A was closed, arrives', await until(() => patientVisible(A2.page, P3), 30000));

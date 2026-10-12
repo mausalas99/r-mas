@@ -68,13 +68,17 @@ async function handleGetRoomDek(db, request, roomId) {
 }
 
 /**
- * Store the wrapped room DEK for the first time. Only once — after this, changing
- * the wrap goes through handlePutRoomDekRotate (paired with rotating the room code).
+ * Store the wrapped room DEK for the first time. Owner only, and only once — after
+ * this, changing the wrap goes through handlePutRoomDekRotate (paired with rotating
+ * the room code). A member must not plant the first key ahead of the owner.
  * @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request @param {string} roomId
  */
 async function handlePutRoomDek(db, request, roomId) {
   const user = await requireUser(db, request);
-  await requireMembership(db, roomId, user.id);
+  const membership = await requireMembership(db, roomId, user.id);
+  if (membership.role !== 'owner') {
+    throw new SyncError('forbidden', 'Solo el dueño de la sala puede crear su llave.');
+  }
 
   const existing = await db.prepare('SELECT wrapped_dek_ct FROM rooms WHERE id = ?').bind(roomId).first();
   if (!existing) throw new SyncError('not_found', 'Sala no encontrada.');
