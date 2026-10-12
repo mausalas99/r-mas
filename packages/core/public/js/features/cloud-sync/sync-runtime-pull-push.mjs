@@ -571,7 +571,11 @@ async function pullThenRebuildMonitoreoOps(ctx) {
   try {
     await ctx.pullLatest();
   } catch (err) {
-    ctx.setStatus('error', cloudSyncErrorMessage(err, 'No se pudo enviar un cambio a la nube.'));
+    // The push never runs, so record it here: Diagnóstico must show «Envío a Nube»
+    // failed whether or not the queue held monitoreo.
+    const message = cloudSyncErrorMessage(err, 'No se pudo enviar un cambio a la nube.');
+    recordCloudSyncError({ op: 'push', code: cloudSyncErrorCode(err), message });
+    ctx.setStatus('error', message);
     throw err;
   }
   // No room key and the pull came back locked: the phone's blob never reached the
