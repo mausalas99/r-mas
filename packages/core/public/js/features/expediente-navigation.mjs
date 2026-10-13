@@ -2,6 +2,7 @@
  * Expediente inner-tab navigation (nota sub-tabs).
  */
 import { isModeSala } from '../mode-features.mjs';
+import { getNotes, getIndicaciones } from '../app-state.mjs';
 import { invalidateEventualidadesPanel } from './eventualidades-panel.mjs';
 import { invalidateEaPanelCache, refreshEaCopyFabVisibility } from './estado-actual-panel.mjs';
 import { renderEstadoActualBar } from './soap-estado.mjs';
@@ -139,13 +140,33 @@ function ensureAppTabForInner(tab) {
 }
 
 /**
- * The post-paint repaint must not replace a note / indicaciones form the user is already typing in:
- * the focused field is swapped for a new node and the keystrokes aimed at it vanish (they were never
- * in the doc). The tab stays stale, so the next tab switch repaints it.
+ * A teammate's edit lands in the open nota / indicaciones form while the user types in it: a repaint
+ * would swap the focused field for a new node and the keystrokes aimed at it would vanish. So write the
+ * synced text straight into the other single-value fields and leave the focused one alone.
+ */
+export function syncNoteFormsInPlace() {
+  var id = rt.getActiveId();
+  var focused = document.activeElement;
+  [['#note-form', 'updateNote', getNotes()[id]], ['#indica-form', 'updateIndica', getIndicaciones()[id]]].forEach(function (f) {
+    if (!f[2]) return;
+    document.querySelectorAll(f[0] + ' [data-oninput="' + f[1] + '"]').forEach(function (el) {
+      var field = JSON.parse(el.getAttribute('data-oninput-args') || '[]')[0];
+      var next = field && f[2][field];
+      if (el !== focused && typeof next === 'string' && el.value !== next) el.value = next;
+    });
+  });
+}
+
+/**
+ * The post-paint repaint must not replace a note / indicaciones form the user is already typing in
+ * (see syncNoteFormsInPlace). The tab stays stale, so the next tab switch repaints it.
  */
 function repaintUnlessTyping(tab, opts) {
   var el = document.activeElement;
-  if (el && /^(INPUT|TEXTAREA)$/.test(el.tagName) && el.closest('#note-form, #indica-form')) return;
+  if (el && /^(INPUT|TEXTAREA)$/.test(el.tagName) && el.closest('#note-form, #indica-form')) {
+    syncNoteFormsInPlace();
+    return;
+  }
   renderGranularInnerTab(tab, opts);
 }
 

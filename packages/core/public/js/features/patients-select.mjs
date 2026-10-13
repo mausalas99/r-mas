@@ -223,6 +223,7 @@ export function refreshActivePatientViewIfOpen() {
   var id = rt.getActiveId();
   if (id == null || id === '') return;
   if (hasFocusedEditableInPatientView()) {
+    import('./expediente-navigation.mjs').then(function (m) { m.syncNoteFormsInPlace(); });
     repaintAfterBlur();
     return;
   }
