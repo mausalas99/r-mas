@@ -158,7 +158,7 @@ async function openVpo(page) {
   await closeToasts(page);
   await goArea(page, 'nota');
   await page.waitForTimeout(500);
-  const boardCard = page.getByText(/^DEMO (PÉREZ )?JUAN$/).locator('visible=true').first();
+  const boardCard = page.locator('.ic-card, .ic-line', { hasText: /demo (pérez )?juan/i }).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section', { hasText: 'VPO' }).click();
