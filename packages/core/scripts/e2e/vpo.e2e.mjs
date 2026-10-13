@@ -195,6 +195,7 @@ async function fillBusyVpo(page) {
   // Diagnósticos: "Pegar lista con «+»" — error path (nothing parses), then
   // a paste that splits into rows. Same rows are then re-typed by the loop
   // below (Enter-walk coverage), so the two features compose on one state.
+  await page.locator('[data-vpo-open="dx"]').click();
   await page.locator('.vpo-dx-paste summary').click();
   const dxPasteInput = page.locator('[data-vpo-dx-paste]');
   const dxSplitBtn = page.locator('[data-vpo-action="dx-split-plus"]');
@@ -242,12 +243,16 @@ async function fillBusyVpo(page) {
   const dxCount = await page.locator('[data-vpo-dx-idx]').count();
   check('4 diagnósticos typed, Enter walks the list', dxCount === DIAGNOSTICOS.length, dxCount);
 
+  await page.locator('dialog[open] [data-vpo-close]').click();
+
   // Fármacos: pull from the SOME receta imported in Medicamentos.
+  await page.locator('[data-vpo-open="farm"]').click();
   await page.locator('[data-vpo-action="tomar-meds"]').click();
   await page.locator('.vpo-farm-row').first().waitFor({ state: 'visible' });
   const farmCount = await page.locator('.vpo-farm-row').count();
   check('fármacos pulled from SOME receta, one row per drug', farmCount === 5, farmCount);
   await page.locator('.vpo-farm-nota').first().fill('Continuar, sin ajuste perioperatorio.');
+  await page.locator('dialog[open] [data-vpo-close]').click();
 
   await page.waitForTimeout(200);
 }
@@ -288,12 +293,11 @@ async function run() {
   check('secondary actions are borderless text links', style.linkNoBorder && style.linkNoBg, style);
   check('inputs share one 40px flat height', style.inputHeight === '40px', style);
 
-  const twoCol = await page.evaluate(() => {
-    const cols = document.querySelectorAll('.vpo-col');
-    if (cols.length !== 2) return null;
-    return cols[0].getBoundingClientRect().left < cols[1].getBoundingClientRect().left;
+  const sideBySide = await page.evaluate(() => {
+    const cards = document.querySelectorAll('.vpo-rows .vpo-card');
+    return cards.length >= 3 && cards[0].getBoundingClientRect().left < cards[cards.length - 1].getBoundingClientRect().left;
   });
-  check('layout is two columns at 1440px wide', twoCol === true, twoCol);
+  check('risk cards sit side by side at 1440px wide', sideBySide === true, sideBySide);
 
   await page.locator('[data-vpo-action="copy-full"]').click();
   const toast = page.locator('.toast', { hasText: 'copiado' });
@@ -341,6 +345,9 @@ async function run() {
   await page.locator('.vpo-calc > summary').click().catch(() => {});
   await page.locator('[data-vpo-field="procedureId"]').selectOption('gupta-foregut-hpb');
   await page.locator('[data-vpo-field="asaKey"]').selectOption('asa-ii');
+  await page.locator('[data-vpo-field="edad"]').fill('66');
+  await page.locator('.vpo-more > summary', { hasText: 'Más datos' }).click();
+  await page.locator('[data-vpo-calc="mets"]').selectOption('ge4');
   await page.locator('[data-vpo-action="calc-all"]').click();
   await page.locator('.toast', { hasText: 'escalas calculadas' }).waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
   await closeToasts(page);
@@ -350,7 +357,7 @@ async function run() {
   check(
     'Calcular todo fills RCRI, Gupta MICA and the AHA lines from surgery + ASA',
     /^\d PUNTOS?\. CLASE [IV]+\./.test(calced.rcri) && /^[\d.]+% DE IAM/.test(calced.gupta) && /^(BAJO|ELEVADO) — MACE/.test(calced.ahaCv) && calced.ahaSurg !== '' && calced.asa === 'ASA II',
-    calced
+    { calced, miss: await page.locator('.vpo-row-miss').allInnerTexts() }
   );
 
   check('no page errors', pageErrors.length === 0, pageErrors);
