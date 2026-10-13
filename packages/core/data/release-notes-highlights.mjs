@@ -27,7 +27,7 @@ var RELEASE_NOTES_851 = [
   },
   {
     title: 'Tiempo de respuesta de interconsulta',
-    body: 'Las tarjetas del tablero muestran <strong>Recibida</strong> y <strong>Respondida</strong>, con el promedio de 7 días. Los tiempos marcados en el teléfono llegan por Nube.',
+    body: 'El tablero ahora es una fila por paciente con <strong>Recibida</strong> y <strong>Respondida</strong>, y el promedio de 7 días. Asigna equipo con las teclas 1 a 4. Los tiempos marcados en el teléfono llegan por Nube.',
   },
   {
     title: 'Estado actual con texto corrido',

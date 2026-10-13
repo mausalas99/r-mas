@@ -9,7 +9,8 @@ Pantallas renovadas con un solo estilo, y el tiempo de respuesta de interconsult
 
 ## Nuevo / mejorado
 
-- **Nuevo (Interconsulta):** las tarjetas del tablero muestran «Recibida» y «Respondida», la etiqueta de triage y el promedio de 7 días.
+- **Nuevo (Interconsulta):** el tablero muestra una fila por paciente, con «Recibida» y «Respondida», la etiqueta de triage y el promedio de 7 días. Con el teclado puedes moverte entre filas y asignar equipo con las teclas 1 a 4.
+- **Nuevo (Diseño):** los botones de solo ícono muestran su nombre al pasar el cursor o al enfocarlos con el teclado.
 - **Corrección (Nube):** los tiempos de «Recibida» y «Respondida» tomados en el teléfono ahora llegan al escritorio. Antes el contador quedaba viejo.
 - **Corrección (Interconsulta):** el «Motivo de consulta» llega a tu equipo mientras lo escribes. Antes solo se guardaba al salir del campo.
 - **Corrección (Nube):** la Nota y las Indicaciones de un compañero aparecen en tu pantalla mientras las escribe, aunque tengas el cursor en otro campo.
