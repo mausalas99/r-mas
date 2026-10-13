@@ -43,16 +43,16 @@ async function showBoard(page) {
     await page.locator('.exp-group-pill[data-group="paciente"]').click();
     await page.locator('[data-ic-back-to-board]').click();
   }
-  await board.locator('.ic-card').first().waitFor({ state: 'visible' });
+  await board.locator('.ic-line').first().waitFor({ state: 'visible' });
   return board;
 }
 
 /** Card ids, in screen order, of the first card group that holds `id`. */
 function groupOrder(page, id) {
   return page.evaluate((pid) => {
-    const card = document.querySelector('#ic-board-mount .ic-card[data-patient-id="' + pid + '"]');
-    const grid = card && card.closest('.ic-row__cards, .sv-grid');
-    return grid ? Array.from(grid.querySelectorAll('.ic-card')).map((c) => c.getAttribute('data-patient-id')) : [];
+    const card = document.querySelector('#ic-board-mount .ic-line[data-patient-id="' + pid + '"]');
+    const grid = card && card.closest('.ic-lines');
+    return grid ? Array.from(grid.querySelectorAll('.ic-line')).map((c) => c.getAttribute('data-patient-id')) : [];
   }, id);
 }
 
@@ -68,8 +68,8 @@ await r.finish('Interconsulta Seguimiento: band select saves triage, board sorts
 
   // A card group with 2+ patients; take its LAST card.
   const target = await page.evaluate(() => {
-    for (const grid of document.querySelectorAll('#ic-board-mount .ic-row__cards, #ic-board-mount .sv-grid')) {
-      const cards = grid.querySelectorAll('.ic-card');
+    for (const grid of document.querySelectorAll('#ic-board-mount .ic-lines')) {
+      const cards = grid.querySelectorAll('.ic-line');
       if (cards.length > 1) return cards[cards.length - 1].getAttribute('data-patient-id');
     }
     return null;
@@ -78,7 +78,7 @@ await r.finish('Interconsulta Seguimiento: band select saves triage, board sorts
   const before = await groupOrder(page, target);
   await r.shot(page, 'board-before');
 
-  await page.locator(`#ic-board-mount .ic-card[data-patient-id="${target}"]`).first().click();
+  await page.locator(`#ic-board-mount .ic-line[data-patient-id="${target}"]`).first().click();
   const sel = page.locator('.ic-consult-band [data-consult-field="triage"]');
   await sel.waitFor({ state: 'visible', timeout: 8000 });
   const opts = await sel.locator('option').allTextContents();

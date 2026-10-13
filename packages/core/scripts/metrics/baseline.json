@@ -3,7 +3,7 @@
   "updatedAt": "2026-09-26T19:27:49.089Z",
   "totalScore": 665,
   "trackedLoc": 792800,
-  "moduleCount": 1304,
+  "moduleCount": 1307,
   "bootGraphHash": "7c79a4f65815fa2c",
   "bootGraph": {
     "hash": "7c79a4f65815fa2c",
@@ -782,6 +782,10 @@
     {
       "date": "2026-10-09",
       "note": "moduleCount 1301->1304, owner-approved in chat: the 8.5.0 baseline was set 3 low. git ls-files equals HEAD and no file was added since ed752583, so 1304 is the real committed count, not new work."
+    },
+    {
+      "date": "2026-10-13",
+      "note": "moduleCount 1304->1307 for 8.5.1, owner-approved in chat: ui-icon-tooltips.mjs, interconsulta-team-board.test.mjs and scripts/e2e/lint-ui.mjs from the IC board rows redesign. Eager boot budget 3450000->3470000 B (measured 3460031) for the same change."
     }
   ]
 }

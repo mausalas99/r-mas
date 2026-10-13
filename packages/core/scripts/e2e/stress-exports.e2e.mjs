@@ -148,7 +148,7 @@ async function setMode(page, mode) {
 
 async function pickPatientIc(page, p) {
   await closeToasts(page);
-  if (!(await page.locator('#ic-board-mount .p-name, #ic-board-mount .ic-card .sv-name').locator('visible=true').count())) {
+  if (!(await page.locator('#ic-board-mount .p-name, #ic-board-mount .ic-line .ic-line__name').locator('visible=true').count())) {
     await goArea(page, 'nota');
     await page.locator('.exp-group-pill[data-group="paciente"]').click();
     await page.locator('[data-ic-back-to-board]').click();

@@ -44,7 +44,7 @@ async function showBoard(page) {
     await page.locator('.exp-group-pill[data-group="paciente"]').click();
     await page.locator('[data-ic-back-to-board]').click();
   }
-  await board.locator('.ic-card').first().waitFor({ state: 'visible' });
+  await board.locator('.ic-line:not(.ic-line--assign)').first().waitFor({ state: 'visible' });
   return board;
 }
 
@@ -58,15 +58,15 @@ await r.finish('Interconsulta timer: Recibida, running time, Respondida, average
   const board = await showBoard(page);
 
   // Give the first card a group so the tag shows, through the band.
-  const id = await board.locator('.ic-card').first().getAttribute('data-patient-id');
-  await board.locator(`.ic-card[data-patient-id="${id}"]`).first().click();
+  const id = await board.locator('.ic-line:not(.ic-line--assign)').first().getAttribute('data-patient-id');
+  await board.locator(`.ic-line[data-patient-id="${id}"]`).first().click();
   await page.locator('.ic-consult-band [data-consult-field="triage"]').selectOption('ic');
   await page.waitForTimeout(300);
   const timeFields = await page.locator('.ic-consult-band [data-consult-time]').count();
   check('band has Recibida + Respondida time fields', timeFields === 2, timeFields);
   await showBoard(page);
 
-  const wrap = board.locator(`.sv-card-wrap:has(.ic-card[data-patient-id="${id}"])`).first();
+  const wrap = board.locator(`.ic-line[data-patient-id="${id}"]`).first();
   const tag = (await wrap.locator('.ic-tag').first().textContent().catch(() => '')) || '';
   check('card shows the IC tag', tag.trim().toUpperCase() === 'IC', tag);
   check('card starts with a Recibida button', (await wrap.locator('[data-ic-timer="start"]').count()) === 1);
@@ -74,7 +74,7 @@ await r.finish('Interconsulta timer: Recibida, running time, Respondida, average
 
   await wrap.locator('[data-ic-timer="start"]').click();
   await page.waitForTimeout(300);
-  const wrap2 = board.locator(`.sv-card-wrap:has(.ic-card[data-patient-id="${id}"])`).first();
+  const wrap2 = board.locator(`.ic-line[data-patient-id="${id}"]`).first();
   const running = (await wrap2.locator('.ic-timer__t').textContent().catch(() => '')) || '';
   check('Recibida shows a running time', /^0 min$/.test(running.trim()), running);
   check('card now has a Respondida button', (await wrap2.locator('[data-ic-timer="stop"]').count()) === 1);
@@ -82,7 +82,7 @@ await r.finish('Interconsulta timer: Recibida, running time, Respondida, average
 
   await wrap2.locator('[data-ic-timer="stop"]').click();
   await page.waitForTimeout(300);
-  const wrap3 = board.locator(`.sv-card-wrap:has(.ic-card[data-patient-id="${id}"])`).first();
+  const wrap3 = board.locator(`.ic-line[data-patient-id="${id}"]`).first();
   check('Respondida freezes the time', (await wrap3.locator('.ic-timer__t.is-done').count()) === 1);
   check('no buttons left on an answered card', (await wrap3.locator('[data-ic-timer]').count()) === 0);
   const stats = (await board.locator('.ic-stats').textContent().catch(() => '')) || '';
@@ -90,7 +90,7 @@ await r.finish('Interconsulta timer: Recibida, running time, Respondida, average
   await r.shot(page, 'board-answered');
 
   // Band: both times show, editing one saves and keeps the other.
-  await board.locator(`.ic-card[data-patient-id="${id}"]`).first().click();
+  await board.locator(`.ic-line[data-patient-id="${id}"]`).first().click();
   const rec = page.locator('.ic-consult-band [data-consult-time="receivedAt"]');
   await rec.waitFor({ state: 'visible', timeout: 8000 });
   check('band shows the Recibida time', /^\d{2}:\d{2}$/.test(await rec.inputValue()));
@@ -108,15 +108,15 @@ await r.finish('Interconsulta timer: Recibida, running time, Respondida, average
 
   // Known follow-up: "Es seguimiento" on a fresh card removes the timer and the band time fields.
   await showBoard(page);
-  const other = await board.locator('.ic-card:not([data-patient-id="' + id + '"])').first().getAttribute('data-patient-id');
-  const ow = board.locator(`.sv-card-wrap:has(.ic-card[data-patient-id="${other}"])`).first();
+  const other = await board.locator('.ic-line:not(.ic-line--assign):not([data-patient-id="' + id + '"])').first().getAttribute('data-patient-id');
+  const ow = board.locator(`.ic-line[data-patient-id="${other}"]`).first();
   await ow.locator('[data-ic-timer="followup"]').click();
   await page.waitForTimeout(300);
-  const ow2 = board.locator(`.sv-card-wrap:has(.ic-card[data-patient-id="${other}"])`).first();
+  const ow2 = board.locator(`.ic-line[data-patient-id="${other}"]`).first();
   check('Es seguimiento removes the timer from the card', (await ow2.locator('[data-ic-timer]').count()) === 0);
-  const ftag = (await ow2.locator('.ic-tag').first().textContent().catch(() => '')) || '';
+  const ftag = (await ow2.locator('.ic-line__triage').first().textContent().catch(() => '')) || '';
   check('card now shows the Seguimiento tag', ftag.trim().toUpperCase() === 'SEGUIMIENTO', ftag);
-  await board.locator(`.ic-card[data-patient-id="${other}"]`).first().click();
+  await board.locator(`.ic-line[data-patient-id="${other}"]`).first().click();
   await page.locator('.ic-consult-band [data-consult-field="triage"]').waitFor({ state: 'visible', timeout: 8000 });
   check('band hides the time fields for a follow-up', (await page.locator('.ic-consult-band [data-consult-time]').count()) === 0);
   await page.locator('.ic-consult-band [data-consult-field="triage"]').selectOption('ic');

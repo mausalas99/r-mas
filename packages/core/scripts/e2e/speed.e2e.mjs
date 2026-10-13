@@ -159,7 +159,7 @@ await r.finish('Patient switch and fast use stay smooth', async () => {
   await page.waitForTimeout(600);
   await closeToasts(page);
   await goArea(page, 'nota'); // Interconsulta › Paciente opens on the team board
-  await page.locator('.ic-card .sv-name').locator('visible=true').first().waitFor();
+  await page.locator('.ic-line .ic-line__name').locator('visible=true').first().waitFor();
   await openPatient(page, last);
   await closeToasts(page);
   await page.locator('.exp-group-pill[data-group="clinico"]').hover({ timeout: 5000 }).catch(() => {});

@@ -49,7 +49,7 @@ import { fileURLToPath } from 'node:url';
 import { createA11yRecorder } from './harness.mjs';
 import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT } from '../../public/js/tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
-import { quietHints, goArea, pasteAndSave } from './harness.mjs';
+import { quietHints, goArea, pasteAndSave, readClipboard } from './harness.mjs';
 import { header, TABLE } from './some-fixtures.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -155,7 +155,7 @@ async function openEstadoActual(page) {
   await closeToasts(page);
   await goArea(page, 'nota');
   await page.waitForTimeout(500);
-  const boardCard = page.locator('.ic-card .sv-name', { hasText: 'DEMO PÉREZ JUAN' }).locator('visible=true').first();
+  const boardCard = page.locator('.ic-line .ic-line__name', { hasText: 'DEMO PÉREZ JUAN' }).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section[data-section="estadoActual"]').click();
@@ -167,7 +167,7 @@ async function checkSalaActionBar(page) {
   await closeToasts(page);
   await goArea(page, 'nota');
   await page.waitForTimeout(400);
-  const boardCard = page.locator('.ic-card .sv-name', { hasText: 'DEMO PÉREZ JUAN' }).locator('visible=true').first();
+  const boardCard = page.locator('.ic-line .ic-line__name', { hasText: 'DEMO PÉREZ JUAN' }).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section[data-section="estadoActual"]').click();
@@ -656,7 +656,7 @@ async function copyEa(page, app) {
   await app.evaluate(({ clipboard }) => clipboard.clear());
   await page.locator('#ea-copy-fab').click();
   await page.waitForTimeout(300);
-  return app.evaluate(({ clipboard }) => ({ text: clipboard.readText(), html: clipboard.readHTML() }));
+  return readClipboard(app);
 }
 
 /** Med splits, duplicate add, remove, escaping, diet and ventilatory variants: all read from the copied text. */
@@ -1103,7 +1103,7 @@ async function run() {
   check('copy FAB is visible on Estado actual with an active patient', await fab.isVisible());
   await fab.click();
   await page.waitForTimeout(300);
-  const clip = await app.evaluate(({ clipboard }) => ({ text: clipboard.readText(), html: clipboard.readHTML() }));
+  const clip = await readClipboard(app);
   check(
     'copying Estado actual strips ** markers from the plain text and bolds them in the HTML',
     !!clip.text && !/\*\*/.test(clip.text) && /<strong>/.test(clip.html || ''),

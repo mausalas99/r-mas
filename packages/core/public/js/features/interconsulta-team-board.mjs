@@ -89,7 +89,7 @@ export function icRowHtml(p, opts = {}) {
     '<span class="ic-line__triage">' + triageCell + '</span>' +
     '<span class="ic-line__crit">' + critDot + '</span>' +
     '<span class="ic-line__bed">' + escHtml(shortBed(p)) + '</span>' +
-    '<span class="ic-line__name">' + escHtml(titleCaseName(p.nombre) || 'Sin nombre') + '</span>' +
+    '<span class="ic-line__name" title="' + escHtml([p.registro].filter(Boolean).join(' · ')) + '">' + escHtml(titleCaseName(p.nombre) || 'Sin nombre') + '</span>' +
     '<span class="ic-line__svc">' + svcHtml(p) + '</span>' +
     '<span class="ic-line__motivo">' + (reason ? escHtml(reason) : '<span class="sv-none">Sin motivo</span>') + '</span>' +
     '<span class="ic-line__timer">' + (assign ? '' : icTimerHtml(p)) + '</span>' +

@@ -120,7 +120,7 @@ await r.finish('Refactoring UI R1 tour: light + dark', async () => {
   await setMode('interconsulta');
   await goArea(page, 'nota');
   await page.waitForTimeout(500);
-  const icCard = page.locator('.ic-card .sv-name', { hasText: P.name }).locator('visible=true').first();
+  const icCard = page.locator('.ic-line .ic-line__name', { hasText: P.name }).locator('visible=true').first();
   if (await icCard.isVisible().catch(() => false)) await icCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover({ timeout: 5000 }).catch(() => {});
   await page.locator('.exp-group-section[data-section="notas"]').click().catch(() => {});

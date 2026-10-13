@@ -14,3 +14,5 @@ scripts/lib/electron-pack-files.test.js
 scripts/golden/golden-corpus.test.mjs
 # Toast click fix (886fbb19): reads ui-toast.mjs and app-shell.mjs source. Owner-approved 2026-10-09.
 public/js/ui-toast.test.mjs
+# reads manifests/zips the test writes itself, not source (false positive)
+scripts/publish-module.test.mjs

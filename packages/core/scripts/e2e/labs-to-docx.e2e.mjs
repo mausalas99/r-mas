@@ -227,7 +227,7 @@ async function run() {
   // With a patient already open, IC mode may skip its team board.
   // The board card shows the full name (DEMO PÉREZ JUAN), the sidebar the short one.
   await page.mouse.move(0, 600); // close the area menu goArea left open
-  const boardCard = page.getByText(/^DEMO (PÉREZ )?JUAN$/).locator('visible=true').first();
+  const boardCard = page.getByText(/^DEMO (PÉREZ )?JUAN$/i).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   t0 = performance.now();
@@ -302,8 +302,8 @@ async function run() {
   if (askedAgain) await onboardAgain.click();
   await dismissLearnHub(page);
   // The app reopens in Interconsulta: its board shows full names, the sidebar short ones.
-  const juan = page.getByText(/^DEMO (PÉREZ )?JUAN$/).locator('visible=true').first();
-  const ana = page.getByText(/^DEMO (GARCÍA )?ANA$/).locator('visible=true').first();
+  const juan = page.getByText(/^DEMO (PÉREZ )?JUAN$/i).locator('visible=true').first();
+  const ana = page.getByText(/^DEMO (GARCÍA )?ANA$/i).locator('visible=true').first();
   await juan.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
   check('both patients survive restart', (await juan.isVisible()) && (await ana.isVisible()));
   await juan.click();

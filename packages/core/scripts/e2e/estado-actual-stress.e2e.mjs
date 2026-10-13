@@ -34,7 +34,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, quietHints, until, dismissLearnHub, goArea } from './harness.mjs';
+import { createRun, onboardLocalOnly, openPatient, pasteAndSave, closeToasts, quietHints, until, dismissLearnHub, goArea, readClipboard as harnessReadClipboard } from './harness.mjs';
 import { header, TABLE } from './some-fixtures.mjs';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -250,7 +250,7 @@ async function openEstadoActual(page, p) {
   await goArea(page, 'nota');
   await page.waitForTimeout(500);
   // The board shows a short name ("DEMO ALFA"): match on the last word.
-  const card = page.getByText(new RegExp('^DEMO.*' + p.name.split(' ').pop() + '$')).locator('visible=true').first();
+  const card = page.getByText(new RegExp('^DEMO.*' + p.name.split(' ').pop() + '$', 'i')).locator('visible=true').first();
   if (await card.isVisible().catch(() => false)) await card.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section[data-section="estadoActual"]').click();
@@ -338,7 +338,7 @@ async function historialText(page) {
 const panelText = (page) => page.locator('.estado-actual-panel').innerText();
 
 async function readClipboard(app) {
-  return app.evaluate(({ clipboard }) => ({ text: clipboard.readText(), html: clipboard.readHTML() }));
+  return harnessReadClipboard(app);
 }
 
 // ── Scenario ───────────────────────────────────────────────────────────────

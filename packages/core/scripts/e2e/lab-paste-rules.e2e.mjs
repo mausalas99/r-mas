@@ -77,6 +77,7 @@ import {
   pasteAndSave as harnessPasteAndSave,
   openPatient as harnessOpenPatient,
   goArea,
+  readClipboard,
 } from './harness.mjs';
 import { TABLE, header, fullLabs, gas } from './some-fixtures.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
@@ -871,7 +872,7 @@ await r.finish('SOME paste rules', async () => {
   await daySets(TRES, '08/01/2026');
   await page.locator('#lab-copy-fab').click();
   await page.waitForTimeout(600);
-  const [clipText, clipHtml] = await app.evaluate(({ clipboard }) => [clipboard.readText(), clipboard.readHTML()]);
+  const { text: clipText, html: clipHtml } = await readClipboard(app);
   check('"Copiar" text is plain lines "08/01" then BH/QS/ESC/PFHs, with no "*" flags',
     /^08\/01\nBH Hb 11\.85 Hto 38\.4/.test(clipText) && /\nQS Glu 94 Cr 1\.35/.test(clipText) && !clipText.includes('*'), clipText.slice(0, 200));
   check('"Copiar" HTML bolds altered values (<strong>11.85</strong>) and breaks lines with <br>',
@@ -1331,7 +1332,7 @@ await r.finish('SOME paste rules', async () => {
     await page.locator('#lab-copy-fab').click();
     await page.waitForTimeout(600);
     await closeToasts(page);
-    return app.evaluate(({ clipboard }) => [clipboard.readText(), clipboard.readHTML()]);
+    return readClipboard(app).then((c) => [c.text, c.html]);
   };
   const [t1, h1] = await copyDay('01/04/2026');
   const unhtml = (h) => h.replace(/<\/?strong>/g, '').replace(/<br>/g, '\n').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');

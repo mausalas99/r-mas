@@ -126,7 +126,7 @@ async function pickPatient(page, p) {
     await page.locator('.exp-group-pill[data-group="paciente"]').click();
     await page.locator('[data-ic-back-to-board]').click();
   }
-  await board.locator('.sv-name').first().waitFor({ state: 'visible' });
+  await board.locator('.ic-line__name').first().waitFor({ state: 'visible' });
   await openPatient(page, p);
 }
 
@@ -181,12 +181,12 @@ const chromeState = (page) => page.evaluate(() => ({
   emptyState: getComputedStyle(document.getElementById('empty-state')).display !== 'none',
   sidebar: (() => { const a = document.querySelector('aside.patient-sidebar'); return !!a && a.getClientRects().length > 0; })(),
 }));
-/** IC team board lanes as data. */
+/** IC team board sections as data. */
 const boardLanes = (page) => page.locator('#ic-board-mount').evaluate((mount) =>
-  [...mount.querySelectorAll('.ic-board-lane')].map((l) => ({
+  [...mount.querySelectorAll('.ic-board-section')].map((l) => ({
     role: l.dataset.role,
-    title: l.querySelector('.ic-board-lane__title')?.textContent.trim(),
-    empty: [...l.querySelectorAll('.ic-board-lane__body > .ic-board-empty')].map((e) => e.textContent.trim()).join('|'),
+    title: l.querySelector('.ic-board-section__title')?.childNodes[0]?.textContent.trim(),
+    empty: [...l.querySelectorAll('.ic-lines > .ic-lines__empty')].map((e) => e.textContent.trim()).join('|'),
     drop: l.getAttribute('data-drop-team-id'),
   })));
 const field = (page, arg) => page.locator(`#note-form [data-oninput-args='["${arg}"]']`);
@@ -268,13 +268,13 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   let boardHtml = await page.locator('#ic-board-mount').innerHTML();
   check('board header: «+ Agregar» comes ahead of «Actualizar pacientes»',
     /<div class="ic-board-header">[\s\S]*data-ic-board-add[\s\S]*data-ic-board-refresh/.test(boardHtml));
-  const laneCount = (boardHtml.match(/<section class="ic-board-lane /g) || []).length;
-  // 4 fixed team rows (guardia/activo x2/postguardia, all "no team today" with
-  // no teams configured) plus the «Por asignar» tray for P1/P2, who have no team.
-  check('board renders its rows (4 fixed + «Por asignar» tray)', laneCount === 5, laneCount);
+  const laneCount = (boardHtml.match(/<section class="ic-board-section /g) || []).length;
+  // 4 fixed team sections (guardia/activo x2/postguardia, all "no team today" with
+  // no teams configured) plus the «Por asignar» section for P1/P2, who have no team.
+  check('board renders its sections (4 fixed + «Por asignar»)', laneCount === 5, laneCount);
   check('no rollover button on the board (feature was removed)', !boardHtml.includes('Terminar guardia y repartir pacientes'));
   check('patients with no team land in «Por asignar» instead of disappearing',
-    boardHtml.includes('Por asignar') && boardHtml.includes(P1.name) && boardHtml.includes(P2.name));
+    boardHtml.includes('Por asignar') && boardHtml.toLowerCase().includes(P1.name.toLowerCase()) && boardHtml.toLowerCase().includes(P2.name.toLowerCase()));
 
   await pickPatient(page, P1);
 
@@ -334,26 +334,25 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   await page.locator('#ic-board-mount').waitFor({ state: 'visible' });
   await page.locator('body').click({ position: { x: 5, y: 5 } }).catch(() => {});
   await page.keyboard.press('Alt+Control+Shift+KeyI');
-  await page.locator('#ic-board-mount .ic-row--guardia').waitFor({ state: 'visible' });
-  await page.locator('#ic-board-mount [data-role="guardia"] .ic-card').first().waitFor({ state: 'visible' });
+  await page.locator('#ic-board-mount .ic-board-section--guardia').waitFor({ state: 'visible' });
+  await page.locator('#ic-board-mount [data-role="guardia"] .ic-line').first().waitFor({ state: 'visible' });
   await closeToasts(page);
   const lanes = () => page.locator('#ic-board-mount').evaluate((mount) =>
-    [...mount.querySelectorAll('.ic-board-lane')].map((l) => ({
+    [...mount.querySelectorAll('.ic-board-section')].map((l) => ({
       role: l.dataset.role,
-      title: l.querySelector('.ic-board-lane__title')?.textContent.trim(),
-      headFirst: l.firstElementChild?.classList.contains('ic-row__head') && l.lastElementChild?.classList.contains('ic-board-lane__body'),
-      note: l.querySelector('.ic-row__note')?.textContent.trim() || '',
+      title: l.querySelector('.ic-board-section__title')?.childNodes[0]?.textContent.trim(),
+      headFirst: l.firstElementChild?.classList.contains('ic-board-section__title') && l.lastElementChild?.classList.contains('ic-lines'),
+      note: l.querySelector('.ic-board-section__title em')?.textContent.trim() || '',
       drop: l.getAttribute('data-drop-team-id'),
-      buckets: [...l.querySelectorAll('.ic-row__bucket > .sv-label')].map((d) => d.textContent.trim()),
-      ids: [...l.querySelectorAll('.ic-card[data-patient-id]')].map((c) => c.getAttribute('data-patient-id')),
+      ids: [...l.querySelectorAll('.ic-line[data-patient-id]')].map((c) => c.getAttribute('data-patient-id')),
     })));
   let L = await lanes();
   const byRole = (role) => L.filter((l) => l.role === role);
   check('demo board: real patients are hidden while the demo shows',
-    !(await page.locator('#ic-board-mount').innerText()).includes(P1.name) && L.reduce((n, l) => n + l.ids.length, 0) === 12,
+    !(await page.locator('#ic-board-mount').innerText()).toLowerCase().includes(P1.name.toLowerCase()) && L.reduce((n, l) => n + l.ids.length, 0) === 12,
     L.map((l) => l.ids.length));
-  check('lane layout: guardia, 2 activo, postguardia, then «Sin equipo»; every lane has its head before its body',
-    L.map((l) => l.role).join(',') === 'guardia,activo,activo,postguardia,sin-equipo' && L.every((l) => l.headFirst), L.map((l) => l.role));
+  check('section layout: «Por asignar», guardia, 2 activo, postguardia; every section has its heading before its rows',
+    L.map((l) => l.role).join(',') === 'sin-equipo,guardia,activo,activo,postguardia' && L.every((l) => l.headFirst), L.map((l) => l.role));
   const letter = (l) => 'ABCD'.indexOf(/Equipo Demo ([A-D])/.exec(l.title || '')?.[1] ?? '?');
   const gL = letter(byRole('guardia')[0]);
   const pL = letter(byRole('postguardia')[0]);
@@ -361,29 +360,27 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   check('team roles: the guardia letter is on guardia, the letter before it is postguardia, the other two are activo',
     gL >= 0 && (new Date().getDate() === 1 /* the A–D cycle restarts each month */ || pL === (gL + 3) % 4) && aL.every((x) => x >= 0 && x !== gL && x !== pL) && new Set([gL, pL, ...aL]).size === 4,
     { gL, pL, aL });
-  check('guardia lane has Preop / Pendientes / Under; VPO and today\'s new consults are in Preop, older follow-ups in Pendientes',
-    byRole('guardia')[0].buckets.join('|') === 'Preop / Nuevas hoy · 4|Pendientes · 2', byRole('guardia')[0].buckets);
-  check('activo lanes have Pendientes and Under only (no Preop)',
-    byRole('activo').every((l) => l.buckets.join('|') === 'Pendientes · 2'), byRole('activo').map((l) => l.buckets));
-  check('postguardia lane says «No presencial hoy», keeps its buckets and stays a drop target',
-    /No presencial hoy/.test(byRole('postguardia')[0].note) && byRole('postguardia')[0].buckets.length === 0 && !!byRole('postguardia')[0].drop,
+  check('guardia has 6 rows and each activo team 2 (flat list, no buckets)',
+    byRole('guardia')[0].ids.length === 6 && byRole('activo').every((l) => l.ids.length === 2), L.map((l) => l.ids.length));
+  check('postguardia lane says «No presencial hoy», has no rows and stays a drop target',
+    /No presencial hoy/.test(byRole('postguardia')[0].note) && byRole('postguardia')[0].ids.length === 0 && !!byRole('postguardia')[0].drop,
     byRole('postguardia')[0]);
-  check('every lane body is a drop target; «Sin equipo» uses an empty team id',
+  check('every section is a drop target; «Sin equipo» uses an empty team id',
     L.every((l) => l.drop !== null && l.drop !== undefined) && byRole('sin-equipo')[0].drop === '' && byRole('sin-equipo')[0].ids.length === 2, L.map((l) => l.drop));
 
   // Drag a today's-new consult from guardia to the first activo lane → it becomes «Pendientes» there.
-  const card = page.locator('#ic-board-mount .ic-card[data-patient-id="ic-demo-new-1"]');
+  const card = page.locator('#ic-board-mount .ic-line[data-patient-id="ic-demo-new-1"]');
   const activo1Id = byRole('activo')[0].drop;
-  await card.dragTo(page.locator(`#ic-board-mount [data-drop-team-id="${activo1Id}"]`));
+  await card.dragTo(page.locator(`#ic-board-mount section[data-drop-team-id="${activo1Id}"]`));
   await until(async () => (await lanes()).find((l) => l.drop === activo1Id)?.ids.includes('ic-demo-new-1'), 4000);
   L = await lanes();
   const g2 = byRole('guardia')[0];
   const a2 = L.find((l) => l.drop === activo1Id);
-  check('drag reassign: the card moves lane; on an activo team it counts under Pendientes, not Preop',
+  check('drag reassign: the row moves to the other team section',
     a2.ids.includes('ic-demo-new-1') && !g2.ids.includes('ic-demo-new-1') &&
-    g2.buckets[0] === 'Preop / Nuevas hoy · 3' && a2.buckets.join('|') === 'Pendientes · 3', { g: g2.buckets, a: a2.buckets });
+    g2.ids.length === 5 && a2.ids.length === 3, { g: g2.ids.length, a: a2.ids.length });
   // The change survives leaving and re-entering the board.
-  await page.locator('#ic-board-mount .ic-card[data-patient-id="ic-demo-fu-1"]').click();
+  await page.locator('#ic-board-mount .ic-line[data-patient-id="ic-demo-fu-1"]').click();
   await page.locator('.ic-consult-band').waitFor({ state: 'visible' });
   await page.keyboard.press('Escape');
   await page.locator('#ic-board-mount').waitFor({ state: 'visible' });
@@ -392,11 +389,11 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
     L.find((l) => l.drop === activo1Id).ids.includes('ic-demo-new-1'));
   await page.locator('body').click({ position: { x: 5, y: 5 } }).catch(() => {});
   await page.keyboard.press('Alt+Control+Shift+KeyI');
-  await until(async () => (await page.locator('#ic-board-mount .ic-card[data-patient-id^="ic-demo"]').count()) === 0, 5000);
-  await page.locator('#ic-board-mount .ic-card .sv-name').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+  await until(async () => (await page.locator('#ic-board-mount .ic-line[data-patient-id^="ic-demo"]').count()) === 0, 5000);
+  await page.locator('#ic-board-mount .ic-line .ic-line__name').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
   await closeToasts(page);
   const offTxt = await page.locator('#ic-board-mount').innerText();
-  check('demo off: the demo patients go and the real patients are back on the board', /DEMO (NOTA )?DOS/.test(offTxt) && !/Equipo Demo/.test(offTxt), offTxt.slice(0, 300));
+  check('demo off: the demo patients go and the real patients are back on the board', /DEMO (NOTA )?DOS/i.test(offTxt) && !/Equipo Demo/.test(offTxt), offTxt.slice(0, 300));
 
   await pickPatient(page, P1);
   await goClinico(page, 'notas');
@@ -607,7 +604,7 @@ await r.finish('Nota de evolución + Indicaciones: profile, census dx, rows, Wor
   // Entering with a patient open lands on that patient; Escape goes back to the board.
   await goArea(ic, 'nota');
   if (await ic.locator('.ic-consult-band').isVisible().catch(() => false)) await ic.keyboard.press('Escape');
-  await ic.locator('#ic-board-mount .ic-board-lane').first().waitFor({ state: 'attached' });
+  await ic.locator('#ic-board-mount .ic-board-section').first().waitFor({ state: 'attached' });
   const icChrome = await chromeState(ic);
   check('Nube Interconsultas user: the IC board shows (IC classes on, board not hidden)', icChrome.icMode && icChrome.boardOpen && !icChrome.boardHidden, icChrome);
   const icL = await boardLanes(ic);

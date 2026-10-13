@@ -127,8 +127,8 @@ await r.finish('IC «SUGERENCIAS» paste anywhere → Indicaciones', async () =>
   await page.waitForTimeout(600);
   const board = page.locator('#ic-board-mount');
   if (!(await board.isVisible())) await goArea(page, 'nota');
-  await board.locator('.ic-card').first().waitFor({ state: 'visible', timeout: 8000 });
-  await board.locator('.ic-card').first().click();
+  await board.locator('.ic-line').first().waitFor({ state: 'visible', timeout: 8000 });
+  await board.locator('.ic-line').first().click();
   await page.locator('.ic-consult-band').waitFor({ state: 'visible', timeout: 8000 });
 
   // ── First paste: empty indicaciones → no question, fills every box ───────

@@ -74,7 +74,7 @@ function requestingServiceTriggerHtml(name) {
   });
   var hue = svc ? hueForRequestingService(svc) : 220;
   return (
-    '<button type="button" class="ic-cf-svc" aria-label="Servicio solicitante" data-ic-req-trigger>' +
+    '<button type="button" class="ic-cf-svc" aria-label="' + (trimmed ? escHtml(trimmed) : 'Elegir') + ', servicio solicitante" data-ic-req-trigger>' +
     (trimmed ? escHtml(trimmed) : 'Elegir') +
     '</button>'
   );

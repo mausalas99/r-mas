@@ -235,7 +235,7 @@ export async function closeToasts(page) {
 }
 
 export async function visiblePatientCount(page) {
-  return page.locator('.p-name, .ic-card .sv-name').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
+  return page.locator('.p-name, .ic-line .ic-line__name').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
 }
 
 /** Open the "Pegar SOME" box if needed, paste, press Procesar. */
@@ -344,7 +344,7 @@ export async function openPatient(page, p) {
     await page.keyboard.press('Escape');
     await page.locator('#lab-input').waitFor({ state: 'hidden', timeout: 5000 });
   }
-  await page.locator(`.p-name[title*="${p.exp}"], .ic-card .sv-name[title*="${p.exp}"]`).locator('visible=true').first().click();
+  await page.locator(`.p-name[title*="${p.exp}"], .ic-line .ic-line__name[title*="${p.exp}"]`).locator('visible=true').first().click();
   const servicio = page.locator('#m-servicio');
   // Interconsulta «Completar ingreso» (8.5.0) asks for the servicio solicitante instead.
   const icSvc = page.locator('#m-ic-svc button').first();
@@ -463,3 +463,12 @@ export function createA11yRecorder(scenario) {
     },
   };
 }
+
+/** Main-process clipboard as {text, html}. Electron 44 dropped readHTML and made reads async. */
+export const readClipboard = (app) => app.evaluate(async ({ clipboard }) => {
+  let html = '';
+  for (const item of await clipboard.read()) {
+    if (item.types.includes('text/html')) html = await (await item.getType('text/html')).text();
+  }
+  return { text: await clipboard.readText(), html };
+});
