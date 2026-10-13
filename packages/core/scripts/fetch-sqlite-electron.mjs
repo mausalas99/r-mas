@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeNativeBinary, isMachO, isWindowsPe, readBinaryHeader } from './lib/native-binary-format.mjs';
 import {
+  bundledSqlcipherPrebuild,
   canProbeSqlcipherUnderElectron,
   electronRuntimeReady,
   electronSqlcipherLoads,
@@ -98,6 +99,12 @@ async function main() {
         'Run: node node_modules/electron/install.js'
     );
     process.exit(1);
+  }
+
+  // v13 ships N-API prebuilds (Electron-version independent): nothing to download.
+  if (bundledSqlcipherPrebuild(root, platform, arch)) {
+    console.log(`[fetch-sqlite-electron] N-API prebuild bundled for ${platform}-${arch} — no download needed`);
+    process.exit(0);
   }
 
   if (
