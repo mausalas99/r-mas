@@ -426,6 +426,10 @@ function ensureConsultBandDelegation(bandMount) {
   if (bandMount.dataset.icBandWired) return;
   bandMount.dataset.icBandWired = '1';
   bandMount.addEventListener('change', handleConsultBandChange);
+  // Motivo is free text: 'change' only fires on blur, so push while typing.
+  bandMount.addEventListener('input', function (ev) {
+    if (ev.target.type === 'text') handleConsultBandChange(ev);
+  });
   bandMount.addEventListener('click', handleConsultBandClick);
 }
 
