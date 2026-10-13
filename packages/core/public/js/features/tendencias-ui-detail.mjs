@@ -4,6 +4,8 @@ import { dedupeTrendSetsForSeries, getSetTrendValueForSeries, buildTendChartLabe
 import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
 import { TREND_DETAIL_DOWNSAMPLE, downsampleTrendChartSeries } from '../lab-history-cache.mjs';
 import { loadChartJs } from '../vendor-loader.mjs';
+import { mountRpcDateInput } from '../rpc-date-picker.mjs';
+import { filterHistoryByDateRange } from '../tend-group-modal-open.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
 import { aid, esc, tendStore } from './tendencias-state.mjs';
 import {
@@ -228,6 +230,29 @@ function ensureTendDetailControlsWired() {
   if (!btn) return;
   _tendDetailControlsWired = true;
   registerTendPane('analito', closeTendDetail);
+  var rFrom = document.getElementById('tend-detail-range-from');
+  var rTo = document.getElementById('tend-detail-range-to');
+  var rClear = document.getElementById('tend-detail-range-clear');
+  if (rFrom && rTo && rClear) {
+    mountRpcDateInput(rFrom);
+    mountRpcDateInput(rTo);
+    var reapplyRange = function () {
+      var ctx = tendStore.detailContext;
+      if (!ctx) return;
+      tendStore.detailRange = { pid: aid(), from: rFrom.value, to: rTo.value };
+      rClear.hidden = !(rFrom.value || rTo.value);
+      void openTendDetailAsync(ctx.sectionKey, ctx.fieldKey);
+    };
+    rFrom.addEventListener('change', reapplyRange);
+    rTo.addEventListener('change', reapplyRange);
+    rClear.addEventListener('click', function () {
+      rFrom.value = '';
+      rTo.value = '';
+      rFrom.dispatchEvent(new Event('rpc-date-refresh'));
+      rTo.dispatchEvent(new Event('rpc-date-refresh'));
+      reapplyRange();
+    });
+  }
   document.getElementById('tend-detail-readings').addEventListener('click', function (ev) {
     var more = ev.target.closest('.tend-rd-more');
     if (!more) return;
@@ -572,6 +597,17 @@ function fillTendDetailHeader(sectionKey, fieldKey, title, unit, latest, ref, la
 }
 
 function openTendDetail(sectionKey, fieldKey) {
+  // Range sticks across analytes of one patient; a different patient starts clean.
+  var r = tendStore.detailRange;
+  if (r.pid !== aid()) r = tendStore.detailRange = { pid: aid(), from: '', to: '' };
+  ['from', 'to'].forEach(function (k) {
+    var el = document.getElementById('tend-detail-range-' + k);
+    if (!el) return;
+    el.value = r[k];
+    el.dispatchEvent(new Event('rpc-date-refresh'));
+  });
+  var clr = document.getElementById('tend-detail-range-clear');
+  if (clr) clr.hidden = !(r.from || r.to);
   void openTendDetailAsync(sectionKey, fieldKey);
 }
 
@@ -586,7 +622,13 @@ function openTendDetailAsync(sectionKey, fieldKey) {
     fieldKey
   );
   if (setsDesc.length < 2) return Promise.resolve();
-  var allAsc = toTrendAscendingSets(setsDesc);
+  var rng = tendStore.detailRange;
+  var inRange = filterHistoryByDateRange(setsDesc, rng.from, rng.to);
+  if (!inRange.length) {
+    rt.showToast('Sin resultados en ese rango', 'error');
+    return Promise.resolve();
+  }
+  var allAsc = toTrendAscendingSets(inRange);
   // Sample the sets (not just labels) so chart index → set stays true for events/clicks.
   var sampled = downsampleTrendChartSeries(
     allAsc,
@@ -601,7 +643,7 @@ function openTendDetailAsync(sectionKey, fieldKey) {
   var labelParts = tendCardLabelParts(sectionKey, fieldKey);
   var title = labelParts.title;
   var unit = labelParts.unit;
-  var latestSet = setsDesc.length ? setsDesc[0] : null;
+  var latestSet = inRange.length ? inRange[0] : null;
   var latest = latestSet ? getSetTrendValueForSeries(latestSet, sectionKey, fieldKey) : null;
   var ref = tendRefForSeries(history, sectionKey, fieldKey, latestSet);
   var markerMap = buildEventMarkerMapForSets(setsAsc, aid());

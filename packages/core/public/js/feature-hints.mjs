@@ -76,7 +76,7 @@ export const FEATURE_HINTS = [
     kind: 'guia',
     title: 'Buscar',
     steps: [
-      { sel: '#btn-header-cmdk', text: 'Busca pacientes y acciones desde aquí. Atajo: <strong>⌘K</strong>.' },
+      { sel: '#btn-header-cmdk', text: 'Busca secciones, pacientes y acciones desde aquí. Los resultados salen en ese orden. Atajo: <strong>⌘K</strong>.' },
     ],
   },
   {
@@ -104,10 +104,11 @@ export const FEATURE_HINTS = [
     kind: 'guia',
     title: 'Tablero de interconsultas',
     steps: [
-      { sel: '.ic-mode-seg', text: '<strong>Asignar</strong> muestra una fila por equipo. <strong>Mi equipo</strong> muestra solo las tarjetas de un equipo, completas.' },
-      { sel: '.ic-team-board .ic-row__head', text: 'Cada fila es un equipo. Las tarjetas de ese equipo van dentro.' },
-      { sel: '.ic-team-board .ic-row .ic-card', text: 'Arrastra una tarjeta a otra fila para cambiarla de equipo. Tócala para abrir su Resumen.' },
-      { sel: '.ic-team-board .ic-tray .ic-row__head', text: '<strong>Por asignar</strong> junta a los que aún no tienen equipo. Arrástralos a una fila.' },
+      { sel: '.ic-mode-seg', text: '<strong>Asignar</strong> muestra una sección por equipo. <strong>Mi equipo</strong> muestra solo los pacientes de un equipo.' },
+      { sel: '.ic-team-board .ic-board-section__title', text: 'Cada sección es un equipo. El número es cuántos pacientes tiene.' },
+      { sel: '.ic-team-board .ic-line--grip', text: 'Arrastra un paciente a otra sección para cambiarlo de equipo. Tócalo para abrir su Resumen.' },
+      { sel: '.ic-team-board .ic-line__assign', text: '<strong>Por asignar</strong> junta a los que aún no tienen equipo. Pulsa <strong>Asignar</strong> o usa las teclas <strong>1</strong> a <strong>4</strong>.' },
+      { sel: '.ic-keys', text: 'Atajos del tablero: <strong>J</strong> y <strong>K</strong> mueven, <strong>R</strong> marca respondida, <strong>A</strong> archiva, <strong>↵</strong> abre al paciente.' },
       { sel: '[data-ic-board-refresh]', text: '<strong>Actualizar labs</strong> trae los labs de los pacientes del tablero. En Mi equipo, solo los de ese equipo. <strong>+ Agregar</strong> da de alta a alguien sin esperar un laboratorio.' },
     ],
   },

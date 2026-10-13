@@ -1146,7 +1146,7 @@ html.dark .ic-cf--svc.is-picked::before {
 }
 .patient-dash .vital-input::placeholder {
   color: var(--color-ink-muted);
-  opacity: 0.6;
+  opacity: 1;
 }
 .patient-dash .vital-input:focus-visible {
   outline: none;

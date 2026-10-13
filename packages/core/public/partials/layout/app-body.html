@@ -329,8 +329,8 @@
             <div class="rpc-proc-agenda-range" id="procedure-agenda-range" aria-live="polite"></div>
           </div>
           <div class="rpc-proc-agenda-actions">
-            <button type="button" class="secondary" id="procedure-agenda-prev" data-onclick="navigateProcedureAgendaWeek" data-onclick-args='[-1]' aria-label="Semana anterior" title="Semana anterior">←</button>
-            <button type="button" class="secondary" id="procedure-agenda-next" data-onclick="navigateProcedureAgendaWeek" data-onclick-args='[1]' aria-label="Semana siguiente" title="Semana siguiente">→</button>
+            <button type="button" class="secondary" id="procedure-agenda-prev" data-onclick="navigateProcedureAgendaWeek" data-onclick-args='[-1]' aria-label="Semana anterior" title="Semana anterior"><span aria-hidden="true">←</span></button>
+            <button type="button" class="secondary" id="procedure-agenda-next" data-onclick="navigateProcedureAgendaWeek" data-onclick-args='[1]' aria-label="Semana siguiente" title="Semana siguiente"><span aria-hidden="true">→</span></button>
             <button type="button" class="rpc-proc-agenda-btn-new" id="procedure-agenda-new" data-onclick="openProcedureAgendaModal" data-onclick-args='[null]'>+ Procedimiento</button>
           </div>
         </div>
@@ -342,7 +342,7 @@
 
     <div id="appcontent-nota" role="tabpanel" aria-labelledby="apptab-nota" aria-hidden="false" style="flex-direction:column;flex:1;overflow:hidden;">
       <div id="interconsulta-mode-frame" class="wb-mode-frame-mount" hidden aria-label="Interconsulta"></div>
-      <div id="ic-board-mount" class="ic-board-view" hidden aria-label="Tablero de equipos de interconsulta"></div>
+      <div id="ic-board-mount" class="ic-board-view" role="region" hidden aria-label="Tablero de equipos de interconsulta"></div>
       <div class="empty-state" id="empty-state">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
         <h3 class="empty-state-title">Elige un paciente para ver el expediente</h3>
@@ -448,6 +448,13 @@
                       <span id="tend-detail-badge"></span>
                       <button type="button" class="tend-pane-close" aria-label="Cerrar" title="Cerrar (Esc)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
                     </div>
+                  </div>
+                  <div class="tend-group-range-row" id="tend-detail-range-row">
+                    <span class="tend-group-range-label">Rango</span>
+                    <input type="date" class="tend-group-range-input" id="tend-detail-range-from" />
+                    <span class="tend-group-range-sep">a</span>
+                    <input type="date" class="tend-group-range-input" id="tend-detail-range-to" />
+                    <button type="button" class="tend-group-range-clear" id="tend-detail-range-clear" hidden>Quitar rango</button>
                   </div>
                   <div class="tend-pane-body">
                     <div id="tend-detail-hero" class="tend-detail-hero"></div>

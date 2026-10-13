@@ -96,7 +96,8 @@
     "e2e:paste-smart": "node scripts/e2e/paste-smart.e2e.mjs",
     "dev:nube-test-fresh": "node scripts/dev-nube-test-app.mjs --fresh",
     "ci:forbid-lan": "node scripts/ci/forbid-lan-imports.mjs",
-    "bench:flow": "node scripts/run-with-electron-node.mjs scripts/metrics/flow-timer.mjs"
+    "bench:flow": "node scripts/run-with-electron-node.mjs scripts/metrics/flow-timer.mjs",
+    "lint:ui": "node scripts/e2e/lint-ui.mjs"
   },
   "author": "Mauricio Salas",
   "license": "ISC",
@@ -125,6 +126,7 @@
     "fast-check": "^4.10.2",
     "globals": "^17.12.0",
     "jscpd": "^5.3.3",
+    "lintapple": "^0.1.19",
     "playwright": "^1.62.1",
     "ts-api-utils": "^2.5.0"
   },

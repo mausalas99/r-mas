@@ -1125,6 +1125,7 @@ html.dark .card { box-shadow: var(--shadow); }
   color: var(--status-warning, #b45309);
   white-space: nowrap;
 }
+html.dark .lab-late-status { color: #d27127; }
 .lab-late-status::before {
   content: '';
   width: 8px;

@@ -9,10 +9,10 @@
   --color-content: #f2f1ed;
   --color-elevated: #ffffff;
   --color-ink: #1a1a1c;
-  --color-ink-muted: #636367; /* ≥4.5:1 on paper + panel greys (was #6c6c70 = 4.35:1) */
-  --color-ink-tertiary: #6e747e; /* Claro R1 2026-10-09: 4.5:1 on paper */
+  --color-ink-muted: #606064; /* ≥4.5:1 on paper + panel greys (was #6c6c70 = 4.35:1) */
+  --color-ink-tertiary: #5b616b; /* Claro R1 2026-10-09: 4.5:1 on paper */
   --color-warm: oklch(0.55 0.02 52);
-  --color-accent: oklch(0.51 0.09 195);
+  --color-accent: oklch(0.46 0.09 195);
   --color-accent-hover: oklch(0.42 0.09 195);
   --color-accent-soft: color-mix(in oklab, var(--color-accent) 12%, var(--color-elevated));
   --color-accent-soft-text: var(--color-accent-hover); /* accent on accent-soft was 4.19:1 */
@@ -280,7 +280,7 @@ html.dark {
   --color-surface: #1f232d;
   --color-elevated: #262b36;
   --color-ink: #e8eaed;
-  --color-ink-muted: #97a3b8;
+  --color-ink-muted: #9ca8bd;
   --color-ink-tertiary: #8b94a7;
   /* Teal accent, lightened from light-mode value to clear 4.5:1 on #1e222b
    * (and, past 0.72, to clear 4.5:1 for --lab-chip-txt on --lab-chip-bg) */

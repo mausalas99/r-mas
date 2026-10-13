@@ -219,9 +219,20 @@ function repaintAfterBlur() {
   );
 }
 
+/** Datos is a modal, not the active inner tab: the chart repaint below never reaches it.
+ * A pull must redraw it too, or a teammate's edit stays hidden until the modal is reopened. */
+function refreshOpenDatosModal() {
+  var backdrop = document.getElementById('exp-datos-modal-backdrop');
+  var wrap = document.getElementById('patient-data-form');
+  if (!backdrop || !wrap || !backdrop.classList.contains('open')) return;
+  rt.renderPatientDataPane(wrap.dataset.patientId);
+  if (wrap.contains(document.activeElement)) repaintAfterBlur();
+}
+
 export function refreshActivePatientViewIfOpen() {
   var id = rt.getActiveId();
   if (id == null || id === '') return;
+  refreshOpenDatosModal();
   if (hasFocusedEditableInPatientView()) {
     import('./expediente-navigation.mjs').then(function (m) { m.syncNoteFormsInPlace(); });
     repaintAfterBlur();

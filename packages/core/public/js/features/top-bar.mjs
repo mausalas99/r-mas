@@ -170,8 +170,9 @@ function makeRoom(header, row) {
       var on = el.classList.contains('header-mode-seg-btn') ? segInHeader : short;
       var want = on && SHORT[el.dataset.full] ? SHORT[el.dataset.full] : el.dataset.full;
       if (el.textContent !== want) el.textContent = want;
-      if (want !== el.dataset.full) el.setAttribute('aria-label', el.dataset.full);
-      else if (el.getAttribute('aria-label') === el.dataset.full) el.removeAttribute('aria-label');
+      // The accessible name starts with the visible text («IC» → «IC, Interconsulta»).
+      if (want !== el.dataset.full) el.setAttribute('aria-label', want + ', ' + el.dataset.full);
+      else if ((el.getAttribute('aria-label') || '').slice(-el.dataset.full.length - 2) === ', ' + el.dataset.full) el.removeAttribute('aria-label');
       if (!el.classList.contains('header-mode-seg-btn')) {
         if (want !== el.dataset.full) el.title = el.dataset.full;
         else if (el.title === el.dataset.full) el.removeAttribute('title');

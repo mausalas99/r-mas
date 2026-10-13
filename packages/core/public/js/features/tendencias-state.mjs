@@ -27,6 +27,7 @@ export const tendStore = {
   detailChart: null,
   detailContext: null,
   detailSelectedIndex: null,
+  detailRange: { pid: null, from: '', to: '' },
   _tendRenderState: {
     key: null,
     seriesKeys: [],

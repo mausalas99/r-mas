@@ -265,7 +265,7 @@ function renderPatientListMessage(list, msg, opts) {
   destroyPatientActiveZoneVirtual();
   var scrollTop = opts.silent ? list.scrollTop : 0;
   list.innerHTML =
-    '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">' + msg + '</div>';
+    '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">' + msg + '</div>';
   if (opts.silent && scrollTop > 0) list.scrollTop = scrollTop;
   setLastRondaNavIds([]);
   if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();

@@ -128,7 +128,7 @@ function buildToastEl(msg, kind, id, action) {
   closeBtn.type = 'button';
   closeBtn.className = 'toast-close';
   closeBtn.setAttribute('aria-label', 'Cerrar aviso');
-  closeBtn.textContent = '×';
+  closeBtn.innerHTML = '<span aria-hidden="true">×</span>';
   closeBtn.addEventListener('click', function (ev) {
     ev.stopPropagation();
     removeToastEl(el, false);

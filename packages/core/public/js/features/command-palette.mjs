@@ -128,6 +128,7 @@ function ensureDom() {
   var list = document.createElement('ul');
   list.className = 'cmdk-list';
   list.setAttribute('role', 'listbox');
+  list.setAttribute('aria-label', 'Resultados');
 
   input.addEventListener('input', function () {
     renderResults(input.value);

@@ -208,7 +208,9 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
     await page.waitForTimeout(100);
   }
   check('no hint bubble over the «Preparando R+» boot screen', overBoot === 0, { samplesOverBoot: overBoot });
-  await goArea(page, 'lab');
+  // g-areas is first in line; × it, then g-labs opens by itself.
+  await visible(bubbleOf(page, 'g-areas'), 8000);
+  await page.locator('.fh-close').click();
   check('updating user (registered, no done list) gets the «Guía» hints',
     await visible(page.locator('.fh-bubble[data-hint^="g-"]:not([hidden])'), 8000), await hintState(page));
   await shot(page, 'updating-user-guia');

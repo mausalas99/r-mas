@@ -343,8 +343,12 @@ await r.finish('Worst-case input through every export: Word x3, census PDF, VPO 
   await page.locator('.exp-group-section', { hasText: 'VPO' }).click();
   await page.locator('#vpo-container .vpo-panel').waitFor({ state: 'visible' });
   await page.locator('[data-vpo-field="valoracionIntro"]').fill(odd('V-INTRO'));
+  await page.locator('[data-vpo-open="ekg"]').click();
   await page.locator('#vpo-ekg').fill(odd('V-EKG'));
+  await page.keyboard.press('Escape');
+  await page.locator('[data-vpo-open="rx"]').click();
   await page.locator('#vpo-rx').fill(`V-RX ${LONG}`);
+  await page.keyboard.press('Escape');
   await page.locator('[data-vpo-dx-idx="0"]').fill(odd('V-DX-1'));
   await page.locator('[data-vpo-action="copy-full"]').click();
   await page.waitForTimeout(500);

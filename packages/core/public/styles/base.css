@@ -423,8 +423,10 @@ html.high-contrast .patient-search-input:focus-visible {
 }
 .skip-to-main {
   position: absolute;
-  left: -9999px;
-  top: 0;
+  left: 12px;
+  top: 12px;
+  opacity: 0;
+  pointer-events: none;
   z-index: var(--z-db-unlock);
   padding: 10px 16px;
   font-family: inherit;
@@ -439,8 +441,8 @@ html.high-contrast .patient-search-input:focus-visible {
   cursor: pointer;
 }
 .skip-to-main:focus {
-  left: 12px;
-  top: 12px;
+  opacity: 1;
+  pointer-events: auto;
   outline: 3px solid color-mix(in oklab, var(--action) 50%, var(--surface));
   outline-offset: 1px;
 }
@@ -692,6 +694,7 @@ html.dark #update-modal .channel-pill { background: var(--color-channel-pill-bg)
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html {
+  background: var(--shell-gap);
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -809,3 +812,25 @@ html.dark .avatar img {
 .type-body { font-family: var(--font-ui); font-weight: 400; font-size: calc(13.5px * var(--density-font, 1)); line-height: 1.5; text-wrap: pretty; }
 .type-caption { font-family: var(--font-ui); font-weight: 500; font-size: calc(11.5px * var(--density-font, 1)); line-height: 1.4; color: var(--text-muted); text-wrap: pretty; }
 .num-tabular { font-variant-numeric: tabular-nums; }
+
+/* Placeholder text must clear 4.5:1 like any other text (lintapple text-contrast). */
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+/* Icon-button tooltips (ui-icon-tooltips.mjs). Fixed, out of flow, hidden until opened. */
+#ui-icon-tips { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-toast, 10000); }
+.ui-icon-tip {
+  position: fixed;
+  visibility: hidden;
+  max-width: 260px;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  background: var(--color-ink);
+  color: var(--color-surface);
+  font: var(--type-caption);
+  white-space: nowrap;
+}
+.ui-icon-tip.is-open { visibility: visible; }

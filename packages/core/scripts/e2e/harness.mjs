@@ -61,6 +61,17 @@ export function createRun(name, { hints: runHints = false } = {}) {
     shotN += 1;
     await page.screenshot({ path: path.join(artifactDir, `${String(shotN).padStart(2, '0')}-${label}.png`) });
     await a11y.scan(page, label);
+    if (lintUi) await lintScan(page, label);
+  }
+
+  // LINT_UI=1: also run lintapple (ui-policy.json) on every screenshot; findings go to lintapple.json.
+  const lintUi = process.env.LINT_UI === '1';
+  const lintFindings = [];
+  async function lintScan(page, label) {
+    const { checkPage } = await import('lintapple');
+    const policy = JSON.parse(fs.readFileSync(path.join(repoRoot, 'ui-policy.json'), 'utf8'));
+    const r = await checkPage(page, policy).catch(() => null);
+    if (r) for (const f of r.findings) lintFindings.push({ screen: label, ...f });
   }
 
   async function launch({ profile = 'a', lanPort = 3791, fakePortal = false, hints = runHints } = {}) {
@@ -136,6 +147,7 @@ export function createRun(name, { hints: runHints = false } = {}) {
     const passed = checks.filter((c) => c.ok).length;
     const report = { scenario, runId, passed, failed: checks.length - passed, checks, timings, a11y: a11y.screens };
     fs.writeFileSync(path.join(artifactDir, 'report.json'), JSON.stringify(report, null, 2) + '\n');
+    if (lintUi) fs.writeFileSync(path.join(artifactDir, 'lintapple.json'), JSON.stringify(lintFindings, null, 2) + '\n');
     for (const dir of Object.values(userDataDirs)) fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(downloadsDir, { recursive: true, force: true });
     if (Object.keys(timings).length) {

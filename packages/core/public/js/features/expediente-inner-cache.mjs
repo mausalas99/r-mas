@@ -138,6 +138,13 @@ function innerTabRenderCacheKey(tab) {
   if (tab === "eventualidades") {
     key += "|V" + eventualidadesCacheSuffix(pid);
   }
+  // A teammate's Datos edit arrives through a pull: the form's own clock tells the repaint.
+  if (tab === "datos" || tab === "todo") {
+    var dp = getPatients().find(function (x) {
+      return String(x.id) === pid;
+    });
+    key += "|P" + ((dp && dp.lanUpdatedAt) || "0") + JSON.stringify((dp && dp.fieldClocks) || 0);
+  }
   if (tab === "resumen") {
     var patient = getPatients().find(function (x) {
       return String(x.id) === pid;

@@ -31,7 +31,7 @@ import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import { getClinicalScopeContextForEvaluate } from '../clinical-access-runtime.mjs';
 import { resolvePatientCensusTeamId } from './patients-clinical-filter.mjs';
 import { patientsVisibleInSidebar } from './patients-scope.mjs';
-import { mountInterconsultaTeamBoard, interconsultaTeamOptions } from './interconsulta-team-board.mjs';
+import { mountInterconsultaTeamBoard, interconsultaTeamOptions, stepFocusId, guardiaTeamLabel, assignKeyToTeamId } from './interconsulta-team-board.mjs';
 import { openServicePickerModal } from './patient-dashboard/ic-modal.mjs';
 import { openAddModal, openCompleteAdmissionModal } from './patients-modal.mjs';
 import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
@@ -107,6 +107,9 @@ function syncPostguardiaFilterButton(container) {
 
 /** Board ↔ patient drill-down state — 'board' is the IC mode default view. */
 var _icView = 'board';
+/** Keyboard focus in "Mi equipo" rows (patient id). Empty = first row. */
+var _icFocusId = '';
+var _icKeysWired = false;
 var _wasInterconsultaActive = false;
 var _icArchivedCollapsed = true;
 
@@ -551,6 +554,84 @@ function openIcPatient(pid) {
   if (patient && isPatientAdmissionIncomplete(patient, settingsRef())) openCompleteAdmissionModal(pid, renderConsultBandForActivePatient);
 }
 
+var _icTeamOptions = [];
+
+/** Closes the Asignar menu; `restoreFocus` returns focus to that row's assign button. */
+function icCloseAssignMenu(restoreFocus) {
+  var menu = document.getElementById('ic-assign-menu');
+  if (!menu) return;
+  var pid = menu.dataset.patientId;
+  menu.remove();
+  document.removeEventListener('pointerdown', icAssignOutsidePointer, true);
+  if (!restoreFocus) return;
+  var btns = Array.from(document.querySelectorAll('[data-ic-assign-open]'));
+  var btn = btns.find(function (b) { return b.getAttribute('data-ic-assign-open') === pid; });
+  if (btn) btn.focus();
+}
+
+function icAssignOutsidePointer(ev) {
+  var menu = document.getElementById('ic-assign-menu');
+  if (!menu || menu.contains(ev.target)) return;
+  if (ev.target.closest && ev.target.closest('[data-ic-assign-open]')) return;
+  icCloseAssignMenu(false);
+}
+
+/** Below the button, right-aligned; flips above when there is no room below. */
+function icPositionAssignMenu(menu, btn) {
+  var r = btn.getBoundingClientRect();
+  var w = 260;
+  var left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8));
+  var below = r.bottom + 6;
+  var top = below + menu.offsetHeight > window.innerHeight - 8 && r.top - 6 - menu.offsetHeight >= 8
+    ? r.top - 6 - menu.offsetHeight
+    : below;
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+}
+
+function icOpenAssignMenu(pid, btn) {
+  var mount = icBoardMount();
+  var wasOpen = document.getElementById('ic-assign-menu');
+  var samePid = wasOpen && wasOpen.dataset.patientId === String(pid);
+  icCloseAssignMenu(false);
+  if (samePid || !mount || !_icTeamOptions.length) return;
+  var menu = document.createElement('div');
+  menu.id = 'ic-assign-menu';
+  menu.className = 'ic-assign-menu';
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', 'Asignar a');
+  menu.dataset.patientId = String(pid);
+  menu.innerHTML = _icTeamOptions.map(function (o, i) {
+    return '<button type="button" role="menuitem" data-ic-assign-team="' + escHtml(o.id) + '">' +
+      escHtml(o.label) + (i < 9 ? ' <kbd>' + (i + 1) + '</kbd>' : '') + '</button>';
+  }).join('') + '<button type="button" role="menuitem" data-ic-assign-team="">Sin equipo <kbd>0</kbd></button>';
+  menu.addEventListener('keydown', function (ev) {
+    var items = Array.from(menu.querySelectorAll('[role="menuitem"]'));
+    var i = items.indexOf(document.activeElement);
+    var k = ev.key;
+    if (k === 'ArrowDown' || k === 'ArrowUp') {
+      ev.preventDefault();
+      items[(i + (k === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+    } else if (k === 'Home' || k === 'End') {
+      ev.preventDefault();
+      (k === 'Home' ? items[0] : items[items.length - 1]).focus();
+    } else if (k === 'Escape') {
+      ev.preventDefault();
+      icCloseAssignMenu(true);
+    } else if (k === '0' || (/^[1-9]$/.test(k) && assignKeyToTeamId(_icTeamOptions, k))) {
+      ev.preventDefault();
+      var tid = k === '0' ? '' : assignKeyToTeamId(_icTeamOptions, k);
+      icCloseAssignMenu(false);
+      assignInterconsultaTeamViaBoardDrop(pid, tid).then(renderInterconsultaBoardView);
+    }
+  });
+  mount.appendChild(menu);
+  icPositionAssignMenu(menu, btn);
+  var first = menu.querySelector('[role="menuitem"]');
+  if (first) first.focus();
+  document.addEventListener('pointerdown', icAssignOutsidePointer, true);
+}
+
 function ensureIcBoardClickDelegation(mount) {
   if (!mount || mount.dataset.icBoardWired) return;
   mount.dataset.icBoardWired = '1';
@@ -562,6 +643,27 @@ function ensureIcBoardClickDelegation(mount) {
     }
   }, true);
   mount.addEventListener('click', function (ev) {
+    var clickedRow = ev.target.closest('.ic-line[data-patient-id]');
+    if (clickedRow) _icFocusId = clickedRow.getAttribute('data-patient-id');
+    var takeBtn = ev.target.closest('[data-ic-take]');
+    if (takeBtn) {
+      assignInterconsultaTeamViaBoardDrop(takeBtn.getAttribute('data-ic-take'), takeBtn.getAttribute('data-ic-take-team'))
+        .then(renderInterconsultaBoardView);
+      return;
+    }
+    var assignBtn = ev.target.closest('[data-ic-assign-open]');
+    if (assignBtn) {
+      icOpenAssignMenu(assignBtn.getAttribute('data-ic-assign-open'), assignBtn);
+      return;
+    }
+    var menuItem = ev.target.closest('[data-ic-assign-team]');
+    if (menuItem && menuItem.closest('#ic-assign-menu')) {
+      var menuEl = document.getElementById('ic-assign-menu');
+      var menuPid = menuEl.dataset.patientId;
+      icCloseAssignMenu(false);
+      assignInterconsultaTeamViaBoardDrop(menuPid, menuItem.getAttribute('data-ic-assign-team')).then(renderInterconsultaBoardView);
+      return;
+    }
     if (ev.target.closest('[data-ic-archived-toggle]')) {
       _icArchivedCollapsed = !_icArchivedCollapsed;
       renderInterconsultaBoardView();
@@ -624,6 +726,85 @@ function stampIcTimer(id, kind) {
   renderInterconsultaBoardView();
 }
 
+function icFocusLines() {
+  return Array.from(document.querySelectorAll('#ic-team-board-mount .ic-line[data-ic-line]'));
+}
+
+/** Marks the focused row (saved id, else first row) without re-rendering. */
+function icApplyFocus() {
+  var lines = icFocusLines();
+  lines.forEach(function (l) { l.classList.remove('is-focused'); });
+  if (!lines.length) return null;
+  var ids = lines.map(function (l) { return l.getAttribute('data-patient-id'); });
+  var idx = ids.indexOf(_icFocusId);
+  if (idx < 0) idx = 0;
+  _icFocusId = ids[idx];
+  lines[idx].classList.add('is-focused');
+  return lines[idx];
+}
+
+function icFocusedLine() {
+  return document.querySelector('#ic-team-board-mount .ic-line.is-focused[data-ic-line]');
+}
+
+function icNextFocusId(dir) {
+  var ids = icFocusLines().map(function (l) { return l.getAttribute('data-patient-id'); });
+  return stepFocusId(ids, _icFocusId, dir);
+}
+
+function onIcBoardKeydown(ev) {
+  if (!isInterconsultaModeActive() || _icView !== 'board') return;
+  if (document.getElementById('ic-assign-menu')) return;
+  if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  var t = ev.target;
+  if (t && (t.isContentEditable || (t.closest && t.closest('input, select, textarea')))) return;
+  // Closed menus and hidden dialogs stay in the DOM: only a laid-out one blocks the keys.
+  var overlays = document.querySelectorAll('[role="dialog"], dialog[open], [aria-modal="true"], .wb-menu-panel');
+  for (var i = 0; i < overlays.length; i++) if (overlays[i].getClientRects().length) return;
+  var key = ev.key;
+  var k = String(key || '').toLowerCase();
+  var line = icFocusedLine();
+  if (!line && !icFocusLines().length) return;
+  if (key === 'ArrowDown' || k === 'j' || key === 'ArrowUp' || k === 'k') {
+    ev.preventDefault();
+    _icFocusId = icNextFocusId(key === 'ArrowDown' || k === 'k' ? 1 : -1);
+    var next = icApplyFocus();
+    if (next) next.scrollIntoView({ block: 'nearest' });
+    return;
+  }
+  if (!line) return;
+  var id = line.getAttribute('data-patient-id');
+  if (/^[0-9]$/.test(key)) {
+    if (icMode() !== 'asignar') return;
+    var tid = key === '0' ? '' : assignKeyToTeamId(_icTeamOptions, key);
+    if (key !== '0' && !tid) return;
+    ev.preventDefault();
+    _icFocusId = icNextFocusId(1);
+    assignInterconsultaTeamViaBoardDrop(id, tid).then(renderInterconsultaBoardView);
+  } else if (k === 'r') {
+    var stop = line.querySelector('[data-ic-timer="stop"]');
+    var start = line.querySelector('[data-ic-timer="start"]');
+    if (!stop && !start) return;
+    ev.preventDefault();
+    _icFocusId = icNextFocusId(1);
+    stampIcTimer(id, stop ? 'stop' : 'start');
+  } else if (k === 'a') {
+    var arch = line.querySelector('.sv-card-archive');
+    if (!arch) return;
+    ev.preventDefault();
+    arch.click();
+  } else if (key === 'Enter') {
+    ev.preventDefault();
+    openIcPatient(id);
+  }
+}
+
+function ensureIcKeyboardWired() {
+  if (_icKeysWired) return;
+  _icKeysWired = true;
+  document.addEventListener('keydown', onIcBoardKeydown);
+}
+
 /** Teams, archived and active patients (each with `censusTeamId`) for the board and the rail. */
 function icBoardData() {
   // A background scope refresh (Nube pull, LAN reconcile) since the last render may
@@ -657,7 +838,27 @@ function icBoardData() {
   return { teams: teams, now: now, active: active, archived: archived };
 }
 
-function icHeaderHtml(mode, options, teamId, count, statsHtml) {
+var IC_KEYS_HTML =
+  '<div class="ic-keys" role="note" aria-label="Atajos de teclado">' +
+  '<span><kbd>J</kbd><kbd>K</kbd> Mover</span>' +
+  '<span><kbd>R</kbd> Respondida</span>' +
+  '<span><kbd>A</kbd> Archivar</span>' +
+  '<span><kbd>↵</kbd> Abrir paciente</span>' +
+  '<span><kbd>⌘/</kbd> Todos los atajos</span>' +
+  '</div>';
+
+var IC_KEYS_ASIGNAR_HTML =
+  '<div class="ic-keys" role="note" aria-label="Atajos de teclado">' +
+  '<span><kbd>J</kbd><kbd>K</kbd> Mover</span>' +
+  '<span><kbd>1</kbd>–<kbd>4</kbd> Asignar al equipo</span>' +
+  '<span><kbd>0</kbd> Sin equipo</span>' +
+  '<span><kbd>R</kbd> Respondida</span>' +
+  '<span><kbd>A</kbd> Archivar</span>' +
+  '<span><kbd>↵</kbd> Abrir paciente</span>' +
+  '<span><kbd>⌘/</kbd> Todos los atajos</span>' +
+  '</div>';
+
+function icHeaderHtml(mode, options, teamId, count, statsHtml, guardiaName) {
   function seg(key, label) {
     return (
       '<button type="button" class="ic-mode-btn' + (mode === key ? ' is-on' : '') + '" data-ic-mode="' + key +
@@ -678,6 +879,9 @@ function icHeaderHtml(mode, options, teamId, count, statsHtml) {
           .join('') +
         '</select>'
       : '') +
+    (mode === 'equipo' && guardiaName
+      ? '<span class="ic-board-duty">Guardia hoy: <b>' + escHtml(guardiaName) + '</b></span>'
+      : '') +
     '<span class="ic-board-header__sp"></span>' +
     '<button type="button" class="wb-btn wb-btn-secondary" data-ic-board-add>+ Agregar</button>' +
     '<button type="button" class="wb-btn wb-btn-primary" data-ic-board-refresh>Actualizar labs</button>' +
@@ -694,6 +898,7 @@ export function renderInterconsultaBoardView() {
   var mode = icMode();
   var options = interconsultaTeamOptions(data.teams, data.now);
   var teamId = icSelectedTeamId(options);
+  _icTeamOptions = options;
 
   var count = mode === 'equipo'
     ? data.active.filter(function (p) { return String(p.censusTeamId || '') === String(teamId); }).length
@@ -704,8 +909,10 @@ export function renderInterconsultaBoardView() {
   for (var el = mount; el; el = el.parentElement) if (el.scrollTop) kept.push([el, el.scrollTop]);
   mount.querySelectorAll('*').forEach(function (d) { if (d.scrollTop && d.className) kept.push([String(d.className), d.scrollTop]); });
   mount.innerHTML =
-    icHeaderHtml(mode, options, teamId, count, icTimerStatsHtml(data.active.concat(data.archived))) +
-    '<div id="ic-team-board-mount"></div><div id="ic-archived-mount"></div>';
+    icHeaderHtml(mode, options, teamId, count, icTimerStatsHtml(data.active.concat(data.archived)), guardiaTeamLabel(data.teams, data.now)) +
+    '<div id="ic-team-board-mount"></div><div id="ic-archived-mount"></div>' +
+    (mode === 'equipo' ? IC_KEYS_HTML : IC_KEYS_ASIGNAR_HTML);
+  ensureIcKeyboardWired();
   mount.querySelector('[data-ic-board-refresh]').addEventListener('click', refreshPatients);
   mount.querySelector('[data-ic-board-add]').addEventListener('click', openAddModal);
   mountInterconsultaTeamBoard(mount.querySelector('#ic-team-board-mount'), data.active, data.teams, {
@@ -720,6 +927,7 @@ export function renderInterconsultaBoardView() {
     },
   });
   mount.querySelector('#ic-archived-mount').innerHTML = renderIcArchivedSectionHtml(data.archived);
+  icApplyFocus();
   kept.forEach(function (k) {
     var t = typeof k[0] === 'string' ? mount.getElementsByClassName(k[0])[0] : k[0];
     if (t) t.scrollTop = k[1];

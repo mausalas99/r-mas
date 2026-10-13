@@ -70,6 +70,7 @@ import {
   syncWorkContextChrome,
 } from './app-shell.mjs';
 import { attachProfileSettingsGetter, loadSettings, syncProfileSectionVisibility } from './features/profile.mjs';
+import { initIconTooltips } from './ui-icon-tooltips.mjs';
 import { windowHandlers as chromeWindowHandlers, mountTopBar } from './features/chrome.mjs';
 import { windowHandlers as lanWindowHandlers } from './features/cloud-sync/panel-chrome.mjs';
 import {
@@ -540,6 +541,7 @@ function runDomBootAfterState() {
     }
     initModalDismiss();
     mountTopBar();
+    initIconTooltips();
     syncHeaderTodayDate();
     if (!window._rpcHeaderDateResizeWired && typeof window.matchMedia === 'function') {
       window._rpcHeaderDateResizeWired = true;
