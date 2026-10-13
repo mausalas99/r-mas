@@ -299,8 +299,7 @@ await r.finish('Feature hints: open by themselves, flows in place, remembered', 
   await m.waitFor({ state: 'detached' });
   // Interconsultas: the team board.
   await setMode(page, 'interconsulta');
-  // No cards yet, so the card step is skipped; the empty «Por asignar» tray still shows.
-  await walkHint(page, 'g-interconsultas', 4);
+  await walkHint(page, 'g-interconsultas', 6);
   await setMode(page, 'sala');
   check('8.4.2 «Nuevo» hints are retired in 8.4.3', !ALL.some((id) => id.endsWith('-842')), ALL);
 
