@@ -1,15 +1,34 @@
 /** Bloques de texto copiables para nota externa VPO. */
 
 export const VPO_OFFICIAL_CALCULATOR_DISCLAIMER =
-  'R+ no calcula riesgo. Pon el resultado de una calculadora validada.';
+  'Fórmulas publicadas. Revisa los datos antes de copiar.';
 
 /** Escalas a documentar manualmente (sin cálculo en R+). */
 export const VPO_SUGGESTED_SCALES = [
+  { key: 'mets', label: 'Capacidad funcional', hint: 'Capacidad funcional basal en METs.' },
+  { key: 'abvd', label: 'Estado funcional ABVD', hint: 'Independiente o dependiente.' },
+  { key: 'cfs', label: 'Fragilidad', hint: 'Escala clínica de fragilidad (CFS).' },
+  { key: 'ahaSurg', label: 'Riesgo quirúrgico AHA/ACC 2026', hint: 'Riesgo intrínseco de la cirugía.' },
+  { key: 'ahaCv', label: 'Riesgo CV perioperatorio AHA/ACC 2026', hint: 'Bajo si MACE <1%.' },
+  { key: 'ahaMod', label: 'Modificadores de riesgo', hint: 'Condiciones que piden decisión en equipo.' },
+  { key: 'rcri', label: 'RCRI (índice de Lee)', hint: 'Puntos, clase y riesgo.' },
+  { key: 'gupta', label: 'Gupta MICA', hint: '% riesgo de IAM o paro cardiaco perioperatorio.' },
+  { key: 'aub', label: 'AUB-HAS2', hint: 'Puntos y riesgo de muerte, IAM o EVC.' },
   { key: 'asa', label: 'ASA', hint: 'Clasificación del estado físico (I–V).' },
-  { key: 'rcri', label: 'RCRI (índice de Lee)', hint: 'Puntos y/o clase según calculadora validada.' },
-  { key: 'gupta', label: 'Gupta MICA', hint: '% riesgo de IAM perioperatorio (herramienta validada).' },
   { key: 'ariscat', label: 'ARISCAT', hint: 'Puntos y categoría de riesgo pulmonar postoperatorio.' },
+  { key: 'guptaResp', label: 'Gupta insuficiencia respiratoria', hint: '% de VM >48 h o reintubación no planeada.' },
+  { key: 'guptaPneu', label: 'Gupta neumonía', hint: '% de neumonía postoperatoria.' },
   { key: 'caprini', label: 'Caprini', hint: 'Puntos y categoría de riesgo tromboembólico.' },
+  { key: 'stopbang', label: 'STOP-Bang', hint: 'Riesgo de apnea obstructiva del sueño.', optional: true },
+  { key: 'hasbled', label: 'HAS-BLED', hint: 'Riesgo de sangrado con anticoagulación.', optional: true },
+  { key: 'chads', label: 'CHA₂DS₂-VASc', hint: 'Riesgo de EVC en fibrilación auricular.', optional: true },
+  { key: 'childpugh', label: 'Child-Pugh', hint: 'Puntos y clase de cirrosis.', optional: true },
+  { key: 'meld', label: 'MELD', hint: 'MELD 3.0, MELD-Na y supervivencia a 90 días.', optional: true },
+  { key: 'escSurg', label: 'Riesgo quirúrgico ESC 2022', hint: 'Riesgo de la cirugía por procedimiento (ESC 2022).', optional: true },
+  { key: 'nrs', label: 'NRS-2002', hint: 'Riesgo nutricional.', optional: true },
+  { key: 'awol', label: 'AWOL', hint: 'Tamizaje de delirio, derivado en pacientes médicos.', optional: true },
+  { key: 'bridging', label: 'Puente de anticoagulación', hint: 'Riesgo trombótico y suspensión del anticoagulante.', optional: true },
+  { key: 'padua', label: 'Padua', hint: 'Riesgo de TEV en paciente médico.', optional: true },
 ];
 
 /**
@@ -18,7 +37,9 @@ export const VPO_SUGGESTED_SCALES = [
  */
 export function formatVpoScaleResultLines(state) {
   var sr = (state && state.scaleResults) || {};
-  return VPO_SUGGESTED_SCALES.map(function (s) {
+  return VPO_SUGGESTED_SCALES.filter(function (s) {
+    return !s.optional || String(sr[s.key] || '').trim();
+  }).map(function (s) {
     var val = String(sr[s.key] || '').trim();
     if (!val) return s.label + ': —';
     return s.label + ': ' + val;

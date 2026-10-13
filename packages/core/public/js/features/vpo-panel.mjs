@@ -1,7 +1,7 @@
 /**
  * Panel VPO — plantillas EKG/Rx, escalas documentadas manualmente, copiar.
  */
-import { getPatients, getVpoByPatient, getNotes, getMedRecetaByPatient, persistClinicalState } from '../app-state.mjs';
+import { getPatients, getVpoByPatient, getNotes, getMedRecetaByPatient, getLabHistory, persistClinicalState } from '../app-state.mjs';
 import {
   ensureVpoState,
   ensureScaleResults,
@@ -9,7 +9,12 @@ import {
   applyVitalsFromMonitoreo,
   importDiagnosticosFromNota,
   setDiagnosticosList,
+  applyProcedureSelection,
+  applyAsaSuggestion,
 } from '../vpo-data.mjs';
+import { focusMissingInput, renderCalcInputsHtml } from './vpo-calc-form.mjs';
+import { autofillCalc, buildScaleLines } from '../vpo-calc.mjs';
+import { isVpoCalculatorEnabled } from './profile-prefs.mjs';
 import { formatDiagnosticosCopy } from '../patient-diagnosticos.mjs';
 import { pushDiagnosticosToPatient, stampCensoFieldsClock } from '../patient-diagnosticos.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
@@ -65,37 +70,79 @@ function copyText(label, text) {
 }
 
 /* UI copy only. Copy-output labels stay in vpo-text.mjs. */
-var VPO_SCALE_UI_LABEL = { rcri: 'RCRI (Lee)' };
+var VPO_SCALE_UI_LABEL = { rcri: 'RCRI (Lee)', ahaCv: 'Riesgo CV AHA/ACC', ahaSurg: 'Riesgo quirúrgico AHA/ACC', guptaResp: 'Gupta resp.', guptaPneu: 'Gupta neumonía' };
+
+/** Which EKG/Rx dialog is open; a re-render reopens it. */
+var _openDialog = '';
+/** Which «Otras escalas» tab is showing. */
+var _scaleTab = '';
+
+/** Names of scales that lacked data on the last «Calcular todo»; shown once on the next render. */
+var _missingNote = '';
+
+/** Results shown in three cards by system; keys not listed here land in the last card. */
+var VPO_GROUPS = [
+  ['Función', ['mets', 'abvd', 'cfs', 'asa', 'nrs', 'awol']],
+  ['Cardiaco', ['ahaSurg', 'ahaCv', 'ahaMod', 'rcri', 'gupta', 'aub', 'chads', 'escSurg', 'hasbled']],
+  ['Pulmonar y trombosis', null],
+];
+
+/** Results: one row per scale, grouped in cards. A scale without data shows what it lacks and a «Completar» button. */
+function renderScaleRows(state) {
+  var sr = state.scaleResults;
+  var calc = isVpoCalculatorEnabled();
+  var lines = calc ? buildScaleLines(state) : {};
+  var shown = VPO_SUGGESTED_SCALES.filter(function (s) {
+    return !s.optional || String(sr[s.key] || '').trim();
+  });
+  var named = [].concat.apply([], VPO_GROUPS.map(function (g) { return g[1] || []; }));
+  function row(s) {
+    var miss = !String(sr[s.key] || '').trim() && lines[s.key] && lines[s.key].missing;
+    return (
+      '<div class="vpo-row" title="' + esc(s.hint) + '"><span class="vpo-row-name">' + esc(VPO_SCALE_UI_LABEL[s.key] || s.label) + '</span>' +
+      (miss
+        ? '<span class="vpo-row-miss">Falta: ' + esc(miss.join(', ')) + '</span><button type="button" class="wb-btn" data-vpo-complete="' + esc(miss.join('|')) + '">Completar</button>'
+        : '<input type="text" class="vpo-row-val" data-vpo-scale="' + esc(s.key) + '" value="' + esc(sr[s.key]) + '" placeholder="' + (calc ? 'Calcular todo' : '') + '" autocomplete="off" aria-label="' + esc(s.label) + '">') +
+      '</div>'
+    );
+  }
+  return (
+    '<div class="vpo-rows">' +
+    VPO_GROUPS.map(function (g) {
+      var list = shown.filter(function (s) {
+        return g[1] ? g[1].indexOf(s.key) >= 0 : named.indexOf(s.key) < 0;
+      });
+      return list.length ? '<div class="vpo-card"><h4 class="vpo-card-title">' + esc(g[0]) + '</h4>' + list.map(row).join('') + '</div>' : '';
+    }).join('') +
+    '</div>'
+  );
+}
+
+function showVpoDialog(mount, key) {
+  var dlg = mount.querySelector('dialog[data-vpo-dialog="' + key + '"]');
+  if (!dlg || dlg.open) return;
+  _openDialog = key;
+  dlg.showModal();
+}
 
 function renderRiskScalesOnlyBody(state) {
   ensureScaleResults(state);
-  var sr = state.scaleResults;
+  var note = _missingNote;
+  _missingNote = '';
   return (
+    '<div class="vpo-risk-grid">' +
+    (isVpoCalculatorEnabled() ? '<div class="vpo-risk-in">' + renderCalcInputsHtml(state, esc, _scaleTab) + '</div>' : '') +
+    '<div class="vpo-risk-out">' +
+    (note ? '<p class="vpo-disclaimer">' + esc(note) + '</p>' : '') +
+    renderScaleRows(state) +
+    '<details class="vpo-more"><summary class="ea-io-link">Introducción del texto</summary>' +
+    '<textarea id="vpo-intro" class="ea-input" data-vpo-field="valoracionIntro" rows="2" aria-label="Introducción">' +
+    esc(state.valoracionIntro) +
+    '</textarea></details>' +
     '<p class="vpo-disclaimer">' +
     esc(VPO_OFFICIAL_CALCULATOR_DISCLAIMER) +
     '</p>' +
-    '<label class="ea-label" for="vpo-intro">Introducción</label>' +
-    '<textarea id="vpo-intro" class="ea-input" data-vpo-field="valoracionIntro" rows="2">' +
-    esc(state.valoracionIntro) +
-    '</textarea>' +
-    '<div class="vpo-scales-results">' +
-    VPO_SUGGESTED_SCALES.map(function (s) {
-      return (
-        '<label class="vpo-scale-cell" title="' +
-        esc(s.hint) +
-        '">' +
-        '<span class="vpo-scale-label">' +
-        esc(VPO_SCALE_UI_LABEL[s.key] || s.label) +
-        '</span>' +
-        '<input type="text" class="ea-input" data-vpo-scale="' +
-        esc(s.key) +
-        '" value="' +
-        esc(sr[s.key]) +
-        '" placeholder="Resultado…" autocomplete="off">' +
-        '</label>'
-      );
-    }).join('') +
-    '</div>'
+    '</div></div>'
   );
 }
 
@@ -163,6 +210,76 @@ function wireVpoImportActions(mount, state, patientId) {
     rt.showToast('FC y SpO₂ tomados de Estado actual', 'success');
   });
 
+  mount.querySelector('[data-vpo-action="calc-fill"]')?.addEventListener('click', function () {
+    var n = autofillCalc(state, { labHistory: getLabHistory()[patientId], patient: getPatients().find(function (p) { return p.id === patientId; }) }).length;
+    scheduleSave();
+    renderVpoPanel(mount, patientId);
+    rt.showToast(n ? n + ' datos tomados de R+' : 'Nada nuevo en R+', n ? 'success' : 'error');
+  });
+
+  mount.querySelector('[data-vpo-action="calc-all"]')?.addEventListener('click', function () {
+    var lines = buildScaleLines(state);
+    var done = 0;
+    var missing = [];
+    VPO_SUGGESTED_SCALES.forEach(function (sc) {
+      if (sc.optional) return;
+      var ln = lines[sc.key];
+      if (ln && ln.text) {
+        state.scaleResults[sc.key] = ln.text;
+        done++;
+      } else if (ln && ln.missing) {
+        missing.push(sc.label + ' (' + ln.missing.join(', ') + ')');
+      }
+    });
+    _missingNote = missing.length ? 'Faltan datos: ' + missing.join('; ') + '.' : '';
+    scheduleSave();
+    renderVpoPanel(mount, patientId);
+    rt.showToast(done + ' escalas calculadas', done ? 'success' : 'error');
+  });
+
+  mount.querySelectorAll('[data-vpo-open]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      showVpoDialog(mount, btn.getAttribute('data-vpo-open'));
+    });
+  });
+  mount.querySelectorAll('[data-vpo-tab]').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      _scaleTab = tab.getAttribute('data-vpo-tab');
+      mount.querySelectorAll('[data-vpo-tab]').forEach(function (t) {
+        t.setAttribute('aria-selected', String(t === tab));
+      });
+      mount.querySelectorAll('[data-vpo-panel]').forEach(function (panel) {
+        panel.hidden = panel.getAttribute('data-vpo-panel') !== _scaleTab;
+      });
+    });
+  });
+  mount.querySelectorAll('dialog[data-vpo-dialog]').forEach(function (dlg) {
+    dlg.addEventListener('close', function () {
+      if (_openDialog === dlg.getAttribute('data-vpo-dialog')) _openDialog = '';
+    });
+    dlg.addEventListener('click', function (ev) {
+      if (ev.target === dlg || (ev.target.closest && ev.target.closest('[data-vpo-close]'))) dlg.close();
+    });
+  });
+
+  mount.querySelectorAll('[data-vpo-complete]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      focusMissingInput(mount, btn.getAttribute('data-vpo-complete'));
+    });
+  });
+
+  mount.querySelectorAll('[data-vpo-calc-one]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var key = btn.getAttribute('data-vpo-calc-one');
+      var ln = buildScaleLines(state)[key];
+      if (ln && ln.text) state.scaleResults[key] = ln.text;
+      _missingNote = ln && ln.missing ? 'Faltan datos: ' + ln.missing.join(', ') + '.' : '';
+      scheduleSave();
+      renderVpoPanel(mount, patientId);
+      rt.showToast(ln && ln.text ? 'Escala calculada' : 'Faltan datos', ln && ln.text ? 'success' : 'error');
+    });
+  });
+
   mount.querySelector('[data-vpo-action="tomar-dx"]')?.addEventListener('click', function () {
     var note = getNotes()[patientId] || {};
     if (state.diagnosticosTouched && (state.diagnosticosList || []).some(function (d) { return String(d).trim(); })) {
@@ -226,6 +343,15 @@ function wireForm(mount, state, patientId) {
       scheduleSave();
       return;
     }
+    var calcKey = el.getAttribute('data-vpo-calc');
+    if (calcKey) {
+      state.calc = state.calc || { touched: {} };
+      state.calc.touched = state.calc.touched || {};
+      state.calc[calcKey] = el.type === 'checkbox' ? el.checked : el.value;
+      state.calc.touched[calcKey] = true;
+      scheduleSave();
+      return;
+    }
     if (!el.getAttribute('data-vpo-field')) return;
     var field = el.getAttribute('data-vpo-field');
     if (field.indexOf('.') >= 0) {
@@ -235,6 +361,8 @@ function wireForm(mount, state, patientId) {
       else state[parts[0]][parts[1]] = el.value;
     } else {
       state[field] = el.type === 'checkbox' ? el.checked : el.value;
+      if (field === 'procedureId') applyProcedureSelection(state, el.value);
+      else if (field === 'asaKey') applyAsaSuggestion(state, el.value);
     }
     scheduleSave();
   });
@@ -417,6 +545,7 @@ export function renderVpoPanel(mount, patientId) {
     return p.id === patientId;
   });
   hydrateVpoPatientDefaults(state, patient || null);
+  if (isVpoCalculatorEnabled() && autofillCalc(state, { labHistory: getLabHistory()[patientId], patient: getPatients().find(function (p) { return p.id === patientId; }) }).length) scheduleSave();
   mount._vpoPatientId = patientId;
 
   mount.innerHTML = buildVpoPanelInnerHtml(
@@ -444,6 +573,7 @@ export function renderVpoPanel(mount, patientId) {
   var form = mount.querySelector('.vpo-form');
   if (form) form._vpoWired = false;
   wireForm(mount, state, patientId);
+  if (_openDialog) showVpoDialog(mount, _openDialog);
 }
 
 export function stashVpoForPatient(_patientId) {

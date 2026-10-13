@@ -19,7 +19,7 @@
 
 .vpo-columns {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
   align-items: start;
 }
@@ -166,6 +166,150 @@
   text-overflow: ellipsis;
 }
 
+.vpo-calc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.vpo-calc > summary {
+  cursor: pointer;
+  width: fit-content;
+}
+
+.vpo-chk-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Yes/no input as a round chip: the checkbox hides, the chip fills when on. */
+.vpo-chk {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-12);
+  cursor: pointer;
+}
+
+.vpo-chk input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vpo-chk:has(input:checked) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--color-on-accent);
+}
+
+.vpo-chk:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.vpo-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.vpo-card-title {
+  margin: 0;
+  font-size: var(--fs-14);
+}
+
+.vpo-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-2);
+}
+
+.vpo-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.vpo-chip-row .vpo-chk-grid {
+  flex: 1 1 520px;
+}
+
+.vpo-card .ea-input {
+  height: 36px;
+  min-height: 0;
+  padding: 0 var(--space-2);
+}
+
+.vpo-more {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.vpo-hint {
+  margin-right: auto;
+  font-size: var(--fs-12);
+  color: var(--text-muted);
+}
+
+.vpo-rows {
+  /* Up to 3 columns, each at least 320px; cards fill top to bottom, so no gaps. */
+  columns: 3 320px;
+  column-gap: var(--space-3);
+}
+
+.vpo-rows > .vpo-card {
+  break-inside: avoid;
+  margin-bottom: var(--space-3);
+}
+
+.vpo-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 36px;
+  border-bottom: 1px solid var(--border);
+}
+
+.vpo-row-name {
+  font-weight: 600;
+  font-size: var(--fs-13);
+}
+
+.vpo-row-val {
+  grid-column: 2 / -1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--fs-13);
+}
+
+.vpo-row-miss {
+  font-size: var(--fs-13);
+  color: var(--warn);
+}
+
+.vpo-calc-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
 /* ── EKG / Rx ────────────────────────────────────────────────────────── */
 
 .vpo-inline-row {
@@ -293,4 +437,123 @@
 }
 .vpo-dx-actions .vpo-dx-paste[open] {
   flex-basis: 100%;
+}
+
+/* ── EKG / Rx buttons and dialogs ────────────────────────────────────── */
+
+.vpo-toolbar {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.vpo-dialog {
+  /* A global reset zeroes the dialog's auto margin, so center it here. */
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  max-height: 85vh;
+  overflow: auto;
+  width: min(640px, 92vw);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: inherit;
+}
+
+.vpo-dialog::backdrop {
+  background: rgb(0 0 0 / 50%);
+}
+
+.vpo-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.vpo-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Quiet pill buttons inside the VPO tab (the default .wb-btn is heavy on dark). */
+.vpo-panel .wb-btn:not(.wb-btn-primary) {
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  font-size: var(--fs-12);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.vpo-panel .wb-btn:not(.wb-btn-primary):hover {
+  background: var(--surface-elevated);
+}
+
+.vpo-risk-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.vpo-risk-in,
+.vpo-risk-out {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.vpo-section-actions {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ── Otras escalas: tabs, one scale at a time ───────────────────────── */
+
+.vpo-dialog--wide {
+  width: min(780px, 94vw);
+}
+
+.vpo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.vpo-tab {
+  min-height: 30px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--fs-12);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vpo-tab[aria-selected='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--color-on-accent);
+}
+
+.vpo-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.vpo-tab-panel[hidden] {
+  display: none;
+}
+
+.vpo-tab-result {
+  margin-right: auto;
+  font-size: var(--fs-13);
 }

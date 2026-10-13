@@ -26,6 +26,7 @@ import {
   ensureClinicoTabConsistency,
   syncHideClinicoTabUI,
   syncHideListadoProblemasAiPromptUI,
+  syncVpoCalculatorUI,
 } from "./profile-prefs.mjs";
 
 /** Oculta secciones de Sala / clínica según modo y base de datos. */
@@ -48,6 +49,7 @@ export function syncProfileLoadedSections(full) {
   syncUpdateTelemetryUI();
   syncHideClinicoTabUI();
   syncHideListadoProblemasAiPromptUI();
+  syncVpoCalculatorUI();
   ensureClinicoTabConsistency();
   if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
   syncAppModeRadioControls();

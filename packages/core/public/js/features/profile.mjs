@@ -21,6 +21,7 @@ import {
   setHideManejoSection,
   setHideClinicoTab,
   setHideListadoProblemasAiPrompt,
+  setVpoCalculator,
 } from "./profile-prefs.mjs";
 import {
   openTemplatesModal,
@@ -82,6 +83,7 @@ export {
   isHideListadoProblemasAiPromptEnabled,
   syncHideListadoProblemasAiPromptUI,
   setHideListadoProblemasAiPrompt,
+  setVpoCalculator,
 } from "./profile-prefs.mjs";
 
 /** @param {Record<string, unknown>} st */
@@ -106,6 +108,7 @@ export const profileWindowHandlers = {
   setHideManejoSection,
   setHideClinicoTab,
   setHideListadoProblemasAiPrompt,
+  setVpoCalculator,
   closeClinicoUnlockModal,
   confirmClinicoUnlock,
   openTemplatesModal,

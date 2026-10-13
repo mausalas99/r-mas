@@ -51,53 +51,66 @@ export function buildVpoPanelInnerHtml(
   renderFarmacosList
 ) {
   var riesgoBody = renderRiskScalesOnlyBody(state);
-  var ekgBody =
+  var dialog = (key, title, body, copyAction, copyLabel) =>
+    '<dialog class="vpo-dialog" data-vpo-dialog="' + key + '" aria-labelledby="vpo-dlg-' + key + '">' +
+    '<div class="vpo-dialog-head"><h3 id="vpo-dlg-' + key + '" class="vpo-section-title">' + title + '</h3>' +
+    '<button type="button" class="ea-io-link" data-vpo-close>Cerrar</button></div>' +
+    body +
+    (copyAction ? '<div class="vpo-calc-actions"><button type="button" class="wb-btn wb-btn-primary" data-vpo-action="' + copyAction + '">' + copyLabel + '</button></div>' : '') +
+    '</dialog>';
+  var ekgDialog = dialog(
+    'ekg',
+    'EKG',
     '<div class="vpo-inline-row">' +
-    '<label class="ea-label" for="vpo-fc">FC (lpm)</label>' +
-    '<input id="vpo-fc" class="ea-input vpo-fc-input" data-vpo-field="fcLpm" type="text" value="' +
-    esc(state.fcLpm) +
-    '">' +
-    '<button type="button" class="ea-io-link" data-vpo-action="tomar-estado">Tomar de Estado actual</button>' +
-    '</div>' +
-    '<label class="ea-label" for="vpo-ekg">EKG</label>' +
-    '<textarea id="vpo-ekg" class="ea-input" data-vpo-field="ekgText" rows="3">' +
-    esc(state.ekgText) +
-    '</textarea>' +
+      '<label class="ea-label" for="vpo-fc">FC (lpm)</label>' +
+      '<input id="vpo-fc" class="ea-input vpo-fc-input" data-vpo-field="fcLpm" type="text" value="' + esc(state.fcLpm) + '">' +
+      '<button type="button" class="ea-io-link" data-vpo-action="tomar-estado">Tomar de Estado actual</button>' +
+      '</div>' +
+      '<label class="ea-label" for="vpo-ekg">EKG</label>' +
+      '<textarea id="vpo-ekg" class="ea-input" data-vpo-field="ekgText" rows="6">' + esc(state.ekgText) + '</textarea>',
+    'copy-ekg',
+    'Copiar EKG'
+  );
+  var farmDialog = dialog(
+    'farm',
+    'Fármacos perioperatorios',
+    '<button type="button" class="ea-io-link" data-vpo-action="tomar-meds">Tomar de SOME</button>' +
+      '<div class="vpo-farm-list">' + renderFarmacosList(state.farmacos) + '</div>',
+    'copy-farm',
+    'Copiar fármacos'
+  );
+  var dxDialog = dialog(
+    'dx',
+    'Diagnósticos',
+    '<div class="vpo-calc-actions"><button type="button" class="ea-io-link" data-vpo-action="tomar-dx">Tomar de la nota</button>' +
+      '<button type="button" class="ea-io-link" data-vpo-action="push-dx-datos">Enviar a Datos</button></div>' +
+      renderDiagnosticosSection(state)
+  );
+  var rxDialog = dialog(
+    'rx',
+    'Rx de tórax',
     '<label class="ea-label" for="vpo-rx">Rx de tórax</label>' +
-    '<textarea id="vpo-rx" class="ea-input" data-vpo-field="rxText" rows="3">' +
-    esc(state.rxText) +
-    '</textarea>';
+      '<textarea id="vpo-rx" class="ea-input" data-vpo-field="rxText" rows="6">' + esc(state.rxText) + '</textarea>',
+    'copy-rx',
+    'Copiar Rx'
+  );
 
   return (
     '<div class="vpo-panel vpo-form rpc-form-stack">' +
     '<div class="vpo-columns">' +
     '<div class="vpo-col">' +
-    vpoSection('Riesgo preoperatorio', riesgoBody, '<button type="button" class="ea-io-link" data-vpo-action="copy-risk">Copiar riesgos</button>') +
     vpoSection(
-      'Diagnósticos',
-      renderDiagnosticosSection(state),
-      '<button type="button" class="ea-io-link" data-vpo-action="tomar-dx">Tomar de la nota</button>' +
-        '<button type="button" class="ea-io-link" data-vpo-action="push-dx-datos">Enviar a Datos</button>'
-    ) +
-    '</div>' +
-    '<div class="vpo-col">' +
-    vpoSection(
-      'EKG y Rx de tórax',
-      ekgBody,
-      '<button type="button" class="ea-io-link" data-vpo-action="copy-ekg">Copiar EKG</button>' +
-        '<button type="button" class="ea-io-link" data-vpo-action="copy-rx">Copiar Rx</button>'
-    ) +
-    vpoSection(
-      'Fármacos perioperatorios',
-      '<div class="vpo-farm-list">' + renderFarmacosList(state.farmacos) + '</div>',
-      '<button type="button" class="ea-io-link" data-vpo-action="tomar-meds">Tomar de SOME</button>' +
-        '<button type="button" class="ea-io-link" data-vpo-action="copy-farm">Copiar</button>'
+      'Riesgo preoperatorio',
+      riesgoBody,
+      ['ekg:EKG', 'rx:Rx de tórax', 'dx:Diagnósticos', 'farm:Fármacos', 'scales:Otras escalas']
+        .map((b) => '<button type="button" class="wb-btn" data-vpo-open="' + b.split(':')[0] + '">' + b.split(':')[1] + '</button>')
+        .join('') + '<button type="button" class="wb-btn" data-vpo-action="copy-risk">Copiar riesgos</button>' +
+        '<button type="button" class="wb-btn wb-btn-primary" data-vpo-action="copy-full">Copiar valoración completa</button>'
     ) +
     '</div>' +
     '</div>' +
-    '<div class="vpo-actions">' +
-    '<button type="button" class="wb-btn wb-btn-primary" data-vpo-action="copy-full">Copiar valoración completa</button>' +
-    '</div></div>'
+    ekgDialog + rxDialog + dxDialog + farmDialog +
+    '</div>'
   );
 }
 

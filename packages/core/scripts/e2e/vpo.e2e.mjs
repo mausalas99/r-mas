@@ -159,7 +159,7 @@ async function openVpo(page) {
   await closeToasts(page);
   await goArea(page, 'nota');
   await page.waitForTimeout(500);
-  const boardCard = page.locator('.ic-card .sv-name', { hasText: 'DEMO PÉREZ JUAN' }).locator('visible=true').first();
+  const boardCard = page.locator('[data-ic-open]', { hasText: 'DEMO PÉREZ JUAN' }).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section', { hasText: 'VPO' }).click();
@@ -176,6 +176,7 @@ async function fillBusyVpo(page) {
 
   // Riesgo preoperatorio — Gupta left undocumented on purpose: R+ must show
   // "—" for it, never a computed percentage (formatRiskLines edge case).
+  await page.locator('.vpo-more > summary', { hasText: 'Introducción' }).click();
   await page.locator('[data-vpo-field="valoracionIntro"]').fill('Valoración prequirúrgica: programado para colecistectomía electiva.');
   const scales = { asa: 'II', rcri: '1 punto', gupta: '', ariscat: '26 (bajo)', caprini: '3 (moderado)' };
   for (const [key, val] of Object.entries(scales)) {
@@ -183,9 +184,13 @@ async function fillBusyVpo(page) {
   }
 
   // EKG / Rx
+  await page.locator('[data-vpo-open="ekg"]').click();
   await page.locator('#vpo-fc').fill('82');
   await page.locator('#vpo-ekg').fill('RITMO SINUSAL\nFC ___ LPM\nSIN ALTERACIONES AGUDAS DE LA REPOLARIZACIÓN');
+  await page.locator('dialog[open] [data-vpo-close]').click();
+  await page.locator('[data-vpo-open="rx"]').click();
   await page.locator('#vpo-rx').fill('SIN INFILTRADOS NI CONSOLIDACIONES\nSILUETA CARDIACA NORMAL\nSIN DERRAME PLEURAL');
+  await page.locator('dialog[open] [data-vpo-close]').click();
 
   // Diagnósticos: "Pegar lista con «+»" — error path (nothing parses), then
   // a paste that splits into rows. Same rows are then re-typed by the loop
@@ -323,6 +328,29 @@ async function run() {
     'no fabricated «LEE: N PUNTOS» summary line (R+ never computes it)',
     !/LEE:\s*\d+\s*PUNTOS/i.test(fullClip),
     fullClip.split('\n').filter((l) => /LEE/i.test(l))
+  );
+
+  // The calculator ships off (Ajustes › Calculadora VPO): turn it on, then reopen the tab to repaint.
+  await page.evaluate(() => window.setVpoCalculator(true));
+  await page.locator('.exp-group-pill[data-group="clinico"]').hover();
+  await page.locator('.exp-group-section', { hasText: 'Nota' }).first().click();
+  await page.locator('.exp-group-pill[data-group="clinico"]').hover();
+  await page.locator('.exp-group-section', { hasText: 'VPO' }).click();
+  await page.locator('[data-vpo-action="calc-all"]').waitFor({ state: 'visible' });
+  // Calculators: pick surgery + ASA, «Calcular todo» fills the scale lines from the form.
+  await page.locator('.vpo-calc > summary').click().catch(() => {});
+  await page.locator('[data-vpo-field="procedureId"]').selectOption('gupta-foregut-hpb');
+  await page.locator('[data-vpo-field="asaKey"]').selectOption('asa-ii');
+  await page.locator('[data-vpo-action="calc-all"]').click();
+  await page.locator('.toast', { hasText: 'escalas calculadas' }).waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+  await closeToasts(page);
+  const calced = await page.evaluate(() => Object.fromEntries(
+    Array.from(document.querySelectorAll('[data-vpo-scale]')).map((el) => [el.getAttribute('data-vpo-scale'), el.value])
+  ));
+  check(
+    'Calcular todo fills RCRI, Gupta MICA and the AHA lines from surgery + ASA',
+    /^\d PUNTOS?\. CLASE [IV]+\./.test(calced.rcri) && /^[\d.]+% DE IAM/.test(calced.gupta) && /^(BAJO|ELEVADO) — MACE/.test(calced.ahaCv) && calced.ahaSurg !== '' && calced.asa === 'ASA II',
+    calced
   );
 
   check('no page errors', pageErrors.length === 0, pageErrors);

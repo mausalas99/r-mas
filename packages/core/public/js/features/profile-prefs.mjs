@@ -86,3 +86,25 @@ export function setHideListadoProblemasAiPrompt(enabled) {
     "success"
   );
 }
+
+/** The VPO risk-score calculator ships off: the Riesgo preoperatorio card keeps its manual fields only. */
+export function isVpoCalculatorEnabled() {
+  var st = settingsRef();
+  return !!(st && st.vpoCalculator);
+}
+
+export function syncVpoCalculatorUI() {
+  var cb = document.getElementById("settings-vpo-calculator");
+  if (cb) cb.checked = isVpoCalculatorEnabled();
+}
+
+export function setVpoCalculator(enabled) {
+  var st = settingsRef();
+  st.vpoCalculator = !!enabled;
+  persistSettingsToLocalStorage();
+  syncVpoCalculatorUI();
+  getProfileRuntime().showToast(
+    enabled ? "Calculadora VPO activada." : "Calculadora VPO oculta.",
+    "success"
+  );
+}

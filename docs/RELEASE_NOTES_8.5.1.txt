@@ -14,6 +14,7 @@ Pantallas renovadas con un solo estilo, y el tiempo de respuesta de interconsult
 - **Corrección (Interconsulta):** el «Motivo de consulta» llega a tu equipo mientras lo escribes. Antes solo se guardaba al salir del campo.
 - **Corrección (Nube):** la Nota y las Indicaciones de un compañero aparecen en tu pantalla mientras las escribe, aunque tengas el cursor en otro campo.
 - **Nuevo (Estado actual):** el parser lee texto corrido: glucometrías, ingresos, egresos, evacuaciones y signos vitales. Las letras sueltas I, E y B ya no confunden otras palabras.
+- **Nuevo (VPO):** calculadora de escalas de riesgo preoperatorio (RCRI, Gupta, AHA y más) con los datos del paciente. Viene apagada: se activa en Ajustes › «Calculadora VPO».
 - **Cambio (Diseño):** Resumen, Barra, Labs, Manejo, Datos, Egreso, Nota de evolución, Agenda, Ajustes, Mi perfil, Nube y equipo, la paleta ⌘K y el tema claro usan el mismo estilo: tarjetas con sombra en vez de bordes, títulos en minúscula y un solo botón lleno por pantalla.
 - **Cambio (Mi perfil):** el perfil se guarda al cambiarlo. Ya no hay botón «Guardar perfil».
 - **Cambio (Actualizaciones):** R+ revisa si hay módulos nuevos de forma periódica.
