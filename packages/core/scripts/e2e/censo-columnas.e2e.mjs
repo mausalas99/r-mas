@@ -109,6 +109,7 @@ await r.finish('Census preview: hide a column, edit a cell, generate PDF from th
     check('PDF has no Labs column header', !/^labs$/im.test(text));
     check('PDF still has other headers', /^dx$/im.test(text), text.match(/^[A-Za-z. /-]{2,16}$/gm));
   }
+  await closeToasts(page);
   await page.locator('#censo-preview-close').click();
   await closeToasts(page);
 
@@ -141,6 +142,7 @@ await r.finish('Census preview: hide a column, edit a cell, generate PDF from th
     fs.writeFileSync(path.join(r.artifactDir, 'census-labs-blank.txt'), text2);
     check('PDF: blanked Labs does not bring HGB 10.2 back', /^labs$/im.test(text2) && !text2.includes('10.2'), text2.split('\n').filter((l) => /10\.2|HGB/.test(l)));
   }
+  await closeToasts(page);
   await page.locator('#censo-preview-close').click();
 
   check('no page errors', pageErrors.length === 0, pageErrors.slice(0, 3));

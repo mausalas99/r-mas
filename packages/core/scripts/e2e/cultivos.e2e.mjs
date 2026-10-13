@@ -403,6 +403,7 @@ await r.finish('Cultivos table + Actualizar', async () => {
     /Cuenta: 25,000 UFC\/ML/.test(cultLine) && !/\/2026/.test(cultLine) && !/KLEBSIELLA PNEUMONIAE/.test(cultLine),
     cultLine);
   await r.shot(page, 'censo-preview');
+  await closeToasts(page);
   await page.locator('#censo-preview-close').click();
   // "Vista previa" stacks the preview over the "Exportar censo" dialog without
   // closing it, so the dialog is still open (and blocking clicks) underneath.

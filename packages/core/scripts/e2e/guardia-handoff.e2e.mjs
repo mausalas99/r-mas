@@ -118,6 +118,9 @@ await r.finish('Guardia handoff: R2 → on-call R1 over Nube, both ways, restart
   await A.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   await A.page.locator('#btn-clinical-team-create-open').click();
   await A.page.locator('#clinical-team-create-name').fill('EQUIPO DEMO GUARDIA');
+  // The R2 must NOT be on call today (the form defaults to A, which is today's R2 letter on days 1, 7, 13…): then the entrega suggests the on-call R1.
+  const r2Off = activeCycleLetterForDate('Sala', 'R2', new Date()) === 'B' ? 'C' : 'B';
+  await A.page.locator('#clinical-team-create-day').selectOption(r2Off);
   await A.page.locator('#clinical-team-create-form [type="submit"]').click();
   await B.page.getByRole('button', { name: 'Abrir Mi rotación' }).click();
   const joinBtn = B.page.getByRole('button', { name: 'Unirme' });

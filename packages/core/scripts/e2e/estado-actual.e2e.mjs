@@ -654,6 +654,7 @@ async function setEc(page, key, val) {
 }
 async function copyEa(page, app) {
   await app.evaluate(({ clipboard }) => clipboard.clear());
+  await closeToasts(page);
   await page.locator('#ea-copy-fab').click();
   await page.waitForTimeout(300);
   return readClipboard(app);

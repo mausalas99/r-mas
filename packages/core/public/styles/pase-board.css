@@ -6118,6 +6118,9 @@ dialog.clinical-teams-dialog[open] {
 .ic-lines > * {
   min-width: 980px;
 }
+.ic-lines > .ic-lines__empty {
+  min-width: 0;
+}
 .ic-line {
   display: grid;
   grid-template-columns: 104px 14px 72px minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.3fr) 240px 44px;

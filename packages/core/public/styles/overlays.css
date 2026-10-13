@@ -119,3 +119,6 @@ html.no-blur #tour-dock .tour-dock-inner {
 }
 
 /* Options: no body view-bar — nav is modal head only */
+
+/* Dark: the red glyph on the red-tinted error toast was 2.86:1. */
+html.dark .toast.error .toast-glyph { color: var(--text); }

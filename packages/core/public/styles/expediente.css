@@ -2192,7 +2192,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 }
 #cultivos-table-container .cult-site .atb-chip--i {
   background: color-mix(in oklab, #c98a00 16%, transparent);
-  color: #9a6700;
+  color: var(--warn);
 }
 #cultivos-table-container .cult-site .atb-chip--s {
   background: color-mix(in oklab, var(--success) 14%, transparent);

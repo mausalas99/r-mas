@@ -57,7 +57,7 @@ const readHome = (page) => page.evaluate((sel) => {
   return {
     heroTitle: q('.cloud-sync-hero-title')?.textContent.trim() || '',
     heroVisible: visible(q('[data-cloud-hero]')),
-    primaries: [...(section?.querySelectorAll('.cloud-sync-btn--primary') || [])]
+    primaries: [...(section?.querySelectorAll('.cloud-sync-btn--primary, .cloud-sync-hero-sync') || [])]
       .filter(visible).map((b) => b.textContent.trim()),
     chain: [...(section?.querySelectorAll('.cloud-sync-chain-step') || [])].map((s) => ({
       label: s.querySelector('.cloud-sync-chain-label')?.textContent.trim(),

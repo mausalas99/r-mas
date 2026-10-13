@@ -129,6 +129,7 @@ function ensureDom() {
   list.className = 'cmdk-list';
   list.setAttribute('role', 'listbox');
   list.setAttribute('aria-label', 'Resultados');
+  list.tabIndex = 0;
 
   input.addEventListener('input', function () {
     renderResults(input.value);

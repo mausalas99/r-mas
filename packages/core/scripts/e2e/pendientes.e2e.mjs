@@ -306,8 +306,8 @@ await r.finish('Pendientes: add, dates, priority, edit, listo/deshacer, delete, 
   check('delete → Cancelar keeps it', !!rowOf(await listState(page), ECO));
   await (await row(page, ECO)).locator('.wb-todo-del-btn').click();
   await confirm.getByRole('button', { name: 'Eliminar' }).click();
-  await page.waitForTimeout(400);
-  check('delete → Eliminar removes it', !rowOf(await listState(page), ECO));
+  const gone = await until(async () => !rowOf(await listState(page), ECO), 5000, 200);
+  check('delete → Eliminar removes it', gone);
   await r.shot(page, 'after-edits');
 
   // ── Resumen card and scope ────────────────────────────────────────────
@@ -536,6 +536,7 @@ await r.finish('Pendientes: add, dates, priority, edit, listo/deshacer, delete, 
   const pdf = pdfFile ? pdfText(fs.readFileSync(pdfFile)) : '';
   check('PDF «Pendientes» column: the three newest MEDIA of P2, the long one whole; nothing from the excluded ones',
     !!pdfFile && pdf.includes(CENSO_M[2]) && pdf.includes(CENSO_M[1]) && pdf.includes('FINALIZADO') && pdf.includes('REVISAR') && !pdf.includes(CENSO_M[0]) && !pdf.includes(CENSO_BAJA) && !pdf.includes(CENSO_CLOSED), pdf.slice(0, 300));
+  await closeToasts(pg);
   await pg.locator('#censo-preview-close').click();
 
   // The reminder set for the same minute: P2's toast shows, the deleted P4's never does.

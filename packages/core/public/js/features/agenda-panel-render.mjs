@@ -113,7 +113,6 @@ export function buildAgendaDayColumn(iDay, monday, dayClips, onEdit) {
       blk.style.width = 'calc(' + pctEach + '% - 10px)';
     }
     blk.setAttribute('title', (ev.procedure || '') + ' · ' + (ev.location || '') + ' · ' + cell.patientLabel);
-    blk.setAttribute('aria-label', 'Editar procedimiento para ' + cell.patientLabel);
     if (!(ev.materialApproved && ev.anesthesiaScheduled)) blk.classList.add('rpc-proc-flag');
     blk.innerHTML =
       '<div class="rpc-proc-name">' + esc(String(ev.procedure || '')) + '</div>' +

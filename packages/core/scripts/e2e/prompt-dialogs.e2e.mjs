@@ -213,7 +213,7 @@ await r.finish('prompt() callers use the in-app dialog', async () => {
   await page.locator('.topbar-area-btn').waitFor({ state: 'visible' });
   await goArea(page, 'nota');
   // No active patient after reload: pick A from the team board.
-  await page.getByText(A.name,{ exact: true }).locator('visible=true').first().click();
+  await page.getByText(new RegExp('^' + A.name + '$', 'i')).locator('visible=true').first().click();
   await page.evaluate(() => window.switchInnerTab('indica'));
   await page.locator('#indica-form').waitFor({ state: 'visible' });
   await dieta.fill('Dieta blanda');

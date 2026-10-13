@@ -212,6 +212,7 @@ await r.finish('Worst-case input through every export: Word x3, census PDF, VPO 
   await page.waitForTimeout(300);
   const censoToast = await toastText(page);
   await shot(page, 'census-exported');
+  await closeToasts(page);
   await page.locator('#censo-preview-close').click();
   check('census: PDF written', !!pdf, censoToast);
   check('census: no WinAnsi / error toast', !/winansi|error/i.test(censoToast), censoToast);
@@ -234,7 +235,7 @@ await r.finish('Worst-case input through every export: Word x3, census PDF, VPO 
   const panPdf = fs.readdirSync(r.downloadsDir).filter((f) => f.endsWith('.pdf')).map((f) => path.join(r.downloadsDir, f)).find((f) => fs.statSync(f).mtimeMs > t0);
   await shot(page, 'pancenso');
   check('pancenso: writes a PDF or says clearly why not', !!panPdf || /sin pacientes para el pancenso/i.test(panToast), panToast);
-  if (await page.locator('#censo-preview-close').isVisible()) await page.locator('#censo-preview-close').click();
+  if (await page.locator('#censo-preview-close').isVisible()) { await closeToasts(page); await page.locator('#censo-preview-close').click(); }
   if (await page.locator('#censo-export-cancel').isVisible()) await page.locator('#censo-export-cancel').click();
   await closeToasts(page);
 
@@ -342,10 +343,12 @@ await r.finish('Worst-case input through every export: Word x3, census PDF, VPO 
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section', { hasText: 'VPO' }).click();
   await page.locator('#vpo-container .vpo-panel').waitFor({ state: 'visible' });
+  await page.locator('.vpo-more > summary', { hasText: 'Introducción' }).click();
   await page.locator('[data-vpo-field="valoracionIntro"]').fill(odd('V-INTRO'));
   await page.locator('[data-vpo-open="ekg"]').click();
   await page.locator('#vpo-ekg').fill(odd('V-EKG'));
   await page.keyboard.press('Escape');
+  await closeToasts(page);
   await page.locator('[data-vpo-open="rx"]').click();
   await page.locator('#vpo-rx').fill(`V-RX ${LONG}`);
   await page.keyboard.press('Escape');
