@@ -57,10 +57,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ## R+ 8.5.1 (estable — release 8.5.1)
 
+- **Seguridad clínica:** la línea HD marca «¿INESTABLE?» con TA baja, FC anormal o vasopresor; el balance cuenta todos los egresos.
+- **Protección de datos:** sesión de Nube cerrada con el llavero; una base cifrada antigua se respalda, no se borra; «Exportar copia» dice «sin cifrar».
+- **Interno:** en salas cifradas el teléfono vuelve a abrir el tablero y mandar signos.
+- **Nube:** los cambios ya no se rechazan por una hora del servidor mal calculada; un paciente agregado en otro equipo aparece tras reiniciar.
 - **Interconsulta:** tarjetas con «Recibida» / «Respondida» y promedio de 7 días; los tiempos del teléfono llegan por Nube.
 - **Estado actual:** el parser lee texto corrido (glucometrías, ingresos, egresos, evacuaciones, signos vitales).
 - **Diseño:** pantallas principales con un solo estilo. Mi perfil se guarda al cambiarlo.
 - **Sistema:** Electron 44.
+- **Interconsulta:** pegar «SUGERENCIAS POR …» llena las Indicaciones del paciente.
+- **Estado actual:** pastilla «Turno en curso» (cierra esta noche, se ve como hoy).
+- **Interconsulta:** «Motivo de IC» en tarjetas; servicio solicitante obligatorio; Grupo + Seguimiento en un control.
+- **Estado actual:** caja de velocidad (mcg/min) para norepinefrina.
+- **Permisos:** «Nueva rotación» solo R4/admin; límite de intentos al código de admin; solo el dueño fija la primera llave de la sala.
 
 Notas: `docs/RELEASE_NOTES_8.5.1.txt`.
 
@@ -256,7 +265,7 @@ Firmar y notarizar **no acelera** el build: suele tardar más que un build sin n
 
 ## Architecture
 
-R+ is an Electron desktop app with SQLCipher clinical store, **Nube** turn sync (all clinical wards via `cloud/sync-worker`), and an esbuild-bundled renderer. LAN LiveSync and the ward HTTP host (`server.js` :3738) are gone. Offline = local SQLCipher only. Interno MIP, Equipos, and R+ Móvil run on Cloudflare. New UI work belongs in `public/js/features/*.mjs` — run `npm run build:ui` after edits; never hand-edit `public/js/chunks/` or `app.bundle.mjs`.
+R+ is an Electron desktop app with a local SQLite clinical store (SQLCipher driver, but no key since 8.4.2 — rely on disk encryption), **Nube** turn sync (all clinical wards via `cloud/sync-worker`), and an esbuild-bundled renderer. LAN LiveSync and the ward HTTP host (`server.js` :3738) are gone. Offline = local DB only. Interno MIP, Equipos, and R+ Móvil run on Cloudflare. New UI work belongs in `public/js/features/*.mjs` — run `npm run build:ui` after edits; never hand-edit `public/js/chunks/` or `app.bundle.mjs`.
 
 ### Entry points
 

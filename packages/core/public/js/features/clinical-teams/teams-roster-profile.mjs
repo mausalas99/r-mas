@@ -168,7 +168,7 @@ async function runProfileSave(form) {
     document.querySelectorAll('#profile-body [data-perfil-sala]').forEach((c) => {
       c.setAttribute('aria-pressed', String(c.getAttribute('data-perfil-sala') === sala));
     });
-    const cur = document.querySelector('#profile-body .settings-perfil-sala-current');
+    const cur = document.querySelector('#profile-body details.settings-perfil-sala .settings-perfil-sala-current');
     if (cur) cur.textContent = sala || 'Sin sala';
   }
 }

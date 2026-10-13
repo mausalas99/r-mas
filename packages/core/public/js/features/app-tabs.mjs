@@ -294,7 +294,6 @@ export function switchAppTab(tab) {
   if (tab === 'med') rt.setMedTabAttention(false);
   syncHeaderContext(rt);
   schedulePostAppTabSwitch(tab, prevAppTab);
-  document.dispatchEvent(new CustomEvent('rpc-app-tab-changed', { detail: { tab: tab } }));
 }
 
 export function syncMainAppTabA11y(tab) {

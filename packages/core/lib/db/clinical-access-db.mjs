@@ -121,10 +121,3 @@ export {
   verifySalaInternoToken,
 } from './clinical-access-interno.mjs';
 
-export {
-  listEntregaTemplates,
-  saveEntregaTemplateUser,
-  saveEntregaTemplateTeam,
-  deleteEntregaTemplate,
-} from './clinical-access-entrega.mjs';
-

@@ -40,7 +40,7 @@ import { fileURLToPath } from 'node:url';
 import { createA11yRecorder, acceptAbxDias } from './harness.mjs';
 import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT } from '../../public/js/tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../public/js/lab-bulk-paste.mjs';
-import { goArea, onboardLocalOnly, quietHints } from './harness.mjs';
+import { goArea, onboardLocalOnly } from './harness.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const runId = new Date().toISOString().replace(/[:.]/g, '-');
@@ -95,9 +95,8 @@ async function launch() {
   const page = await app.firstWindow();
   // Sala opens in the card view by default; these scenarios drive the sidebar.
   await page.waitForLoadState('domcontentloaded');
-  await page.evaluate(() => globalThis.localStorage.setItem('rplus-sala-view', 'bar'));
-  await quietHints(page);
-  await page.reload();
+  const salaCards = await page.evaluate(() => { globalThis.localStorage.setItem('rplus-sala-view', 'bar'); globalThis.localStorage.setItem('rpc-registro-autoopen', 'off'); globalThis.localStorage.setItem('rpc-feature-hints-enabled', '0'); globalThis.localStorage.setItem('rpc-keyboard-tab-shortcuts-adopted', '1'); return !!globalThis.document.body.dataset.salaView; });
+  if (salaCards) await page.reload();
   await page.setViewportSize({ width: 1440, height: 902 });
   const pageErrors = [];
   page.on('pageerror', (err) => pageErrors.push(err.message));
@@ -159,7 +158,7 @@ async function openVpo(page) {
   await closeToasts(page);
   await goArea(page, 'nota');
   await page.waitForTimeout(500);
-  const boardCard = page.locator('[data-ic-open]', { hasText: 'DEMO PÉREZ JUAN' }).locator('visible=true').first();
+  const boardCard = page.getByText(/^DEMO (PÉREZ )?JUAN$/).locator('visible=true').first();
   if (await boardCard.isVisible().catch(() => false)) await boardCard.click();
   await page.locator('.exp-group-pill[data-group="clinico"]').hover();
   await page.locator('.exp-group-section', { hasText: 'VPO' }).click();

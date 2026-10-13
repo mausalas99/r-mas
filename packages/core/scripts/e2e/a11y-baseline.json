@@ -222,6 +222,15 @@
     "registro-bomba": {}
   },
   "feature-hints": {
+    "choice-modal": {
+      "color-contrast": 3
+    },
+    "choice-step2": {
+      "color-contrast": 3
+    },
+    "choice-where": {
+      "color-contrast": 3
+    },
     "fresh-open": {
       "color-contrast": 3
     },
@@ -234,74 +243,34 @@
     "updating-user-guia": {},
     "g-buscar-1": {},
     "g-tendencias-1": {},
-    "cultivos-842-noopen": {},
+    "g-tendencias-2": {},
+    "g-tendencias-3": {},
+    "g-tendencias-4": {},
+    "g-tendencias-5": {},
+    "g-tendencias-6": {},
+    "g-tendencias-7": {},
+    "lab-843-1": {},
+    "lab-843-2": {},
+    "lista-843-1": {},
     "g-manejo-1": {},
-    "agua-iny-842-1": {},
-    "abx-dia-842-1": {},
-    "abx-dia-842-2": {},
-    "estado-actual-842-1": {},
-    "estado-actual-842-2": {},
-    "resumen-842-1": {},
-    "resumen-842-2": {},
-    "actualizar-labs-842-1": {},
-    "portal-url-842-1": {
-      "color-contrast": 1
-    },
-    "datos-842-1": {},
-    "datos-842-2": {
-      "color-contrast": 2
-    },
-    "datos-842-3": {
-      "color-contrast": 2
-    },
-    "datos-842-4": {
-      "color-contrast": 2
-    },
+    "manejo-843-1": {},
+    "manejo-843-2": {},
+    "manejo-843-3": {},
+    "resumen-843-1": {},
+    "datos-tachar-843-1": {},
     "g-pendientes-1": {},
     "g-pendientes-2": {},
-    "proximos-842-1": {},
-    "sala-archivo-842-1": {
-      "color-contrast": 3
-    },
-    "sala-archivo-842-2": {
-      "color-contrast": 3
-    },
-    "archivados-after-archive": {
-      "color-contrast": 2
-    },
-    "card-after-archivados": {
-      "color-contrast": 2
-    },
     "g-interconsultas-1": {},
     "g-interconsultas-2": {},
     "g-interconsultas-3": {},
-    "censo-842-1": {
-      "color-contrast": 3
-    },
-    "censo-842-2": {
-      "color-contrast": 1
-    },
-    "censo-842-3": {
-      "color-contrast": 1
-    },
-    "censo-842-4": {
-      "color-contrast": 3
-    },
+    "g-interconsultas-4": {},
     "g-sync-1": {
       "color-contrast": 3
     },
-    "g-conexion-1": {
-      "color-contrast": 1
-    },
-    "g-conexion-2": {
-      "color-contrast": 1
-    },
-    "g-conexion-3": {
-      "color-contrast": 1
-    },
-    "g-conexion-4": {
-      "color-contrast": 1
-    }
+    "g-conexion-1": {},
+    "g-conexion-2": {},
+    "g-conexion-3": {},
+    "g-conexion-4": {}
   },
   "guardia-handoff": {
     "r1-cycle-saved": {
@@ -447,6 +416,11 @@
     },
     "new-rotation-picked": {
       "color-contrast": 9
+    }
+  },
+  "nube-session-expired": {
+    "2-login-panel": {
+      "color-contrast": 2
     }
   },
   "nube-sync": {
@@ -597,11 +571,6 @@
     "vpo-empty": {},
     "vpo-busy": {
       "label": 5
-    }
-  },
-  "nube-session-expired": {
-    "2-login-panel": {
-      "color-contrast": 2
     }
   }
 }

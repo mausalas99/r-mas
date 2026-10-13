@@ -220,7 +220,7 @@ async function exportClinicalDbBackupDb() {
   var dbBackupResult = await openConfirm({
     weight: 'consequence',
     title: '¿Continuar?',
-    consequenceText: 'Se copiará el archivo .db cifrado. Protégelo como datos clínicos sensibles.',
+    consequenceText: 'Se copiará el archivo .db sin cifrar. Protégelo como datos clínicos sensibles.',
     confirmLabel: 'Continuar',
   });
   if (dbBackupResult !== 'confirm') {

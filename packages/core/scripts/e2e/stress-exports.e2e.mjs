@@ -97,6 +97,12 @@ async function newFile(ext, since, label) {
   return file;
 }
 
+// «Generar …» opens the print preview; the .docx comes from its «Generar .docx» button.
+async function exportViaPreview(page, sel) {
+  await page.locator(sel).click();
+  await page.locator('#doc-preview-docx').click();
+}
+
 const toastText = async (page) => (await page.locator('.toast').allInnerTexts()).join(' | ').replace(/\s+/g, ' ').slice(0, 300);
 
 /** All the .docx checks. Returns the document text (w:t runs joined by \n). */
@@ -142,7 +148,7 @@ async function setMode(page, mode) {
 
 async function pickPatientIc(page, p) {
   await closeToasts(page);
-  if (!(await page.locator('#ic-board-mount .p-name').locator('visible=true').count())) {
+  if (!(await page.locator('#ic-board-mount .p-name, #ic-board-mount .ic-card .sv-name').locator('visible=true').count())) {
     await goArea(page, 'nota');
     await page.locator('.exp-group-pill[data-group="paciente"]').click();
     await page.locator('[data-ic-back-to-board]').click();
@@ -271,7 +277,7 @@ await r.finish('Worst-case input through every export: Word x3, census PDF, VPO 
   await fillRows(page, '#tx-list', '.btn-add-row', Array.from({ length: 40 }, (_, i) => `N-TX-${i + 1} ${i === 0 ? ODD : 'TX'}`));
   await shot(page, 'note-filled');
   t0 = Date.now();
-  await page.locator('#btn-gen').click();
+  await exportViaPreview(page, '#btn-gen');
   const noteText = await checkDocx(page, 'nota', await newFile('.docx', t0, 'nota'),
     ['N-INTERR-FIN', 'N-TA', 'N-FC', 'N-MEDICO', 'N-PROFESOR', 'N-DX-40']);
   const lost = (prefix, n) => [...Array(n).keys()].map((i) => `${prefix}-${i + 1} `).filter((t) => !up(noteText).includes(t) && !up(noteText).includes(t.trim() + '\n'));
@@ -297,7 +303,7 @@ await r.finish('Worst-case input through every export: Word x3, census PDF, VPO 
   }
   await shot(page, 'indicaciones-filled');
   t0 = Date.now();
-  await page.locator('#btn-gen-ind').click();
+  await exportViaPreview(page, '#btn-gen-ind');
   const indText = await checkDocx(page, 'indicaciones', await newFile('.docx', t0, 'indicaciones'),
     ['I-MEDICOS', 'I-DIETA', 'I-CUIDADOS', 'I-ESTUDIOS', 'I-MED-1', 'I-MED-40', 'I-IC', 'I-OTRO-1', 'I-OTRO-8']);
   check('indicaciones: header área/servicio filled, no template sample left', /CARDIOLOG/.test(indText) && !/TRAUMATOLOGIA|SINTETICO/.test(indText), indText.match(/ÁREA[\s\S]{0,60}/)?.[0]);
@@ -309,7 +315,9 @@ await r.finish('Worst-case input through every export: Word x3, census PDF, VPO 
   await pasteAndSave(page, header(AREA, TODAY(3)) + bh('10.2'));
   await pickPatientIc(page, AREA);
   await closeToasts(page);
-  await page.locator('#btn-exp-datos-open').click();
+  await page.locator('#btn-exp-datos-open:visible, #patient-dashboard-mount .dash-name:visible').first().click();
+  // Datos B (8.4.3) splits the modal into tabs; área/servicio live on «Cama e ingreso».
+  await page.locator('#exp-datos-modal-mount [data-datos-tab="cama"]').click();
   const datos = (key) => page.locator(`[data-oninput-args='["${key}"]']`).locator('visible=true').first();
   await datos('area').fill('MEDICINA INTERNA');
   await datos('servicio').fill('CARDIOLOGIA');
@@ -318,12 +326,12 @@ await r.finish('Worst-case input through every export: Word x3, census PDF, VPO 
   const areaRe = /ÁREA:\s*MEDICINA INTERNA\s*SERVICIO:\s*CARDIOLOGIA/;
   await goClinico(page, 'notas', '#btn-gen');
   t0 = Date.now();
-  await page.locator('#btn-gen').click();
+  await exportViaPreview(page, '#btn-gen');
   const areaNote = await checkDocx(page, 'nota-area', await newFile('.docx', t0, 'nota-area'), [], []);
   check('nota: ÁREA: MEDICINA INTERNA / SERVICIO: CARDIOLOGIA (not swapped)', areaRe.test(areaNote), areaNote.match(/ÁREA:[\s\S]{0,60}/)?.[0]);
   await goClinico(page, 'indica', '#btn-gen-ind');
   t0 = Date.now();
-  await page.locator('#btn-gen-ind').click();
+  await exportViaPreview(page, '#btn-gen-ind');
   const areaInd = await checkDocx(page, 'indicaciones-area', await newFile('.docx', t0, 'indicaciones-area'), [], []);
   check('indicaciones: ÁREA: MEDICINA INTERNA / SERVICIO: CARDIOLOGIA (not swapped)', areaRe.test(areaInd), areaInd.match(/ÁREA:[\s\S]{0,60}/)?.[0]);
   await shot(page, 'area-servicio-exported');
@@ -353,7 +361,7 @@ await r.finish('Worst-case input through every export: Word x3, census PDF, VPO 
   });
   await goClinico(page, 'notas', '#btn-gen');
   await closeToasts(page);
-  await page.locator('#btn-gen').click();
+  await exportViaPreview(page, '#btn-gen');
   await page.locator('.toast', { hasText: 'DEMO disco lleno' }).waitFor({ timeout: 10000 }).catch(() => {});
   await page.waitForTimeout(800);
   const failToasts = await page.locator('.toast').allInnerTexts();

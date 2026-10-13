@@ -13,13 +13,17 @@ This doc is the canonical map of *where* paths exist and *why*.
 
 ```
 R+/
-├── main.js, preload.js               # Electron main, IPC bridge
-├── lan-squad/                          # LiveSync host: router, store, auth, WS hub
-├── lib/                                # Node shared logic (importable from main)
-├── public/js/                          # Renderer source (pre-bundle)
-│   └── features/                       # Primary place for new UI features
-├── public/interno/                     # Mobile interno/guardia web client
-├── scripts/                            # build-ui, bundle, release, metrics
+├── packages/core/                      # Shared core: lib, public, cloud, scripts, data
+│   ├── lib/                            # Node shared logic (importable from main)
+│   ├── public/js/                      # Renderer source (pre-bundle)
+│   │   └── features/                   # Primary place for new UI features
+│   ├── public/interno/                 # Mobile interno/guardia web client
+│   ├── cloud/                          # sync-worker, equipos-worker, update-worker, landing
+│   └── scripts/                        # build-ui, bundle, release, metrics
+├── packages/im/                        # Free IM app shell: main.js, preload.js
+├── packages/shared-signing/            # Module signing shared by apps
+├── packages/hf/, packages/neumo/       # Separate apps (own CLAUDE.md; not R+ work)
+├── lib/, public/, cloud/, scripts/     # Root paths are committed symlinks into packages/core
 └── docs/
     ├── core/                           # Strategy & architecture
     ├── features/                       # Feature docs + features-index.md
@@ -38,7 +42,7 @@ R+/
 | IPC channel | `preload.js` + `main.js` or `lib/db/ipc-handlers.mjs` |
 | DB schema change | `lib/db/schema.mjs` + `schema.test.mjs` (bump version) |
 | Feature documentation | `docs/features/feat-*.md` + update `features-index.md` |
-| Agent graph memory | `scripts/graph-memory/` (not shipped in Electron; see [19-agent-graph-memory.md](./19-agent-graph-memory.md)) |
+| Agent graph memory | `scripts/graph-memory/` (not shipped in Electron) |
 
 ## Generated — do not hand-edit
 

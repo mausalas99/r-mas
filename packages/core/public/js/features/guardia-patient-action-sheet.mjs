@@ -162,7 +162,7 @@ async function applyGuardiaMarksViaClinicalRepo(patient, merged, next) {
   }
   if (!res || !res.ok) return { ok: false, reason: (res && res.error) || 'repo_failed' };
   Object.assign(patient, next);
-  _applyPatientPatch(patient.id, next, patient, { source: 'guardia-marks' });
+  _applyPatientPatch(patient.id, next, patient);
   // ponytail: bundle push carries the fields with the fresh clock; change_log row drains later (idempotent). Add projector drain only if Nube lag is observed.
   scheduleCloudSyncPush();
   return { ok: true, via: 'clinical-repo', changeId: res.changeId || null };
@@ -180,7 +180,7 @@ export async function saveGuardiaMarks(patient, patch) {
   const merged = { ...patient, ...next, id: String(patient.id) };
   if (!canExecuteClinicalCommand()) {
     Object.assign(patient, next);
-    _applyPatientPatch(patient.id, next, patient, { source: 'guardia-marks' });
+    _applyPatientPatch(patient.id, next, patient);
     await persistClinicalState({ immediate: true, source: 'guardia-marks' });
     scheduleCloudSyncPush();
     return { ok: true, via: 'snapshot' };

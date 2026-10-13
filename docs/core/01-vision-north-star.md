@@ -56,7 +56,7 @@ To maintain focus, we explicitly say **NO** to:
 - **EMR replacement:** R+ is not the system of record; formal boundary with the hospital EMR stays explicit.
 - **Autonomous clinical decisions:** No opaque diagnostic or treatment engines; Manejo automático-style suggestions remain retired.
 - **Clinical interpretation:** R+ calculates from lab values (eTFG, corrected calcium, BUN/Cr, corrected reticulocytes) and flags values outside the lab's reference range. It emits no interpretations, diagnoses, or treatment suggestions—in the app or in its marketing.
-- **Forced cloud:** Nube is **opt-in**; offline device unlock (local SQLCipher only) must keep working without an account.
+- **Forced cloud:** Nube is **opt-in**; offline local use (local DB, no key — see `15-security.md`) must keep working without an account.
 - **Tool time over patient time:** If a feature makes residents manage R+ instead of patients, it violates the North Star.
 
 ---

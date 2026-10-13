@@ -3,7 +3,6 @@ import { handleAuth } from './auth.js';
 import { assertNubeClient } from './auth-util.js';
 import { SyncError, jsonSyncError, syncErrorStatus } from './errors.js';
 import { handleInternoApiRoute } from './interno/routes.js';
-import { handlePaseLabs } from './pase-labs.js';
 import { handleRooms } from './rooms.js';
 import { stampAppVersionFromRequest } from './session.js';
 
@@ -34,7 +33,7 @@ export async function handleApiRoute(request, env, ctx) {
   const subpath = path.slice(API_PREFIX.length) || '/';
 
   try {
-    // Runs on every authenticated request (rooms, admin, pase-labs), not
+    // Runs on every authenticated request (rooms, admin), not
     // just login — sessions last 14 days, so login-only tracking would
     // leave fleet-adoption data stale for weeks.
     if (env.DB) await stampAppVersionFromRequest(env.DB, request);
@@ -66,10 +65,6 @@ export async function handleApiRoute(request, env, ctx) {
       }
       const roomsSub = subpath === '/rooms' ? '/' : subpath.slice('/rooms'.length) || '/';
       return await handleRooms(request, env, roomsSub, ctx);
-    }
-
-    if (subpath === '/pase-labs') {
-      return await handlePaseLabs(request, env);
     }
 
     if (subpath === '/admin' || subpath.startsWith('/admin/')) {

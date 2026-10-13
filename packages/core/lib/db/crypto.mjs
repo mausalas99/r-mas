@@ -8,7 +8,12 @@ export const ARGON2_OPTS = {
   outputLen: 32,
 };
 
-/** @deprecated Universal fallback for databases wrapped before recovery v2. */
+/**
+ * @deprecated Universal fallback for databases wrapped before recovery v2.
+ * Since 8.4.2 the clinical DB has no key, so this only ever opens an old encrypted DB
+ * (recovery_version < 2) that a user restores by hand from an archived backup. Remove it
+ * together with the recovery flow if encryption at rest comes back with a new design.
+ */
 export const LEGACY_RECOVERY_CODE = 'r+123';
 const AES_ALGO = 'aes-256-gcm';
 const RECOVERY_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

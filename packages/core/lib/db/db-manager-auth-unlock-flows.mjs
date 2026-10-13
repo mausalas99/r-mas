@@ -13,6 +13,7 @@ import {
 } from './crypto.mjs';
 import { getAppMeta, setAppMeta } from './db-manager-app-meta.mjs';
 import {
+  archiveClinicalDbFiles,
   readUnlockMeta,
   removeClinicalDbFiles,
   removeUnlockMetaFile,
@@ -351,12 +352,13 @@ export async function ensureUnlockedImpl(ctx) {
     if (!dbExists || !bootstrap.kdf_salt || !isNotADatabaseError(plainErr)) {
       throw plainErr;
     }
+    // A pre-8.4.2 encrypted DB with no remembered key can't be opened anymore.
+    // Keep it (moved aside, never deleted) and tell the user, then start empty.
     lockDb(ctx);
-    removeClinicalDbFiles(deps.userDataPath);
-    removeUnlockMetaFile(deps.userDataPath);
+    const archivedEncryptedDb = archiveClinicalDbFiles(deps.userDataPath);
     await openDatabaseConnection(ctx);
     clearUnlockFails(state);
-    return { ok: true };
+    return { ok: true, archivedEncryptedDb };
   }
 }
 

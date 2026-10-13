@@ -482,6 +482,8 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
   await page.waitForTimeout(400);
   const wk0 = await blocks();
   await shot(page, 'agenda-this-week-50');
+  // The refused-date toasts sit over the week buttons; close them like a user.
+  await closeToasts(page);
   await page.locator('#procedure-agenda-next').click();
   await page.waitForTimeout(400);
   const wk1 = await blocks();
@@ -528,6 +530,7 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
   await page.locator('#procedure-agenda-range').waitFor();
   await page.waitForTimeout(400);
   const wk0b = await blocks();
+  await closeToasts(page);
   await page.locator('#procedure-agenda-next').click();
   await page.waitForTimeout(400);
   const wk1b = await blocks();

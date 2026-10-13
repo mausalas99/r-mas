@@ -19,7 +19,6 @@ import {
   verifyAdminAccessCode,
   setAdminAccessCode,
 } from '../admin-access-code.mjs';
-import { redistributePostCallPatients } from '../clinical-scope/interconsulta-role-rollover.mjs';
 
 /** @param {import('./ipc-handlers-context.mjs').IpcHandlerContext} ctx */
 function registerDbProfileCrudHandlers(ctx) {
@@ -178,18 +177,6 @@ function registerDbProfileTeamHandlers(ctx) {
       )
     );
     return { ok: true, teamId };
-  });
-
-  bindIpcHandler(ipcMain, 'db:clinical-interconsulta-rollover', async (payload) => {
-    const result = await dbManager.withTransaction((db) =>
-      redistributePostCallPatients(
-        db,
-        String(payload.postCallTeamId || ''),
-        Array.isArray(payload.remainingTeamIds) ? payload.remainingTeamIds.map(String) : [],
-        payload.nowIso ? String(payload.nowIso) : undefined
-      )
-    );
-    return { ok: true, result };
   });
 }
 

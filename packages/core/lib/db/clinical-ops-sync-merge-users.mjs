@@ -137,8 +137,6 @@ function collectIncomingReferencedUserIds(incoming) {
   }
   addFromRows(incoming?.team_guardia_today, 'user_id');
   addFromRows(incoming?.active_guardias, 'covering_user_id');
-  addFromRows(incoming?.entrega_template_user, 'user_id');
-  addFromRows(incoming?.entrega_template_team, 'created_by');
   return needed;
 }
 

@@ -5,6 +5,7 @@
 
 import { mapBlobsToAppState } from './db-storage-bridge.mjs';
 import { hydrateClinicalReadModel } from './clinical-read-model.mjs';
+import { getBlobCache } from './storage/storage-core.mjs';
 
 const MAP_FIELDS = [
   'notes',
@@ -81,6 +82,12 @@ function snapshotFromStorage(storage) {
  * @returns {Promise<{ ok: boolean, source?: 'db', error?: string }>}
  */
 async function hydrateFromDb() {
+  // Boot already loaded every blob in ensureStorageHydrated(); reuse it instead of a second full DB read.
+  const cached = getBlobCache();
+  if (cached && typeof cached === 'object') {
+    hydrateClinicalReadModel(snapshotFromFields(mapBlobsToAppState(cached)));
+    return { ok: true, source: 'db' };
+  }
   try {
     const res = await window.electronAPI.dbClinicalLoadAll();
     if (!res || res.ok === false) {

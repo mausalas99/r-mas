@@ -373,12 +373,7 @@ export async function persistEventualidades(patient, store, command) {
       next
     );
     patient.eventualidades = authoritative;
-    _applyPatientPatch(
-      patient.id,
-      { eventualidades: authoritative },
-      patient,
-      { source: 'eventualidades-persist' }
-    );
+    _applyPatientPatch(patient.id, { eventualidades: authoritative }, patient);
     touchPatientLanUpdatedAt(patient.id);
     touchClinicalSessionActivity({ force: true });
     // Do not await projector/push before UI returns — a concurrent pull can

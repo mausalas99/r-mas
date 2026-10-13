@@ -1,11 +1,11 @@
 R+ 8.5.1 (estable — release 8.5.1)
 ======================================
 
-Fecha: 2026-10-11
+Fecha: 2026-10-12
 
 ## Resumen
 
-Pantallas renovadas con un solo estilo, y el tiempo de respuesta de interconsulta en el tablero. El estado actual entiende texto corrido, y R+ pasa a Electron 44.
+Pantallas renovadas con un solo estilo, y el tiempo de respuesta de interconsulta en el tablero. El estado actual entiende texto corrido, y R+ pasa a Electron 44. Versión de correcciones. La línea HD de la nota ya no marca «ESTABLE» a un paciente hipotenso o con vasopresor, y el balance cuenta todos los egresos. La sesión de Nube queda cerrada con el llavero del equipo, y una base cifrada antigua ya no se borra al iniciar.
 
 ## Nuevo / mejorado
 
@@ -19,6 +19,20 @@ Pantallas renovadas con un solo estilo, y el tiempo de respuesta de interconsult
 - **Cambio (Mi perfil):** el perfil se guarda al cambiarlo. Ya no hay botón «Guardar perfil».
 - **Cambio (Actualizaciones):** R+ revisa si hay módulos nuevos de forma periódica.
 - **Cambio (Sistema):** R+ usa Electron 44 y una base cifrada actualizada. Copiar texto al portapapeles se adaptó a la nueva versión.
+- **Corrección (Seguridad clínica):** la línea HD que genera Estado actual decía siempre «ESTABLE». Ahora, con TA baja, FC anormal o un vasopresor confirmado, escribe «¿INESTABLE?» para que el médico lo confirme. La nota SOAP usa la misma regla.
+- **Corrección (Seguridad clínica):** la gráfica de balance diario y la de I/O por turno restaban solo la diuresis. Ahora cuentan todos los egresos: drenajes, gastrostomía, nefrostomía y UF, igual que el balance del turno.
+- **Corrección (Protección de datos):** el token de Nube y las llaves de las salas («Recuérdame») se guardan cerrados con el llavero del sistema. Sin llavero no se escriben en disco.
+- **Corrección (Protección de datos):** una base cifrada antigua que ya no se puede abrir se mueve a una carpeta de respaldo en lugar de borrarse, y R+ avisa dónde quedó.
+- **Corrección (Protección de datos):** «Exportar copia» dice «sin cifrar», porque la copia .db no va cifrada.
+- **Corrección (Interno):** en salas cifradas, el teléfono del interno no podía abrir el tablero ni mandar signos. Monitoreo y operaciones clínicas ahora usan la llave de Interno.
+- **Corrección (Permisos):** «Nueva rotación» solo la puede usar un R4 o un admin del programa. El código de admin se bloquea tras 5 intentos fallidos en 15 minutos. Solo el dueño de una sala puede fijar su primera llave.
+- **Corrección (Nube):** el servidor combina los signos con el mismo código que la app. Antes ignoraba 5 grupos de medicamentos (vasopresor, anticoagulación, antiarrítmicos, estatinas, NM).
+- **Corrección (Nube):** R+ podía calcular mal la hora del servidor y mandar cambios con fecha vieja. Nube los rechazaba, y un paciente agregado en otro equipo podía no aparecer tras reiniciar.
+- **Corrección:** una lectura de signos del interno refresca de inmediato la guardia y Estado actual.
+- **Corrección:** el KPI de PaFi aparece en el Resumen cuando aplica.
+- **Corrección:** la pista «Cambiar de área» ya no tapa el menú de áreas.
+- **Cambio (Velocidad):** al iniciar, R+ lee la base clínica una vez, no dos.
+- **Cambio:** se quitó código sin uso (plantillas de entrega, rollover de interconsulta, ruta pase-labs).
 
 ## Instalación
 

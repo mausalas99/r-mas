@@ -61,7 +61,7 @@ await r.finish('Nube sala switch from Mi perfil', async () => {
   const hint = N.page.locator('#profile-modal [data-perfil-sala-hint]');
   check('sala unset: Mi perfil shows the pick hint', await until(() => hint.isVisible().catch(() => false), 10000), await N.page.locator('#profile-modal').innerText().catch(() => ''));
   check('sala unset: the Sala section is open despite the saved collapse', await N.page.locator('#profile-modal details.settings-perfil-sala').evaluate((d) => d.open));
-  check('sala unset: the summary says Sin sala', /Sin sala/.test(await N.page.locator('#profile-modal [data-perfil-sala-host] .settings-perfil-sala-current').innerText()));
+  check('sala unset: the summary says Sin sala', /Sin sala/.test(await N.page.locator('#profile-modal details.settings-perfil-sala .settings-perfil-sala-current').innerText()));
   const mark = workerLog.length;
   await N.page.locator('#profile-modal [data-perfil-sala="Sala E"]').evaluate((b) => b.click());
   const joined = await until(async () => (await roomMeta(N.page))?.sala === 'Sala E', 20000);

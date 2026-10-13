@@ -220,12 +220,12 @@ await r.finish('Navigation redesign (board 7)', async () => {
     const m = document.querySelector('#ea-registro-backdrop.open .ea-registro-modal');
     if (!m) return null;
     return {
-      right: m.getBoundingClientRect().left > innerWidth * 0.6,
       title: document.getElementById('ea-registro-title').textContent.trim(),
       text: m.innerText,
     };
   });
-  check('no vitals saved: «Registro completo» button opens it on the right', !!panel && panel.right && panel.title === 'Registro completo', panel && { right: panel.right, title: panel.title });
+  // Back to the centered modal since 8.4.7 (ccea6653), not the right side panel.
+  check('no vitals saved: «Registro completo» button opens it', !!panel && panel.title === 'Registro completo', panel && { title: panel.title });
   check('panel has default slots, «+ Agregar hora» and the three shifts',
     !!panel && ['08:00', '16:00', '00:00', '+ Agregar hora', 'Matutino', 'Vespertino', 'Nocturno'].every((t) => panel.text.includes(t)), panel && panel.text.slice(0, 400));
   await r.shot(page, 'registro-panel');

@@ -6,6 +6,22 @@
 
 var RELEASE_NOTES_851 = [
   {
+    title: 'HD: R+ avisa, tú decides',
+    body: 'Con TA baja, FC anormal o un vasopresor, la línea HD dice <strong>¿INESTABLE?</strong> para que lo confirmes. Antes decía siempre ESTABLE.',
+  },
+  {
+    title: 'Balance con todos los egresos',
+    body: 'Las gráficas de balance cuentan drenajes, gastrostomía, nefrostomía y UF, no solo la diuresis.',
+  },
+  {
+    title: 'Tu sesión de Nube, protegida',
+    body: '«Recuérdame» guarda la sesión cerrada con el llavero del equipo. Una base cifrada antigua se respalda en una carpeta, ya no se borra.',
+  },
+  {
+    title: 'Interno en salas cifradas',
+    body: 'El teléfono del interno vuelve a abrir el tablero y a mandar signos en salas cifradas.',
+  },
+  {
     title: 'Pantallas con un solo estilo',
     body: 'Resumen, Labs, Manejo, Datos, Agenda, Ajustes y más usan tarjetas con sombra, títulos más claros y un solo botón lleno por pantalla.',
   },
@@ -16,10 +32,6 @@ var RELEASE_NOTES_851 = [
   {
     title: 'Estado actual con texto corrido',
     body: 'Pega glucometrías, ingresos, egresos, evacuaciones y signos vitales escritos en una frase, y R+ los lee.',
-  },
-  {
-    title: 'Mi perfil se guarda solo',
-    body: 'Cambia un dato y queda guardado. Ya no existe el botón «Guardar perfil».',
   },
 ];
 

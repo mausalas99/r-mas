@@ -12,6 +12,8 @@ import {
   fetchIncomingAssignments,
   getClinicalScopeContext,
 } from './clinical-access-db.mjs';
+import { getClinicalProfile } from './clinical-access-users.mjs';
+import { canConfigureRotation } from './clinical-privileges.mjs';
 import { stampRotationNuevaAt } from './clinical-ops-sync.mjs';
 import { bindIpcHandler } from './ipc-handlers-bind.mjs';
 
@@ -124,18 +126,26 @@ function registerDbGuardiaRotationHandlers(ctx) {
   });
 
   bindIpcHandler(ipcMain, 'db:rotation-nueva', async (payload) => {
-    const result = await dbManager.withTransaction((db, { audit }) => {
+    const userId = String(payload.userId || '');
+    return dbManager.withTransaction((db, { audit }) => {
+      // Rank comes from this DB row, never from the renderer payload.
+      // ponytail: main has no signed-in session, so userId is still renderer-supplied.
+      if (!canConfigureRotation(userId ? getClinicalProfile(db, userId) : null)) {
+        audit(getClientId(), 'rotation.nueva.denied', { userId: userId || null });
+        return {
+          ok: false,
+          code: 'FORBIDDEN',
+          error: 'Solo R4 o un administrador del programa puede iniciar una nueva rotación.',
+        };
+      }
       const now = new Date().toISOString();
       archiveRotationAndTeams(db);
       const migration = migrateLinkedTeamPatients(db, now);
       releaseArchivedTeamPatients(db, now);
       stampRotationNuevaAt(db, now);
-      if (payload.userId) {
-        audit(getClientId(), 'rotation.nueva', { userId: String(payload.userId) });
-      }
-      return migration;
+      audit(getClientId(), 'rotation.nueva', { userId });
+      return { ok: true, migratedPatients: migration.migrated };
     });
-    return { ok: true, migratedPatients: result.migrated };
   });
 
   bindIpcHandler(ipcMain, 'db:rotation-incoming-assignments', async () => {
