@@ -10,6 +10,14 @@ var RELEASE_NOTES_852 = [
     body: 'R+ lee <strong>TP, TTP e INR corregidos</strong> del reporte y los muestra junto a los valores sin corregir. También entran a Tendencias.',
   },
   {
+    title: 'Cambios de equipo, bien sincronizados',
+    body: 'Un cambio de equipo hecho en otro dispositivo llega aunque ese paciente tenga otro id local.',
+  },
+  {
+    title: 'Insulina preprandial en la nota',
+    body: 'La nota SOAP conserva la línea de <strong>insulina preprandial</strong>. Antes la perdía.',
+  },
+  {
     title: 'Pestañas con resorte',
     body: 'La línea de la pestaña activa se desliza al nuevo lugar, en lugar de saltar.',
   },

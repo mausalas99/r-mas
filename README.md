@@ -58,6 +58,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 ## R+ 8.5.2 (estable — release 8.5.2)
 
 - **Labs:** TP, TTP e INR corregidos se leen del reporte y entran a Tendencias.
+- **Correcciones:** cambio de equipo entre dispositivos en Nube, insulina preprandial en la nota SOAP, y Tendencias que no cargaba tras un fallo.
 - **Diseño:** pestañas, ventanas, interruptores y tarjetas de Tendencias se mueven con física de resorte; se respeta movimiento reducido.
 
 Notas: `docs/RELEASE_NOTES_8.5.2.txt`.
