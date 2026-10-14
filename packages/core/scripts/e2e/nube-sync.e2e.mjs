@@ -880,14 +880,17 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await netBlock(J, null);
   check('gaps: after a 503 streak the next sync comes within the 2 min overload cap (sync-runtime-schedule)', (await ff(125000)) > 0);
   await streak(404, 310000);
-  await netBlock(J, null);
   // The jumps killed J's room socket (heartbeat): its reconnect runs one pull of its own, not the poll timer. Let it happen first.
+  // Pulls stay blocked (404): a pull that succeeds resets the streak and polls every 15 s, which hides the cap.
   for (let i = 0; i < 3; i += 1) await ff(3000);
   // Small steps (< the 25 s socket heartbeat timeout) so the socket stays up: a jump over 25 s drops it, and its reconnect pulls too.
-  let early = 0;
-  for (let i = 0; i < 6; i += 1) early += await ff(20000);
-  const late = await ff(190000);
-  check('gaps: after a 404 streak the cap is 5 min: nothing at 2 min, a sync by 5 min (permanent-error backoff)', early === 0 && late > 0, { early, late });
+  // The next timer sits anywhere in 150-300 s (5 min cap, equal jitter), so watch 400 s and look at the gaps between pulls.
+  const hits = [];
+  for (let i = 0; i < 20; i += 1) if ((await ff(20000)) > 0) hits.push(i);
+  const gaps = hits.slice(1).map((h, i) => (h - hits[i]) * 20);
+  await netBlock(J, null);
+  check('gaps: after a 404 streak the cap is 5 min: pulls are 2.5-5 min apart, at least one by 5 min (permanent-error backoff)',
+    hits.length > 0 && hits[0] * 20 <= 320 && gaps.every((g) => g >= 140 && g <= 320), { hits, gaps });
   check('no uncaught page errors on J', !J.pageErrors.length, J.pageErrors.slice(0, 5));
   await J.app.close();
 
