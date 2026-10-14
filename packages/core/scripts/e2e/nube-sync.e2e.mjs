@@ -357,6 +357,8 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
   await openPatient(A.page, P1);
   await segment(A.page, 'apptab-nota');
   await segment(A.page, 'exp-segment-vpo');
+  // The intro text sits in a closed «Introducción del texto» <details>: a hidden field never takes fill.
+  await A.page.locator('details.vpo-more > summary').click();
   await vpoIntro(A.page).fill(VPO_TEXT);
   await segment(A.page, 'exp-segment-listado');
   await A.page.locator('#listado-form [data-seccion-group="activos"] .listado-add-row').click();
