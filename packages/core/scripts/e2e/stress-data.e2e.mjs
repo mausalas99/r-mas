@@ -250,7 +250,7 @@ await r.finish('Data input stress: lab paste, Tendencias, Cultivos, Manejo, Pend
   const trDays = (await labDays(page, TR)).filter((o) => /^\d{2}\/\d{2}\/\d{4}$/.test(o));
   check('180 daily reports → 180 days in the day list', trDays.length === 180, trDays.length);
   const tc = timings.trendChunksMs;
-  check('paste chunk time does not climb (last ≤ 2× first)', tc[5] <= tc[0] * 2, tc);
+  check('paste chunk time does not climb (last ≤ 2× second; the first runs before a patient is open)', tc[5] <= tc[1] * 2, tc);
   t = Date.now();
   await page.locator('#lab-inner-tend-btn').click();
   await page.locator('.tend-row[data-series-key="BH|Hb"]').locator('visible=true').first().waitFor({ timeout: 20000 });

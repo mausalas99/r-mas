@@ -231,7 +231,7 @@ export async function acceptAbxDias(page, timeout = 1500) {
  * and a positional click can land on the header mode switch under them.
  */
 export async function closeToasts(page) {
-  for (const btn of await page.locator('.toast-close').all()) await btn.dispatchEvent('click').catch(() => {});
+  for (const btn of await page.locator('.toast-close').all()) await btn.dispatchEvent('click', undefined, { timeout: 1000 }).catch(() => {});
 }
 
 export async function visiblePatientCount(page) {
