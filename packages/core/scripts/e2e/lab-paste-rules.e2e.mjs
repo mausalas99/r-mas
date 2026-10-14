@@ -1455,9 +1455,7 @@ await r.finish('SOME paste rules', async () => {
   await clip('');
   await page.keyboard.press('Meta+K');
   await page.waitForTimeout(400);
-  const pal = page.locator('[data-action="procesar-some"], [data-cmd="procesar-some"]').first();
-  if (await pal.count()) await pal.click();
-  else { await page.keyboard.type('SOME'); await page.keyboard.press('Enter'); }
+  await page.locator('.cmdk-item', { hasText: 'Procesar SOME' }).first().click();
   const emptyClip = page.locator('.toast', { hasText: 'Copia un reporte SOME al portapapeles primero' });
   await emptyClip.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {});
   check('⌘K "Procesar SOME" with an empty clipboard → toast "Copia un reporte SOME al portapapeles primero"', await emptyClip.isVisible());

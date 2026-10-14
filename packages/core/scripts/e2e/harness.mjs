@@ -248,11 +248,13 @@ export async function pasteAndProcess(page, text) {
     await goArea(page, 'lab');
   }
   if (!(await page.locator('#lab-input').isVisible())) {
+    await closeToasts(page);
     await page.locator('#lab-bar-more > summary').click();
     await page.locator('#btn-lab-paste').click();
     await page.locator('#lab-input').waitFor({ state: 'visible' });
   }
   await page.locator('#lab-input').fill(text);
+  await closeToasts(page);
   await page.locator('#btn-procesar').click();
 }
 
