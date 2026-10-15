@@ -3,7 +3,7 @@
   "updatedAt": "2026-09-26T19:27:49.089Z",
   "totalScore": 665,
   "trackedLoc": 792800,
-  "moduleCount": 1307,
+  "moduleCount": 1309,
   "bootGraphHash": "7c79a4f65815fa2c",
   "bootGraph": {
     "hash": "7c79a4f65815fa2c",
@@ -786,6 +786,10 @@
     {
       "date": "2026-10-13",
       "note": "moduleCount 1304->1307 for 8.5.1, owner-approved in chat: ui-icon-tooltips.mjs, interconsulta-team-board.test.mjs and scripts/e2e/lint-ui.mjs from the IC board rows redesign. Eager boot budget 3450000->3470000 B (measured 3460031) for the same change."
+    },
+    {
+      "date": "2026-10-15",
+      "note": "moduleCount 1307->1309 for 8.5.2, owner-approved in chat: ui-feel.mjs (spring physics for tabs and switches) and features/tend-drag-motion.mjs (Tendencias card drag)."
     }
   ]
 }
