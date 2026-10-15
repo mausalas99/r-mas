@@ -1,60 +1,30 @@
-version: 8.5.1
+version: 8.5.2
 files:
-  - url: R+-8.5.1-x64.exe
-    sha512: vsLVE5EPkN//129MwGG4Il9BZrE6TFMLvSRfvN3khGZXJptsqWOq60Esd09NmJ7880MDl1Kk1IwQN9OpKdY1GA==
-    size: 138746782
-path: R+-8.5.1-x64.exe
-sha512: vsLVE5EPkN//129MwGG4Il9BZrE6TFMLvSRfvN3khGZXJptsqWOq60Esd09NmJ7880MDl1Kk1IwQN9OpKdY1GA==
-releaseDate: '2026-10-13T18:20:56.000Z'
+  - url: R+-8.5.2-x64.exe
+    sha512: ma290cqE9u4uoi2gz7GtU6uCi6BcU+UNydY2Demcr9vJ3LGWJZSkDuaSGYLThFEPmBawFl6oGFZi3UjdpMiBjQ==
+    size: 138781368
+path: R+-8.5.2-x64.exe
+sha512: ma290cqE9u4uoi2gz7GtU6uCi6BcU+UNydY2Demcr9vJ3LGWJZSkDuaSGYLThFEPmBawFl6oGFZi3UjdpMiBjQ==
+releaseDate: '2026-10-15T22:02:41.000Z'
 releaseNotes: |
-  Pantallas renovadas con un solo estilo, y el tiempo de respuesta de interconsulta en el tablero. El estado actual entiende texto corrido, y R+ pasa a Electron 44. Versión de correcciones. La línea HD de la nota ya no marca «ESTABLE» a un paciente hipotenso o con vasopresor, y el balance cuenta todos los egresos. La sesión de Nube queda cerrada con el llavero del equipo, y una base cifrada antigua ya no se borra al iniciar.
+  Los labs de coagulación leen TP, TTP e INR corregidos. Los movimientos de la app (pestañas, ventanas, interruptores y tarjetas de Tendencias) ahora siguen un modelo de física. También corrige tres fallas: el cambio de equipo entre dispositivos, la insulina preprandial en la nota SOAP y Tendencias que no abría tras una carga fallida.
   
-  Nuevo (Interconsulta): el tablero muestra una fila por paciente, con «Recibida» y «Respondida», la etiqueta de triage y el promedio de 7 días. Con el teclado puedes moverte entre filas y asignar equipo con las teclas 1 a 4.
+  Nuevo (Labs): R+ lee TP, TTP e INR corregidos cuando el reporte los trae. Salen junto a los valores sin corregir y entran a Tendencias.
   
-  Nuevo (Diseño): los botones de solo ícono muestran su nombre al pasar el cursor o al enfocarlos con el teclado.
+  Nuevo (Importar de Drive): las filas TPc, TTPc e INRc caen en el panel de coagulación.
   
-  Corrección (Nube): los tiempos de «Recibida» y «Respondida» tomados en el teléfono ahora llegan al escritorio. Antes el contador quedaba viejo.
+  Corrección (Nube): un cambio de equipo hecho en otro dispositivo ahora llega aunque ese paciente tenga otro id local.
   
-  Corrección (Interconsulta): el «Motivo de consulta» llega a tu equipo mientras lo escribes. Antes solo se guardaba al salir del campo.
+  Corrección (Estado actual): la nota SOAP conserva la línea «INSULINA PREPRANDIAL». Antes la perdía.
   
-  Corrección (Nube): la Nota y las Indicaciones de un compañero aparecen en tu pantalla mientras las escribe, aunque tengas el cursor en otro campo.
+  Corrección (Tendencias): si el módulo falla al cargar, R+ lo reintenta y avisa. Antes Tendencias no abría hasta reiniciar.
   
-  Nuevo (Estado actual): el parser lee texto corrido: glucometrías, ingresos, egresos, evacuaciones y signos vitales. Las letras sueltas I, E y B ya no confunden otras palabras.
+  Cambio (Diseño): la línea de la pestaña activa se desliza con un resorte, en lugar de saltar.
   
-  Nuevo (VPO): calculadora de escalas de riesgo preoperatorio (RCRI, Gupta, AHA y más) con los datos del paciente. Viene apagada: se activa en Ajustes › «Calculadora VPO».
+  Cambio (Diseño): las ventanas abren y cierran con un resorte más suave.
   
-  Cambio (Diseño): Resumen, Barra, Labs, Manejo, Datos, Egreso, Nota de evolución, Agenda, Ajustes, Mi perfil, Nube y equipo, la paleta ⌘K y el tema claro usan el mismo estilo: tarjetas con sombra en vez de bordes, títulos en minúscula y un solo botón lleno por pantalla.
+  Cambio (Diseño): los interruptores tienen peso: puedes arrastrar la perilla.
   
-  Cambio (Mi perfil): el perfil se guarda al cambiarlo. Ya no hay botón «Guardar perfil».
+  Cambio (Tendencias): al arrastrar una tarjeta, la tarjeta sigue al cursor y las demás se acomodan con suavidad.
   
-  Cambio (Actualizaciones): R+ revisa si hay módulos nuevos de forma periódica.
-  
-  Cambio (Sistema): R+ usa Electron 44 y una base cifrada actualizada. Copiar texto al portapapeles se adaptó a la nueva versión.
-  
-  Corrección (Seguridad clínica): la línea HD que genera Estado actual decía siempre «ESTABLE». Ahora, con TA baja, FC anormal o un vasopresor confirmado, escribe «¿INESTABLE?» para que el médico lo confirme. La nota SOAP usa la misma regla.
-  
-  Corrección (Seguridad clínica): la gráfica de balance diario y la de I/O por turno restaban solo la diuresis. Ahora cuentan todos los egresos: drenajes, gastrostomía, nefrostomía y UF, igual que el balance del turno.
-  
-  Corrección (Protección de datos): el token de Nube y las llaves de las salas («Recuérdame») se guardan cerrados con el llavero del sistema. Sin llavero no se escriben en disco.
-  
-  Corrección (Protección de datos): una base cifrada antigua que ya no se puede abrir se mueve a una carpeta de respaldo en lugar de borrarse, y R+ avisa dónde quedó.
-  
-  Corrección (Protección de datos): «Exportar copia» dice «sin cifrar», porque la copia .db no va cifrada.
-  
-  Corrección (Interno): en salas cifradas, el teléfono del interno no podía abrir el tablero ni mandar signos. Monitoreo y operaciones clínicas ahora usan la llave de Interno.
-  
-  Corrección (Permisos): «Nueva rotación» solo la puede usar un R4 o un admin del programa. El código de admin se bloquea tras 5 intentos fallidos en 15 minutos. Solo el dueño de una sala puede fijar su primera llave.
-  
-  Corrección (Nube): el servidor combina los signos con el mismo código que la app. Antes ignoraba 5 grupos de medicamentos (vasopresor, anticoagulación, antiarrítmicos, estatinas, NM).
-  
-  Corrección (Nube): R+ podía calcular mal la hora del servidor y mandar cambios con fecha vieja. Nube los rechazaba, y un paciente agregado en otro equipo podía no aparecer tras reiniciar.
-  
-  Corrección: una lectura de signos del interno refresca de inmediato la guardia y Estado actual.
-  
-  Corrección: el KPI de PaFi aparece en el Resumen cuando aplica.
-  
-  Corrección: la pista «Cambiar de área» ya no tapa el menú de áreas.
-  
-  Cambio (Velocidad): al iniciar, R+ lee la base clínica una vez, no dos.
-  
-  Cambio: se quitó código sin uso (plantillas de entrega, rollover de interconsulta, ruta pase-labs).
+  Cambio (Diseño): con movimiento reducido o modo Sobrio, todo salta al estado final, sin animar.
