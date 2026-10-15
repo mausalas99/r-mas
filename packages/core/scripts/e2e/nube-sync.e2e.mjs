@@ -74,6 +74,7 @@ const P9 = { exp: '7000419-0', name: 'DEMO SINCRONIA NUEVE', room: '309' };
 const P6 = { exp: '7000416-6', name: 'DEMO SINCRONIA SEIS', room: '306' };
 const P7 = { exp: '7000417-7', name: 'DEMO SINCRONIA SIETE', room: '307' };
 const P10 = { exp: '7000420-1', name: 'DEMO SINCRONIA DIEZ', room: '310' };
+const P12 = { exp: '7000422-3', name: 'DEMO SINCRONIA DOCE', room: '312' };
 const P11 = { exp: '7000421-2', name: 'DEMO SINCRONIA ONCE', room: '311' };
 /** lib/clinical-salas.mjs CLINICAL_SALA_VALUES === cloud-sync/sala-allowlist.mjs CLOUD_SALAS. */
 const CLOUD_SALAS = ['Sala 1', 'Sala 2', 'Sala E', 'Torre HU', 'Interconsultas', 'UX', 'Eme', 'Área A/Pensionistas'];
@@ -1444,6 +1445,34 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
     await formB.waitFor({ state: 'visible' });
     // OPEN (not asserted): after the P1 form was left open on a removed patient and cancelled, P2's form still showed the rescue column (P2 has no rescue). Cause not found; see report.
     await B.page.locator('#ea-registro-backdrop [data-onclick="closeEstadoActualRegistroModal"]').first().click();
+
+
+    // ── Team change when B holds the same registro under another patient id ──
+    // Last in this block so it cannot disturb the membership checks above. Each device registers P12
+    // with its network cut, so each keeps its own id. The assignment row carries A's id: B must
+    // map it to its own id (pull-apply alias).
+    await backToLabs(A.page);
+    await backToLabs(B.page);
+    for (const d of [A, B]) { await tapNet(d); await netBlock(d, '/(pull|mutations)', 0); }
+    await pasteAndSave(A.page, fullLabs(P12, 'Sep 26 2026 8:00AM'));
+    await pasteAndSave(B.page, fullLabs(P12, 'Sep 26 2026 8:00AM'));
+    for (const d of [A, B]) await netBlock(d, null);
+    const p12A = await patientIdOf(A.page, P12);
+    const p12B = await patientIdOf(B.page, P12);
+    check('same registro: A and B hold P12 under different ids', !!p12A && !!p12B && p12A !== p12B, { p12A, p12B });
+    await until(async () => (await patientVisible(A.page, P12)) && (await patientVisible(B.page, P12)), 60000);
+    const p12BAfter = await patientIdOf(B.page, P12);
+    check('same registro: B keeps its own id after the pull, one card', p12BAfter === p12B && (await B.page.locator(`.p-name[title*="${P12.exp}"]`).count()) === 1, { p12B, p12BAfter });
+    /** Newest assignment row for the patient wins (by id, unlike the Datos-reading teamOf above). */
+    const rowTeamOf = async (page, pid) => ((await clinicalOpsOf(page)).patient_team_assignment || [])
+      .filter((x) => x.patient_id === pid).sort((x, y) => String(y.effective_at).localeCompare(String(x.effective_at)))[0]?.team_id ?? '';
+    await openPatient(A.page, P12);
+    await openDatos(A.page);
+    await A.page.locator('#patient-team-assign-select').selectOption(alfaId);
+    await closeDatos(A.page);
+    check('same registro: A resolves P12 to EQUIPO DEMO ALFA', await until(async () => (await rowTeamOf(A.page, p12A)) === alfaId, 15000));
+    check('same registro: B resolves its own P12 id to EQUIPO DEMO ALFA', await until(async () => (await rowTeamOf(B.page, p12B)) === alfaId, 45000), { onB: await teamOf(B.page, p12B), onAId: await teamOf(B.page, p12A) });
+    await backToLabs(A.page);
 
     await r.shot(B.page, 'b-merge-done');
     check('UNREACHABLE: two devices assigning the same patient to different teams at once (assignment LWW) — R2 accounts get one team per sala, so a patient has only one team to be assigned to', true);

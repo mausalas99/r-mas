@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { remapClinicalOpsPatientIds } from './pull-apply.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -546,5 +547,24 @@ describe('pull-apply stale room copies', () => {
       ],
     });
     assert.deepEqual([...fromOps], [['p3', { sala: '', registro: '' }]]);
+  });
+});
+
+describe('remapClinicalOpsPatientIds', () => {
+  it('moves a peer assignment onto this device\'s id for the same registro, also when it arrives alone', () => {
+    const store = {};
+    globalThis.localStorage = {
+      getItem: (k) => store[k] ?? null,
+      setItem: (k, v) => { store[k] = v; },
+    };
+    const ops = { patient_team_assignment: [{ patient_id: 'remote-1', team_id: 't1', effective_at: 'x' }] };
+    // Pull with the patient entry: remote-1 is local-1 here.
+    assert.equal(remapClinicalOpsPatientIds(ops, { 'remote-1': 'local-1' }).patient_team_assignment[0].patient_id, 'local-1');
+    // Later pull with the assignment only: the stored alias still maps it.
+    assert.equal(remapClinicalOpsPatientIds(ops, {}).patient_team_assignment[0].patient_id, 'local-1');
+    // Unknown ids and snapshots without assignments pass through.
+    assert.equal(remapClinicalOpsPatientIds({ patient_team_assignment: [{ patient_id: 'other' }] }, {}).patient_team_assignment[0].patient_id, 'other');
+    assert.equal(remapClinicalOpsPatientIds({ teams: [] }, {}).teams.length, 0);
+    delete globalThis.localStorage;
   });
 });

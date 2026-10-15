@@ -17,6 +17,9 @@ export { until };
 // (they vendor this same Worker code).
 const WORKER_DIR = path.resolve(import.meta.dirname, '../../cloud/sync-worker');
 const WRANGLER = path.join(WORKER_DIR, 'node_modules/.bin/wrangler');
+// E2E_WRANGLER_CONFIG=wrangler.staging.toml runs the same local Worker with staging's config and vars.
+const CFG = process.env.E2E_WRANGLER_CONFIG ? ['-c', process.env.E2E_WRANGLER_CONFIG] : [];
+const DB_NAME = CFG.length ? 'rplus-sync-staging' : 'rplus-sync';
 // run-all.mjs gives each parallel slot its own 100-port block (E2E_PORT_OFFSET = slot * 10).
 const PORT = 8790 + (Number(process.env.E2E_PORT_OFFSET) || 0) * 10 + Math.floor(Math.random() * 60);
 export const BASE = `http://127.0.0.1:${PORT}`;
@@ -40,7 +43,7 @@ export const workerLog = [];
 function spawnWorker() {
   const w = spawn(
     WRANGLER,
-    ['dev', '--local', '--persist-to', stateDir, '--port', String(PORT), '--ip', '127.0.0.1',
+    ['dev', ...CFG, '--local', '--persist-to', stateDir, '--port', String(PORT), '--ip', '127.0.0.1',
       '--var', 'SYNC_ADMIN_KEY:e2e-admin-key', '--var', 'WORKER_DATA_KEY:' + 'ab'.repeat(32)],
     // Own process group: wrangler runs workerd as grandchildren, so kill the whole group.
     { cwd: WORKER_DIR, env: wEnv, stdio: ['ignore', 'pipe', 'pipe'], detached: true },
@@ -76,7 +79,7 @@ export function stopWorker() {
 }
 /** Read-only look at the Worker's D1, straight from the local sqlite file. */
 export function d1Query(sql) {
-  const out = execFileSync(WRANGLER, ['d1', 'execute', 'rplus-sync', '--local', '--persist-to', stateDir, '--json',
+  const out = execFileSync(WRANGLER, ['d1', 'execute', DB_NAME, ...CFG, '--local', '--persist-to', stateDir, '--json',
     '--command', sql], { cwd: WORKER_DIR, env: wEnv, maxBuffer: 64 << 20 });
   return String(out);
 }
@@ -152,5 +155,5 @@ export const patientVisible = (page, p) =>
   page.locator(`.p-name[title*="${p.exp}"]`).evaluateAll((els) => els.some((e) => e.getBoundingClientRect().width > 0));
 
 process.env.R_PLUS_CLOUD_SYNC_URL = BASE;
-execFileSync(WRANGLER, ['d1', 'migrations', 'apply', 'rplus-sync', '--local', '--persist-to', stateDir],
+execFileSync(WRANGLER, ['d1', 'migrations', 'apply', DB_NAME, ...CFG, '--local', '--persist-to', stateDir],
   { cwd: WORKER_DIR, env: wEnv, stdio: 'ignore' });

@@ -219,8 +219,52 @@ async function applyCloudTombstones(tombstones) {
   return removed;
 }
 
-async function applyClinicalOpsSnapshot(clinicalOps) {
+const PID_ALIAS_KEY = 'rplus-cloud-pid-alias';
+
+function readPidAliases() {
+  try {
+    return JSON.parse(localStorage.getItem(PID_ALIAS_KEY) || '{}') || {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Assignment rows carry the writer's patient id. When this device holds the same
+ * registro under another id, the row would sit on a patient nobody sees. Aliases are
+ * kept across pulls: an assignment often arrives alone, without its patient entry.
+ * @param {unknown} clinicalOps @param {Record<string, string>} idMap remote id → local id of this pull
+ */
+export function remapClinicalOpsPatientIds(clinicalOps, idMap) {
+  const rows = /** @type {any} */ (clinicalOps)?.patient_team_assignment;
+  if (!Array.isArray(rows)) return clinicalOps;
+  const aliases = readPidAliases();
+  let learned = false;
+  for (const [remote, local] of Object.entries(idMap || {})) {
+    if (local && remote !== local && aliases[remote] !== local) {
+      aliases[remote] = local;
+      learned = true;
+    }
+  }
+  if (learned) {
+    try {
+      localStorage.setItem(PID_ALIAS_KEY, JSON.stringify(aliases));
+    } catch {
+      /* alias cache optional */
+    }
+  }
+  return {
+    .../** @type {object} */ (clinicalOps),
+    patient_team_assignment: rows.map((row) => {
+      const local = aliases[String(row?.patient_id || '')];
+      return local ? { ...row, patient_id: local } : row;
+    }),
+  };
+}
+
+async function applyClinicalOpsSnapshot(clinicalOps, idMap) {
   if (clinicalOps == null) return false;
+  clinicalOps = remapClinicalOpsPatientIds(clinicalOps, idMap);
   try {
     const { isClinicalOpsSyncAvailable, applyClinicalOpsSnapshot, refreshClinicalOpsSnapshotCache } =
       await import('../../clinical-ops-sync.mjs');
@@ -382,9 +426,9 @@ export async function applyCloudState(state, opts) {
   } catch {
     /* optional */
   }
-  await applyClinicalOpsSnapshot(snapshot.clinicalOps);
   const entries = excludeTombstonedEntries(cloudStateToLanEntries(snapshot), snapshot.tombstones);
   const idMap = buildLiveSyncPatientIdMap(entries, getSyncablePatients(), {});
+  await applyClinicalOpsSnapshot(snapshot.clinicalOps, idMap);
   const patientSync = await applyPatientEntriesStaged(entries);
 
   let todoPatients = [];
@@ -419,9 +463,9 @@ export async function applyCloudState(state, opts) {
 
 /** @param {ReturnType<typeof createOpFold>} fold @param {{ rawLabOps: number, filteredLabOps: number }} labCounts */
 async function applyFoldedCloudPull(fold, labCounts) {
-  await applyClinicalOpsSnapshot(fold.clinicalOps);
   const entries = excludeTombstonedEntries(opFoldToLanEntries(fold), fold.tombstones);
   const idMap = buildLiveSyncPatientIdMap(entries, getSyncablePatients(), {});
+  await applyClinicalOpsSnapshot(fold.clinicalOps, idMap);
   const patientSync = entries.length
     ? applyLanPatientEntries(entries, cloudPatientEntryApplyOpts())
     : { added: 0, updated: 0 };
