@@ -4,6 +4,8 @@
  * follows any code that flips the active class or re-renders the row, so no
  * tab-switch path needs to know about it.
  */
+import { createGlide } from '../ui-feel.mjs';
+
 var ACTIVE = '.exp-group-section.is-active, .exp-group-pill--leaf.is-active > .exp-group-name, .inner-tab.active';
 
 export function wireGlide(bar) {
@@ -12,6 +14,10 @@ export function wireGlide(bar) {
   pill.className = 'nav-glide';
   pill.setAttribute('aria-hidden', 'true');
   bar._glide = pill;
+  var glide = createGlide(function (x, w) {
+    pill.style.width = w + 'px';
+    pill.style.transform = 'translateX(' + x + 'px)';
+  });
   var queued = false;
   function place() {
     queued = false;
@@ -23,10 +29,12 @@ export function wireGlide(bar) {
     }
     // Rect maths, not offsetLeft: a group wrapper is the tab's offset parent.
     var x = tab.getBoundingClientRect().left - bar.getBoundingClientRect().left + bar.scrollLeft;
-    pill.style.width = tab.offsetWidth + 'px';
-    pill.style.transform = 'translateX(' + Math.round(x) + 'px)';
-    // First placement jumps; later ones glide (the transition is on .is-ready only).
-    if (!pill.classList.contains('is-ready')) requestAnimationFrame(function () { pill.classList.add('is-ready'); });
+    // First placement jumps; later ones spring (the pill is hidden until .is-ready).
+    if (pill.classList.contains('is-ready')) glide.to(x, tab.offsetWidth);
+    else {
+      glide.jump(x, tab.offsetWidth);
+      requestAnimationFrame(function () { pill.classList.add('is-ready'); });
+    }
   }
   function queue() {
     if (queued) return;

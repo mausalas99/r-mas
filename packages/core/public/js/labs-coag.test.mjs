@@ -110,3 +110,53 @@ test('computeAnionGap_ es AG crudo; cAG corrige por hipoalbuminemia', () => {
   assert.equal(sinCorreccion, '15.1*');
   assert.equal(agc, '19.8*');
 });
+
+test('COAG toma TP/TTP/INR corregidos sin pisar los valores planos', () => {
+  const muestra = `
+Expediente:\t9000014-3\tSolicitud:\t9000000027
+Nombre:\tFICTICIO SINTETICO EJEMPLO CASOAB\tFecha Registro:\tOct 14 2026 11:28AM
+Sexo:\tFEMENINO\tUbicación:\tSERVICIO CLÍNICO 1
+Edad:\t44\tMedico:\tFICTICIO SINTETICO EJEMPLO A
+
+HEMATOLOGIA
+TIEMPO DE PROTROMBINA Y TROMBOPLASTINA CORREGIDO
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+TIEMPO DE PROTROMBINA\t
+A
+22.5
+SEG.\t10.2 - 13.2
+TIEMPO DE PROTOMBINA CORREGIDO\t
+*
+13.8
+TESTIGO\t
+*
+11.04
+SEG\t
+INR\t
+*
+1.9
+INR CORREGIDO\t
+*
+1.19
+TIEMPO DE TROMBOPLASTINA\t
+A
+38.4
+SEG.\t28.9 - 34.1
+TIEMPO DE TROMBOPLASTINA CORREGIDO\t
+*
+33.4
+TESTIGO\t
+*
+33.8
+OBSERVACIONES\t
+*
+`;
+  const coag = procesarLabs(muestra).resLabs.find((l) => /^COAG\t/.test(l));
+  assert.ok(coag, 'debe producir línea COAG');
+  assert.match(coag, /TP\s+22\.5\*/);
+  assert.match(coag, /TTP\s+38\.4\*/);
+  assert.match(coag, /INR\s+1\.9\*?(\s|$)/);
+  assert.match(coag, /TPc\s+13\.8/);
+  assert.match(coag, /TTPc\s+33\.4/);
+  assert.match(coag, /INRc\s+1\.19/);
+});

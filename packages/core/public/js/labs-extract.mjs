@@ -278,6 +278,7 @@ export function extraerIndiceAterogenico_(texto) {
 /** Fin de ventana para un renglón de coagulación SOME (evita robar el valor del siguiente estudio). */
 var COAG_ROW_BOUNDARIES_ = [
   'TIEMPO DE PROTROMBINA',
+  'TIEMPO DE PROTOMBINA', // typo real del reporte SOME («PROTOMBINA CORREGIDO»)
   'TIEMPO DE TROMBOPLASTINA',
   'INR',
   'FIBRINOGENO',
@@ -348,6 +349,10 @@ function isUefFibrinogenoMatch_(tUpper, idx) {
 
 function shouldSkipCoagMatch_(tUpper, nombre, idx) {
   if (nombre === 'TIEMPO DE PROTROMBINA' && isCoagPanelTitleAfter_(tUpper, idx, nombre.length)) {
+    return true;
+  }
+  // «TP»/«TTP»/«INR» planos no deben tomar la fila «… CORREGIDO».
+  if (/^\s*CORREGIDO/.test(tUpper.substring(idx + nombre.length, idx + nombre.length + 16))) {
     return true;
   }
   if (isFibrinogenoNombre_(nombre) && isUefFibrinogenoMatch_(tUpper, idx)) {

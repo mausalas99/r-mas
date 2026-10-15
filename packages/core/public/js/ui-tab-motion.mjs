@@ -1,4 +1,5 @@
 import { prefersReducedMotion } from './ui-motion.mjs';
+import { createGlide } from './ui-feel.mjs';
 import { consolidatedInnerTabButtonId, resolveConsolidatedTarget } from './expediente-tabs.mjs';
 import { consolidatedInnerTabButtonId as mapConsolidatedId, granularInnerTabButtonId } from './ui-tab-motion-ids.mjs';
 
@@ -44,7 +45,13 @@ export function syncTabBarIndicator(barEl, tabEl) {
   if (!pill) return;
   var barRect = barEl.getBoundingClientRect();
   var tabRect = tabEl.getBoundingClientRect();
-  pill.style.transform = tabIndicatorTransform(tabRect.left - barRect.left, tabRect.width);
+  if (!pill._glide) {
+    pill._glide = createGlide(function (x, w) { pill.style.transform = tabIndicatorTransform(x, w); });
+  }
+  var x = tabRect.left - barRect.left;
+  // Hidden → shown jumps; otherwise the underline springs to the new tab.
+  if (pill.style.opacity === '1') pill._glide.to(x, tabRect.width);
+  else pill._glide.jump(x, tabRect.width);
   pill.style.opacity = '1';
 }
 

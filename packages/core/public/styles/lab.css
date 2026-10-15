@@ -2056,7 +2056,7 @@ html.dark .lab-copy-fab:hover {
 }
 .modal-backdrop.open > .modal,
 .modal-backdrop.open > .profile-modal {
-  animation: modal-in var(--dur-normal) var(--ease-out);
+  animation: modal-in var(--modal-in-dur) var(--modal-in-ease);
 }
 .modal {
   background: var(--surface);
@@ -2709,6 +2709,8 @@ html.dark .lab-copy-fab:hover {
   clip: rect(0, 0, 0, 0);
 }
 .rpc-switch-track {
+  touch-action: pan-y;
+  user-select: none;
   width: 48px;
   height: 28px;
   border-radius: var(--radius-pill);
@@ -2733,7 +2735,7 @@ html.dark .rpc-switch-track {
   border-radius: 50%;
   background: var(--surface);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
-  transition: transform var(--dur-normal) var(--ease-out), background var(--dur-fast) var(--ease-out);
+  transition: background var(--dur-fast) var(--ease-out); /* position is sprung in ui-feel.mjs via `translate` */
   pointer-events: none;
 }
 html.dark .rpc-switch-thumb {

@@ -107,7 +107,7 @@ var CORE_MANUAL_TYPES = [
   {
     sectionKey: 'COAG',
     label: 'Coagulación',
-    fields: [f('TP', 'TP'), f('TTP', 'TTP'), f('INR', 'INR'), f('Fib', 'Fibrinógeno'), f('DD', 'Dímero D')],
+    fields: [f('TP', 'TP'), f('TTP', 'TTP'), f('INR', 'INR'), f('TPc', 'TP corregido'), f('TTPc', 'TTP corregido'), f('INRc', 'INR corregido'), f('Fib', 'Fibrinógeno'), f('DD', 'Dímero D')],
   },
   {
     sectionKey: 'EGO',

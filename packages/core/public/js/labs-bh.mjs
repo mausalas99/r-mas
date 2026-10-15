@@ -45,7 +45,7 @@ export const BH_SOME_TREND_ORDER = [
   'Leu', 'Neu', 'NeuPct', 'Lin', 'LinPct', 'Mono', 'MonoPct', 'Eos', 'EosPct', 'Baso', 'BasoPct',
   'Plt', 'MPV',
   'Ret',
-  'TP', 'TTP', 'INR', 'Fib', 'DD',
+  'TP', 'TTP', 'INR', 'TPc', 'TTPc', 'INRc', 'Fib', 'DD',
   'Bandas', 'Mielo', 'Metamielo', 'Promielo', 'Blastos', 'Atipicos',
 ];
 
@@ -149,6 +149,9 @@ var BH_OUTPUT_LABEL_TO_FIELD = {
   TP: 'TP',
   TTP: 'TTP',
   INR: 'INR',
+  TPc: 'TPc',
+  TTPc: 'TTPc',
+  INRc: 'INRc',
   Fib: 'Fib',
   DD: 'DD',
 };
@@ -279,7 +282,7 @@ function extractCoagBodyFromBhLine_(line) {
   return m ? m[1].trim() : '';
 }
 
-var COAG_FIELD_MERGE_ORDER_ = ['TP', 'TTP', 'INR', 'Fib', 'DD'];
+var COAG_FIELD_MERGE_ORDER_ = ['TP', 'TTP', 'INR', 'TPc', 'TTPc', 'INRc', 'Fib', 'DD'];
 
 function coagFieldMergeRank_(key) {
   var i = COAG_FIELD_MERGE_ORDER_.indexOf(key);
@@ -402,6 +405,9 @@ function extractBhScalarFields_(tNorm, priorRefs, priorBhValues) {
     TP: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE PROTROMBINA'], tNorm), 'TP', priorRefs),
     TTP: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE TROMBOPLASTINA'], tNorm), 'TTP', priorRefs),
     INR: fmtBhRanged_(extraerConRangoCoag(['INR ', 'INR'], tNorm), 'INR', priorRefs),
+    TPc: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE PROTROMBINA CORREGIDO', 'TIEMPO DE PROTOMBINA CORREGIDO'], tNorm), 'TPc', priorRefs),
+    TTPc: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE TROMBOPLASTINA CORREGIDO'], tNorm), 'TTPc', priorRefs),
+    INRc: fmtBhRanged_(extraerConRangoCoag(['INR CORREGIDO'], tNorm), 'INRc', priorRefs),
     Fib: fmtBhRanged_(extraerConRangoCoag(['FIBRINOGENO', 'FIBRINÓGENO'], tNorm), 'Fib', priorRefs),
     DD: fmtBhRanged_(extraerConRangoCoag(['DIMERO D', 'D-DIMERO', 'D DIMERO'], tNorm), 'DD', priorRefs),
     Neu: fmtBhRanged_(extraerConRango(['NEU '], tNorm), 'Neu', priorRefs),
@@ -464,6 +470,9 @@ function buildBhCoagDisplay_(f) {
   if (f.TP !== '---') coagDisplay.push('TP ' + f.TP);
   if (f.TTP !== '---') coagDisplay.push('TTP ' + f.TTP);
   if (f.INR !== '---') coagDisplay.push('INR ' + f.INR);
+  if (f.TPc !== '---') coagDisplay.push('TPc ' + f.TPc);
+  if (f.TTPc !== '---') coagDisplay.push('TTPc ' + f.TTPc);
+  if (f.INRc !== '---') coagDisplay.push('INRc ' + f.INRc);
   if (f.Fib !== '---') coagDisplay.push('Fib ' + f.Fib);
   if (f.DD !== '---') coagDisplay.push('DD ' + f.DD);
   return coagDisplay;
@@ -543,7 +552,7 @@ function bhHasAnyData_(f, extras) {
   var hasExtIdx = [f.RBC, f.CHCM, f.RDW, f.MPV, f.Ret].some(function (v) {
     return v !== '---';
   });
-  var hasCoag = [f.TP, f.TTP, f.INR, f.Fib, f.DD].some(function (v) {
+  var hasCoag = [f.TP, f.TTP, f.INR, f.TPc, f.TTPc, f.INRc, f.Fib, f.DD].some(function (v) {
     return v !== '---';
   });
   return hasCore || hasExtIdx || hasCoag || Object.keys(extras).length > 0;

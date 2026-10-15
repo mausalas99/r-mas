@@ -453,7 +453,7 @@ html.ui-density-guardia #lan-connection-banner {
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
-  animation: modal-in var(--dur-normal) var(--ease-out);
+  animation: modal-in var(--modal-in-dur) var(--modal-in-ease);
 }
 
 #entrega-modal-backdrop .entrega-nav-btn {
@@ -2435,7 +2435,7 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   border-radius: var(--radius-container);
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   box-shadow: var(--shadow-md);
-  animation: modal-in var(--dur-normal) var(--ease-out);
+  animation: modal-in var(--modal-in-dur) var(--modal-in-ease);
 }
 
 .clinical-teams-modal-head {

@@ -191,13 +191,14 @@
     window.__RPC_APP_SCRIPTS_LOADING__ = true;
     // The module bundle is the long pole — request it first.
     injectAppBundle();
-    var pending = 2;
+    var pending = 3;
     function done() {
       pending -= 1;
       if (pending === 0) window.__RPC_APP_SCRIPTS_LOADED__ = true;
     }
     appendScript('/vendor/sortable.min.js', done);
     appendScript('/vendor/chart.umd.min.js', done);
+    appendScript('/vendor/feel.js', done);
   }
 
   function scheduleAppScriptsLoad() {

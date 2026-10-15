@@ -142,7 +142,10 @@ export function springTo(el, keyframes, options) {
     };
   }
 
-  var animOpts = { type: 'spring', bounce: bounce, duration: duration };
+  // stiffness/damping/mass (from Feel.words) beat bounce/duration, which are a guess at the same spring.
+  var animOpts = options.stiffness != null
+    ? { type: 'spring', stiffness: options.stiffness, damping: options.damping, mass: options.mass == null ? 1 : options.mass }
+    : { type: 'spring', bounce: bounce, duration: duration };
   if (options.velocity != null) animOpts.velocity = options.velocity;
   // `motion` is ~262 KB and nothing on the boot path animates, so it loads on
   // first use instead of riding the eager bundle. Callers keep the same

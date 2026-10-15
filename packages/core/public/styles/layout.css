@@ -1304,20 +1304,9 @@ html.tab-bar-indicators-ready .topbar-l2 .inner-tab.active,
 }
 .topbar-l2 .nav-glide.is-ready {
   opacity: 1;
-  will-change: transform, width;
-  transition:
-    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-    width 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, width; /* moved by springs in ui-feel.mjs, no CSS transition */
 }
 .topbar-l2 .inner-tab { transition: color 0.25s ease; }
-html.motion-sobrio .topbar-l2 .nav-glide.is-ready {
-  transition: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .topbar-l2 .nav-glide.is-ready {
-    transition: none;
-  }
-}
 .topbar-l2 #exp-group-row,
 .topbar-l2 .inner-tab-bar {
   position: relative;

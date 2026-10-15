@@ -3,6 +3,7 @@ import { createTendDynamicTableModal } from '../tend-dynamic-table-modal.mjs';
 import { writeTendCardOrder } from '../tend-prefs.mjs';
 import { guidedTourAdvanceAfter, getGuidedTourContext } from './settings-help/tour-flow.mjs';
 import { flipSegThumb, segActiveLeft } from '../ui-motion.mjs';
+import { createGhostMotion, flipTendCards } from './tend-drag-motion.mjs';
 import { loadChartJs } from '../vendor-loader.mjs';
 import { isAbgAnalysisHidden } from './tendencias-lab-prefs.mjs';
 import { aid, tendStore, esc } from './tendencias-state.mjs';
@@ -432,10 +433,12 @@ function tendDragBeginVisuals(state) {
   state.ghost = ghost;
   state.offsetX = state.startX - rect.left;
   state.offsetY = state.startY - rect.top;
+  state.motion = createGhostMotion(ghost, rect, state.offsetX, state.offsetY);
 }
 
 function tendDragClearState(state) {
   if (!state) return;
+  if (state.motion) state.motion.stop();
   if (state.ghost && state.ghost.parentNode) state.ghost.parentNode.removeChild(state.ghost);
   state.card.classList.remove('tend-row--sort-source');
   state.card.style.width = '';
@@ -452,13 +455,20 @@ function tendDragHandleMove(state, zone, scrollRoot, zoneCards, e) {
     tendDragBeginVisuals(state);
   }
   if (!state.ghost) return;
-  state.ghost.style.left = e.clientX - state.offsetX + 'px';
-  state.ghost.style.top = e.clientY - state.offsetY + 'px';
+  var gx = e.clientX - state.offsetX;
+  var gy = e.clientY - state.offsetY;
+  if (state.motion) state.motion.move(gx, gy);
+  else {
+    state.ghost.style.left = gx + 'px';
+    state.ghost.style.top = gy + 'px';
+  }
   var cards = zoneCards().filter(function (c) { return c !== state.card; });
   var before = cards.length ? findTendInsertBeforeCard(cards, e.clientX, e.clientY) : null;
   if (before ? state.card.nextElementSibling !== before : zone.lastElementChild !== state.card) {
-    if (before) zone.insertBefore(state.card, before);
-    else zone.appendChild(state.card);
+    flipTendCards(cards, function () {
+      if (before) zone.insertBefore(state.card, before);
+      else zone.appendChild(state.card);
+    });
   }
   if (!scrollRoot) return;
   var sr = scrollRoot.getBoundingClientRect();
@@ -472,6 +482,10 @@ function tendDragHandleUp(state, zone, sectionKey, e, cleanup) {
   if (state.moved) {
     syncTendCardOrderFromDom(sectionKey);
     _tendPointerDidDrag = true;
+  }
+  if (state.motion) {
+    state.motion.drop(state.card.getBoundingClientRect(), function () { tendDragClearState(state); });
+    return;
   }
   tendDragClearState(state);
 }

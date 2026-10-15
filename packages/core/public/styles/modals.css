@@ -103,7 +103,7 @@
   animation: fade-in var(--dur-fast) var(--ease-out);
 }
 .soap-modal-backdrop.open .soap-modal {
-  animation: modal-in var(--dur-normal) var(--ease-out);
+  animation: modal-in var(--modal-in-dur) var(--modal-in-ease);
 }
 /* Estado Actual mode (Sala v3.0) — oculta Subjetivo y cambia botones del footer */
 body[data-estado-actual-mode="true"] #soap-modal-backdrop .soap-section-s { display: none; }

@@ -267,7 +267,7 @@ var BH_DIFF_FIELDS = {
   Blastos: true,
   Atipicos: true
 };
-var BH_COAG_FIELDS = { TP: true, TTP: true, INR: true, Fib: true, DD: true };
+var BH_COAG_FIELDS = { TP: true, TTP: true, INR: true, TPc: true, TTPc: true, INRc: true, Fib: true, DD: true };
 
 /** Orden por defecto de paneles en el modal «Gráfica del estudio». */
 export function familyOrderForSection(sectionKey) {

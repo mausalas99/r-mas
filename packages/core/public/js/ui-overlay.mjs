@@ -14,6 +14,9 @@ import { projectMomentum, rubberband } from './ui-physics.mjs';
 
 var DEFAULT_DISMISS_VELOCITY = 0.11;
 var SHEET_DISMISS_FRACTION = 0.3;
+/** Computed from Feel.words: open "smooth, playful" (3.7% overshoot), close "firm" (none). Same as --modal-in/out in tokens.css. */
+var DIALOG_OPEN_SPRING = { stiffness: 184.8, damping: 19.71, mass: 1 };
+var DIALOG_CLOSE_SPRING = { stiffness: 570.1, damping: 45.36, mass: 1 };
 
 /** @type {ReturnType<typeof createModalDismissRegistry>|null} */
 var dismissRegistry = null;
@@ -153,7 +156,7 @@ export function openDialog(opts) {
 
   var openKf = { opacity: [0, 1] };
   if (!reduced) openKf.transform = ['scale(0.95)', 'scale(1)'];
-  animControls = runSpring(panel, openKf, { bounce: 0, duration: 0.32 });
+  animControls = runSpring(panel, openKf, DIALOG_OPEN_SPRING);
 
   wireScrimDismiss(scrim);
   var trap = wireFocusTrap(panel);
@@ -173,7 +176,7 @@ export function openDialog(opts) {
     if (animControls) animControls.stop();
     var closeKf = { opacity: [1, 0] };
     if (!reduced) closeKf.transform = ['scale(1)', 'scale(0.95)'];
-    afterSpring(runSpring(panel, closeKf, { bounce: 0.1, duration: 0.28 }), cleanup);
+    afterSpring(runSpring(panel, closeKf, DIALOG_CLOSE_SPRING), cleanup);
     void reason;
   }
 

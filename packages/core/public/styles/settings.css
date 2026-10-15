@@ -262,7 +262,7 @@ body.settings-dropdown-open {
   box-shadow: var(--shadow-md);
   -webkit-backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
   backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
-  animation: modal-in var(--dur-normal) var(--ease-out);
+  animation: modal-in var(--modal-in-dur) var(--modal-in-ease);
   position: static;
   top: auto;
   right: auto;
@@ -1105,7 +1105,7 @@ body.connection-dropdown-open {
   border-radius: var(--radius-container);
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   box-shadow: var(--shadow-md);
-  animation: modal-in var(--dur-normal) var(--ease-out);
+  animation: modal-in var(--modal-in-dur) var(--modal-in-ease);
   position: static;
   top: auto;
   right: auto;
@@ -1783,7 +1783,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   border-radius: var(--radius-container);
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   box-shadow: var(--shadow-md);
-  animation: modal-in var(--dur-normal) var(--ease-out);
+  animation: modal-in var(--modal-in-dur) var(--modal-in-ease);
 }
 .equipos-lista-modal-head {
   display: flex;

@@ -13,7 +13,7 @@ const INFER_PANEL_RULES = [
   { panel: 'ESC', re: /^(?:Na|Cl|K|Ca|F|Mg)\b/i },
   { panel: 'PFHs', re: /^(?:Alb|AST|ALT|FA|BT|BD|BI|LDH|Amil)\b/i },
   { panel: 'GASES', re: /^(?:pH|pCO2|pO2|Lactato|Bica|HCO3|BE)\b/i },
-  { panel: 'COAG', re: /^(?:TP|TTP|INR|Fib|DD)\b/i },
+  { panel: 'COAG', re: /^(?:TPc|TTPc|INRc|TP|TTP|INR|Fib|DD)\b/i },
 ];
 
 const LAB_SECTION_STOP_RE =

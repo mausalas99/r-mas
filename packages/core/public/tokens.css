@@ -233,6 +233,13 @@
   --dur-fast: 140ms;
   --dur-normal: 200ms;
   --dur-slow: 300ms;
+  /* Modal springs, computed from Feel.words (public/vendor/feel.js): not chosen by hand.
+     In  "smooth, playful": mass 1, k 184.8, c 19.71, 3.7% overshoot, settles 434 ms; the duration is that plus 15% so the tail lands.
+     Out "firm": mass 1, k 570.1, c 45.36, no overshoot, settles 220 ms. */
+  --modal-in-dur: 499ms;
+  --modal-in-ease: linear(0, 0.0093 2.1%, 0.0348 4.2%, 0.0729 6.3%, 0.1207 8.3%, 0.1755 10.4%, 0.235 12.5%, 0.2973 14.6%, 0.3607 16.7%, 0.4239 18.8%, 0.4858 20.8%, 0.5454 22.9%, 0.6022 25%, 0.6557 27.1%, 0.7055 29.2%, 0.7513 31.3%, 0.7932 33.3%, 0.831 35.4%, 0.8648 37.5%, 0.8948 39.6%, 0.9212 41.7%, 0.9441 43.8%, 0.9637 45.8%, 0.9804 47.9%, 0.9944 50%, 1.0058 52.1%, 1.015 54.2%, 1.0223 56.3%, 1.0278 58.3%, 1.0318 60.4%, 1.0344 62.5%, 1.036 64.6%, 1.0366 66.7%, 1.0364 68.8%, 1.0357 70.8%, 1.0344 72.9%, 1.0327 75%, 1.0308 77.1%, 1.0286 79.2%, 1.0264 81.3%, 1.024 83.3%, 1.0217 85.4%, 1.0194 87.5%, 1.0172 89.6%, 1.0151 91.7%, 1.0131 93.8%, 1.0113 95.8%, 1.0096 97.9%, 1);
+  --modal-out-dur: 253ms;
+  --modal-out-ease: linear(0, 0.0073 2.1%, 0.0271 4.2%, 0.0564 6.3%, 0.0928 8.3%, 0.1342 10.4%, 0.179 12.5%, 0.2259 14.6%, 0.2737 16.7%, 0.3216 18.8%, 0.3688 20.8%, 0.4149 22.9%, 0.4594 25%, 0.5021 27.1%, 0.5427 29.2%, 0.5811 31.3%, 0.6173 33.3%, 0.6511 35.4%, 0.6827 37.5%, 0.712 39.6%, 0.7391 41.7%, 0.7642 43.8%, 0.7872 45.8%, 0.8083 47.9%, 0.8277 50%, 0.8453 52.1%, 0.8614 54.2%, 0.876 56.3%, 0.8892 58.3%, 0.9012 60.4%, 0.9121 62.5%, 0.9218 64.6%, 0.9306 66.7%, 0.9385 68.8%, 0.9456 70.8%, 0.9519 72.9%, 0.9576 75%, 0.9626 77.1%, 0.9672 79.2%, 0.9712 81.3%, 0.9747 83.3%, 0.9779 85.4%, 0.9807 87.5%, 0.9832 89.6%, 0.9854 91.7%, 0.9873 93.8%, 0.989 95.8%, 0.9905 97.9%, 1);
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
@@ -501,6 +508,10 @@ html.motion-sobrio {
   --dur-normal: 160ms;
   --dur-slow: 200ms;
   --ease-spring: cubic-bezier(0.16, 1, 0.3, 1); /* = --ease-out; no springs in Sobrio */
+  --modal-in-dur: var(--dur-normal);
+  --modal-in-ease: var(--ease-out);
+  --modal-out-dur: var(--dur-fast);
+  --modal-out-ease: var(--ease-out);
 }
 
 html.motion-expresivo {
@@ -519,6 +530,8 @@ html.motion-expresivo {
     --dur-slow: 1ms;
     --dur-press: 1ms;
     --dur-ui: 1ms;
+    --modal-in-dur: 1ms;
+    --modal-out-dur: 1ms;
     --ease-spring: linear;
   }
 }

@@ -341,9 +341,7 @@ textarea.field-shake {
   border-radius: 0;
   pointer-events: none;
   z-index: 2;
-  transition:
-    opacity var(--dur-fast) var(--ease-out),
-    transform 180ms var(--ease-out);
+  transition: opacity var(--dur-fast) var(--ease-out); /* transform is sprung in ui-feel.mjs */
   will-change: transform;
 }
 
@@ -352,11 +350,6 @@ html.motion-sobrio .tab-bar-indicator {
   transition-property: opacity;
 }
 
-html.motion-expresivo .tab-bar-indicator {
-  transition:
-    opacity var(--dur-fast) var(--ease-out),
-    transform var(--dur-slow) var(--ease-out);
-}
 
 /* Panel is interactive immediately; motion matches canvas tab cross-fade note. */
 @keyframes app-tab-panel-in {
@@ -399,7 +392,7 @@ html.motion-expresivo .app-tab-panel-enter {
 #equipos-lista-backdrop.closing .equipos-lista-modal,
 #connection-dropdown-backdrop.closing .connection-dropdown-modal,
 #settings-dropdown-backdrop.closing .settings-dropdown-modal {
-  animation: modal-out var(--dur-fast) var(--ease-out) forwards;
+  animation: modal-out var(--modal-out-dur) var(--modal-out-ease) forwards;
 }
 
 /* ── Overlays con display/hidden directo (Tendencias, ⌘K) ──────────
@@ -411,7 +404,7 @@ html.motion-expresivo .app-tab-panel-enter {
 }
 
 .tend-gaso-ext-backdrop > [role='dialog'] {
-  animation: modal-in var(--dur-normal) var(--ease-out);
+  animation: modal-in var(--modal-in-dur) var(--modal-in-ease);
 }
 /* (.cmdk ya define su propio modal-in en cmdk.css) */
 
@@ -423,7 +416,7 @@ html.motion-expresivo .app-tab-panel-enter {
 
 .overlay-anim-out > [role='dialog'],
 [role='dialog'].overlay-anim-out {
-  animation: modal-out var(--dur-fast) var(--ease-out) forwards !important;
+  animation: modal-out var(--modal-out-dur) var(--modal-out-ease) forwards !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
