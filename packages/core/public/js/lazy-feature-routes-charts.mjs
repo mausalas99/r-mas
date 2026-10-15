@@ -23,6 +23,9 @@ export function ensureChartsLoaded() {
       chartsModules = { tendencias: pair[0], eaChartsModal: pair[1] };
       registerLazyChartsRuntimes(chartsModules);
       return chartsModules;
+    }, function (err) {
+      chartsPromise = null; // a failed load must not stick: the next call retries
+      throw err;
     });
   }
   return chartsPromise;
@@ -110,6 +113,10 @@ function chartsAsyncFn(exportName, fallback) {
       var loadedFn = mods.tendencias[exportName];
       if (typeof loadedFn === 'function') loadedFn.apply(null, args);
       else if (typeof fallback === 'function') fallback.apply(null, args);
+    }).catch(function (err) {
+      console.error('[R+ Tendencias] No se pudo cargar el módulo:', err);
+      var box = document.getElementById('tendencias-container');
+      if (box) box.innerHTML = '<p class="tend-empty">No se pudieron cargar las tendencias. Vuelve a abrir la pestaña.</p>';
     });
   };
 }
