@@ -70,11 +70,7 @@ export function partitionNmMedsForSoap(fieldVal) {
   /** @type {string[]} */
   var insulin = [];
   part.antidiabeticos.forEach(function (line) {
-    if (
-      !RESCATE_NM_LINE_RE.test(line) &&
-      !/^INSULINA\s+PREPRANDIAL:/i.test(line) &&
-      !/BOMBA\s+DE\s+INSULINA/i.test(line)
-    ) {
+    if (!RESCATE_NM_LINE_RE.test(line) && !/BOMBA\s+DE\s+INSULINA/i.test(line)) {
       insulin.push(line);
     }
   });
