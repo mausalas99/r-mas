@@ -51,9 +51,16 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.5.1](https://github.com/mausalas99/r-mas/releases/tag/v8.5.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.5.2](https://github.com/mausalas99/r-mas/releases/tag/v8.5.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.5.2 (estable — release 8.5.2)
+
+- **Labs:** TP, TTP e INR corregidos se leen del reporte y entran a Tendencias.
+- **Diseño:** pestañas, ventanas, interruptores y tarjetas de Tendencias se mueven con física de resorte; se respeta movimiento reducido.
+
+Notas: `docs/RELEASE_NOTES_8.5.2.txt`.
 
 ## R+ 8.5.1 (estable — release 8.5.1)
 

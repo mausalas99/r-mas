@@ -1,0 +1,28 @@
+R+ 8.5.2 (estable — release 8.5.2)
+======================================
+
+Fecha: 2026-10-15
+
+## Resumen
+
+Los labs de coagulación leen TP, TTP e INR corregidos. Los movimientos de la app (pestañas, ventanas, interruptores y tarjetas de Tendencias) ahora siguen un modelo de física. Versión de mejoras.
+
+## Nuevo / mejorado
+
+- **Nuevo (Labs):** R+ lee TP, TTP e INR corregidos cuando el reporte los trae. Salen junto a los valores sin corregir y entran a Tendencias.
+- **Nuevo (Importar de Drive):** las filas TPc, TTPc e INRc caen en el panel de coagulación.
+- **Cambio (Diseño):** la línea de la pestaña activa se desliza con un resorte, en lugar de saltar.
+- **Cambio (Diseño):** las ventanas abren y cierran con un resorte más suave.
+- **Cambio (Diseño):** los interruptores tienen peso: puedes arrastrar la perilla.
+- **Cambio (Tendencias):** al arrastrar una tarjeta, la tarjeta sigue al cursor y las demás se acomodan con suavidad.
+- **Cambio (Diseño):** con movimiento reducido o modo Sobrio, todo salta al estado final, sin animar.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.5.2-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.5.2-Mac-Intel.dmg`
+- Windows: `Instalar-R+-8.5.2-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

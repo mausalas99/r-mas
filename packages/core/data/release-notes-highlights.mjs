@@ -4,39 +4,31 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_851 = [
+var RELEASE_NOTES_852 = [
   {
-    title: 'HD: R+ avisa, tú decides',
-    body: 'Con TA baja, FC anormal o un vasopresor, la línea HD dice <strong>¿INESTABLE?</strong> para que lo confirmes. Antes decía siempre ESTABLE.',
+    title: 'Coagulación corregida',
+    body: 'R+ lee <strong>TP, TTP e INR corregidos</strong> del reporte y los muestra junto a los valores sin corregir. También entran a Tendencias.',
   },
   {
-    title: 'Balance con todos los egresos',
-    body: 'Las gráficas de balance cuentan drenajes, gastrostomía, nefrostomía y UF, no solo la diuresis.',
+    title: 'Pestañas con resorte',
+    body: 'La línea de la pestaña activa se desliza al nuevo lugar, en lugar de saltar.',
   },
   {
-    title: 'Tu sesión de Nube, protegida',
-    body: '«Recuérdame» guarda la sesión cerrada con el llavero del equipo. Una base cifrada antigua se respalda en una carpeta, ya no se borra.',
+    title: 'Ventanas más suaves',
+    body: 'Las ventanas abren y cierran con un resorte corto.',
   },
   {
-    title: 'Interno en salas cifradas',
-    body: 'El teléfono del interno vuelve a abrir el tablero y a mandar signos en salas cifradas.',
+    title: 'Interruptores con peso',
+    body: 'Puedes arrastrar la perilla de un interruptor, y se asienta con un pequeño rebote.',
   },
   {
-    title: 'Pantallas con un solo estilo',
-    body: 'Resumen, Labs, Manejo, Datos, Agenda, Ajustes y más usan tarjetas con sombra, títulos más claros y un solo botón lleno por pantalla.',
-  },
-  {
-    title: 'Tiempo de respuesta de interconsulta',
-    body: 'El tablero ahora es una fila por paciente con <strong>Recibida</strong> y <strong>Respondida</strong>, y el promedio de 7 días. Asigna equipo con las teclas 1 a 4. Los tiempos marcados en el teléfono llegan por Nube.',
-  },
-  {
-    title: 'Estado actual con texto corrido',
-    body: 'Pega glucometrías, ingresos, egresos, evacuaciones y signos vitales escritos en una frase, y R+ los lee.',
+    title: 'Tarjetas de Tendencias',
+    body: 'Al arrastrar una tarjeta, las demás se acomodan con suavidad. Con movimiento reducido no hay animación.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_851;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_852;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.5.1': RELEASE_NOTES_851,
+  '8.5.2': RELEASE_NOTES_852,
 };
