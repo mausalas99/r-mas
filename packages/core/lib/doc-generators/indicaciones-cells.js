@@ -1,6 +1,6 @@
 'use strict';
 
-const { esc } = require('./shared.js');
+const { esc, upper } = require('./shared.js');
 
 const SZ = '<w:sz w:val="16"/><w:szCs w:val="16"/>';
 const LIST_NUMID = '52';
@@ -94,7 +94,7 @@ function cellR1c1(ind, servicio, otros) {
   }
 
   for (const item of otros || []) {
-    const titulo = (item.titulo || '').trim().toUpperCase();
+    const titulo = upper((item.titulo || '').trim());
     const contenido = (item.contenido || '').trim();
     if (titulo) {
       content += sectionXml(titulo, contenido);

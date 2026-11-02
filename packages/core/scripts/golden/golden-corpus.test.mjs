@@ -16,12 +16,11 @@
  * expedientes only) in the right folder and run the command above.
  */
 import { test } from 'node:test';
-import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import JSZip from 'jszip';
+import { matchGolden as matchGoldenIn, docxText } from './helpers.mjs';
 import { procesarLabs } from '../../public/js/labs.js';
 import { parseIndicacionesPaste } from '../../public/js/med-receta-core.mjs';
 
@@ -30,7 +29,7 @@ const { generateNoteBuffer } = require('../../lib/doc-generators/note.js');
 const { generateIndicacionesBuffer } = require('../../lib/doc-generators/indicaciones.js');
 
 const CORPUS = path.join(path.dirname(fileURLToPath(import.meta.url)), 'corpus');
-const UPDATE = process.env.UPDATE_GOLDEN === '1';
+const matchGolden = (file, actual) => matchGoldenIn(CORPUS, file, actual);
 
 function inputs(dir, suffix) {
   return fs
@@ -40,37 +39,8 @@ function inputs(dir, suffix) {
     .map((f) => ({ name: f.slice(0, -suffix.length), file: path.join(CORPUS, dir, f) }));
 }
 
-/** Compare `actual` with the golden file next to the input (or rewrite it under UPDATE_GOLDEN=1). */
-function matchGolden(goldenFile, actual) {
-  if (UPDATE || !fs.existsSync(goldenFile)) {
-    if (!UPDATE) assert.fail(`missing ${path.relative(CORPUS, goldenFile)} — run with UPDATE_GOLDEN=1 to create it`);
-    fs.writeFileSync(goldenFile, actual);
-    return;
-  }
-  assert.equal(actual, fs.readFileSync(goldenFile, 'utf8'), `${path.relative(CORPUS, goldenFile)} differs — if intended, run with UPDATE_GOLDEN=1`);
-}
-
 // Generated ids (time + random) differ on every run: keep their presence, not their value.
 const json = (v) => JSON.stringify(v, (k, x) => (k === 'id' && typeof x === 'string' ? '<id>' : x), 2) + '\n';
-
-/** Visible text of a .docx, one paragraph per line, empty runs of paragraphs collapsed. */
-async function docxText(buf) {
-  const raw = await (await JSZip.loadAsync(buf)).file('word/document.xml').async('string');
-  // Text boxes are stored twice (DrawingML + a VML fallback): keep one copy.
-  const xml = raw.replace(/<mc:Fallback>[\s\S]*?<\/mc:Fallback>/g, '');
-  const decode = (s) =>
-    s
-      .replace(/&#x([0-9a-f]+);/gi, (_m, h) => String.fromCodePoint(parseInt(h, 16)))
-      .replace(/&#(\d+);/g, (_m, d) => String.fromCodePoint(Number(d)))
-      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
-  const paras = xml.split('</w:p>').map((p) =>
-    [...p.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:tab\/>|<w:br\/>/g)]
-      .map((m) => (m[1] !== undefined ? decode(m[1]) : m[0] === '<w:tab/>' ? '\t' : '\n'))
-      .join('')
-      .trimEnd(),
-  );
-  return paras.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
-}
 
 for (const { name, file } of inputs('labs', '.txt')) {
   test(`labs/${name}: procesarLabs output matches golden`, () => {

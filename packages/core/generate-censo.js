@@ -143,8 +143,15 @@ function wrapText(font, text, maxWidth, fontSize) {
         for (var i = 0; i < word.length; i++) {
           var next = chunk + word[i];
           if (font.widthOfTextAtSize(next, fontSize) > maxWidth && chunk) {
-            lines.push(chunk);
-            chunk = word[i];
+            // Prefer a break after / - . : so a date reads «12/09/» + «2026», not «12/09/20» + «26».
+            var sep = chunk.slice(0, -1).search(/[/\-.:][^/\-.:]*$/);
+            if (sep >= 1) {
+              lines.push(chunk.slice(0, sep + 1));
+              chunk = chunk.slice(sep + 1) + word[i];
+            } else {
+              lines.push(chunk);
+              chunk = word[i];
+            }
           } else {
             chunk = next;
           }

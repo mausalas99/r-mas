@@ -1,0 +1,32 @@
+ELECTROCARDIOGRAMA:
+
+RITMO SINUSAL, FC 78 LPM, EJE NORMAL, SIN ALTERACIONES AGUDAS DEL ST.
+
+RADIOGRAFÍA DE TÓRAX:
+
+SIN INFILTRADOS NI DERRAME. SILUETA CARDIACA DE TAMAÑO NORMAL.
+
+DIAGNÓSTICOS:
+
+1. HERNIA INGUINAL DERECHA
+2. HIPERTENSION ARTERIAL SISTEMICA
+3. DIABETES MELLITUS TIPO 2
+
+VALORACIÓN PREOPERATORIA:
+
+SE REALIZA VALORACIÓN PREOPERATORIA. SE OTORGA RIESGO QUIRÚRGICO:
+Capacidad funcional: >4 METs
+Estado funcional ABVD: Independiente
+Fragilidad: —
+Riesgo quirúrgico AHA/ACC 2026: —
+Riesgo CV perioperatorio AHA/ACC 2026: —
+Modificadores de riesgo: —
+RCRI (índice de Lee): 1 punto, clase II, 6%
+Gupta MICA: —
+AUB-HAS2: —
+ASA: III
+ARISCAT: 26 puntos, riesgo intermedio
+Gupta insuficiencia respiratoria: —
+Gupta neumonía: —
+Caprini: 5 puntos, riesgo alto
+STOP-Bang: 3 puntos

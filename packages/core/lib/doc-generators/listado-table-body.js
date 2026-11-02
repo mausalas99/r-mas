@@ -1,6 +1,6 @@
 'use strict';
 
-const { esc } = require('./shared.js');
+const { esc, upper } = require('./shared.js');
 
 const LIST_NUMID_BASE = 35;
 const LIST_NUMID_DYNAMIC_START = 9000;
@@ -91,12 +91,12 @@ function injectListadoNumbering(files, numIdAlloc) {
 
 function fillListadoPatientSentinels(xml, patient) {
   return replaceSentinels(xml, [
-    ['~~NOMBRE~~', (patient.nombre || '').toUpperCase()],
+    ['~~NOMBRE~~', upper(patient.nombre || '')],
     ['~~REGISTRO~~', patient.registro || ''],
     ['~~EDAD~~', String(patient.edad || '')],
-    ['~~SEXO~~', (patient.sexo || '').toUpperCase()],
-    ['~~AREA~~', (patient.area || '').toUpperCase()],
-    ['~~SERVICIO~~', (patient.servicio || '').toUpperCase()],
+    ['~~SEXO~~', upper(patient.sexo || '')],
+    ['~~AREA~~', upper(patient.area || '')],
+    ['~~SERVICIO~~', upper(patient.servicio || '')],
     ['~~CUARTO~~', patient.cuarto || ''],
     ['~~CAMA~~', patient.cama || ''],
   ]);

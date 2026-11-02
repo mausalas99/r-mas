@@ -19,9 +19,9 @@ import { formatDiagnosticosCopy } from '../patient-diagnosticos.mjs';
 import { pushDiagnosticosToPatient, stampCensoFieldsClock } from '../patient-diagnosticos.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import {
-  buildVpoFullCopyText,
+  buildVpoFullCopyFromState,
+  buildVpoRiskBlock,
   buildFarmacosCopyText,
-  formatRiskLines,
   renderEkgWithFc,
   VPO_SUGGESTED_SCALES,
   VPO_OFFICIAL_CALCULATOR_DISCLAIMER,
@@ -176,21 +176,11 @@ function wireVpoCopyActions(mount, state) {
       } else if (action === 'copy-rx') {
         copyText('Rx tórax', 'RADIOGRAFÍA DE TÓRAX:\n\n' + state.rxText);
       } else if (action === 'copy-risk') {
-        var lines = formatRiskLines(null, state);
-        copyText('Riesgos', state.valoracionIntro + '\n' + lines.join('\n'));
+        copyText('Riesgos', buildVpoRiskBlock(state));
       } else if (action === 'copy-farm') {
         copyText('Fármacos', buildFarmacosCopyText(state.farmacos));
       } else if (action === 'copy-full') {
-        var riskBlock = state.valoracionIntro + '\n' + formatRiskLines(null, state).join('\n');
-        copyText(
-          'Valoración completa',
-          buildVpoFullCopyText({
-            ekgBlock: renderEkgWithFc(state.ekgText, state.fcLpm),
-            rxBlock: state.rxText,
-            diagnosticosBlock: state.diagnosticosText,
-            valoracionBlock: riskBlock,
-          })
-        );
+        copyText('Valoración completa', buildVpoFullCopyFromState(state));
       }
     });
   });

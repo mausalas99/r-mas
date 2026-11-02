@@ -1,6 +1,6 @@
 'use strict';
 
-const { replaceT } = require('./shared.js');
+const { replaceT, upper } = require('./shared.js');
 const { cellR0c0, cellR0c1, cellR1c0, cellR1c1 } = require('./indicaciones-cells.js');
 
 function findFirstTable(xml) {
@@ -62,11 +62,11 @@ function fillIndicacionesTable(xml, indicaciones, servicio) {
 }
 
 function fillIndicacionesPatientFields(xml, patient, servicio, constants) {
-  const nombre = (patient.nombre || '').toUpperCase();
+  const nombre = upper(patient.nombre || '');
   const registro = patient.registro || '';
   const edad = String(patient.edad || '');
-  const sexo = (patient.sexo || '').toUpperCase();
-  const area = (patient.area || '').toUpperCase();
+  const sexo = upper(patient.sexo || '');
+  const area = upper(patient.area || '');
   const cuarto = patient.cuarto || '';
   const cama = patient.cama || '';
 

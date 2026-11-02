@@ -1,6 +1,6 @@
 'use strict';
 
-const { loadDocxTemplate, packDocxBuffer } = require('./shared.js');
+const { loadDocxTemplate, packDocxBuffer, upper } = require('./shared.js');
 const {
   fillIndicacionesTable,
   fillIndicacionesPatientFields,
@@ -25,7 +25,7 @@ async function generateIndicacionesBuffer({ patient, indicaciones }) {
   indicaciones = indicaciones || {};
 
   const { names, files } = await loadDocxTemplate('template_indicaciones.docx');
-  const servicio = (patient.servicio || 'MEDICINA INTERNA').toUpperCase();
+  const servicio = upper(patient.servicio || 'MEDICINA INTERNA');
 
   let xml = files['word/document.xml'].toString('utf-8');
   xml = fillIndicacionesTable(xml, indicaciones, servicio);

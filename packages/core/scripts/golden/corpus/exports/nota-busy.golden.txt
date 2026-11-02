@@ -1,0 +1,52 @@
+NOMBRE: DEMO GOLDEN EXPORT
+REGISTRO: 7000991-2	EDAD: 71	SEXO: M
+ÁREA:  HOSPITALIZACION
+SERVICIO: MEDICINA INTERNA
+CUARTO: 514	CAMA: 03
+
+REGISTRO: 	EDAD:	SEXO:
+ÁREA:
+SERVICIO:
+CUARTO:	CAMA:
+HOSPITAL UNIVERSITARIO
+“Dr. José Eleuterio González”
+Francisco I. Madero pte. y Av. Gonzalitos s/n Col. Mitras Centro, C.P. 64460,
+Monterrey, N.L. Tel: (81) 83-46-78-00
+
+Favor de escribir con letra legible, sin abreviaciones, sin faltar fecha, hora, nombre completo y firma de quien realiza la nota NOM-168-SSA1-1998. (6.2, 7.2, 8.3).
+NOTA DE EVOLUCIÓN
+MASCULINO DE 71 AÑOS CON DM2, HAS Y ERC G4 EN HEMODIALISIS, HOSPITALIZADO POR SEPSIS DE ORIGEN URINARIO. EVOLUCIONA CON MEJORIA, AFEBRIL DESDE HACE 48 H, CON DIURESIS CONSERVADA.
+Fecha: 2026-09-21	   Hora: 08:30	 Resume n del interrogatorio, exploración física y estado mental:
+Evolución y actualización del cuadro clínico (tabaquismo, alcoholismo y adicciones):
+N: ALERTA, ORIENTADO || SIN FOCALIZACION
+V: FR 18 RPM, SATO2 96% AL AIRE AMBIENTE
+HD: TA 132/78 MMHG, FC 74 LPM
+HI: AFEBRIL || MEROPENEM 1 G IV CADA 8 HORAS (DIA 5)
+NM: DIETA RENAL || GLUCOMETRIAS 150, 172, 138 MG/DL
+
+21.09.26
+HB 10.4 HTO 31.2 LEU 11.8 PLT 188
+GLU 150 CR 3.2 BUN 48
+NA 136 K 4.9 CL 100
+20.09.26
+HB 10.1 HTO 30.8 LEU 14.2 PLT 175
+GLU 171 CR 3.4 BUN 52
+NA 134 K 5.1 CL 98
+
+Resultados de Estudios Auxiliares:          Diagnóstico(s):	Signos Vitales:
+SEPSIS DE ORIGEN URINARIO
+ERC G4 EN HEMODIALISIS | DIABETES MELLITUS TIPO 2 | HIPERTENSION ARTERIAL SISTEMICA
+TA 132/78  FR 18
+FC 74   T.  36.4°C
+Peso (kg.)  82
+
+Tratamiento e indicaciones médicas (indicar en caso de medicamentos: dosis, vía y periodicidad):
+1. FARMACO1 10 MG VO CADA 6 H                    6. FARMACO6 60 MG VO CADA 11 H
+2. FARMACO2 20 MG VO CADA 7 H    7. FARMACO7 70 MG VO CADA 12 H
+3. FARMACO3 30 MG VO CADA 8 H    8. FARMACO8 80 MG VO CADA 13 H
+4. FARMACO4 40 MG VO CADA 9 H    9. FARMACO9 90 MG VO CADA 14 H
+5. FARMACO5 50 MG VO CADA 10 H    10. FARMACO10 100 MG VO CADA 15 H
+Médico Tratante (Nombre completo, firma): DRA. DEMO RESIDENTE
+Profesor Responsable: DR. DEMO PROFESOR _____
+
+00-005-R-11/05

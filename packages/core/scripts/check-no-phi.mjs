@@ -11,8 +11,9 @@
  *
  * A synthetic fixture line that must match can carry the marker
  * `phi-scan: synthetic` on the same line. The .docx templates' golden text
- * (scripts/golden/corpus/docs) is exempt from the hospital rules only: it is
- * the hospital's own format. Patient-data rules still apply there.
+ * (scripts/golden/corpus/docs) and the exports' golden text
+ * (scripts/golden/corpus/exports) are exempt from the hospital rules only:
+ * they carry the hospital's own format. Patient-data rules still apply there.
  *
  * Usage: node scripts/check-no-phi.mjs            (reads the staged diff)
  *        node scripts/check-no-phi.mjs --diff F   (reads a diff file, for tests)
@@ -37,7 +38,7 @@ const RULES = [
 const SELF = /scripts\/check-no-phi(\.test)?\.mjs$/; // these two list the terms on purpose
 // Text of the .docx templates (golden output): they carry the hospital's own
 // letterhead on purpose, since notes and indicaciones use the hospital's format.
-const TEMPLATE_TEXT = /scripts\/golden\/corpus\/docs\/[^/]+\.golden\.txt$/;
+const TEMPLATE_TEXT = /scripts\/golden\/corpus\/(docs|exports)\/[^/]+\.golden\.txt$/;
 const ALLOW = 'phi-scan: synthetic';
 
 /** @param {string} diff unified diff with -U0 @returns {string[]} */

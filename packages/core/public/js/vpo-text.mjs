@@ -106,3 +106,18 @@ export function buildFarmacosCopyText(farmacos) {
     })
     .join('\n');
 }
+
+/** Bloque «VALORACIÓN PREOPERATORIA» del estado: intro + una línea por escala. @param {object} state */
+export function buildVpoRiskBlock(state) {
+  return state.valoracionIntro + '\n' + formatRiskLines(null, state).join('\n');
+}
+
+/** Texto de «Copiar valoración completa» (único armado; el panel y las pruebas lo comparten). @param {object} state */
+export function buildVpoFullCopyFromState(state) {
+  return buildVpoFullCopyText({
+    ekgBlock: renderEkgWithFc(state.ekgText, state.fcLpm),
+    rxBlock: state.rxText,
+    diagnosticosBlock: state.diagnosticosText,
+    valoracionBlock: buildVpoRiskBlock(state),
+  });
+}

@@ -1,6 +1,6 @@
 'use strict';
 
-const { esc, replaceT } = require('./shared.js');
+const { esc, replaceT, upper } = require('./shared.js');
 
 const RPR_NORMAL =
   '<w:rPr><w:color w:val="231F20"/><w:spacing w:val="6"/>' +
@@ -22,7 +22,7 @@ function fitSlots(lines, n) {
 }
 
 function getTx(tratamiento, i) {
-  return i < tratamiento.length ? tratamiento[i].toUpperCase() : '';
+  return i < tratamiento.length ? upper(tratamiento[i]) : '';
 }
 
 function normalizeLines(raw) {
@@ -31,7 +31,7 @@ function normalizeLines(raw) {
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
-    .map((l) => l.toUpperCase());
+    .map((l) => upper(l));
 }
 
 function normalizeStringList(value) {
@@ -66,12 +66,12 @@ function fillPatientHeader(xml, patient, replaceTBound) {
 }
 
 function fillPatientHeaderCopy(xml, patient, replaceTBound) {
-  const nombre = (patient.nombre || '').toUpperCase();
+  const nombre = upper(patient.nombre || '');
   const registro = patient.registro || '';
   const edad = String(patient.edad || '');
   const sexo = patient.sexo || '';
-  const area = (patient.area || '').toUpperCase();
-  const servicio = (patient.servicio || '').toUpperCase();
+  const area = upper(patient.area || '');
+  const servicio = upper(patient.servicio || '');
   const cuarto = patient.cuarto || '';
   const cama = patient.cama || '';
 
@@ -127,10 +127,10 @@ function stripLabPrefixes(xml) {
 
 function buildDiagnosticos(note) {
   let diagnosticos = normalizeStringList(note.diagnosticos);
-  const dx1 = diagnosticos.length > 0 ? diagnosticos[0].toUpperCase() : '';
-  let dx2 = diagnosticos.length > 1 ? diagnosticos[1].toUpperCase() : '';
+  const dx1 = diagnosticos.length > 0 ? upper(diagnosticos[0]) : '';
+  let dx2 = diagnosticos.length > 1 ? upper(diagnosticos[1]) : '';
   if (diagnosticos.length > 2) {
-    dx2 += ` | ${diagnosticos.slice(2).map((d) => d.toUpperCase()).join(' | ')}`;
+    dx2 += ` | ${diagnosticos.slice(2).map((d) => upper(d)).join(' | ')}`;
   }
   return { dx1, dx2 };
 }
@@ -214,7 +214,7 @@ function fillTratamiento(xml, tratamiento, medico, txLeftOrig, txRightOrig, orig
 function fillNoteDocumentXml(xml, patient, note, constants) {
   const replaceTBound = (doc, orig, val) => replaceT(doc, orig, val);
   let out = fillNoteDateTime(xml, note, replaceTBound);
-  out = replaceTBound(out, constants.ORIG_INTERR, (note.interrogatorio || '').toUpperCase());
+  out = replaceTBound(out, constants.ORIG_INTERR, upper(note.interrogatorio || ''));
   out = fillPatientHeader(out, patient, replaceTBound);
   out = fillLineReplacements(
     out,

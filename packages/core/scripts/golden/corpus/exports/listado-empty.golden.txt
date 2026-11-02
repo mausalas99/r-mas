@@ -1,0 +1,18 @@
+NOMBRE:
+REGISTRO:   EDAD:  SEXO: 	 ÁREA:           	 SERVICIO:
+CUARTO:    CAMA:
+HOSPITAL UNIVERSITARIO
+“Dr. José Eleuterio González”
+Francisco I. Madero pte. y Av. Gonzalitos s/n Col. Mitras Centro, C.P. 64460
+83-46-78-00
+Monterrey, N.L. Tel: (81) 83-89-11-11
+
+LISTA DE PROBLEMAS
+Favor de escribir la nota de acuerdo a la NOM-004-SSA3-2012, (sin abreviaciones, sin faltar fecha, hora, nombre completo y firma de quien realiza)
+
+FECHA
+No.
+ACTIVOS
+INACTIVOS
+
+200−013−R−04ƒ13
