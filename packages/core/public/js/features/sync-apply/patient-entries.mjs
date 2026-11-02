@@ -29,7 +29,7 @@ import {
   filterLabHistorySetsForMobileReference,
   shouldApplyMobileLabHistoryWindow,
 } from '../cloud-mobile/lab-history-window.mjs';
-import { cloudSyncNowIso } from '../cloud-sync/cloud-sync-clock.mjs';
+import { cloudSyncNowIso, CLOCKLESS_FLOOR_CLOCK } from '../cloud-sync/cloud-sync-clock.mjs';
 import { applyNeumoStudiesToPatient } from '../cloud-sync/neumo-studies-sync.mjs';
 
 /** @type {{
@@ -245,6 +245,15 @@ function applyLanIncomingOnlyFields(existing, p) {
   return changed;
 }
 
+/** True when the room copy carries a placeholder name over a real name we hold. */
+function roomNamePlaceholderOverRealName(existing, p) {
+  return (
+    Object.prototype.hasOwnProperty.call(p, 'nombre') &&
+    isPlaceholderPatientName(p.nombre) &&
+    !isPlaceholderPatientName(existing.nombre)
+  );
+}
+
 function applyLanPatientScalars(existing, p) {
   var changed = false;
   var takeIncoming = incomingScalarsAreAuthoritative(existing, p);
@@ -257,6 +266,14 @@ function applyLanPatientScalars(existing, p) {
     if (assignLanScalarIfChanged(existing, key, p[key], existing[key], scalarKeyTakesIncoming(existing, p, key, takeIncoming))) changed = true;
   }
   if (takeIncoming && applyLanIncomingOnlyFields(existing, p)) changed = true;
+  if (takeIncoming && roomNamePlaceholderOverRealName(existing, p)) {
+    // A device that only knew this patient by id pushed its blob with a newer clock. The
+    // name stays ours (see pickNombreMergeValue); re-push with a fresh clock or every
+    // other device keeps the placeholder.
+    existing.lanUpdatedAt = cloudSyncNowIso();
+    censusRepushNeeded = true;
+    changed = true;
+  }
   var censoBefore = JSON.stringify(existing);
   mergeCensoPatientFields(existing, p, { keepLocalWhenPresent: !takeIncoming });
   var clocks = mergeFieldClocks(existing, p);
@@ -319,6 +336,22 @@ function mergeLabSetsIntoLocalPatient(patientId, labHistory) {
   return true;
 }
 
+/** patientId -> lab sets that arrived before their patient row. In memory: lost on restart. */
+var orphanLabSets = new Map();
+
+/** Test seam: the held sets, so a test with several simulated devices can swap them per device. */
+export function orphanLabSetsForTests() {
+  return orphanLabSets;
+}
+
+/** Fold held lab sets into the entry that finally carries their patient. */
+function takeOrphanLabSets(entry) {
+  var held = orphanLabSets.get(entry.patient.id);
+  if (!held) return;
+  orphanLabSets.delete(entry.patient.id);
+  entry.labHistory = mergeLabHistorySets(held, Array.isArray(entry.labHistory) ? entry.labHistory : []);
+}
+
 /**
  * Lab sets that reached this device without their patient row — the row came in an
  * earlier pull, and Nube pushes a lab set as its own mutation right after it. Merge
@@ -332,7 +365,13 @@ export function applyLanLabSetsToExistingPatients(labsByPatientId) {
     var local = getPatients().find(function (p) {
       return p && p.id === pid;
     });
-    if (local && mergeLabSetsIntoLocalPatient(local.id, labsByPatientId[pid])) changed += 1;
+    if (local) {
+      if (mergeLabSetsIntoLocalPatient(local.id, labsByPatientId[pid])) changed += 1;
+    } else if (pid && Array.isArray(labsByPatientId[pid]) && labsByPatientId[pid].length) {
+      // The room never resends an op once the revision moves past it, so a set that beats
+      // its patient row here is held until the row arrives (see takeOrphanLabSets).
+      orphanLabSets.set(pid, mergeLabHistorySets(orphanLabSets.get(pid) || [], labsByPatientId[pid]));
+    }
   });
   if (changed) {
     persistClinicalState({ domains: ['patients'] });
@@ -552,6 +591,15 @@ function attachOptionalPatientFields(newPat, patient) {
   if (patient.neumoStudies) applyNeumoStudiesToPatient(newPat, patient.neumoStudies);
 }
 
+/**
+ * An entry that carried no census data (a note or lab op reached us before the fields)
+ * must not claim a fresh clock: this shell would then push its blank blob over the real one.
+ */
+function newShellClock(p) {
+  if (p.lanUpdatedAt) return p.lanUpdatedAt;
+  return isPlaceholderPatientName(p.nombre) ? CLOCKLESS_FLOOR_CLOCK : cloudSyncNowIso();
+}
+
 function createNewPatientShell(entry) {
   var remoteId = String(entry.patient.id || '').trim();
   var p = entry.patient;
@@ -569,7 +617,7 @@ function createNewPatientShell(entry) {
     sexo: p.sexo || 'F',
     registro: p.registro || '',
     fromLab: !!p.fromLab,
-    lanUpdatedAt: p.lanUpdatedAt || cloudSyncNowIso(),
+    lanUpdatedAt: newShellClock(p),
     interconsultServiceIds: Array.isArray(p.interconsultServiceIds) ? p.interconsultServiceIds.slice() : [],
   };
   if (p.consultInfo && typeof p.consultInfo === 'object') newPat.consultInfo = Object.assign({}, p.consultInfo);
@@ -630,6 +678,7 @@ export function applyLanPatientEntries(entries, opts) {
   for (var i = 0; i < scopedEntries.length; i += 1) {
     var entry = scopedEntries[i];
     if (!entry || !entry.patient) continue;
+    takeOrphanLabSets(entry);
     var existing = findExistingPatient(entry);
     if (existing) {
       if (applyLanPatientEntryToExisting(existing, entry, opts)) updated += 1;

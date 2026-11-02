@@ -1,6 +1,7 @@
 /**
  * Cloud sync LWW op builders — maps patient/bundle shapes to worker ops.
  */
+import { CLOCKLESS_FLOOR_CLOCK } from './cloud-sync-clock.mjs';
 import { slimLabSetForCloud, CLOUD_DOC_MAX_BYTES, utf8JsonBytes } from './cloud-op-slim.mjs';
 import { labSetTimestamp, monitoreoUpdatedAt } from '../../patient-merge.mjs';
 import {
@@ -16,12 +17,7 @@ import { hasNeumoStudies, neumoStudiesUpdatedAt } from './neumo-studies-sync.mjs
 /** Packed into dedicated LWW paths — must not ride along on `fields` with a fresh batch clock. */
 export const FIELD_SKIP = new Set(['historiaClinica', 'id', 'monitoreo', 'eventualidades', 'medReceta', 'neumoStudies']);
 
-/**
- * Floor clock for content with no clock of its own and a patient with no census clock.
- * Fixed, so the echo guard sees the same (path, updatedAt) every cycle; low, so it never
- * beats a peer's real edit.
- */
-export const CLOCKLESS_FLOOR_CLOCK = '2000-01-01T00:00:00.000Z';
+export { CLOCKLESS_FLOOR_CLOCK };
 
 /** @param {unknown} note @param {string} fallback */
 function noteOpUpdatedAt(note, fallback) {

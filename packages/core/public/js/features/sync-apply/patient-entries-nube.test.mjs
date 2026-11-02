@@ -1,9 +1,9 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { getPatients, getNotes, getIndicaciones } from '../../app-state.mjs';
+import { getPatients, getNotes, getIndicaciones, getLabHistory } from '../../app-state.mjs';
 import { resetLabHistoryCacheForTests } from '../../lab-history-cache.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
-import { applyLanPatientEntries, configurePatientEntries } from './patient-entries.mjs';
+import { applyLanPatientEntries, applyLanLabSetsToExistingPatients, configurePatientEntries } from './patient-entries.mjs';
 
 describe('applyLanPatientEntries on Nube path', () => {
   /** @type {typeof patients} */
@@ -41,6 +41,30 @@ describe('applyLanPatientEntries on Nube path', () => {
     assert.equal(ci.answeredAt, '2026-10-11T10:30:00.000Z');
     assert.equal(ci.triage, 'urgente');
     assert.equal(ci.receivedAt, '2026-10-11T09:00:00.000Z');
+  });
+
+  it('a lab set that beats its patient row is held and lands with the row (no lab lost)', () => {
+    const set = { id: 'orph-lab', fecha: '2026-10-01', hora: '08:00', resLabs: ['Na 140'] };
+    assert.equal(applyLanLabSetsToExistingPatients({ orph1: [set] }), 0);
+    assert.equal(getLabHistory().orph1, undefined);
+    applyLanPatientEntries([{ patient: { id: 'orph1', nombre: 'DEMO', lanUpdatedAt: '2026-10-01T08:00:00.000Z' } }], { skipTeamScopeFilter: true });
+    assert.deepEqual(getLabHistory().orph1.map((x) => x.id), ['orph-lab']);
+    delete getLabHistory().orph1;
+  });
+
+  it('room placeholder name over our real name: keep ours and re-push with a newer clock', () => {
+    getPatients().push({ id: 'ph1', nombre: 'DEMO REAL', lanUpdatedAt: '2026-10-01T08:00:00.000Z' });
+    applyLanPatientEntries(
+      [{ patient: { id: 'ph1', nombre: 'PACIENTE SIN NOMBRE', lanUpdatedAt: '2026-10-01T09:00:00.000Z' } }],
+      { skipTeamScopeFilter: true }
+    );
+    assert.equal(getPatients()[0].nombre, 'DEMO REAL');
+    assert.ok(getPatients()[0].lanUpdatedAt > '2026-10-01T09:00:00.000Z');
+  });
+
+  it('a shell born from an entry with no census data takes the floor clock, not "now"', () => {
+    applyLanPatientEntries([{ patient: { id: 'floor1' } }], { skipTeamScopeFilter: true });
+    assert.equal(getPatients().find((p) => p.id === 'floor1').lanUpdatedAt, '2000-01-01T00:00:00.000Z');
   });
 
   it('eventualidades equal to the room copy keep the room clock (no re-push ping-pong)', () => {

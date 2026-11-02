@@ -25,3 +25,10 @@ export function getCloudSyncClockOffsetMs() {
 export function clearCloudSyncClockOffset() {
   offsetMs = 0;
 }
+
+/**
+ * Floor clock for content with no clock of its own and a patient with no census clock.
+ * Fixed, so the echo guard sees the same (path, updatedAt) every cycle; low, so it never
+ * beats a peer's real edit.
+ */
+export const CLOCKLESS_FLOOR_CLOCK = '2000-01-01T00:00:00.000Z';
