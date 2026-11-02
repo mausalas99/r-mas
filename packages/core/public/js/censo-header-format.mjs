@@ -29,6 +29,11 @@ function pick(v) {
  */
 export function normalizeCensoUbicacionValue(settings) {
   var st = settings || {};
+  // Mi perfil sala is the real room; the Documentos pick only fills in when it is not a Sala/Torre.
+  var mine = pick(st.clinicalSala);
+  if (/^torre/i.test(mine)) return CENSO_UBICACION_TORRE;
+  var m = /^sala\s+(.+)$/i.exec(mine);
+  if (m) return m[1];
   var sala = pick(st.censoSala);
   if (sala) {
     if (/^torre/i.test(sala) || sala === CENSO_UBICACION_TORRE) return CENSO_UBICACION_TORRE;
@@ -50,18 +55,27 @@ export function formatCensoSalaTitleLine(settings) {
 }
 
 /**
+ * Saved slot wins even when empty (cleared on purpose); legacy only for never-saved profiles.
+ * @param {Record<string, string>} tpl
+ * @param {string} key
+ * @param {unknown} legacy
+ */
+export function censoSlot(tpl, key, legacy) {
+  return key in tpl ? pick(tpl[key]) : pick(legacy);
+}
+
+/**
  * @param {Record<string, unknown>} settings
  * @returns {{ r2: string, r1a: string, r1b: string, maestro: string }}
  */
 export function resolveCensoEquipoMembers(settings) {
   var st = settings || {};
   var tpl = medTpl(st);
-  var legacyR1 = pick(st.residenteR1);
   return {
-    r2: pick(tpl.r2) || pick(st.residenteR2),
-    r1a: pick(tpl.r1a) || pick(st.residenteR1a) || legacyR1,
-    r1b: pick(tpl.r1b) || pick(st.residenteR1b),
-    maestro: pick(tpl.profesor) || pick(st.profesorName),
+    r2: censoSlot(tpl, 'r2', st.residenteR2),
+    r1a: censoSlot(tpl, 'r1a', st.residenteR1a || st.residenteR1),
+    r1b: censoSlot(tpl, 'r1b', st.residenteR1b),
+    maestro: censoSlot(tpl, 'profesor', st.profesorName),
   };
 }
 

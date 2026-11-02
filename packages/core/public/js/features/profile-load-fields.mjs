@@ -1,5 +1,6 @@
 /** Perfil — populate profile modal form fields from settings. */
 import { syncApprovedOutputDir } from "../document-export-client.mjs";
+import { censoSlot } from "../censo-header-format.mjs";
 import {
   normalizeQuickOutputFormat,
   syncAppModeRadioControls,
@@ -53,7 +54,7 @@ export function populateProfileIdentityFields(st) {
   var legacy = { r2: st.residenteR2, r1a: st.residenteR1a || st.residenteR1, r1b: st.residenteR1b };
   ["profesor", "r4", "r2", "r1a", "r1b"].forEach(function (k) {
     var el = document.getElementById("settings-medico-" + k);
-    if (el) el.value = medTpl[k] || legacy[k] || "";
+    if (el) el.value = censoSlot(medTpl, k, legacy[k]);
   });
   syncProfileToggleLabel(st);
 }
