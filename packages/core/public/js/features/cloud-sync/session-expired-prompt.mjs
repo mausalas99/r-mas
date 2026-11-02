@@ -6,7 +6,7 @@
  */
 import { isCloudMobileClient } from '../cloud-mobile/origin.mjs';
 
-const TARGET_IDS = ['profile-nube-session'];
+const TARGET_IDS = ['profile-nube-session', 'app-nube-session-pill'];
 
 /** @param {boolean} expired */
 function setPromptVisible(expired) {
@@ -52,7 +52,15 @@ export function noteNubeAuthResponse(status, data, token) {
 /** «Cerrar sesión»: hide the prompt; requests still out with this token are ignored. */
 export function noteNubeSignedOut(token) {
   signedOutToken = String(token || '');
+  import('./settings.mjs').then((m) => m.setNubeWasSignedIn(false)).catch(() => {});
   setPromptVisible(false);
+}
+
+/** On boot: a past sign-in with no token now means the session was lost. Show the pill. */
+async function showPillIfSessionLost() {
+  if (isCloudMobileClient()) return;
+  const { getNubeWasSignedIn, getCloudSyncToken } = await import('./settings.mjs');
+  if (getNubeWasSignedIn() && !getCloudSyncToken()) setPromptVisible(true);
 }
 
 export async function openNubeLogin() {
@@ -64,4 +72,7 @@ export async function openNubeLogin() {
 
 if (typeof window !== 'undefined') {
   window.openNubeLogin = openNubeLogin;
+  const boot = () => showPillIfSessionLost().catch(() => {});
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+  else boot();
 }

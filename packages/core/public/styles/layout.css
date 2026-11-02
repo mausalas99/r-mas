@@ -683,6 +683,30 @@ html:not(.ui-density-normal) .workbench-chrome {
 html.sidebar-auto-hide:not(.sidebar-reveal) .app {
   gap: 0;
 }
+.nube-session-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 16px;
+  border: 1px solid color-mix(in oklab, var(--warn) 45%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--warn) 14%, var(--surface));
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.nube-session-pill[hidden] { display: none; }
+.nube-session-pill::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warn);
+}
 .app-tabs-row .app-tabs { flex: 1; padding: 0; box-shadow: none; background: transparent; min-width: 0; }
 /* Guardia: hide main tabs, full-height board */
 html:not(.ui-density-normal) .app-tabs-row {

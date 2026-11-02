@@ -273,6 +273,25 @@ export function setCloudSyncToken(token, opts) {
     setCloudSyncRemember(!!opts.remember);
   }
   writeDual(TOKEN_KEY, token ? String(token) : '');
+  if (token) setNubeWasSignedIn(true);
+}
+
+const WAS_SIGNED_IN_KEY = 'rplus_nube_was_signed_in';
+
+/** Survives restarts: a token that vanished without «Cerrar sesión» means the session was lost. */
+export function setNubeWasSignedIn(on) {
+  try {
+    if (on) localStorage.setItem(WAS_SIGNED_IN_KEY, '1');
+    else localStorage.removeItem(WAS_SIGNED_IN_KEY);
+  } catch { /* storage blocked */ }
+}
+
+export function getNubeWasSignedIn() {
+  try {
+    return localStorage.getItem(WAS_SIGNED_IN_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
 export function clearCloudSyncToken() {
