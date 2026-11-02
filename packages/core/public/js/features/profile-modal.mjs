@@ -71,7 +71,8 @@ export function doctorOptionsHtml(people, current) {
     return '<option value="' + esc(p.name) + '">' + esc(p.name + (p.rank ? " · " + p.rank : "")) + "</option>";
   });
   if (current && names.indexOf(current) === -1) opts.unshift('<option value="' + esc(current) + '">' + esc(current) + "</option>");
-  if (!opts.length) opts.push('<option value="">Sin equipo en Nube</option>');
+  // Nothing saved: show an empty pick, never a team member that is not stored.
+  if (!current) opts.unshift('<option value="">' + (people.length ? "Elige tu nombre" : "Sin equipo en Nube") + "</option>");
   opts.push('<option value="' + OTHER + '">Otro…</option>');
   return opts.join("");
 }
@@ -82,7 +83,7 @@ function syncDoctorPicker(root) {
   if (!(pick instanceof HTMLSelectElement) || !(input instanceof HTMLInputElement)) return;
   var people = perfilTeamPeople(clinicalSessionContext.teams, clinicalSessionContext.user);
   pick.innerHTML = doctorOptionsHtml(people, input.value.trim());
-  pick.value = input.value.trim() || (pick.options[0] ? pick.options[0].value : "");
+  pick.value = input.value.trim();
   input.hidden = pick.value !== OTHER;
 }
 
@@ -119,7 +120,8 @@ export function renderPerfilIdentity(root) {
   var doctor = val("profile-doctor");
   var user = clinicalSessionContext.user || {};
   var st = readRpcSettings();
-  var name = doctor || String(user.clinical_name || "").trim() || "Tu nombre";
+  // Same name as the Médico tratante pick: the saved one, else empty.
+  var name = doctor || "Tu nombre";
   var setText = function (sel, text) {
     var el = root.querySelector(sel);
     if (el) el.textContent = text;
