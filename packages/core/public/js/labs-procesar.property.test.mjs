@@ -17,7 +17,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fc from 'fast-check';
 import { procesarLabs } from './labs.js';
-import { DEMO_SOME_LAB_REPORT } from './tour-demo-some-lab.mjs';
+import { createRequire } from 'node:module';
+import JSZip from 'jszip';
+import { DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } from './tour-demo-some-lab.mjs';
+import { buildEstudiosCopyLinesFromLabSets } from './lab-history-format.mjs';
+
+const { generateNoteBuffer } = createRequire(import.meta.url)('../../lib/doc-generators/note.js');
 
 const SEED = Number(process.env.FC_SEED || 20260927);
 const RUNS = Number(process.env.FC_RUNS || 300);
@@ -192,4 +197,102 @@ test('a mangled report (lines dropped, duplicated, cut, junk inserted) never cra
     }),
     opts(),
   );
+});
+
+// ── Scorecard fuzz: a value is parsed exactly, or not reported. Never changed. ──
+const FUZZ_RUNS = Number(process.env.FC_FUZZ_RUNS || 10000);
+const UNIT_VARIANTS = {
+  'mg/dL': ['mg/dl', 'MG/DL', 'mg / dL', 'mg/dL ', 'mg%'],
+  'mmol/L': ['mmol/l', 'mEq/L', 'MMOL/L', 'mmol / L'],
+  'UI/L': ['U/L', 'ui/l', 'IU/L', 'UI / L'],
+  'g/dL': ['g/dl', 'G/DL', 'g/L'],
+  'K/uL': ['10^3/uL', 'x10³/µL', 'k/ul', '10e3/uL'],
+};
+const mangleArb = fc.record({
+  decimalComma: fc.boolean(),
+  unit: fc.nat({ max: 5 }),
+  pad: fc.constantFrom('', ' ', '  ', ' \t'),
+  noTabs: fc.boolean(),
+  cutAfterValue: fc.boolean(),
+  refComma: fc.boolean(),
+});
+
+/** One analyte row with a mangle applied. Value digits are never touched except the decimal mark. */
+function mangledRow(r, m) {
+  const value = m.decimalComma ? r.value.replace('.', ',') : r.value;
+  const variants = UNIT_VARIANTS[r.unit] || [];
+  const unit = variants.length ? variants[m.unit % (variants.length + 1)] ?? r.unit : r.unit;
+  const ref = m.refComma ? r.ref.replace(/\./g, ',') : r.ref;
+  const cols = [r.row, '', r.flag, value, ...(m.cutAfterValue ? [] : [unit, ref])].map((c) => m.pad + c + m.pad);
+  return cols.join(m.noTabs ? '   ' : '\t');
+}
+
+test(`fuzz ${FUZZ_RUNS}: mangled pastes never change or lose a value`, () => {
+  const mangledReportArb = fc.tuple(reportArb, fc.array(mangleArb, { minLength: 40, maxLength: 40 })).map(([rep, ms]) => {
+    let text = HEADER;
+    let i = 0;
+    if (rep.bh) {
+      text += 'HEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\n' + TABLE;
+      for (const r of rep.bh) text += mangledRow(r, ms[i++ % ms.length]) + '\n';
+      text += '\n';
+    }
+    text += 'QUIMICA CLINICA\n';
+    for (const r of rep.chem) text += `${r.study}\n${TABLE}${mangledRow(r, ms[i++ % ms.length])}\n`;
+    return { rep, text };
+  });
+  fc.assert(
+    fc.property(mangledReportArb, ({ rep, text }) => {
+      const got = readValues(procesarLabs(text));
+      for (const p of pasted(rep)) {
+        // Every mangle here keeps the value readable, so it must come out exact (never changed, never lost).
+        assert.ok(p.key in got, `${p.row} (${p.key}) lost`);
+        assert.equal(got[p.key], p.value, `${p.row}: pasted ${p.value}, got ${got[p.key]}`);
+      }
+    }),
+    { seed: SEED, numRuns: FUZZ_RUNS },
+  );
+});
+
+// ── Round trip: paste → parse → note .docx → read back → every value is still there ──
+const PAIR = /([A-Za-z][A-Za-z/%]*)\s+(-?\d+(?:\.\d+)?)/g;
+const pairsOf = (lines) => {
+  const out = new Set();
+  for (const line of lines) {
+    const rest = String(line).split('\t').slice(1).join(' ');
+    for (const m of rest.matchAll(PAIR)) out.add(`${m[1].toUpperCase()} ${m[2]}`);
+  }
+  return out;
+};
+
+async function docxRoundTrip(text) {
+  const { resLabs } = procesarLabs(text);
+  const estudios = buildEstudiosCopyLinesFromLabSets([{ id: 'rt', fecha: '11/04/2026', hora: '09:42', resLabs }]).join('\n');
+  const buf = await generateNoteBuffer({ patient: { nombre: 'DEMO PROPIEDAD' }, note: { estudios } });
+  const xml = await (await JSZip.loadAsync(buf)).file('word/document.xml').async('string');
+  const docText = xml.replace(/<w:tab\/>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ');
+  return { resLabs, docText };
+}
+
+function missingInDocx({ resLabs, docText }) {
+  return [...pairsOf(resLabs)].filter((p) => !docText.includes(p));
+}
+
+test('round trip: demo SOME reports → .docx keeps every parsed value', async () => {
+  for (const [name, text] of [['demo', DEMO_SOME_LAB_REPORT], ['older demo', OLDER_DEMO_SOME_LAB_REPORT]]) {
+    const rt = await docxRoundTrip(text);
+    assert.ok(pairsOf(rt.resLabs).size > 10, `${name}: parser found too few values`);
+    assert.deepEqual(missingInDocx(rt), [], `${name}: value lost on the way to .docx`);
+  }
+});
+
+test('round trip: fuzzed pastes → .docx keeps every parsed value', async () => {
+  const samples = fc.sample(reportArb, { seed: SEED, numRuns: Number(process.env.FC_RT_RUNS || 150) });
+  const t0 = performance.now();
+  for (const rep of samples) {
+    const rt = await docxRoundTrip(rep.text);
+    assert.deepEqual(missingInDocx(rt), [], `value lost on the way to .docx\n${rep.text}`);
+    for (const p of pasted(rep)) assert.ok(rt.docText.includes(`${p.key.split('|')[1].toUpperCase()} ${p.value}`), `${p.row} ${p.value} not in .docx`);
+  }
+  const perPaste = (performance.now() - t0) / samples.length;
+  assert.ok(perPaste < 200, `parse → .docx took ${perPaste.toFixed(0)} ms per paste`);
 });

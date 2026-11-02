@@ -4,7 +4,7 @@
  *   SOME lab paste → procesarLabs → labs into the note → Nota de evolución .docx
  *
  * Runs every lab paste in the golden corpus through the real parser and the
- * real note generator, many times, and prints the median ms per step.
+ * real note generator, many times, and prints the median ms per step and the p95 of the whole journey.
  * Inputs are the synthetic golden-corpus files only (no PHI).
  *
  *   npm run bench:flow            # 30 runs per paste
@@ -34,6 +34,11 @@ const median = (xs) => {
   return s[Math.floor(s.length / 2)];
 };
 
+const p95 = (xs) => {
+  const s = [...xs].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.ceil(s.length * 0.95) - 1)];
+};
+
 /** One full journey for one paste; returns ms per step. */
 async function journey(text) {
   const t0 = performance.now();
@@ -49,18 +54,21 @@ async function journey(text) {
 for (const p of pastes) await journey(p.text);
 
 const rows = [];
+const allTotals = [];
 for (const p of pastes) {
   const runs = [];
   for (let i = 0; i < RUNS; i++) runs.push(await journey(p.text));
+  allTotals.push(...runs.map((r) => r.total));
   rows.push({
     paste: p.name,
     'parse ms': +median(runs.map((r) => r.parse)).toFixed(2),
     'docx ms': +median(runs.map((r) => r.docx)).toFixed(2),
     'total ms': +median(runs.map((r) => r.total)).toFixed(2),
+    'p95 total ms': +p95(runs.map((r) => r.total)).toFixed(2),
   });
 }
 const sum = (k) => +rows.reduce((a, r) => a + r[k], 0).toFixed(2);
-rows.push({ paste: 'ALL (sum of medians)', 'parse ms': sum('parse ms'), 'docx ms': sum('docx ms'), 'total ms': sum('total ms') });
+rows.push({ paste: 'ALL (sum of medians; p95 = all runs)', 'parse ms': sum('parse ms'), 'docx ms': sum('docx ms'), 'total ms': sum('total ms'), 'p95 total ms': +p95(allTotals).toFixed(2) });
 
 console.log(`Flow timer — ${pastes.length} pastes × ${RUNS} runs, median per step`);
 console.table(rows);
