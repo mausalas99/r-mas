@@ -79,7 +79,7 @@ function medDropdownOptionLabel(it, ctx, value) {
   if (ctx.category === 'abx' && ctx.fecha) {
     return formatMedicationSoapShort(
       /** @type {Parameters<typeof formatMedicationSoapShort>[0]} */ (it),
-      { fechaActualizacion: ctx.fecha, refDate: ctx.refDate }
+      { fechaActualizacion: ctx.fecha, refDate: ctx.refDate, ivOral: false }
     );
   }
   return value;

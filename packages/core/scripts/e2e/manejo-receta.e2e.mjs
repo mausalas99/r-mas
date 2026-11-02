@@ -566,11 +566,11 @@ await r.finish('Manejo + Perfil histórico', async () => {
   check('EA NM proposal: Stanford in ONE fragment, pump, rescates, prandial, glargina, omeprazol, potassium replacement',
     /SOLUCIÓN STANFORD: NISTATINA 5ML VO C\/6H \+ LIDOCAINA 10ML VO C\/6H \+ LORATADINA 10MG VO C\/6H/.test(nmTxt) &&
     /BOMBA DE INSULINA EN ALGORITMO 3/.test(nmTxt) && /RESCATES DE INSULINA/.test(nmTxt) && /INSULINA PREPRANDIAL: 6 UI SC PREVIO A COMIDAS/.test(nmTxt) &&
-    /INSULINA GLARGINA 20UI SC C\/24H/.test(nmTxt) && /OMEPRAZOL 40MG VO C\/12H/.test(nmTxt) && /REPOSICIÓN DE POTASIO 40 MEQ/.test(nmTxt), nmTxt);
+    /INSULINA GLARGINA 20UI SC C\/24H/.test(nmTxt) && /OMEPRAZOL 40MG IV C\/12H/.test(nmTxt) && /REPOSICIÓN DE POTASIO 40 MEQ/.test(nmTxt), nmTxt);
   const abxTxt = await eaTxt(/MEROPENEM/);
   check('EA Antibióticos proposal: Día advanced (meropenem DIA 6, rifampicina DIA 7), Stanford parts not inside it',
     /MEROPENEM 1 G IV C\/8H DIA 6/.test(abxTxt) && /RIFAMPICINA 600MG VO C\/24H DIA 7/.test(abxTxt) && /DOTBAL 3 TABLETAS C\/24H DIA 7/.test(abxTxt) &&
-    /METRONIDAZOL 500MG VO C\/8H/.test(abxTxt) && !/^.{0,80}NISTATINA/.test(abxTxt.replace(/^.*?Propuesta/, '')), abxTxt);
+    /METRONIDAZOL 500MG IV C\/8H/.test(abxTxt) && !/^.{0,80}NISTATINA/.test(abxTxt.replace(/^.*?Propuesta/, '')), abxTxt);
   const htaTxt = await eaTxt(/ENALAPRIL/);
   check('doses marked «no administrado» carry into EA: amlodipino «(NO ADMINISTRADA)», enalapril «(NO ADMINISTRADO, 06:00)»',
     /AMLODIPINO 5MG VO C\/24H \(NO ADMINISTRADA\)/.test(htaTxt) && /ENALAPRIL 10MG VO C\/12H \(NO ADMINISTRADO, 06:00\)/.test(htaTxt), htaTxt);

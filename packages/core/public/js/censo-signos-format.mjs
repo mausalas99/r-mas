@@ -114,8 +114,10 @@ function appendCensoVitalLines(lines, v) {
   if (v.temp != null && v.temp !== '') lines.push('T°: ' + v.temp + ' °C');
   if (v.fc != null && v.fc !== '') lines.push('FC: ' + v.fc + ' LPM');
   if (v.fr != null && v.fr !== '') lines.push('FR: ' + v.fr + ' RPM');
-  if (v.tas != null || v.tad != null) {
-    lines.push('TA: ' + (v.tas != null && v.tas !== '' ? v.tas : '—') + '/' + (v.tad != null && v.tad !== '' ? v.tad : '—') + ' MMHG');
+  var hasTas = v.tas != null && v.tas !== '';
+  var hasTad = v.tad != null && v.tad !== '';
+  if (hasTas || hasTad) {
+    lines.push('TA: ' + (hasTas ? v.tas : '—') + '/' + (hasTad ? v.tad : '—') + ' MMHG');
   }
 }
 

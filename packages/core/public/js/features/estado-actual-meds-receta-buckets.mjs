@@ -61,7 +61,7 @@ function missedDoseTimesForItem(notAdminMap, item) {
  * @returns {string}
  */
 export function medInstructionFragmentForSoap(it, notAdminMap) {
-  var frag = formatMedicationSoapShort(it);
+  var frag = formatMedicationSoapShort(it, { ivOral: false });
   var info = missedDoseTimesForItem(notAdminMap, it);
   if (!info.missed.length) return frag;
   if (info.missed.length === info.total) return frag + ' (NO ADMINISTRADA)';

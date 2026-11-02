@@ -47,11 +47,14 @@ function shouldSkipIvToOral(item) {
 }
 
 function parseFixedDoseMg(dosisRaw) {
-  var d = dosisBeforeSlash(dosisRaw).toUpperCase().replace(',', '.');
+  var d = dosisBeforeSlash(dosisRaw).toUpperCase();
+  // «1.000» / «1,000» puede ser mil o uno: no se adivina, el ítem queda sin convertir.
+  if (/\d[.,]\d{3}(?!\d)/.test(d)) return null;
+  d = d.replace(',', '.');
   var g = d.match(/^(\d+(?:\.\d+)?)\s*G$/);
-  if (g) return { mg: parseFloat(g[1]) * 1000, text: g[1].replace(/\.0$/, '') + ' G' };
+  if (g && parseFloat(g[1]) > 0) return { mg: parseFloat(g[1]) * 1000, text: g[1].replace(/\.0$/, '') + ' G' };
   var mg = d.match(/^(\d+(?:\.\d+)?)\s*MG$/);
-  if (mg) return { mg: parseFloat(mg[1]), text: mg[1].replace(/\.0$/, '') + ' MG' };
+  if (mg && parseFloat(mg[1]) > 0) return { mg: parseFloat(mg[1]), text: mg[1].replace(/\.0$/, '') + ' MG' };
   return null;
 }
 
@@ -93,16 +96,9 @@ const KNOWN_ORAL_SWITCH_RE =
   /\b(PARACETAMOL|ACETAMINOFEN|METAMIZOL|DIPIRONA|KETOROLAC|OMEPRAZOL|PANTOPRAZOL|ESOMEPRAZOL|LANSOPRAZOL|RABEPRAZOL|ONDANSETRON|GRANISETRON|METOCLOPRAMIDA|DOMPERIDONA|METRONIDAZOL|DEXAMETASONA|HIDROCORTISONA|METILPREDNISOLONA|FUROSEMIDA|LEVETIRACETAM|VALPROATO|ACIDO\s+VALPROICO|TRAMADOL|IBUPROFENO|DICLOFENACO|NAPROXENO|MELOXICAM|CELECOXIB|CIPROFLOXACINO|LEVOFLOXACINO|MOXIFLOXACINO|LINEZOLID|CLARITROMICINA|AZITROMICINA|DOXICICLINA|MINOCICLINA|CLINDAMICINA|FLUCONAZOL|ACICLOVIR|HALOPERIDOL|FENITOINA|BUTILHIOSCINA)\b/;
 
 function steroidOralPrednisoneMg(nombre, doseMg) {
-  if (/\bHIDROCORTISONA\b/.test(nombre)) {
-    if (doseMg >= 100) return 25;
-    if (doseMg >= 50) return 12.5;
-    return 5;
-  }
-  if (/\bMETILPREDNISOLONA\b/.test(nombre)) {
-    if (doseMg >= 40) return 50;
-    if (doseMg >= 20) return 25;
-    return 10;
-  }
+  // Equivalencia glucocorticoide: prednisona 5 = hidrocortisona 20 = metilprednisolona 4.
+  if (/\bHIDROCORTISONA\b/.test(nombre)) return doseMg / 4;
+  if (/\bMETILPREDNISOLONA\b/.test(nombre)) return doseMg * 1.25;
   return 0;
 }
 
@@ -128,6 +124,8 @@ function clinicalOralTarget(nombre, doseMg, stem) {
 function resolveOralPack(nombre, oralMg, outStem, clinical) {
   var pack = pickSomeOralPack(nombre, oralMg) || pickSomeOralPack(outStem, oralMg);
   if (pack) return pack;
+  // Sin presentación oral real y dosis > tableta mayor (50 mg): se deja IV, no se inventa tableta.
+  if (clinical && clinical.stem === 'PREDNISONA' && oralMg > 50) return null;
   if (clinical || KNOWN_ORAL_SWITCH_RE.test(nombre)) {
     return { unitMg: oralMg, units: 1, form: 'TABLETA' };
   }

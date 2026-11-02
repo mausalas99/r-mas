@@ -11,7 +11,10 @@ const MAX_VITAL_READINGS_PER_DAY = 4;
  */
 export function normalizeVitalReading(raw) {
   if (!raw || typeof raw !== 'object') return null;
-  var val = Number(/** @type {any} */ (raw).value);
+  var rv = /** @type {any} */ (raw).value;
+  // Number(null) y Number('') dan 0: una lectura vacía no es una TA de 0.
+  if (rv == null || (typeof rv === 'string' && !rv.trim())) return null;
+  var val = Number(rv);
   if (!Number.isFinite(val)) return null;
   var time = /** @type {any} */ (raw).time;
   return { value: val, time: time != null && String(time).length ? String(time) : undefined };

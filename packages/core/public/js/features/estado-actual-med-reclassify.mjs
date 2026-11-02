@@ -58,7 +58,7 @@ function pendingLines(monitoreo, fromKey) {
 
 function itemMatchesPendingLine(it, line) {
   if (!it || !line) return false;
-  var frag = String(formatMedicationSoapShort(it) || '').trim();
+  var frag = String(formatMedicationSoapShort(it, { ivOral: false }) || '').trim();
   if (frag && frag === line) return true;
   var nombre = String(it.nombreRaw || '')
     .trim()
