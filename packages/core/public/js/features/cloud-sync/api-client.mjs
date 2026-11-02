@@ -8,6 +8,7 @@ import {
   encryptOpsForPush,
   decryptOpsFromPull,
   decryptRoomStateFromPull,
+  decryptUserSettingsMap,
   hasLockedOpValue,
   describeLockedOps,
   listContentFieldEntries,
@@ -149,6 +150,8 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
           ];
         }
       }
+      // Own per-user settings only (the Worker sends nobody else's). Sealed with the room DEK.
+      if (data?.userSettings) data.userSettings = await decryptUserSettingsMap(dek, data.userSettings);
       // Ciphertext that survives a loaded key is a wrong-key envelope: a retry gives the
       // same bytes, and holding the cursor back re-pulls the whole state forever.
       if (locked && !dek) {

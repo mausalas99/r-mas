@@ -3,6 +3,7 @@ import { mergeClinicalOpsLww } from './clinical-ops-lww.js';
 import { mergeMonitoreo } from '../../../lib/monitoreo-merge.mjs';
 import { mergeCardioDailyLww } from './cardioDaily-lww.js';
 import { mergeNeumoStudiesLww } from './neumoStudies-lww.js';
+import { userSettingsPathOwner } from './user-settings.js';
 
 /** @returns {import('./lww.js').RoomSyncState} */
 export function emptyState() {
@@ -15,11 +16,12 @@ export function emptyState() {
     clinicalOps: null,
     labSidecars: {},
     tombstones: {},
+    userSettings: {},
   };
 }
 
 /**
- * @typedef {{ revision: number, entries: object[], entityVersions: Record<string, { updatedAt: string, actorId: string }>, todos: Record<string, unknown>, agenda: unknown[], clinicalOps: unknown, labSidecars: Record<string, Record<string, unknown>>, tombstones?: Record<string, { registroFp?: string, registro?: string, deletedAt: string, actorId?: string }> }} RoomSyncState
+ * @typedef {{ revision: number, entries: object[], entityVersions: Record<string, { updatedAt: string, actorId: string }>, todos: Record<string, unknown>, agenda: unknown[], clinicalOps: unknown, labSidecars: Record<string, Record<string, unknown>>, userSettings?: Record<string, unknown>, tombstones?: Record<string, { registroFp?: string, registro?: string, deletedAt: string, actorId?: string }> }} RoomSyncState
  * @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} SyncOp
  * @typedef {{ op: SyncOp, reason: string }} RejectedOp
  */
@@ -295,9 +297,19 @@ function applyTombstone(state, patientId, op) {
   };
 }
 
-/** @param {RoomSyncState} state @param {SyncOp} op */
-function applyOpToState(state, op) {
+/** @param {RoomSyncState} state @param {SyncOp} op @param {string} userId session user id of the pusher */
+function applyOpToState(state, op, userId) {
   const { path, value } = op;
+  const settingsOwner = userSettingsPathOwner(path);
+  if (settingsOwner) {
+    if (!userId || settingsOwner !== userId) {
+      const err = new Error(`forbidden path: ${path}`);
+      err.code = 'forbidden_path';
+      throw err;
+    }
+    state.userSettings = { ...(state.userSettings || {}), [userId]: value };
+    return;
+  }
   maybeResurrectPatientFromOp(state, op);
 
   if (path === 'agenda') {
@@ -384,9 +396,10 @@ export class QuotaExceededError extends Error {
  * Apply mutation ops with per-path LWW. Does not bump `revision` (server-owned).
  * @param {RoomSyncState} state
  * @param {SyncOp[]} ops
+ * @param {string} [userId] session user id; only `settings/{userId}` ops from this user apply
  * @returns {{ state: RoomSyncState, applied: SyncOp[], rejected: RejectedOp[] }}
  */
-export function applyOps(state, ops) {
+export function applyOps(state, ops, userId = '') {
   const list = Array.isArray(ops) ? ops : [];
   /** @type {RejectedOp[]} */
   const staleRejected = [];
@@ -436,7 +449,7 @@ export function applyOps(state, ops) {
         continue;
       }
 
-      applyOpToState(next, op);
+      applyOpToState(next, op, userId);
       // A chart op for a patient still deleted after the op was a no-op here. Counting it
       // as applied would broadcast it, and a peer applying it recreates the patient.
       if (isTombstonedTarget(next, op.path)) {
@@ -449,7 +462,7 @@ export function applyOps(state, ops) {
       };
       applied.push(op);
     } catch (err) {
-      if (err instanceof QuotaExceededError || err?.code === 'unsupported_path') {
+      if (err instanceof QuotaExceededError || err?.code === 'unsupported_path' || err?.code === 'forbidden_path') {
         rejected.push({ op, reason: err.code || 'unsupported_path' });
         continue;
       }

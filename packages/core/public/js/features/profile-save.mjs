@@ -9,6 +9,7 @@ import {
 } from "./profile-runtime.mjs";
 import { loadSettings } from "./profile-load.mjs";
 import { resolveGlobalFn } from "./resolve-global-fn.mjs";
+import { publishUserSettingsChange } from "./cloud-sync/user-settings-sync.mjs";
 
 function readProfileField(id) {
   return (document.getElementById(id)?.value || "").trim();
@@ -39,6 +40,7 @@ export function saveSettings(opts) {
   var st = settingsRef();
   applyProfileFormToSettings(st);
   localStorage.setItem("rpc-settings", JSON.stringify(st));
+  void publishUserSettingsChange();
   var backfill = false;
   Object.keys(getNotes()).forEach(function (pid) {
     if (getNotes()[pid] && applyProfileToNoteIfEmpty(getNotes()[pid])) backfill = true;

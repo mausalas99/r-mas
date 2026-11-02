@@ -27,6 +27,12 @@ import {
   filterRoomStateLabSidecarsForMobile,
   isLabSetWithinMobileHistoryWindow,
 } from './mobile-lab-window.js';
+import {
+  ownUserSettingsFromOps,
+  ownUserSettingsFromState,
+  stateWithoutUserSettings,
+  stripUserSettingsOps,
+} from './user-settings.js';
 
 /** Concurrent pushes race on (room_id, revision); retry with fresh revision. */
 const MUTATION_COMMIT_ATTEMPTS = 5;
@@ -740,7 +746,7 @@ async function handleMutations(request, env, db, roomId, t = null, ctx = undefin
     const priorLabBytes = labsSkipped
       ? Math.max(0, Number(roomRow.storage_bytes || 0) - coreBytesAtLoad)
       : undefined;
-    const appliedResult = applyOps(state, lwwOps);
+    const appliedResult = applyOps(state, lwwOps, user.id);
     /** @type {unknown[]} */
     const sidecarApplied = [];
     for (let i = 0; i < sidecarOps.length; i += 1) {
@@ -776,7 +782,8 @@ async function handleMutations(request, env, db, roomId, t = null, ctx = undefin
       // aren't {path,value} LWW ops the client's ops-apply path understands).
       // Off the response path when the runtime gives a ctx: the commit is
       // already durable and the ack does not depend on the broadcast.
-      await notifyRoomRevision(env, roomId, committed.revision, appliedResult.applied, ctx);
+      // settings/{id} stays out of the broadcast: peers pull, and pull filters it per caller.
+      await notifyRoomRevision(env, roomId, committed.revision, stripUserSettingsOps(appliedResult.applied), ctx);
       t?.lap('notify');
       return Response.json({
         revision: committed.revision,
@@ -901,24 +908,30 @@ async function handlePull(request, env, db, roomId, t = null) {
       .bind(roomId, since, roomId, roomId, since, PULL_REVISION_GAP),
   ]);
   t?.lap('auth');
-  const { room } = memberFromRow(authRes?.results?.[0] ?? null);
+  const { user, room } = memberFromRow(authRes?.results?.[0] ?? null);
 
   const revision = Number(room.revision);
   if (since >= revision) {
-    return Response.json({ revision, ops: [] });
+    return Response.json({ revision, ops: [], userSettings: {} });
   }
+
+  // Snapshot body. Other members' `settings/{id}` never leave the Worker: the
+  // caller gets only its own value, as `userSettings: { [callerId]: value }`.
+  const snapshotResponse = ({ state }) => {
+    const payload = mobileLabWindow ? filterRoomStateLabSidecarsForMobile(state) : state;
+    return Response.json({
+      revision,
+      needSnapshot: true,
+      state: stateWithoutUserSettings(payload),
+      userSettings: ownUserSettingsFromState(state, user.id),
+    });
+  };
 
   const gap = revision - since;
   // CRITICAL: check gap BEFORE selecting mutations. Loading 1000+ ops_json rows
   // (tens of MB) into the D1 isolate exceeds memory and resets the DB.
   if (shouldReturnSnapshotPull(gap)) {
-    const { state } = await loadRoomState(env, db, roomId, snapshotOpts);
-    const payload = mobileLabWindow ? filterRoomStateLabSidecarsForMobile(state) : state;
-    return Response.json({
-      revision,
-      needSnapshot: true,
-      state: payload,
-    });
+    return snapshotResponse(await loadRoomState(env, db, roomId, snapshotOpts));
   }
 
   const rows = mutationsRes?.results ?? [];
@@ -930,28 +943,17 @@ async function handlePull(request, env, db, roomId, t = null) {
       ? toUint8Array(row.ciphertext).length
       : new TextEncoder().encode(String(row.ops_json || '[]')).length;
     if (shouldReturnSnapshotPull(gap, cumulativeBytes)) {
-      const { state } = await loadRoomState(env, db, roomId, snapshotOpts);
-      const payload = mobileLabWindow ? filterRoomStateLabSidecarsForMobile(state) : state;
-      return Response.json({
-        revision,
-        needSnapshot: true,
-        state: payload,
-      });
+      return snapshotResponse(await loadRoomState(env, db, roomId, snapshotOpts));
     }
     const parsed = await decodeMutationOps(env, row);
     if (Array.isArray(parsed)) ops.push(...parsed);
   }
 
   if (!ops.length && since < revision) {
-    const { state } = await loadRoomState(env, db, roomId, snapshotOpts);
-    const payload = mobileLabWindow ? filterRoomStateLabSidecarsForMobile(state) : state;
-    return Response.json({
-      revision,
-      needSnapshot: true,
-      state: payload,
-    });
+    return snapshotResponse(await loadRoomState(env, db, roomId, snapshotOpts));
   }
 
-  const outOps = mobileLabWindow ? filterPullOpsForMobileLabWindow(ops) : ops;
-  return Response.json({ revision, ops: outOps });
+  const shareOps = stripUserSettingsOps(ops);
+  const outOps = mobileLabWindow ? filterPullOpsForMobileLabWindow(shareOps) : shareOps;
+  return Response.json({ revision, ops: outOps, userSettings: ownUserSettingsFromOps(ops, user.id) });
 }

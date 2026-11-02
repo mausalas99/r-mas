@@ -20,6 +20,7 @@ import {
   scheduleDeferredUiInits as scheduleDeferredUiInitsImpl,
 } from './app-shell-deferred.mjs';
 import { createPatientUpdateHandler } from './app-shell-patient-update.mjs';
+import { publishUserSettingsChange } from './features/cloud-sync/user-settings-sync.mjs';
 
 /** @type {typeof import('./ui-toast.mjs').showToast | null} */
 let showToastImpl = null;
@@ -166,6 +167,7 @@ function onDefaultServicioBlur() {
   el.value = v;
   shellCtx.getSettings().defaultServicio = v;
   localStorage.setItem('rpc-settings', JSON.stringify(shellCtx.getSettings()));
+  void publishUserSettingsChange();
   var w = document.getElementById('default-servicio-warning');
   var looksAbbrev = v.length > 0 && v.length <= 3 && /^[A-Z]+$/.test(v);
   if (w) w.style.display = looksAbbrev ? 'block' : 'none';
@@ -197,6 +199,7 @@ function onMedicoTemplateBlur() {
   });
   shellCtx.getSettings().medicosPlantilla = tpl;
   localStorage.setItem('rpc-settings', JSON.stringify(shellCtx.getSettings()));
+  void publishUserSettingsChange();
 }
 
 var patientHandlers = createPatientUpdateHandler(shellCtx, syncWorkContextChrome);

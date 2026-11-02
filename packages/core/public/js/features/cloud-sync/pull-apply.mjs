@@ -28,6 +28,7 @@ import { getLabHistory } from '../../app-state.mjs';
 import { getCloudSyncRoomSnapshot } from './settings.mjs';
 import { getCachedRoomDek } from './room-dek.mjs';
 import { fingerprintValue } from './crypto.mjs';
+import { applyRemoteUserSettings } from './user-settings-sync.mjs';
 
 /** @type {Promise<typeof import('../cloud-mobile/lab-sync-diagnostics.mjs')> | null} */
 let _labSyncDiagMod = null;
@@ -601,6 +602,8 @@ export async function applyCloudPullResult(result) {
   } else if (Array.isArray(row.ops) && row.ops.length) {
     applied = await applyCloudOps(row.ops);
   }
+  // Only a Worker that sends `userSettings` (new) gets the per-user settings hook.
+  if (row.userSettings !== undefined) await applyRemoteUserSettings(row.userSettings);
   await refreshSidebarAfterCloudPull(applied);
   await refreshActivePatientChartAfterCloudPull(applied);
   if (Array.isArray(row.ops)) dispatchInternoVitalsSynced(row.ops);

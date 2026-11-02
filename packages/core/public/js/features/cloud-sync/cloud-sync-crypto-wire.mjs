@@ -67,7 +67,20 @@ export function isEncryptedContentPath(path) {
   if (new RegExp(`^entries/[^/]+/(${ENTRY_CONTENT_FIELDS.join('|')})$`).test(p)) return true;
   if (p.startsWith('labSidecars/')) return true;
   if (/^todos\/[^/]+$/.test(p)) return true;
+  if (/^settings\/[^/]+$/.test(p)) return true;
   return false;
+}
+
+/**
+ * Pulled `userSettings` map (`{ [userId]: value }`), opened with the room DEK.
+ * A value still sealed here (no key) stays an envelope; the caller skips it.
+ * @param {CryptoKey|null} dek @param {Record<string, unknown>} map
+ */
+export async function decryptUserSettingsMap(dek, map) {
+  if (!map || typeof map !== 'object') return map;
+  const out = {};
+  for (const [userId, value] of Object.entries(map)) out[userId] = await maybeDecrypt(dek, value);
+  return out;
 }
 
 /** @param {unknown} value identity payload (entries/{id} root, or entries/{id}/fields) */

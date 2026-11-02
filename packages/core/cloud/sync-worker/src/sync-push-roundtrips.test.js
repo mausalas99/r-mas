@@ -48,7 +48,7 @@ describe('D1 round trips per request', () => {
     assert.equal(inc.ops.length, 1);
     assert.equal(ctx.d1.calls, 1);
     ctx.d1.calls = 0;
-    assert.deepEqual(await pull(ctx, 1), { revision: 1, ops: [] });
+    assert.deepEqual(await pull(ctx, 1), { revision: 1, ops: [], userSettings: {} });
     assert.equal(ctx.d1.calls, 1);
   });
 });
