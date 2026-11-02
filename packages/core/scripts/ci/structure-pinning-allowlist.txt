@@ -2,7 +2,6 @@
 # without review. Rewrite a file off this list when a merge needs it.
 lib/clinical-scope/characterization.test.mjs
 lib/db/migrate-from-legacy.test.mjs
-lib/drive-import/parse-drive-labs.test.mjs
 lib/module-update-fetch.test.mjs
 lib/renderer-protocol.test.mjs
 # Eager boot budget (metrics:check gate): reads the build's metafile and boot hubs.

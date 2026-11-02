@@ -573,6 +573,3 @@ export function invalidateEventualidadesPanel() {
   _editingEntryId = null;
   _dayOpenPrefs.clear();
 }
-
-/** @type {number} */
-export const DRIVE_IMPORT_LAN_MS = 8000;

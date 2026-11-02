@@ -85,10 +85,6 @@ import {
   wireEstadoActualPasteModal,
 } from './features/estado-actual-paste-modal.mjs';
 import {
-  registerDriveImportRuntime,
-  wireDriveImportModal,
-} from './features/drive-import-modal.mjs';
-import {
   registerEstadoActualRegistroModalRuntime,
   openEstadoActualRegistroModal,
   wireEaModalDismiss,
@@ -468,7 +464,6 @@ export async function registerAllFeatureRuntimes() {
   registerProcedureAgendaRuntime(ctx);
   registerSoapEstadoRuntime(ctx);
   registerEstadoActualPanelRuntime(ctx);
-  registerDriveImportRuntime(ctx);
   registerEstadoActualPasteModalRuntime(ctx);
   registerEstadoActualRegistroModalRuntime(ctx);
   registerLabBulkPreviewModalRuntime(ctx);
@@ -489,7 +484,6 @@ export async function registerAllFeatureRuntimes() {
 export function runInitialFeatureBoot() {
   initChromeAppearance();
   wireEstadoActualPasteModal();
-  wireDriveImportModal();
   wireEaModalDismiss();
   syncCensoExportButtonVisibility();
 }

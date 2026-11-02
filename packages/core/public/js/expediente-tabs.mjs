@@ -322,16 +322,6 @@ function syncDatosActionsVisibility(compositeState) {
   datosActions.hidden = !compositeState.paciente;
 }
 
-function syncDriveActionsVisibility(settings, compositeState) {
-  var driveActions = document.getElementById('exp-clinico-drive-actions');
-  if (!driveActions) return;
-  driveActions.hidden = !(
-    isModeSala(settings) &&
-    compositeState.clinico &&
-    compositeState.clinico.active
-  );
-}
-
 function syncSalidaPanes(target, settings) {
   var salidaSections = getSalidaSections(settings);
   salidaSections.forEach(function (section) {
@@ -375,7 +365,6 @@ export function syncConsolidatedPaneVisibility(granularTab, settings) {
     composite.classList.toggle('active', pane.active);
   });
   syncDatosActionsVisibility(compositeState);
-  syncDriveActionsVisibility(settings, compositeState);
   CLINICO_GRANULAR_TABS.forEach(function (section) {
     var pane = paneEl(section);
     if (!pane) return;

@@ -85,7 +85,6 @@ import { windowHandlers as labHistoryBatchCopyWindowHandlers } from './features/
 import { windowHandlers as soapEstadoWindowHandlers } from './features/soap-estado.mjs';
 import { windowHandlers as estadoActualPanelWindowHandlers } from './features/estado-actual-panel.mjs';
 import { windowHandlers as estadoActualPasteWindowHandlers } from './features/estado-actual-paste-modal.mjs';
-import { windowHandlers as driveImportWindowHandlers } from './features/drive-import-modal.mjs';
 import { windowHandlers as estadoActualRegistroWindowHandlers } from './features/estado-actual-registro-modal.mjs';
 import { windowHandlers as agendaWindowHandlers } from './features/agenda.mjs';
 import { windowHandlers as expedienteWindowHandlers } from './features/expediente.mjs';
@@ -166,7 +165,6 @@ const allWindowHandlers = Object.assign(
   soapEstadoWindowHandlers,
   estadoActualPanelWindowHandlers,
   estadoActualPasteWindowHandlers,
-  driveImportWindowHandlers,
   estadoActualRegistroWindowHandlers,
   eaVitalHistoryWindowHandlersLazy,
   chartsWindowHandlersLazy,
