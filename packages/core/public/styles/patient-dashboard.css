@@ -278,7 +278,8 @@ html.dark .patient-dash .svc.is-on {
 /* A missing card (empty list, no meds) → the rest take its space. */
 .patient-dash .dash-bottom:has(> :only-child),
 .patient-dash .bento.rest:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
-.patient-dash .dash-bottom:has(> :only-child) { grid-template-rows: minmax(0, 1fr); }
+.patient-dash .dash-bottom:has(> :only-child) { grid-template-rows: minmax(0, auto); align-content: start; }
+.patient-dash .dash-bottom > .bento.meds-band:only-child { max-height: none; }
 
 /* Medicamentos on top takes the height it needs (up to 55%); Pendientes below
    gets the rest, with rows side by side in 2+ columns. */
@@ -684,7 +685,7 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap] em {
 .patient-dash .bento.meds-band .soap-pack .med {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
   padding: 2px 0 3px;
   max-width: 100%;
