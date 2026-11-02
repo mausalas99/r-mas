@@ -10,6 +10,7 @@ import {
   extractSensCrudasForGermFromSource,
   parseCuentaFromCultivoChunkLines,
 } from './labs.js';
+import { classifyAtbInterp } from './labs-cultivo-atb.mjs';
 
 const norm = (t) => t.replace(/\s+/g, ' ');
 
@@ -752,4 +753,44 @@ test('G4 líquido peritoneal: un germen, slot vacío ignorado', () => {
   const { resLabs } = procesarLabs(G4_PERITONEAL);
   assert.equal(countCultivoChunks(resLabs), 1);
   assert.match(cultivoTextFromResLabs(resLabs), /LIQUIDO PERITONEAL 20\/05: PSEUDOMONAS AERUGINOSA/i);
+});
+
+test('MRSA: screening de cefoxitina POS va a R, R* es R, CMI se conserva', () => {
+  const raw = `
+BACTERIOLOGIA
+ABSCESO
+PRODUCTO	
+*
+INGLE PARTE IZQUIERDA
+MICROORGANISMO	
+*
+Staphylococcus aureus
+ANTIBIOGRAMA	
+*
+CLINDAMICINA
+0.5	S
+*
+SCREENING DE CEFOXITINA
+>4	POS
+*
+OXACILINA
+>2	R
+*
+PENICILINA
+>8	R*
+*
+VANCOMICINA
+1	S
+*
+`;
+  const out = parseCultivo_(raw, norm(raw));
+  const atb = out.split('\n').find((l) => l.startsWith('ATB'));
+  const [r, s] = atb.split('|');
+  assert.match(r, /CFXN/);
+  assert.match(r, /PEN/);
+  assert.doesNotMatch(s, /CFXN/);
+  const sens = extractSensCrudasForGermFromSource(raw, 'Staphylococcus aureus');
+  const fox = sens.find((x) => /CEFOXITINA/.test(x.med));
+  assert.equal(fox.mic, '>4');
+  assert.equal(classifyAtbInterp(fox.interp), 'r');
 });

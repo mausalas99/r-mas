@@ -313,7 +313,8 @@ export function detectMarcasResistenciaCultivoSlice(sliceLines) {
  */
 export function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
   if (!sensCrudas.length) return '';
-  var rank = { R: 4, 'NO SUSCEPTIBLE': 4, ESBL: 4, BLEE: 4, BLAC: 4, KPC: 4, NDM: 4, VIM: 4, IMP: 4, MBL: 4, I: 2, S: 1, POS: 1 };
+  // Screening rows (cefoxitina → MRSA, BLEE, D-test): POS = resistente, NEG = sensible.
+  var rank = { R: 4, 'NO SUSCEPTIBLE': 4, ESBL: 4, BLEE: 4, BLAC: 4, KPC: 4, NDM: 4, VIM: 4, IMP: 4, MBL: 4, POS: 4, I: 2, S: 1, NEG: 1 };
   var byKey = {};
   sensCrudas.forEach(function(s) {
     var key = abreviarFn(s.med);
@@ -325,7 +326,7 @@ export function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
   var R = [], I = [], E = [], S = [];
   Object.keys(byKey).sort().forEach(function(k) {
     var it = byKey[k].interp;
-    if (it === 'S' || it === 'POS') S.push(k);
+    if (it === 'S' || it === 'NEG') S.push(k);
     else if (it === 'I') I.push(k);
     else if (it === 'ESBL') E.push(k);
     else R.push(k);

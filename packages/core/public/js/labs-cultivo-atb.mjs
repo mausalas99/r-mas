@@ -63,7 +63,8 @@ export function classifyAtbInterp(itRaw) {
     .trim()
     .toUpperCase()
     .replace(/\s+/g, ' ');
-  if (u === 'S' || u === 'POS' || u === 'SENSIBLE' || u === 'SUSCEPTIBLE') return 's';
+  // Screening rows (cefoxitina → MRSA): POS = resistente, NEG = sensible.
+  if (u === 'S' || u === 'NEG' || u === 'SENSIBLE' || u === 'SUSCEPTIBLE') return 's';
   if (
     u === 'I' ||
     u === 'IND' ||
