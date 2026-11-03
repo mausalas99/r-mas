@@ -4,39 +4,39 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_852 = [
+var RELEASE_NOTES_853 = [
   {
-    title: 'Coagulación corregida',
-    body: 'R+ lee <strong>TP, TTP e INR corregidos</strong> del reporte y los muestra junto a los valores sin corregir. También entran a Tendencias.',
+    title: 'Ajustes del censo en todos tus equipos',
+    body: 'Doctor, médicos, servicio, sala y torre se <strong>sincronizan por Nube</strong>. El iPad usa el mismo encabezado que el escritorio.',
   },
   {
-    title: 'Cambios de equipo, bien sincronizados',
-    body: 'Un cambio de equipo hecho en otro dispositivo llega aunque ese paciente tenga otro id local.',
+    title: 'Aprobar usuarios del iPad',
+    body: 'Los usuarios nuevos del iPad esperan en la pestaña <strong>Solicitudes</strong> de Admin. Tú eliges la sala y apruebas o rechazas.',
   },
   {
-    title: 'Insulina preprandial en la nota',
-    body: 'La nota SOAP conserva la línea de <strong>insulina preprandial</strong>. Antes la perdía.',
+    title: 'Aviso de sesión Nube perdida',
+    body: 'Si el dispositivo pierde la sesión sin que cierres, aparece la pastilla <strong>«Sin sesión Nube»</strong>. Un clic abre el inicio de sesión.',
   },
   {
-    title: 'Pestañas con resorte',
-    body: 'La línea de la pestaña activa se desliza al nuevo lugar, en lugar de saltar.',
+    title: 'Sincronización más firme',
+    body: 'Labs que llegan antes que su paciente ya no se pierden, y un nombre real ya no se pisa con un marcador.',
   },
   {
-    title: 'Ventanas más suaves',
-    body: 'Las ventanas abren y cierran con un resorte corto.',
+    title: 'Tendencias con línea guía',
+    body: 'Una línea fina sigue el cursor y el número grande muestra el <strong>valor bajo el cursor</strong>.',
   },
   {
-    title: 'Interruptores con peso',
-    body: 'Puedes arrastrar la perilla de un interruptor, y se asienta con un pequeño rebote.',
+    title: 'Signos vitales dudosos',
+    body: 'Un valor imposible se marca con <strong>⚠</strong>. Un clic te lleva al campo para revisarlo.',
   },
   {
-    title: 'Tarjetas de Tendencias',
-    body: 'Al arrastrar una tarjeta, las demás se acomodan con suavidad. Con movimiento reducido no hay animación.',
+    title: 'MRSA en el antibiograma',
+    body: 'El tamiz de cefoxitina positivo cuenta como <strong>resistente</strong>. Antes caía en sensible.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_852;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_853;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.5.2': RELEASE_NOTES_852,
+  '8.5.3': RELEASE_NOTES_853,
 };

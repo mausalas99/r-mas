@@ -1,0 +1,42 @@
+R+ 8.5.3 (estable — release 8.5.3)
+======================================
+
+Fecha: 2026-11-03
+
+## Resumen
+
+Los ajustes del censo y del listado se sincronizan por usuario en Nube. Los usuarios nuevos del iPad esperan la aprobación del escritorio. Se quita «Importar desde Drive». Los signos vitales imposibles se marcan, Tendencias muestra el valor bajo el cursor y los errores de paciente salen junto al campo. También corrige errores de sincronización, de la conversión de recetas y del encabezado del censo.
+
+## Nuevo / mejorado
+
+- **Nuevo (Nube):** doctor, plantilla de médicos, servicio, sala, torre y rótulo FIMI del censo se sincronizan por usuario entre dispositivos.
+- **Nuevo (Admin):** pestaña **Solicitudes**. Los usuarios nuevos del iPad quedan pendientes hasta que apruebes su sala con Aprobar o Rechazar.
+- **Nuevo (Nube):** una pastilla «Sin sesión Nube» avisa si el dispositivo perdió la sesión sin cerrarla. Abre el inicio de sesión.
+- **Nuevo (Tendencias):** una línea fina sigue el cursor sobre la gráfica y el número grande muestra el valor bajo el cursor. Al salir, vuelve al último valor.
+- **Nuevo (Signos vitales):** un valor físicamente imposible se marca con ⚠ y «Valor dudoso». Clic en ⚠ enfoca el campo.
+- **Nuevo (Gráficas):** con las flechas ← y → pasas de una columna a otra en las gráficas de Estado actual.
+- **Nuevo (Medicamentos):** al ocultar un medicamento sale un aviso con Deshacer.
+- **Nuevo (Nube):** sin conexión, un aviso dice «Guardado en cola · se enviará al reconectar».
+- **Cambio (Pacientes):** los errores de edad, servicio, cuarto y cama salen bajo el campo y lo enfocan. Ya no sacuden el campo ni lanzan un aviso.
+- **Cambio (Accesibilidad):** la carga del censo y el valor grande de las gráficas avisan a lectores de pantalla.
+- **Cambio (Importar):** se quitó el botón «Importar desde Drive» y sus funciones.
+- **Corrección (Nube):** un grupo de labs que llegaba antes que su paciente ya no se pierde.
+- **Corrección (Nube):** un paciente sin nombre real ya no borra el registro bueno de otro dispositivo.
+- **Corrección (Nube):** el nombre de un paciente ya no queda como marcador en otros dispositivos.
+- **Corrección (Antibiograma):** el tamiz de cefoxitina positivo cuenta como resistente (MRSA). Negativo cuenta como sensible.
+- **Corrección (Recetas):** conversión IV a oral, reclasificación de medicamentos y lista de medicamentos.
+- **Corrección (Registro):** series de signos vitales y formato de signos en el censo.
+- **Corrección (Exportar):** «µg» ya no se vuelve «ΜG» en los .docx. El PDF del censo parte las fechas largas.
+- **Corrección (Censo):** R2 se puede dejar vacío, el título usa la sala de Mi perfil, y Sala profesor vacía ya no toma el profesor de las notas.
+- **Corrección (Perfil):** «Médico tratante» empieza vacío con «Elige tu nombre» si no hay nombre guardado.
+- **Corrección (Resumen):** la tarjeta Medicamentos ya no llena el espacio vacío cuando está sola.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.5.3-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.5.3-Mac-Intel.dmg`
+- Windows: `Instalar-R+-8.5.3-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

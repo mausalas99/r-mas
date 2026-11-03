@@ -51,9 +51,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.5.2](https://github.com/mausalas99/r-mas/releases/tag/v8.5.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.5.3](https://github.com/mausalas99/r-mas/releases/tag/v8.5.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.5.3 (estable — release 8.5.3)
+
+- **Nube:** ajustes del censo por usuario; pastilla «Sin sesión Nube»; arreglos de sincronización de labs y nombres.
+- **iPad:** usuarios nuevos esperan aprobación del escritorio (pestaña Solicitudes en Admin).
+- **Interfaz:** línea guía en Tendencias; signos vitales dudosos con ⚠; errores de paciente junto al campo; Deshacer al ocultar medicamentos.
+- **Importar:** se quitó «Importar desde Drive».
+- **Clínico:** cefoxitina positiva cuenta como MRSA; arreglos en recetas, signos vitales y censo.
+
+Notas: `docs/RELEASE_NOTES_8.5.3.txt`.
 
 ## R+ 8.5.2 (estable — release 8.5.2)
 
