@@ -1,30 +1,52 @@
-version: 8.5.2
+version: 8.5.3
 files:
-  - url: R+-8.5.2-x64.exe
-    sha512: ma290cqE9u4uoi2gz7GtU6uCi6BcU+UNydY2Demcr9vJ3LGWJZSkDuaSGYLThFEPmBawFl6oGFZi3UjdpMiBjQ==
-    size: 138781368
-path: R+-8.5.2-x64.exe
-sha512: ma290cqE9u4uoi2gz7GtU6uCi6BcU+UNydY2Demcr9vJ3LGWJZSkDuaSGYLThFEPmBawFl6oGFZi3UjdpMiBjQ==
-releaseDate: '2026-10-15T22:02:41.000Z'
+  - url: R+-8.5.3-x64.exe
+    sha512: RmyyQY+6WUhbvQL2PWNizkwcr0KltHWxGpHPNyG91KzG5W3RpUfQLwP4wJ1HVE5ZnVrABV1B5ms/DH5uMrBc2g==
+    size: 138742029
+path: R+-8.5.3-x64.exe
+sha512: RmyyQY+6WUhbvQL2PWNizkwcr0KltHWxGpHPNyG91KzG5W3RpUfQLwP4wJ1HVE5ZnVrABV1B5ms/DH5uMrBc2g==
+releaseDate: '2026-11-03T20:10:49.000Z'
 releaseNotes: |
-  Los labs de coagulación leen TP, TTP e INR corregidos. Los movimientos de la app (pestañas, ventanas, interruptores y tarjetas de Tendencias) ahora siguen un modelo de física. También corrige tres fallas: el cambio de equipo entre dispositivos, la insulina preprandial en la nota SOAP y Tendencias que no abría tras una carga fallida.
+  Los ajustes del censo y del listado se sincronizan por usuario en Nube. Los usuarios nuevos del iPad esperan la aprobación del escritorio. Se quita «Importar desde Drive». Los signos vitales imposibles se marcan, Tendencias muestra el valor bajo el cursor y los errores de paciente salen junto al campo. También corrige errores de sincronización, de la conversión de recetas y del encabezado del censo.
   
-  Nuevo (Labs): R+ lee TP, TTP e INR corregidos cuando el reporte los trae. Salen junto a los valores sin corregir y entran a Tendencias.
+  Nuevo (Nube): doctor, plantilla de médicos, servicio, sala, torre y rótulo FIMI del censo se sincronizan por usuario entre dispositivos.
   
-  Nuevo (Importar de Drive): las filas TPc, TTPc e INRc caen en el panel de coagulación.
+  Nuevo (Admin): pestaña Solicitudes. Los usuarios nuevos del iPad quedan pendientes hasta que apruebes su sala con Aprobar o Rechazar.
   
-  Corrección (Nube): un cambio de equipo hecho en otro dispositivo ahora llega aunque ese paciente tenga otro id local.
+  Nuevo (Nube): una pastilla «Sin sesión Nube» avisa si el dispositivo perdió la sesión sin cerrarla. Abre el inicio de sesión.
   
-  Corrección (Estado actual): la nota SOAP conserva la línea «INSULINA PREPRANDIAL». Antes la perdía.
+  Nuevo (Tendencias): una línea fina sigue el cursor sobre la gráfica y el número grande muestra el valor bajo el cursor. Al salir, vuelve al último valor.
   
-  Corrección (Tendencias): si el módulo falla al cargar, R+ lo reintenta y avisa. Antes Tendencias no abría hasta reiniciar.
+  Nuevo (Signos vitales): un valor físicamente imposible se marca con ⚠ y «Valor dudoso». Clic en ⚠ enfoca el campo.
   
-  Cambio (Diseño): la línea de la pestaña activa se desliza con un resorte, en lugar de saltar.
+  Nuevo (Gráficas): con las flechas ← y → pasas de una columna a otra en las gráficas de Estado actual.
   
-  Cambio (Diseño): las ventanas abren y cierran con un resorte más suave.
+  Nuevo (Medicamentos): al ocultar un medicamento sale un aviso con Deshacer.
   
-  Cambio (Diseño): los interruptores tienen peso: puedes arrastrar la perilla.
+  Nuevo (Nube): sin conexión, un aviso dice «Guardado en cola · se enviará al reconectar».
   
-  Cambio (Tendencias): al arrastrar una tarjeta, la tarjeta sigue al cursor y las demás se acomodan con suavidad.
+  Cambio (Pacientes): los errores de edad, servicio, cuarto y cama salen bajo el campo y lo enfocan. Ya no sacuden el campo ni lanzan un aviso.
   
-  Cambio (Diseño): con movimiento reducido o modo Sobrio, todo salta al estado final, sin animar.
+  Cambio (Accesibilidad): la carga del censo y el valor grande de las gráficas avisan a lectores de pantalla.
+  
+  Cambio (Importar): se quitó el botón «Importar desde Drive» y sus funciones.
+  
+  Corrección (Nube): un grupo de labs que llegaba antes que su paciente ya no se pierde.
+  
+  Corrección (Nube): un paciente sin nombre real ya no borra el registro bueno de otro dispositivo.
+  
+  Corrección (Nube): el nombre de un paciente ya no queda como marcador en otros dispositivos.
+  
+  Corrección (Antibiograma): el tamiz de cefoxitina positivo cuenta como resistente (MRSA). Negativo cuenta como sensible.
+  
+  Corrección (Recetas): conversión IV a oral, reclasificación de medicamentos y lista de medicamentos.
+  
+  Corrección (Registro): series de signos vitales y formato de signos en el censo.
+  
+  Corrección (Exportar): «µg» ya no se vuelve «ΜG» en los .docx. El PDF del censo parte las fechas largas.
+  
+  Corrección (Censo): R2 se puede dejar vacío, el título usa la sala de Mi perfil, y Sala profesor vacía ya no toma el profesor de las notas.
+  
+  Corrección (Perfil): «Médico tratante» empieza vacío con «Elige tu nombre» si no hay nombre guardado.
+  
+  Corrección (Resumen): la tarjeta Medicamentos ya no llena el espacio vacío cuando está sola.
