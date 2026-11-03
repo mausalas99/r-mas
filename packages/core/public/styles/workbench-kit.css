@@ -774,7 +774,8 @@
 .wb-undo-toast-btn {
   background: none;
   border: none;
-  color: var(--color-accent);
+  /* Toast is always dark: use the dark-theme accent so Deshacer keeps AA contrast. */
+  color: oklch(0.75 0.09 195);
   font: 600 12px/1 var(--font-ui);
   cursor: pointer;
   flex-shrink: 0;

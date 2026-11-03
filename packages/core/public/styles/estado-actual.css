@@ -4271,3 +4271,22 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   padding: 2px 6px;
   text-align: right;
 }
+
+/* Valor dudoso (imposible): tinte warn + ⚠ clicable que enfoca el campo. */
+.ea-registro-modal .ea-vital-chip.vital-doubt {
+  border-color: color-mix(in oklab, var(--warn) 55%, transparent);
+  background: color-mix(in oklab, var(--warn) 7%, transparent);
+}
+.ea-registro-modal .ea-vital-chip.vital-doubt .ea-vital-input {
+  color: var(--warn);
+}
+.ea-registro-modal .vital-doubt-mark {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 0 2px;
+  color: var(--warn);
+  font-size: 0.9em;
+  line-height: 1;
+  cursor: pointer;
+}

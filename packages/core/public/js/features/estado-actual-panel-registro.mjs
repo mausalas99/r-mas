@@ -199,7 +199,13 @@ export function syncIoBalanceFromForm(form) {
     egr: diuresisValueFromParts(combinedParts),
   });
   var touched = ingInputs.concat(egrInputs).some(hasIoValue) || extraParts.length > 0;
+  var prevText = out.textContent;
   out.textContent = touched ? String(label).replace(/\s*CC$/i, '') : '—';
+  if (out.textContent !== prevText) {
+    out.classList.remove('num-roll');
+    void out.offsetWidth;
+    out.classList.add('num-roll');
+  }
   out.classList.remove('ea-balance-live--pos', 'ea-balance-live--neg');
   if (/^\+\d/.test(String(label))) out.classList.add('ea-balance-live--pos');
   else if (/^-\d/.test(String(label))) out.classList.add('ea-balance-live--neg');

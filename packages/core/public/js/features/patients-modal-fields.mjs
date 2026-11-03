@@ -1,7 +1,7 @@
-import { shakePatientFieldsForError } from '../ui-motion.mjs';
+import { resolvePatientFieldIds } from '../ui-motion.mjs';
+import { markFieldInvalid } from '../ui-field-invalid.mjs';
 import { isModeSala } from '../mode-features.mjs';
 import { readRegistroModalPrimary } from '../patient-registro-modal-ui.mjs';
-import { rt } from './patients-runtime-state.mjs';
 
 export function readPatientModalFields(isFromLab) {
   if (isFromLab) {
@@ -22,16 +22,22 @@ export function readPatientModalFields(isFromLab) {
   };
 }
 
+// Inline error under the field that caused it; focus moves there.
+export function flagPatientFieldError(message, isFromLab) {
+  var el = resolvePatientFieldIds(message, isFromLab)
+    .map(function (id) { return document.getElementById(id); })
+    .find(Boolean);
+  markFieldInvalid(el, message);
+}
+
 export function validatePatientAge(edadNum, isFromLab) {
   if (!edadNum) {
-    rt.showToast('Ingresa la edad', 'error');
-    shakePatientFieldsForError('Ingresa la edad', isFromLab);
+    flagPatientFieldError('Ingresa la edad', isFromLab);
     return null;
   }
   var ageInt = parseInt(edadNum, 10);
   if (isNaN(ageInt) || ageInt < 0 || ageInt > 120) {
-    rt.showToast('Edad inválida', 'error');
-    shakePatientFieldsForError('Edad inválida', isFromLab);
+    flagPatientFieldError('Edad inválida', isFromLab);
     return null;
   }
   return String(ageInt);
@@ -49,18 +55,15 @@ export function readPatientLocationFields(settings) {
 export function validatePatientLocationFields(loc, isFromLab) {
   if (!loc.servicio) {
     var servicioMsg = loc.salaMode ? 'Ingresa Área / Servicio' : 'Ingresa servicio';
-    rt.showToast(servicioMsg, 'error');
-    shakePatientFieldsForError(servicioMsg, isFromLab);
+    flagPatientFieldError(servicioMsg, isFromLab);
     return false;
   }
   if (!loc.salaMode && !loc.area) {
-    rt.showToast('Ingresa área / departamento', 'error');
-    shakePatientFieldsForError('Ingresa área / departamento', isFromLab);
+    flagPatientFieldError('Ingresa área / departamento', isFromLab);
     return false;
   }
   if (!loc.cuarto || !loc.cama) {
-    rt.showToast('Ingresa cuarto y cama', 'error');
-    shakePatientFieldsForError('Ingresa cuarto y cama', isFromLab);
+    flagPatientFieldError('Ingresa cuarto y cama', isFromLab);
     return false;
   }
   return true;

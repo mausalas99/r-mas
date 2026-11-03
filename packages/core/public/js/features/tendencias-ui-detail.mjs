@@ -343,6 +343,53 @@ function inferAnteriorLabDateFromNote(patientId) {
   return '';
 }
 
+/** Vertical hairline at the hovered point (iOS LabDetailView scrub). */
+function createTendHairlinePlugin() {
+  return {
+    id: 'tendHairline',
+    // Chart.js does not call onHover when the pointer leaves the canvas.
+    afterInit: function (chart) {
+      chart.canvas.addEventListener('mouseleave', function () {
+        scrubTendDetailHero([], null, null);
+      });
+    },
+    afterDatasetsDraw: function (chart) {
+      var active = chart.tooltip && chart.tooltip.getActiveElements ? chart.tooltip.getActiveElements() : [];
+      if (!active.length) return;
+      var area = chart.chartArea;
+      var ctx = chart.ctx;
+      ctx.save();
+      ctx.strokeStyle = getComputedStyle(chart.canvas).getPropertyValue('--text-muted').trim() || 'rgba(127,127,127,0.6)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(Math.round(active[0].element.x) + 0.5, area.top);
+      ctx.lineTo(Math.round(active[0].element.x) + 0.5, area.bottom);
+      ctx.stroke();
+      ctx.restore();
+    },
+  };
+}
+
+/** Headline value follows the hovered point; idx null restores the latest. */
+function scrubTendDetailHero(values, ref, idx) {
+  var big = document.querySelector('#tend-detail-hero .tend-detail-big');
+  if (!big) return;
+  if (big.dataset.latest == null) {
+    big.dataset.latest = big.textContent;
+    big.dataset.latestAbnormal = big.classList.contains('tend-abnormal') ? '1' : '';
+  }
+  var v = idx == null ? big.dataset.latest : values[idx] == null ? '—' : String(values[idx]);
+  if (big.textContent === v) return;
+  big.textContent = v;
+  var n = Number(v);
+  big.classList.toggle('tend-abnormal', idx == null
+    ? !!big.dataset.latestAbnormal
+    : !!ref && Number.isFinite(n) && (n < Number(ref[0]) || n > Number(ref[1])));
+  big.classList.remove('num-roll');
+  void big.offsetWidth;
+  big.classList.add('num-roll');
+}
+
 function tendDetailChartOptions(title, unit, markerMap, primaryValues, ref) {
   var yBounds = yScaleBoundsForRef(primaryValues, ref);
   var yScale = {
@@ -367,6 +414,10 @@ function tendDetailChartOptions(title, unit, markerMap, primaryValues, ref) {
       if (elements && elements.length) {
         tendStore.detailSelectedIndex = elements[0].index;
       }
+    },
+    onHover: function (_evt, elements) {
+      var hit = (elements || []).find(function (e) { return e.datasetIndex === 0; });
+      scrubTendDetailHero(primaryValues || [], ref, hit ? hit.index : null);
     },
     plugins: {
       legend: { display: false, position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } },
@@ -519,6 +570,7 @@ function applyTendDetailCompare(
       backgroundColor: 'rgba(16,185,129,0.08)',
       borderWidth: 2.5,
       pointRadius: 5,
+      pointHoverRadius: 7,
       pointBackgroundColor: '#10b981',
       tension: 0.3,
       fill: false,
@@ -726,7 +778,7 @@ function mountTendDetailChart(Chart, canvas, labels, values, title, ref, latest,
   var refPlugin = createTendRefBandPlugin();
   tendStore.detailChart = new Chart(canvas, {
     type: 'line',
-    plugins: [refPlugin, eventPlugin],
+    plugins: [refPlugin, eventPlugin, createTendHairlinePlugin()],
     data: { labels: labels, datasets: datasets },
     options: tendDetailChartOptions(title, unit, markerMap, values, ref),
   });

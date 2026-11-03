@@ -2,6 +2,7 @@
  * Cloud sync mutation bridge — maps local clinical state to worker LWW ops.
  */
 import { isCloudSyncActive } from './nube-sync-policy.mjs';
+import { showToast } from '../../ui-toast.mjs';
 import { cloudOversizeDocCount } from './cloud-med-receta-index.mjs';
 import { getCloudSyncRoomId } from './settings.mjs';
 import { cloudSyncNowIso } from './cloud-sync-clock.mjs';
@@ -76,6 +77,20 @@ export function enqueueCloudMutation(clientMutationId, ops) {
     ops: prepared,
     baseRevision: bridgeRuntime.getRevision?.() ?? 0,
   });
+  noteQueuedWhileOffline();
+}
+
+/** Last time the offline-queue toast showed (ms epoch). */
+let lastOfflineQueueToastAt = 0;
+const OFFLINE_QUEUE_TOAST_THROTTLE_MS = 10_000;
+
+/** Tell the user a save is queued while offline. Throttled: at most one per 10 s. */
+function noteQueuedWhileOffline() {
+  if (typeof navigator === 'undefined' || navigator.onLine !== false) return;
+  const now = Date.now();
+  if (now - lastOfflineQueueToastAt < OFFLINE_QUEUE_TOAST_THROTTLE_MS) return;
+  lastOfflineQueueToastAt = now;
+  showToast('Guardado en cola · se enviará al reconectar', 'info', { durationMs: 2600 });
 }
 
 /** Flush outbox without re-reading patient memory into ops. */
@@ -108,6 +123,7 @@ function enqueueEntityOps(clientMutationId, ops) {
     ops: prepared,
     baseRevision: bridgeRuntime.getRevision?.() ?? 0,
   });
+  noteQueuedWhileOffline();
   requestOutboxFlush();
 }
 

@@ -138,7 +138,16 @@ async function admitDemoPatient(page) {
   await page.locator('.p-name', { hasText: 'DEMO JUAN' }).locator('visible=true').first().click();
   await page.locator('#m-servicio').waitFor({ state: 'visible' });
   await page.locator('#m-servicio').fill('MEDICINA INTERNA');
+  await page.getByRole('button', { name: 'Agregar Paciente' }).click();
+  const inline = await page.evaluate(() => {
+    const f = document.getElementById('m-cuarto');
+    const msg = f && document.getElementById(f.getAttribute('aria-describedby') || '');
+    return { invalid: f?.getAttribute('aria-invalid'), msg: msg?.textContent, focused: document.activeElement?.id };
+  });
+  check('missing cuarto: error under the field, focus moves there',
+    inline.invalid === 'true' && /cuarto/i.test(inline.msg || '') && /^m-(cuarto|cama)$/.test(inline.focused || ''), inline);
   await page.locator('#m-cuarto').fill('412');
+  check('typing in the field clears its error', (await page.locator('#m-cuarto').getAttribute('aria-invalid')) === null);
   await page.locator('#m-cama').fill('02');
   await page.getByRole('button', { name: 'Agregar Paciente' }).click();
   await page.locator('#m-servicio').waitFor({ state: 'hidden' });
@@ -271,6 +280,17 @@ async function busyRegistro(page) {
   await fillVital(form, 'fr', [24, 20]);
   await fillVital(form, 'temp', [38.4, 37.2]);
   await fillVital(form, 'sat', [89, 94]);
+  await form.locator('[data-ea-vital="fc"][data-ea-layer-idx="0"]').fill('1120');
+  const doubt = await page.evaluate(() => {
+    const chip = document.querySelector('[data-ea-vital="fc"][data-ea-layer-idx="0"]').closest('.ea-vital-chip');
+    return { cls: chip.classList.contains('vital-doubt'), mark: !!chip.querySelector('.vital-doubt-mark') };
+  });
+  check('impossible FC 1120 is marked doubtful (tint + ⚠)', doubt.cls && doubt.mark, doubt);
+  await form.locator('.vital-doubt-mark').first().click();
+  check('⚠ click focuses the doubtful field',
+    await page.evaluate(() => document.activeElement?.getAttribute('data-ea-vital') === 'fc'));
+  await form.locator('[data-ea-vital="fc"][data-ea-layer-idx="0"]').fill('112');
+  check('fixing the value clears the mark', (await form.locator('.vital-doubt-mark').count()) === 0);
   const glus = form.locator('[data-ea-glu-value]');
   await glus.nth(0).fill('182');
   await glus.nth(1).fill('146');
@@ -360,6 +380,8 @@ async function busyRegistro(page) {
     table.bal.join('|') === '+400|NC|+550' && /-450/.test(table.total),
     table
   );
+  check('live balance rolls in after a change',
+    await page.evaluate(() => document.getElementById('ea-balance-turno-live').classList.contains('num-roll')));
   await shot(page, 'registro-busy');
   await page.locator('.ea-registro-submit').click();
   await form.waitFor({ state: 'hidden' });
@@ -815,6 +837,13 @@ async function rangesThresholds(page) {
   const out = await mount.locator('.ea-charts-dot--out').count();
   const inr = await mount.locator('.ea-charts-dot:not(.ea-charts-dot--out)').count();
   check('Gráficas glucometrías: 65 and 200 are out of range, 110 is not', out >= 2 && inr >= 1, { out, inr });
+  await mount.locator('[data-ea-hit="0"]').first().focus();
+  const bigBefore = await mount.locator('.ea-charts-row-big').first().innerText();
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(150);
+  const arrow = await page.evaluate(() => document.activeElement?.getAttribute('data-ea-hit'));
+  const bigAfter = await mount.locator('.ea-charts-row-big').first().innerText();
+  check('→ on a chart moves the point and the headline value', arrow === '1' && bigAfter !== bigBefore, { arrow, bigBefore, bigAfter });
   await page.keyboard.press('Escape');
   await page.locator('#ea-charts-backdrop.open').waitFor({ state: 'hidden' });
   check('UNREACHABLE isBpHypotensive / isHemodynamicallyUnstable: no caller outside estado-actual-ranges.mjs and its tests, so no UI path shows them', true, 'dead code; delete or wire up');

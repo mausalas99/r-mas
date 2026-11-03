@@ -2,7 +2,6 @@ import { getPatients, persistClinicalState } from '../app-state.mjs';
 import { storage } from '../storage.js';
 import { validatePatientForSave } from '../patient-validation.mjs';
 import {
-  shakePatientFieldsForError,
   closeModalAnimated,
   prepareModalBackdropOpen,
 } from '../ui-motion.mjs';
@@ -33,6 +32,7 @@ import {
   validatePatientAge,
   readPatientLocationFields,
   validatePatientLocationFields,
+  flagPatientFieldError,
 } from './patients-modal-fields.mjs';
 import { resumeLabBulkPreviewModalIfSuspended, suspendLabBulkPreviewModal } from './lab-bulk-preview-modal.mjs';
 import { admitPatientsViaRegistroTunnel, admitPatientViaRegistroTunnel } from '../patient-registro-tunnel.mjs';
@@ -577,8 +577,7 @@ export function savePatient() {
   var fields = readPatientModalFields(isFromLab);
   var v = validatePatientForSave(fields);
   if (!v.ok) {
-    rt.showToast(v.error, 'error');
-    shakePatientFieldsForError(v.error, isFromLab);
+    flagPatientFieldError(v.error, isFromLab);
     return;
   }
   var ageStr = validatePatientAge(fields.edadNum, isFromLab);

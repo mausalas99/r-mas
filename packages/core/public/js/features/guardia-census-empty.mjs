@@ -142,7 +142,7 @@ function guardiaSkeletonGroupHtml(cardCount) {
 export function renderGuardiaCensusLoading(container) {
   if (!container) return;
   container.innerHTML =
-    '<div class="wb-table-card guardia-census-loading" role="status">' +
+    '<div class="wb-table-card guardia-census-loading" role="status" aria-busy="true" aria-label="Cargando pacientes">' +
     '<span class="visually-hidden">Cargando censo…</span>' +
     '<div class="wb-table-card-header"><span class="skel skel-title"></span></div>' +
     `<div class="wb-table-body">${SKELETON_GROUP_SIZES.map(guardiaSkeletonGroupHtml).join('')}</div>` +

@@ -593,3 +593,19 @@ html.motion-sobrio .todo-prio-chip.todo-prio-chip--pulse {
     max-height: 0;
   }
 }
+
+/* Numeric roll — live balance number slides in when its value changes (iOS numericText). */
+@keyframes num-roll-in {
+  from { transform: translateY(4px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.num-roll {
+  animation: num-roll-in 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .num-roll {
+    animation: none;
+  }
+}

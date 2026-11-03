@@ -18,13 +18,17 @@ export function markFieldInvalid(field, message) {
     errEl = document.createElement('span');
     errEl.id = errId;
     errEl.className = 'field-invalid-msg';
-    errEl.style.cssText = 'display:block;color:#c0392b;font-size:12px;margin-top:4px;';
+    errEl.style.cssText = 'display:block;color:var(--danger, #c0392b);font-size:12px;margin-top:4px;';
     field.insertAdjacentElement('afterend', errEl);
   }
   errEl.textContent = message;
   errEl.hidden = false;
   field.setAttribute('aria-invalid', 'true');
   field.setAttribute('aria-describedby', errId);
+  if (!field.dataset.invalidWired) {
+    field.dataset.invalidWired = '1';
+    field.addEventListener('input', function () { clearFieldInvalid(field); });
+  }
   field.focus();
 }
 

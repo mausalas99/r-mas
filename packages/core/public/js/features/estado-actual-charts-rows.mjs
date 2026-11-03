@@ -98,7 +98,7 @@ function renderSignRow(rowDef, series, labels, sel) {
     '<div class="ea-charts-row">' +
     '<div class="ea-charts-row-info">' +
     '<span class="ea-charts-row-label">' + esc(rowDef.label) + '</span>' +
-    '<span class="ea-charts-row-big">' + esc(big) + '</span>' +
+    '<span class="ea-charts-row-big" aria-live="polite">' + esc(big) + '</span>' +
     '<span class="ea-charts-row-when">' + esc(when) + '</span>' +
     '<span class="ea-charts-row-badge' + (nOut ? ' ea-charts-row-badge--out' : '') + '">' + esc(badge) + '</span>' +
     '</div>' +
@@ -424,6 +424,16 @@ function wireEaChartsRows(mountEl, ctl) {
   mountEl.addEventListener('focusin', function (ev) {
     var hitBtn = ev.target && typeof ev.target.closest === 'function' ? ev.target.closest('[data-ea-hit]') : null;
     if (hitBtn) pickColumn(mountEl, hitBtn, true);
+  });
+  mountEl.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+    var hitBtn = ev.target && typeof ev.target.closest === 'function' ? ev.target.closest('[data-ea-hit]') : null;
+    if (!hitBtn) return;
+    ev.preventDefault();
+    var plot = hitBtn.getAttribute('data-ea-hit-plot');
+    var next = Number(hitBtn.getAttribute('data-ea-hit')) + (ev.key === 'ArrowLeft' ? -1 : 1);
+    var target = mountEl.querySelector('[data-ea-hit-plot="' + plot + '"][data-ea-hit="' + next + '"]');
+    if (target) pickColumn(mountEl, target, true);
   });
   mountEl.addEventListener('mouseleave', function () {
     if (mountEl._eaRowsSel != null && !mountEl.contains(document.activeElement)) setEaRowsState(mountEl, { _eaRowsSel: null });

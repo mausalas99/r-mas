@@ -544,6 +544,13 @@ await r.finish('Manejo + Perfil histórico', async () => {
   await adminRow('ONDANSETRON').locator('.med-admin-hide-btn').click();
   await page.waitForTimeout(300);
   check('× hides a med from the grid', (await adminRow('ONDANSETRON').count()) === 0);
+  check('hiding a med shows «<name> oculto» + Deshacer',
+    /ONDANSETRON oculto/i.test(await page.locator('.wb-undo-toast').innerText().catch(() => '')));
+  await page.locator('.wb-undo-toast [data-wb-undo]').click();
+  await page.waitForTimeout(300);
+  check('Deshacer brings the med back', (await adminRow('ONDANSETRON').count()) === 1);
+  await adminRow('ONDANSETRON').locator('.med-admin-hide-btn').click();
+  await page.waitForTimeout(300);
   await openPatient(page, A);
   await openPatient(page, E);
   await openMedAdmin();

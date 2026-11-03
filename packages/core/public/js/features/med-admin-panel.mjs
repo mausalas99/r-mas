@@ -4,6 +4,7 @@ import { dayKeyFromIso } from './eventualidades-store.mjs';
 import { medAdminScheduleForItem } from '../med-admin-schedule.mjs';
 import { extractMedBaseName } from '../med-pharm-profile-core.mjs';
 import { effectiveDiaTratamiento } from '../med-receta-dates.mjs';
+import { showUndoToast } from './workbench/undo-toast.mjs';
 
 let rt = {
   getActiveId() {
@@ -366,7 +367,13 @@ function wireMedAdminClicks(mountEl) {
     }
     var hideBtn = e.target.closest('[data-med-admin-hide]');
     if (hideBtn) {
-      setMedAdminHidden(hideBtn.getAttribute('data-med-admin-hide'), true, mountEl);
+      var hideId = hideBtn.getAttribute('data-med-admin-hide');
+      var nameEl = hideBtn.closest('tr')?.querySelector('.med-cell-name');
+      setMedAdminHidden(hideId, true, mountEl);
+      showUndoToast({
+        message: (nameEl ? nameEl.textContent : 'Medicamento') + ' oculto',
+        onUndo: function () { setMedAdminHidden(hideId, false, mountEl); },
+      });
       return;
     }
     var unhideBtn = e.target.closest('[data-med-admin-unhide]');

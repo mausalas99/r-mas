@@ -356,6 +356,24 @@ await r.finish('Lab trend arrows + Tendencias', async () => {
   const pltLabels = await page.evaluate(() => Chart.getChart(document.getElementById('tend-detail-canvas')).data.labels);
   check('detail chart keeps both same-day draws (two 03/01 points), date-only labels', pltLabels.filter((l) => l === '03/01').length === 2 && pltLabels.every((l) => !/\d:\d\d/.test(l)), pltLabels);
 
+  // Scrub: hovering the first point moves the headline to that value; leaving restores the latest.
+  const bigText = () => page.locator('#tend-detail-hero .tend-detail-big').innerText();
+  const latestBig = await bigText();
+  const p0 = await page.evaluate(() => {
+    const c = Chart.getChart(document.getElementById('tend-detail-canvas'));
+    const pt = c.getDatasetMeta(0).data[0];
+    const r = c.canvas.getBoundingClientRect();
+    return { x: r.left + pt.x, y: r.top + pt.y, v: String(c.data.datasets[0].data[0]) };
+  });
+  await page.mouse.move(p0.x, p0.y);
+  await page.waitForTimeout(200);
+  const scrubBig = await bigText();
+  await page.mouse.move(5, 5);
+  await page.waitForTimeout(200);
+  const backBig = await bigText();
+  check('hovering a point moves the headline to its value, leaving restores the latest',
+    scrubBig === p0.v && backBig === latestBig, { latestBig, scrubBig, p0: p0.v, backBig });
+
   // Pasting labs never auto-creates an eventualidad: the events legend is empty
   // even though this patient already has 10+ pasted lab reports.
   const noAutoEventCount = await page.locator('#tend-detail-events-slot .tend-event-legend-item').count();

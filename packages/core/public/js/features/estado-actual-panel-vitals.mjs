@@ -8,6 +8,7 @@ import {
 import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-constants.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 import { applyRegistroTabSkipAttributes } from './estado-actual-panel-registro-tab.mjs';
+import { isDoubtfulVital } from './vitals-doubt.mjs';
 
 export function vitalLayerBoxKey(baseKey, layerIdx) {
   return baseKey + '__L' + layerIdx;
@@ -215,6 +216,48 @@ function updateVitalStackLayerVisibility(form, vitalKey) {
   }
 }
 
+/** @type {WeakSet<HTMLElement>} */
+var doubtWired = new WeakSet();
+
+/**
+ * Marca valores físicamente imposibles (chip con clase vital-doubt + ⚠).
+ * Clic en ⚠ enfoca el campo. Escucha input/clic una sola vez por formulario.
+ * @param {HTMLElement | null} form
+ */
+export function syncVitalDoubtFlags(form) {
+  if (!form) return;
+  if (!doubtWired.has(form) && form.addEventListener) {
+    doubtWired.add(form);
+    form.addEventListener('input', function (ev) {
+      if (ev.target && ev.target.hasAttribute && ev.target.hasAttribute('data-ea-vital')) syncVitalDoubtFlags(form);
+    });
+    form.addEventListener('click', function (ev) {
+      var mark = ev.target && ev.target.closest ? ev.target.closest('.vital-doubt-mark') : null;
+      if (!mark) return;
+      var input = mark.parentElement.querySelector('[data-ea-vital]');
+      if (input) input.focus();
+    });
+  }
+  form.querySelectorAll('[data-ea-vital][data-ea-layer-idx]').forEach(function (input) {
+    var chip = input.closest('.ea-vital-chip');
+    if (!chip) return;
+    var doubt = isDoubtfulVital(input.getAttribute('data-ea-vital') || '', input.value);
+    var mark = chip.querySelector('.vital-doubt-mark');
+    chip.classList.toggle('vital-doubt', doubt);
+    if (doubt && !mark) {
+      var wrap = chip.querySelector('.ea-vital-value-wrap');
+      if (wrap) {
+        wrap.insertAdjacentHTML(
+          'beforeend',
+          '<button type="button" class="vital-doubt-mark" aria-label="Valor dudoso" title="Valor dudoso: revise la captura">⚠</button>'
+        );
+      }
+    } else if (!doubt && mark) {
+      mark.remove();
+    }
+  });
+}
+
 /**
  * @param {HTMLElement | null} form
  * @param {string} vitalKey
@@ -330,6 +373,7 @@ export function setVitalStackFromSeries(form, vitalKey, readings, layerCount) {
   }
   syncVitalPairCount(form, vitalKey, count);
   syncVitalAddButtonVisibility(form, vitalKey);
+  syncVitalDoubtFlags(form);
 }
 
 /**

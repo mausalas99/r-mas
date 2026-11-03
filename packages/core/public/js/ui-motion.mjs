@@ -248,12 +248,6 @@ export function resolvePatientFieldIds(errorMessage, isFromLab) {
   });
 }
 
-export function shakePatientFieldsForError(errorMessage, isFromLab) {
-  resolvePatientFieldIds(errorMessage, isFromLab).forEach(function (id) {
-    shakeField(document.getElementById(id));
-  });
-}
-
 function collectButtonLabelText(btn) {
   var parts = [];
   btn.childNodes.forEach(function (n) {
