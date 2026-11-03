@@ -1160,6 +1160,27 @@ describe("filterClinicalOpsSnapshotForSala — a team's creator survives the sal
   });
 });
 
+describe('exportClinicalOpsSnapshotForSala — approved teamless user', () => {
+  it('exports a user whose sala matches even with no team, and not other salas', () => {
+    const db = openDb();
+    try {
+      const mk = (handle, sala) => {
+        const u = ensureClinicalUser(db, { clientId: handle, rank: 'R1' });
+        claimUsername(db, { userId: u.userId, username: handle });
+        db.prepare('UPDATE users SET sala = ? WHERE user_id = ?').run(sala, u.userId);
+        return u.userId;
+      };
+      const inSala = mk('ipad_nueva', 'Sala 1');
+      const other = mk('otra_sala', 'UCI');
+      const ids = exportClinicalOpsSnapshotForSala(db, 'Sala 1').clinical_users.map((u) => u.user_id);
+      assert.ok(ids.includes(inSala));
+      assert.ok(!ids.includes(other));
+    } finally {
+      db.close();
+    }
+  });
+});
+
 describe("mergeClinicalUsersData — a peer's peer_* stub never renames a known user", () => {
   it('keeps the real @usuario and rank, still adds a stub for an unknown user', async () => {
     const { mergeClinicalUsersData } = await import('./clinical-ops-bundle-merge-users.cjs');

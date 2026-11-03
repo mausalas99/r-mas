@@ -189,6 +189,12 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
     adminResetPassword: (userId, body) =>
       req(`/admin/users/${userId}/reset-password`, { method: 'POST', body }),
     adminDeleteUser: (userId) => req(`/admin/users/${userId}`, { method: 'DELETE' }),
+    adminSalaRequests: (status = 'pending') =>
+      req(`/admin/sala-requests?status=${encodeURIComponent(status)}`),
+    adminApproveSalaRequest: (id, sala) =>
+      req(`/admin/sala-requests/${id}/approve`, { method: 'POST', body: sala ? { sala } : {} }),
+    adminRejectSalaRequest: (id, reason) =>
+      req(`/admin/sala-requests/${id}/reject`, { method: 'POST', body: reason ? { reason } : {} }),
     adminVersionStats: () => req('/admin/version-stats'),
   };
 }

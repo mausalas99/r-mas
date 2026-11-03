@@ -9,6 +9,7 @@ import { randomRoomCode, ROOM_CODE_ALPHABET } from './rooms.js';
 import { readWrappedFields } from './room-dek.js';
 import { ADMIN_ROLES } from './admin-roles.js';
 import { CLOUD_SALAS } from './sala-allowlist.js';
+import { decideSalaRequest, listSalaRequests } from './sala-requests.js';
 import { userFromAuthHeader } from './session.js';
 import { loadRoomState, refattenRoomCore } from './sync.js';
 const PROMOTABLE_ROLES = new Set(['admin', 'program_admin', 'member']);
@@ -705,6 +706,17 @@ export async function handleAdmin(request, env, subpath) {
   if (subpath === '/users' && method === 'GET') {
     await requireAdminUser(db, request, env);
     return handleSearchUsers(db, url.searchParams.get('q'));
+  }
+
+  if (subpath === '/sala-requests' && method === 'GET') {
+    await requireAdminUser(db, request, env);
+    return listSalaRequests(db, url.searchParams.get('status'));
+  }
+
+  const salaDecideMatch = /^\/sala-requests\/([^/]+)\/(approve|reject)$/.exec(subpath);
+  if (salaDecideMatch && method === 'POST') {
+    await requireAdminUser(db, request, env);
+    return decideSalaRequest(db, salaDecideMatch[1], salaDecideMatch[2], await parseJsonBody(request).catch(() => ({})));
   }
 
   const revokeMatch = /^\/users\/([^/]+)\/revoke-sessions$/.exec(subpath);

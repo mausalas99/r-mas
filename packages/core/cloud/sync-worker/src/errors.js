@@ -17,7 +17,8 @@ export function syncErrorStatus(err) {
     code === 'invalid_token' ||
     code === 'auth_required' ||
     code === 'forbidden' ||
-    code === 'not_member'
+    code === 'not_member' ||
+    code === 'pending_approval'
   ) {
     return 403;
   }

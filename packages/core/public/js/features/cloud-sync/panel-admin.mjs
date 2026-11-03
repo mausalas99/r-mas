@@ -13,6 +13,7 @@ import {
 import { loadAdminResumen, loadAdminSalas, loadAdminNetworkCensus, loadAdminMutations } from './panel-admin-data.mjs';
 import { createAdminClickHandler } from './panel-admin-actions.mjs';
 import { equiposShellHtml } from './panel-admin-equipos-html.mjs';
+import { solicitudesShellHtml, wireSolicitudesPanel } from './panel-admin-solicitudes.mjs';
 import { wireCloudEquiposPanel } from './panel-admin-equipos-actions.mjs';
 
 /**
@@ -55,6 +56,8 @@ function mountAdminPanelSections(root) {
   if (mutEl) mutEl.innerHTML = mutacionesShellHtml();
   const equiposEl = root.querySelector('[data-admin-equipos]');
   if (equiposEl) equiposEl.innerHTML = equiposShellHtml();
+  const solEl = root.querySelector('[data-admin-solicitudes]');
+  if (solEl) solEl.innerHTML = solicitudesShellHtml();
 }
 
 /**
@@ -88,6 +91,8 @@ export function mountCloudAdminPanel(host, deps) {
 
   mountAdminPanelSections(root);
   const equiposPanel = wireCloudEquiposPanel(root, { getApi: deps.getApi, toast });
+  const solicitudesPanel = wireSolicitudesPanel(root, { getApi: deps.getApi, toast });
+  void solicitudesPanel.refresh();
 
   function updateRoomSelects() {
     const prevMut = (() => {
@@ -145,6 +150,7 @@ export function mountCloudAdminPanel(host, deps) {
         selectAdminTab(root, tabId);
         const resolved = tabId === 'usuarios' ? 'equipos' : tabId;
         if (resolved === 'equipos') void equiposPanel.refresh();
+        if (resolved === 'solicitudes') void solicitudesPanel.refresh();
         if (resolved === 'mutaciones') loadMutacionesIfEmpty();
       }
       return;

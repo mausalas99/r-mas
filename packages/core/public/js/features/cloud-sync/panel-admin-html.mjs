@@ -18,6 +18,7 @@ const ADMIN_ICON_PATHS = {
   equipos:
     '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/>' +
     '<path d="M18 14a6 6 0 0 1 3.5 6"/>',
+  solicitudes: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>',
   mutaciones: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   peligro: '<path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
 };
@@ -33,6 +34,7 @@ const ADMIN_TABS = [
   { id: 'red', label: 'Pacientes', count: true },
   // Equipos + cuentas Nube (antes pestaña Usuarios) en un solo panel.
   { id: 'equipos', label: 'Usuarios', count: true },
+  { id: 'solicitudes', label: 'Solicitudes', count: true },
   { id: 'mutaciones', label: 'Registro' },
   { id: 'peligro', label: 'Zona de peligro', danger: true },
 ];

@@ -148,7 +148,8 @@ export function filterClinicalOpsSnapshotForSala(db, snapshot, sala) {
 
   const clinical_users = (snapshot.clinical_users || []).filter((row) => {
     const uid = String(row.user_id || '').trim();
-    return memberUserIds.has(uid) || activeCoveringIds.has(uid);
+    // Approved-but-teamless users (sala set by admin) must reach the sala's peers too.
+    return memberUserIds.has(uid) || activeCoveringIds.has(uid) || String(row.sala || '').trim() === target;
   });
 
   return {

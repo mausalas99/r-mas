@@ -7,6 +7,7 @@ import { handleRoomLive } from './room-live.js';
 import { handleRoomDek } from './room-dek.js';
 import { handleSync } from './sync.js';
 import { userFromAuthHeader } from './session.js';
+import { assertApproved } from './sala-requests.js';
 
 /** Unambiguous uppercase alphanumeric (no 0/O, 1/I/L). */
 export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -183,6 +184,7 @@ export async function resolveActiveRoomForUser(db, user) {
 /** @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
 async function handleCreateRoom(env, db, request) {
   const user = await requireUser(db, request);
+  assertApproved(user);
   requireDataKey(env);
 
   const owned = await countOwnedRooms(db, user.id);
@@ -242,6 +244,7 @@ async function handleCreateRoom(env, db, request) {
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
 export async function handleJoinRoom(db, request) {
   const user = await requireUser(db, request);
+  assertApproved(user);
   const body = await parseJsonBody(request);
   const code = String(body?.code ?? '').trim().toUpperCase();
 
@@ -364,6 +367,7 @@ async function handleGetRoom(db, request, roomId) {
 /** @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
 async function handleEnsureTurn(env, db, request) {
   const user = await requireUser(db, request);
+  assertApproved(user);
   requireDataKey(env);
 
   const body = await parseJsonBody(request);

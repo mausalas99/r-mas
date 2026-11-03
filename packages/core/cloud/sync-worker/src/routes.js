@@ -4,6 +4,7 @@ import { assertNubeClient } from './auth-util.js';
 import { SyncError, jsonSyncError, syncErrorStatus } from './errors.js';
 import { handleInternoApiRoute } from './interno/routes.js';
 import { handleRooms } from './rooms.js';
+import { handleSalaRequest } from './sala-requests.js';
 import { stampAppVersionFromRequest } from './session.js';
 
 export const API_PREFIX = '/api/sync/v1';
@@ -65,6 +66,11 @@ export async function handleApiRoute(request, env, ctx) {
       }
       const roomsSub = subpath === '/rooms' ? '/' : subpath.slice('/rooms'.length) || '/';
       return await handleRooms(request, env, roomsSub, ctx);
+    }
+
+    if (subpath === '/sala-request' || subpath.startsWith('/sala-request/')) {
+      if (!env.DB) throw new SyncError('error', 'Base de datos no configurada.');
+      return await handleSalaRequest(env.DB, request, subpath.slice('/sala-request'.length) || '/');
     }
 
     if (subpath === '/admin' || subpath.startsWith('/admin/')) {

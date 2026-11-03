@@ -7,6 +7,7 @@ import {
   rateLimitKey,
   recordFailure,
 } from './rate-limit.mjs';
+import { approvalPayload, pendingRequestStatements, validateSala } from './sala-requests.js';
 import { createSession, revokeSession, userFromAuthHeader } from './session.js';
 import {
   dbBlobToHex,
@@ -37,6 +38,7 @@ async function handleRegister(db, request, ip, gateEnabled) {
   const stamp = gateEnabled ? assertNubeClient(body) : sanitizeAppVersion(body?.appVersion);
   validateUsername(username);
   validatePassword(password);
+  const requestedSala = body?.requestedSala ? validateSala(body.requestedSala) : null;
 
   const rlKey = rateLimitKey(ip, username);
   checkRateLimit(rateLimitKey(ip));
@@ -76,6 +78,7 @@ async function handleRegister(db, request, ip, gateEnabled) {
   }
 
   clearFailures(rlKey);
+  if (requestedSala) await db.batch(pendingRequestStatements(db, id, requestedSala).statements);
   const session = await createSession(db, id);
   const recoveryCode = await mintRecoveryForUser(db, id);
   return Response.json({
@@ -83,6 +86,7 @@ async function handleRegister(db, request, ip, gateEnabled) {
     expiresAt: session.expiresAt,
     user: { id, username, displayName },
     recoveryCode,
+    approval: await approvalPayload(db, id, requestedSala ? 'pending' : 'approved'),
   });
 }
 
@@ -103,7 +107,7 @@ async function handleLogin(db, request, ip, gateEnabled) {
 
   const row = await db
     .prepare(
-      `SELECT id, username, display_name, password_salt, password_hash, password_iterations, recovery_hash, disabled
+      `SELECT id, username, display_name, password_salt, password_hash, password_iterations, recovery_hash, disabled, approval_status
        FROM users WHERE username = ? COLLATE NOCASE`
     )
     .bind(username)
@@ -139,6 +143,7 @@ async function handleLogin(db, request, ip, gateEnabled) {
     token: session.token,
     expiresAt: session.expiresAt,
     user: userPayload(row),
+    approval: await approvalPayload(db, row.id, row.approval_status),
   };
   if (userNeedsRecoveryMint(row)) {
     payload.recoveryCode = await mintRecoveryForUser(db, row.id);
@@ -162,7 +167,10 @@ async function handleMe(db, request) {
   if (!user) {
     throw new SyncError('auth_required', 'Sesión inválida o expirada.');
   }
-  return Response.json({ user: userPayload(user) });
+  return Response.json({
+    user: userPayload(user),
+    approval: await approvalPayload(db, user.id, user.approval_status),
+  });
 }
 
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
