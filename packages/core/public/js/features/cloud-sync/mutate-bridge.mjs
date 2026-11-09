@@ -80,11 +80,9 @@ export function enqueueCloudMutation(clientMutationId, ops) {
   noteQueuedWhileOffline();
 }
 
-/** Last time the offline-queue toast showed (ms epoch). */
 let lastOfflineQueueToastAt = 0;
 const OFFLINE_QUEUE_TOAST_THROTTLE_MS = 10_000;
 
-/** Tell the user a save is queued while offline. Throttled: at most one per 10 s. */
 function noteQueuedWhileOffline() {
   if (typeof navigator === 'undefined' || navigator.onLine !== false) return;
   const now = Date.now();

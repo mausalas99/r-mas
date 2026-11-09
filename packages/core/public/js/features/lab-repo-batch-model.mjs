@@ -149,7 +149,6 @@ export function setLabRepoBatchJobStatus(jobs, patientId, status) {
 }
 
 /**
- * Mark all still-pending/running jobs as aborted.
  * @param {LabRepoBatchJob[]} jobs
  */
 export function abortPendingLabRepoBatchJobs(jobs) {
@@ -221,7 +220,6 @@ export function formatLabRepoBatchSummaryToast(summary) {
 }
 
 /**
- * Classify one patient fetch for batch control flow.
  * @param {unknown[]} studies
  * @param {{ message?: string }[]} errors
  * @returns {'ok'|'empty'|'connection'|'error'}

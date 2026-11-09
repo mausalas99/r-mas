@@ -130,7 +130,6 @@ export async function ensureTurnRoom(deps) {
   }
 }
 
-/** Dynamic-import helper after Mi rotación team join. */
 export async function ensureTurnRoomAfterTeamJoin(toast) {
   const [settings, { createCloudSyncApi }] = await Promise.all([
     import('./settings.mjs'),
