@@ -5,7 +5,6 @@
 import {
   fallbackCopyText,
   resolveTableTheme,
-  tableDomToExportModel,
   writePngToClipboardOrDownload,
 } from './tend-export-helpers.mjs';
 import {
@@ -93,14 +92,4 @@ export function copyChartPng(chart, title, visibleDatasets, onDone) {
     }
     writePngToClipboardOrDownload(blob, title, done);
   }, 'image/png');
-}
-
-/** @deprecated Prefer copyTableModelAsPng — mantiene compatibilidad si solo hay DOM. */
-export function copyTableAsPng(tableEl, title, onDone) {
-  if (!tableEl) {
-    var done0 = typeof onDone === 'function' ? onDone : function () {};
-    done0(false);
-    return;
-  }
-  copyTableModelAsPng(tableDomToExportModel(tableEl), title, onDone);
 }

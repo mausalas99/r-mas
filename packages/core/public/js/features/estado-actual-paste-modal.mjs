@@ -76,11 +76,6 @@ export function closeEstadoActualPasteModal() {
   backdrop.setAttribute('aria-hidden', 'true');
 }
 
-export function isEstadoActualPasteModalOpen() {
-  var backdrop = document.getElementById('ea-paste-backdrop');
-  return !!(backdrop && backdrop.classList.contains('open'));
-}
-
 export function confirmEstadoActualPaste() {
   var ta = getTextarea();
   var parsed = parseEstadoActualPaste(ta ? ta.value : '');

@@ -65,24 +65,6 @@ export const PROCEDURES = [
   { id: 'gupta-urology', labelEn: 'Urology', guptaCoef: -0.26, ahaQuirurgico: 'Intermedio', rcriHighRisk: false, ariscatIncisionKey: 'peripheral' },
 ];
 
-export const ARISCAT_INCISION_POINTS = {
-  peripheral: 0,
-  upperAbdominal: 15,
-  intrathoracic: 24,
-};
-
-export const CREATININE_GUPTA = [
-  { key: 'lte-1.5', max: 1.5, guptaCoef: 0 },
-  { key: 'gt-1.5', max: Infinity, guptaCoef: 0.42 },
-];
-
-function normSearch(s) {
-  return String(s || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-}
-
 /** @param {string} id */
 export function getProcedureById(id) {
   return PROCEDURES.find((p) => p.id === id) || null;
@@ -91,36 +73,6 @@ export function getProcedureById(id) {
 /** @param {string} key */
 export function getAsaByKey(key) {
   return ASA_OPTIONS.find((a) => a.key === key) || null;
-}
-
-/** @param {string} key */
-export function getFunctionalByKey(key) {
-  return FUNCTIONAL_STATUS.find((f) => f.key === key) || null;
-}
-
-/** @param {number} creatinina */
-export function creatinineGuptaCoef(creatinina) {
-  var cr = Number(creatinina);
-  if (!Number.isFinite(cr)) return 0;
-  return cr <= 1.5 ? 0 : 0.42;
-}
-
-/**
- * @param {string} q
- * @returns {VpoProcedure[]}
- */
-export function searchProcedures(q, searchTextFn) {
-  var n = normSearch(q).trim();
-  if (!n) return PROCEDURES.slice();
-  var textOf =
-    typeof searchTextFn === 'function'
-      ? searchTextFn
-      : function (p) {
-          return p.labelEn;
-        };
-  return PROCEDURES.filter(function (p) {
-    return normSearch(textOf(p)).includes(n);
-  });
 }
 
 /** Sugerir AHA clínico desde ASA. @param {string} asaKey */

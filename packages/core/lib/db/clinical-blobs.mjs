@@ -27,16 +27,6 @@ export function loadAllBlobs(db) {
   return out;
 }
 
-/** @param {import('better-sqlite3').Database} db @param {string} blobKey */
-export function deleteBlob(db, blobKey) {
-  const key = String(blobKey || '').trim();
-  if (!key) return 0;
-  const info = db
-    .prepare(`DELETE FROM clinical_blob WHERE namespace = 'desktop' AND blob_key = ?`)
-    .run(key);
-  return info.changes;
-}
-
 /**
  * @param {import('better-sqlite3').Database} db
  * @param {string[]} blobKeys

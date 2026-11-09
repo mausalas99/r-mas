@@ -141,5 +141,3 @@ export function maybeStripAutoLabInterpretationsOnce(patients) {
     labsTextCleared: stats.labsTextCleared,
   };
 }
-
-export { FLAG_KEY as STRIP_AUTO_LAB_EV_FLAG };

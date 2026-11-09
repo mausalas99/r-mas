@@ -11,7 +11,7 @@ import {
   clearCloudSyncSession,
   setCloudSyncRemember,
 } from '../cloud-sync/settings.mjs';
-import { parseCloudMobileInviteSearch, buildCloudMobileJoinUrl } from './invite-url.mjs';
+import { parseCloudMobileInviteSearch } from './invite-url.mjs';
 
 /** Durable PWA pairing — survives Add to Home Screen (same idea as rpc-lan-config). */
 export const CLOUD_MOBILE_PAIRING_KEY = 'rpc-cloud-mobile-pairing';
@@ -100,14 +100,6 @@ export function persistCloudMobilePairing(next) {
     return true;
   } catch {
     return false;
-  }
-}
-
-export function clearCloudMobilePairing() {
-  try {
-    localStorage.removeItem(CLOUD_MOBILE_PAIRING_KEY);
-  } catch {
-    /* ignore */
   }
 }
 
@@ -238,14 +230,6 @@ export function persistCloudMobilePairingFromRoom(room, user) {
     sala: room.sala,
     user: user || readCloudMobileJoinUser(),
   });
-}
-
-/**
- * Permanent homescreen URL (auth + room), LAN-style `/mobile/?…`.
- * @param {{ baseUrl: string, roomCode: string, sala?: string, user?: string, auth?: string }} opts
- */
-export function buildPersistedCloudMobileUrl(opts) {
-  return buildCloudMobileJoinUrl(opts);
 }
 
 export {

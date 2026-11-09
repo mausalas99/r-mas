@@ -112,11 +112,6 @@ export function ensureEventualidades(patient) {
   return patient.eventualidades;
 }
 
-export function hostPatientMutationBase(patient, hostRow) {
-  if (hostRow) return hostRow;
-  return Object.assign({}, patient, { version: 0 });
-}
-
 /**
  * Append one eventualidad and persist locally + LAN when configured.
  * @param {object} patient

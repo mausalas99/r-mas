@@ -32,13 +32,3 @@ export function insulinPumpAlgorithmFromMonitoreo(monitoreo) {
   if (!Number.isFinite(n) || n < 1 || n > 4) return null;
   return n;
 }
-
-/**
- * Bomba activa por SOME o por historial con lecturas bomba.
- * @param {Record<string, unknown> | null | undefined} monitoreo
- * @param {{ bombaInsulina?: unknown[] } | null | undefined} [snapshot]
- */
-export function patientUsesInsulinPumpMode(monitoreo, snapshot) {
-  if (insulinPumpAlgorithmFromMonitoreo(monitoreo) != null) return true;
-  return !!(snapshot && Array.isArray(snapshot.bombaInsulina) && snapshot.bombaInsulina.length);
-}

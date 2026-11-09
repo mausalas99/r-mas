@@ -27,10 +27,6 @@ export function markPushSubscribeActive(active) {
   pushSubscribeActive = !!active;
 }
 
-export function isPushSubscribeActive() {
-  return pushSubscribeActive;
-}
-
 export function isIosDevice() {
   if (typeof navigator === 'undefined') return false;
   return /iPad|iPhone|iPod/.test(navigator.userAgent || '');

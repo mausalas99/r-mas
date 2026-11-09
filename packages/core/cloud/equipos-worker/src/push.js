@@ -210,28 +210,6 @@ export async function notifyEquiposWaitlistTopTwoKind(db, kind, ctx, vapidPrivat
 
 /**
  * @param {import('@cloudflare/workers-types').D1Database} db
- * @param {'device_available'|'lumify_return'} kind
- * @param {object} ctx
- * @param {string} vapidPrivateJwk
- */
-export async function notifyEquiposWaitlistHeadKind(db, kind, ctx, vapidPrivateJwk) {
-  if (!vapidPrivateJwk) return { sent: 0, pruned: 0 };
-  const waitlist = await listWaitlistRows(db, ctx.deviceType);
-  if (!waitlist.length) return { sent: 0, pruned: 0 };
-
-  const row = waitlist[0];
-  const payload = buildEquiposPushPayload(kind, {
-    deviceType: ctx.deviceType,
-    isNext: true,
-    chargePct: ctx.chargePct,
-    appUrl: EQUIPOS_PWA_CLOUD_URL,
-  });
-  const subs = await listPushSubsForWaiter(db, ctx.deviceType, row.reporter_name, row.rotation);
-  return sendPushToSubs(db, subs, payload, vapidPrivateJwk, `${kind} ${row.reporter_name}`);
-}
-
-/**
- * @param {import('@cloudflare/workers-types').D1Database} db
  * @param {object} ctx
  * @param {string} vapidPrivateJwk
  */

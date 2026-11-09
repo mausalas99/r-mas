@@ -17,15 +17,6 @@ export function cloudSyncNowIso() {
   return new Date(Date.now() + offsetMs).toISOString();
 }
 
-/** @returns {number} */
-export function getCloudSyncClockOffsetMs() {
-  return offsetMs;
-}
-
-export function clearCloudSyncClockOffset() {
-  offsetMs = 0;
-}
-
 /**
  * Floor clock for content with no clock of its own and a patient with no census clock.
  * Fixed, so the echo guard sees the same (path, updatedAt) every cycle; low, so it never

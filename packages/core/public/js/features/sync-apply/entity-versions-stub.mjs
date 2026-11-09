@@ -2,9 +2,3 @@
 export function rememberPatientDeleteTombstone() {}
 
 export function clearPatientDeleteTombstoneForAdmit() {}
-
-export function listPatientDeleteTombstones() {
-  return [];
-}
-
-export function clearPatientDeleteTombstones() {}

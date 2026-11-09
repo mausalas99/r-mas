@@ -11,8 +11,3 @@ export function shouldShowNubePostAuthChrome(token) {
 export function shouldForcePanelRebuildOnAuthChange(prevToken, nextToken) {
   return shouldShowNubePostAuthChrome(prevToken) !== shouldShowNubePostAuthChrome(nextToken);
 }
-
-/** @param {{ cloudSala: boolean, cloudActive?: boolean }} opts */
-export function shouldHidePrimaryLanChrome(opts) {
-  return Boolean(opts && opts.cloudSala);
-}

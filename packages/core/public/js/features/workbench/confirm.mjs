@@ -233,8 +233,3 @@ export async function promptText(opts) {
   });
   return result === 'confirm' ? value : null;
 }
-
-/** Force-close any open confirm modal (e.g. on route change). */
-export function closeConfirm() {
-  closeActiveConfirm('cancel');
-}

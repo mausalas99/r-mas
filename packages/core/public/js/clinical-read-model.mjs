@@ -64,17 +64,6 @@ export function getPatients() {
   return cloneValue(_cache.patients);
 }
 
-/**
- * @param {string} id
- * @returns {object|null}
- */
-export function getPatientById(id) {
-  const key = String(id || '');
-  if (!key) return null;
-  const found = _cache.patients.find((p) => p && String(p.id) === key);
-  return found ? cloneValue(found) : null;
-}
-
 /** @param {string} [patientId] */
 export function getNotes(patientId) {
   return getMapDomain('notes', patientId);

@@ -107,15 +107,6 @@ export function medsListForSoap(fieldVal, joiner, bold) {
 
 /**
  * @param {unknown} fieldVal
- * @param {string} fallback
- */
-export function medsClauseOrFallback(fieldVal, fallback) {
-  var list = medsListForSoap(fieldVal, ', ');
-  return list || fallback;
-}
-
-/**
- * @param {unknown} fieldVal
  * @returns {string}
  */
 export function medsClauseOrEmpty(fieldVal) {

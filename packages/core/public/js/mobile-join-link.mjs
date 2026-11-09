@@ -8,10 +8,6 @@ export function parseLanJoinQuery() {
   return { hostUrl: '', teamCode: '', roomId: '' };
 }
 
-export function liveSyncRoomLabel(roomId) {
-  return String(roomId || '').trim();
-}
-
 export function resolveLiveSyncRoomIdFromSala() {
   return '';
 }

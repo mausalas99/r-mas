@@ -42,11 +42,6 @@ export function censusPatientIdsFromEntries(entries) {
   );
 }
 
-/** @param {object|null|undefined} board @param {string} patientId */
-export function boardIncludesPatient(board, patientId) {
-  return !!board?.patients?.some((row) => String(row.id) === String(patientId));
-}
-
 /**
  * R1 de guardia on-call for a sala (cycle + team_guardia_today overrides).
  * @param {object} scopeContext

@@ -53,14 +53,6 @@ export async function resolveEquiposApiBase(opts = {}) {
   const hit = await probeEquiposHost(base, opts.signal);
   return hit || base;
 }
-
-export function isLoopbackHostname() {
-  return false;
-}
-
-export function normalizeHostOverride(raw) {
-  return String(raw || '').trim().replace(/\\/+$/, '');
-}
 `;
 
 const CLOUD_MANIFEST = {

@@ -114,17 +114,6 @@ export function closeClinicalRegistrationModal() {
 }
 
 
-/**
- * @param {Record<string, unknown>} settings
- * @returns {Promise<boolean>}
- */
-export function promptClinicalRegistrationIfNeeded(settings) {
-  if (!needsClinicalRegistration(settings)) return Promise.resolve(false);
-  return import('./clinical-onboarding-main.mjs').then((mod) =>
-    mod.showMainClinicalOnboarding().then(() => true)
-  );
-}
-
 export const windowHandlers = {
   openClinicalRegistrationModal,
   closeClinicalRegistrationModal,

@@ -42,14 +42,6 @@ export function newEquiposId() {
 /** Admin/history retention — daily cron deletes only rows older than this. */
 export const EQUIPOS_PHOTO_RETENTION_DAYS = 14;
 
-/** Server upload cap after client JPEG compression. */
-export const EQUIPOS_PHOTO_MAX_BYTES = 1024 * 1024;
-
-/** Mobile upload resize/compress defaults (keep in sync with public/equipos/equipos-api.mjs). */
-export const EQUIPOS_PHOTO_UPLOAD_MAX_DIM = 720;
-export const EQUIPOS_PHOTO_UPLOAD_JPEG_QUALITY = 0.72;
-export const EQUIPOS_PHOTO_UPLOAD_TARGET_B64_LEN = 320_000;
-
 /** @param {number} [nowMs] */
 export function equiposPhotoRetentionCutoffIso(nowMs = Date.now()) {
   const ms = EQUIPOS_PHOTO_RETENTION_DAYS * 24 * 60 * 60 * 1000;

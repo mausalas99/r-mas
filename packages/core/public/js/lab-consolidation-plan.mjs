@@ -223,13 +223,6 @@ export function countAutoLabConsolidationMerges(jobs) {
   }, 0);
 }
 
-export function countOutlierLabConsolidationMerges(jobs) {
-  return (jobs || []).reduce(function (acc, job) {
-    if (job.kind !== 'outlier') return acc;
-    return acc + job.sets.length - 1;
-  }, 0);
-}
-
 /** Resumen compacto de secciones (BH · QS · GASES) para UI de consolidación. */
 export function labSetSectionSummary(resLabs) {
   var seen = Object.create(null);

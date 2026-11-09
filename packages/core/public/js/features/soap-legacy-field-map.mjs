@@ -22,10 +22,5 @@ export const SOAP_LEGACY_FIELD_IDS = {
   nm: 'soap-nm-soporte',
 };
 
-/** @param {string} cat */
-export function soapLegacyFieldIdForCategory(cat) {
-  return SOAP_LEGACY_FIELD_IDS[/** @type {keyof typeof SOAP_LEGACY_FIELD_IDS} */ (cat)] || null;
-}
-
 /** Todos los ids de campos medicamentosos del modal legacy (para limpiar). */
 export const SOAP_LEGACY_MED_FIELD_IDS = Object.values(SOAP_LEGACY_FIELD_IDS);

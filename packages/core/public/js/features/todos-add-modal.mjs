@@ -23,11 +23,6 @@ function closeActiveTodoAddModal() {
   restoreFocus(previousFocus);
 }
 
-/** Force-close the modal (e.g. on route change). */
-export function closeTodoAddModal() {
-  closeActiveTodoAddModal();
-}
-
 /**
  * @param {{ patientContext?: string }} opts
  * @returns {string}

@@ -40,10 +40,6 @@ export function togglePatientBulkSelected(patientId) {
   return _selected.has(pid);
 }
 
-export function clearPatientBulkSelection() {
-  _selected.clear();
-}
-
 export function exitPatientBulkSelectMode() {
   setPatientBulkSelectMode(false);
 }

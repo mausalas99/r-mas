@@ -201,12 +201,3 @@ export function trySilentVirtualPatientListPatch(list, options) {
   if (typeof options.onRondaNav === 'function') options.onRondaNav(options.zones);
   return true;
 }
-
-/** @param {HTMLElement} list @param {{ pinned: object[], active: object[], archived: object[] }} zones @param {boolean} archivedCollapsed */
-export function stampVirtualPatientListStructure(list, zones, archivedCollapsed) {
-  if (!list) return;
-  list.setAttribute(
-    'data-patient-list-virtual',
-    virtualPatientListStructureSignature(zones, archivedCollapsed)
-  );
-}

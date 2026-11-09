@@ -1,6 +1,6 @@
 // Estado Actual charts — public façade. Series math in -series.mjs,
 // summary cache in -display.mjs, row/SVG rendering (no Chart.js) in -rows.mjs.
-import { historialChartRevision, scanEaChartsSummary } from './estado-actual-charts-series.mjs';
+import { historialChartRevision } from './estado-actual-charts-series.mjs';
 import { getCachedEaChartsSummary } from './estado-actual-charts-display.mjs';
 import { destroyEaChartsRows, renderEaChartsRows } from './estado-actual-charts-rows.mjs';
 
@@ -16,13 +16,6 @@ export { stripMonitoreoChartRuntimeCache } from './estado-actual-charts-display.
 export function destroyEstadoActualCharts(mountEl) {
   if (!mountEl) return;
   destroyEaChartsRows(mountEl);
-}
-
-/**
- * @param {unknown} monitoreo
- */
-export function buildEaChartsSummary(monitoreo) {
-  return scanEaChartsSummary(monitoreo);
 }
 
 /**

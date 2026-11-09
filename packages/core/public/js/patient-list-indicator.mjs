@@ -11,18 +11,6 @@ export function ensurePatientListIndicator(listEl) {
   return null;
 }
 
-export function patientListIndicatorBox(listEl, cardEl) {
-  if (!listEl || !cardEl) return null;
-  var listRect = listEl.getBoundingClientRect();
-  var cardRect = cardEl.getBoundingClientRect();
-  return {
-    top: cardRect.top - listRect.top + listEl.scrollTop,
-    left: cardRect.left - listRect.left + (listEl.scrollLeft || 0),
-    width: cardRect.width,
-    height: cardRect.height,
-  };
-}
-
 export function syncPatientListIndicator(listEl) {
   ensurePatientListIndicator(listEl);
 }

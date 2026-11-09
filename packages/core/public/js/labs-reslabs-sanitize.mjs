@@ -127,10 +127,3 @@ export function sanitizeResLabsChunks(rows) {
   });
   return out;
 }
-
-/** True when text is not a standalone allowed clinical chunk (legacy helper). */
-export function isSomeReportMetadataChunk(text) {
-  var t = String(text == null ? '' : text);
-  if (!t.trim()) return false;
-  return !isAllowedResLabChunk(t, false);
-}

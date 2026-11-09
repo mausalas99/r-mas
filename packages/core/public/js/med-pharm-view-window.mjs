@@ -48,10 +48,6 @@ export function parseFimiFecha(raw) {
   return { year: +m[1], monthIndex: +m[2] - 1, day: +m[3] };
 }
 
-export function columnKey(col) {
-  return monthKeyFromParts(col.year, col.monthIndex) + '-' + String(col.day).padStart(2, '0');
-}
-
 export function daysInCalendarMonth(year, monthIndex) {
   return new Date(year, monthIndex + 1, 0).getDate();
 }

@@ -105,19 +105,3 @@ export function shouldUppercaseHcInput(el) {
   return type === 'text' || type === '' || type === 'search';
 }
 
-/**
- * @param {HTMLInputElement | HTMLTextAreaElement} el
- */
-export function applyUppercaseToHcInput(el) {
-  if (!shouldUppercaseHcInput(el)) return;
-  const next = toClinicalHistoryText(el.value);
-  if (el.value === next) return;
-  const start = el.selectionStart;
-  const end = el.selectionEnd;
-  el.value = next;
-  if (start != null && end != null) {
-    try {
-      el.setSelectionRange(start, end);
-    } catch (_e) { void _e; }
-  }
-}

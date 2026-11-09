@@ -105,11 +105,6 @@ export function warnIfLocalStorageNearFull() {
   }
 }
 
-/** @internal tests */
-export function __resetLocalStorageWarnForTests() {
-  _warnedLocalStorageNearFull = false;
-}
-
 export function isQuotaExceededError(err) {
   if (!err) return false;
   return (

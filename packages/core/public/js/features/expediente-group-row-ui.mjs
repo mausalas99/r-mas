@@ -11,16 +11,6 @@ import { updateExpPendientesTabBadge } from './todos-list-render.mjs';
 
 var resyncWired = false;
 
-export function usesGroupedExpedienteRow() {
-  if (typeof document !== 'undefined' && document.documentElement.classList.contains('rpc-mobile-web')) {
-    return true;
-  }
-  if (typeof window.matchMedia === 'function') {
-    return window.matchMedia('(min-width: 1100px)').matches;
-  }
-  return false;
-}
-
 function rowEl() {
   return document.getElementById('exp-group-row');
 }

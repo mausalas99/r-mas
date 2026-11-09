@@ -87,21 +87,6 @@ export function rewriteCloudMobileBookmarkUrl(user) {
 }
 
 /** @param {HTMLElement} gate */
-export function showCloudMobileConnecting(gate) {
-  document.body.classList.add('rpc-cloud-mobile-gated');
-  gate.hidden = false;
-  gate.innerHTML =
-    '<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="dialog" aria-modal="true" aria-labelledby="rpc-cloud-mobile-modal-title">' +
-    '<div class="rpc-cloud-mobile-modal__head">' +
-    '<h4 id="rpc-cloud-mobile-modal-title" class="rpc-cloud-mobile-modal__title">R+ Móvil</h4>' +
-    '<p class="rpc-cloud-mobile-modal__sub">Conectando al turno…</p>' +
-    '</div>' +
-    '<div class="rpc-cloud-mobile-modal__body rpc-cloud-mobile-modal__body--center">' +
-    '<span class="rpc-cloud-mobile-spinner" aria-hidden="true"></span>' +
-    '</div></div>';
-}
-
-/** @param {HTMLElement} gate */
 export function dismissCloudMobileGate(gate) {
   gate.hidden = true;
   gate.innerHTML = '';

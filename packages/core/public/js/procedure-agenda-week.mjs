@@ -91,7 +91,3 @@ export function assignLanesByInterval(items) {
   });
   return laneById;
 }
-
-export function hoursVisibleCount() {
-  return AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE - AGENDA_DISPLAY_FIRST_HOUR;
-}

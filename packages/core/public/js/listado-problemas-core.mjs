@@ -41,12 +41,3 @@ export function removeProblema(listado, seccion, id) {
   return Object.assign({}, listado, { [seccion]: filtered });
 }
 
-export function reorderProblema(listado, seccion, fromIndex, toIndex) {
-  ensureSeccion(seccion);
-  const arr = (listado[seccion] || []).slice();
-  if (fromIndex < 0 || fromIndex >= arr.length) return listado;
-  if (toIndex < 0 || toIndex >= arr.length) return listado;
-  const [moved] = arr.splice(fromIndex, 1);
-  arr.splice(toIndex, 0, moved);
-  return Object.assign({}, listado, { [seccion]: arr });
-}

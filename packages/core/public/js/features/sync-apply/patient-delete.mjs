@@ -19,11 +19,6 @@ export function configurePatientDeleteLocal(deps) {
   if (deps && typeof deps === 'object') Object.assign(deleteDeps, deps);
 }
 
-/** @deprecated Prefer configurePatientDeleteLocal — kept for LAN wire-config callers. */
-export function configureLanPatientDelete(deps) {
-  configurePatientDeleteLocal(deps);
-}
-
 export function removePatientLocally(patientId) {
   var pid = String(patientId || '').trim();
   if (!pid || pid.indexOf('demo-') === 0) return false;

@@ -39,12 +39,6 @@ export function isClinicalRepoEventualidadesEnabled() {
   return true;
 }
 
-/** @param {boolean} enabled */
-export function setClinicalRepoEventualidadesEnabled(enabled) {
-  if (typeof localStorage === 'undefined') return;
-  localStorage.setItem(LS_KEY, enabled ? '1' : '0');
-}
-
 /**
  * Feature flag: clinicalRepo.syncProjector (default **on** with eventualidades).
  * Opt out: env `R_PLUS_CLINICAL_REPO_SYNC_PROJECTOR=0` or localStorage key `0`.
@@ -77,7 +71,6 @@ export function setClinicalRepoSyncProjectorEnabled(enabled) {
   localStorage.setItem(LS_KEY_PROJECTOR, enabled ? '1' : '0');
 }
 
-export { LS_KEY as CLINICAL_REPO_EVENTUALIDADES_LS_KEY };
 export { LS_KEY_PROJECTOR as CLINICAL_REPO_SYNC_PROJECTOR_LS_KEY };
 
 /**

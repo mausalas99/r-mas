@@ -10,9 +10,6 @@ import {
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { copyInternoQrImage, drawInternoQrCanvas } from '../../interno-qr-render.mjs';
 
-/** @deprecated Collapsible state key — kept for sessionStorage cleanup only. */
-export const CLOUD_INVITE_MOBILE_OPEN_KEY = 'rpc-cloud-invite-mobile-open';
-
 /** @param {HTMLElement} host @param {string} url */
 function mountCloudMobileQrPreview(host, url) {
   if (!host || !url) return;

@@ -162,16 +162,6 @@ export function abortPendingLabRepoBatchJobs(jobs) {
   });
 }
 
-/** @param {LabRepoBatchJobStatus} status */
-export function labRepoBatchJobStatusLabel(status) {
-  if (status === 'running') return 'Consultando…';
-  if (status === 'ok') return 'Actualizado';
-  if (status === 'empty') return 'Sin estudios';
-  if (status === 'error') return 'Error';
-  if (status === 'aborted') return 'Detenido';
-  return 'En cola';
-}
-
 /**
  * Map fetch classification → job status (connection/throw → error).
  * @param {'ok'|'empty'|'connection'|'error'|'throw'} kind

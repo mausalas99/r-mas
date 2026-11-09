@@ -115,43 +115,6 @@ export function mergeTodoListsById(existing, incoming) {
   return Object.keys(byId).map((k) => byId[k]);
 }
 
-export function remapTodosPatientIds(todosMap, idMap) {
-  const out = {};
-  if (!todosMap || typeof todosMap !== 'object') return out;
-  for (const remotePid of Object.keys(todosMap)) {
-    const localPid = idMap[remotePid] || remotePid;
-    const arr = Array.isArray(todosMap[remotePid]) ? todosMap[remotePid] : [];
-    if (!arr.length) continue;
-    out[localPid] = out[localPid] ? mergeTodoListsById(out[localPid], arr) : arr.slice();
-  }
-  return out;
-}
-
-/**
- * Alinea entry.todos con el mapa fusionado de LiveSync (borrados no reaparecen por unión).
- * @param {object[]} entries
- * @param {Record<string, object[]>} todosMap
- * @param {string[]} [todoTouchedPatientIds] pacientes con cambio de pendientes (p. ej. delete)
- */
-export function attachTodosMapToPatientEntries(entries, todosMap, todoTouchedPatientIds) {
-  if (!Array.isArray(entries)) return [];
-  const map = todosMap && typeof todosMap === 'object' ? todosMap : {};
-  const touched = new Set(
-    Array.isArray(todoTouchedPatientIds) ? todoTouchedPatientIds.map((id) => String(id)) : []
-  );
-  for (const entry of entries) {
-    const id = entry?.patient?.id ? String(entry.patient.id) : '';
-    if (!id) continue;
-    if (Object.prototype.hasOwnProperty.call(map, id)) {
-      const list = map[id];
-      entry.todos = Array.isArray(list) ? list.map((t) => ({ ...t })) : [];
-    } else if (touched.has(id)) {
-      entry.todos = [];
-    }
-  }
-  return entries;
-}
-
 export function remapAgendaPatientIds(agenda, idMap) {
   if (!Array.isArray(agenda)) return [];
   return agenda.map((ev) => {

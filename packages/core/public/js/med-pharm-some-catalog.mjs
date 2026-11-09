@@ -163,15 +163,6 @@ export function applySomePharmCatalogOverlay(catalogFromStorage) {
   _overlayTokens = sanitizeSomePharmCatalog(block).tokens;
 }
 
-export function getSomePharmCatalogSnapshot() {
-  const tokens = Object.create(null);
-  SOME_PHARM_FILTER_ORDER.forEach(function (cat) {
-    if (cat === 'OTROS') return;
-    tokens[cat] = tokensForCategory(cat).slice();
-  });
-  return { tokens };
-}
-
 export function listSomePharmFilterLabels() {
   return ['TODOS'].concat(SOME_PHARM_FILTER_ORDER);
 }

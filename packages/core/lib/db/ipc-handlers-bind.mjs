@@ -14,17 +14,3 @@ export function bindIpcHandler(ipcMain, channel, handler) {
     }
   });
 }
-
-/**
- * @param {import('./ipc-handlers-context.mjs').IpcHandlerContext['dbManager']} dbManager
- * @param {(payload: Record<string, unknown>) => (db: import('better-sqlite3').Database, ctx: object) => unknown} buildWork
- */
-export function bindDbTxnHandler(ipcMain, channel, dbManager, buildWork) {
-  bindIpcHandler(ipcMain, channel, async (payload) => {
-    const result = await dbManager.withTransaction(buildWork(payload));
-    if (result && typeof result === 'object' && result.ok === false) return result;
-    if (result === undefined) return { ok: true };
-    if (typeof result === 'object' && !('ok' in result)) return { ok: true, ...result };
-    return { ok: true, result };
-  });
-}

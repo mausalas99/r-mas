@@ -517,7 +517,3 @@ export function openTodoDueModal(opts) {
   if (dateTrigger instanceof HTMLElement) dateTrigger.focus();
   else datetimeInput.focus();
 }
-
-export function closeTodoDueModalPublic() {
-  closeTodoDueModal();
-}

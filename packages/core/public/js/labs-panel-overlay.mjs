@@ -14,12 +14,6 @@ function hydrateGate(g) {
   return new RegExp(escapeRe(g), 'i');
 }
 
-function serializeGate(g) {
-  if (typeof g === 'string') return g;
-  if (g instanceof RegExp) return g.source;
-  return String(g);
-}
-
 function hydrateField(f) {
   if (!f) return f;
   if (f.patterns) {
@@ -52,16 +46,6 @@ function findBuiltinIndex(list, rec) {
     if (list[i].sectionKey === baseKey && list[i].mode === mode) return i;
   }
   return -1;
-}
-
-function serializeField(f) {
-  if (f.patterns) {
-    return {
-      key: f.key,
-      patterns: (f.patterns || []).map(serializeGate),
-    };
-  }
-  return { key: f.key, labels: (f.labels || []).slice() };
 }
 
 function shouldReplaceOverlay(prev, rec) {
@@ -105,20 +89,4 @@ export function applyOverlayToBuiltins(builtins, overlayArr) {
     }
   });
   return list;
-}
-
-export function panelDefToOverlayPatch(def, meta) {
-  var rec = {
-    panelId: meta.panelId,
-    sectionKey: def.sectionKey,
-    mode: def.mode || 'num',
-    gates: Array.isArray(meta.gates) ? meta.gates.slice() : (def.gates || []).map(serializeGate),
-    fields: Array.isArray(meta.fields) ? meta.fields.map(function (f) {
-      return f.patterns ? { key: f.key, patterns: (f.patterns || []).slice() } : { key: f.key, labels: (f.labels || []).slice() };
-    }) : (def.fields || []).map(serializeField),
-    updatedAt: meta.updatedAt,
-    updatedBy: meta.updatedBy,
-  };
-  if (meta.baseSectionKey) rec.baseSectionKey = meta.baseSectionKey;
-  return rec;
 }

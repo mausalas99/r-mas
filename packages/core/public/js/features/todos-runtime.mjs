@@ -31,10 +31,6 @@ export function getClinicalUsername() {
   return u ? String(u) : null;
 }
 
-export function getTodosRuntime() {
-  return rt;
-}
-
 export function getListFilter() {
   return listFilter;
 }
