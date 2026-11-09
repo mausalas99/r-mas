@@ -22,13 +22,11 @@ import { looksLikeIcSugerenciasPaste } from '../ic-sugerencias-parse.mjs';
 import { isModeSala } from '../mode-features.mjs';
 import { settingsRef } from './profile-runtime.mjs';
 import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
+import { notify } from '../toast-notify.mjs';
 
 var wired = false;
 var confirmDom = null;
 
-function showToast(msg, type) {
-  if (typeof window.showToast === 'function') window.showToast(msg, type);
-}
 
 function switchToLabTab() {
   if (typeof window.switchAppTab === 'function') window.switchAppTab('lab');
@@ -86,12 +84,12 @@ export function processSmartPaste(text, opts) {
   });
 
   if (plan.kind === 'empty' || plan.kind === 'not-some') {
-    if (opts && opts.force) showToast(plan.message || 'No hay reporte SOME', 'error');
+    if (opts && opts.force) notify(plan.message || 'No hay reporte SOME', 'error');
     return plan;
   }
 
   if (plan.kind === 'mixed-expediente') {
-    showToast(plan.message, 'error');
+    notify(plan.message, 'error');
     return plan;
   }
 
@@ -104,7 +102,7 @@ export function processSmartPaste(text, opts) {
   if (plan.kind === 'ic-sugerencias') {
     // Sala has no Indicaciones tab: the paste would be saved out of sight.
     if (isModeSala(settingsRef())) {
-      if (opts && opts.force) showToast('Las sugerencias de interconsulta se pegan en modo Interconsulta', 'error');
+      if (opts && opts.force) notify('Las sugerencias de interconsulta se pegan en modo Interconsulta', 'error');
       return plan;
     }
     void applyIcSugerenciasPaste(plan.sourceText);
@@ -124,7 +122,7 @@ export function processSmartPaste(text, opts) {
 export function procesarSomeFromClipboard() {
   return readClipboardText().then(function (text) {
     if (!String(text || '').trim()) {
-      showToast('Copia un reporte SOME al portapapeles primero', 'error');
+      notify('Copia un reporte SOME al portapapeles primero', 'error');
       return null;
     }
     return processSmartPaste(text, { force: true });
@@ -218,10 +216,10 @@ async function onDocumentDrop(ev) {
   var id = card ? card.getAttribute('data-patient-id') : '';
   var target = id ? getPatients().find(function (p) { return p && String(p.id) === id; }) || null : null;
   var api = window.electronAPI;
-  if (!api || !api.pdfToText) return showToast('PDF no disponible en esta versión', 'error');
-  if (file.size > PDF_MAX_BYTES) return showToast('PDF muy grande (máx. 15 MB)', 'error');
+  if (!api || !api.pdfToText) return notify('PDF no disponible en esta versión', 'error');
+  if (file.size > PDF_MAX_BYTES) return notify('PDF muy grande (máx. 15 MB)', 'error');
   var res = await api.pdfToText(await file.arrayBuffer());
-  if (!res || !res.ok || !res.text) return showToast('No se pudo leer el PDF', 'error');
+  if (!res || !res.ok || !res.text) return notify('No se pudo leer el PDF', 'error');
   processDroppedPdfText(res.text, target);
 }
 

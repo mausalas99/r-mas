@@ -1,6 +1,7 @@
 /**
  * Guardia census — patient chip action sheet (expediente vs eventualidad).
  */
+import { notify } from '../toast-notify.mjs';
 import { getPatients, persistClinicalState } from '../app-state.mjs';
 import { toClinicalHistoryText } from '../../../lib/clinical-text.mjs';
 import { getUiDensity, setUiDensity } from './chrome.mjs';
@@ -26,9 +27,7 @@ let dismissWired = false;
 let _sheetCtx = null;
 
 function toast(msg, type = 'info') {
-  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(msg, type);
-  }
+  notify(msg, type);
 }
 
 function backdropEl() {

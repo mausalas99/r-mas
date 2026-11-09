@@ -1,6 +1,7 @@
 /**
  * Entregas activas cuyo expediente ya no está en el censo local (borrado o solo LAN).
  */
+import { notify } from './toast-notify.mjs';
 import { getPatients, persistClinicalState } from './app-state.mjs';
 import { clinicalSessionContext, refreshGuardiaCensusFromDb } from './clinical-access-runtime.mjs';
 import { vitalsMonitorAlertState } from './features/session-manager.mjs';
@@ -12,9 +13,7 @@ function dbApi() {
 }
 
 function toast(msg, type = 'info') {
-  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(msg, type);
-  }
+  notify(msg, type);
 }
 
 function patientInLocalCensus(patientId) {

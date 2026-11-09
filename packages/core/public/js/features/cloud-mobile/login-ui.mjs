@@ -29,6 +29,7 @@ import {
   CLOUD_MOBILE_ROOM_RESOLVE_TIMEOUT_MS,
   withCloudMobileBootTimeout,
 } from './boot-timeout.mjs';
+import { notify } from '../../toast-notify.mjs';
 
 function resolveApiBaseUrl() {
   try {
@@ -50,11 +51,7 @@ function createApi() {
 
 /** @param {string} msg @param {string} [kind] */
 function toast(msg, kind) {
-  try {
-    window.showToast?.(msg, kind);
-  } catch {
-    /* ignore */
-  }
+  try { notify(msg, kind); } catch { /* a failing toast must not break login */ }
 }
 
 /** @param {{ recoveryCode?: string } | null | undefined} data */

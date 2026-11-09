@@ -10,6 +10,7 @@ import { formatHHmm, scheduledAtFromTimeInput, buildTimeSelectMarkup, readTimeFr
 import { checkPill } from './entrega-modal-handoff.mjs';
 import { openConfirm } from '../workbench/confirm.mjs';
 import { markFieldInvalid, clearFieldInvalid } from '../../ui-field-invalid.mjs';
+import { notify } from '../../toast-notify.mjs';
 
 const BADGE_LABELS = {
   consentimiento: 'Consent',
@@ -18,9 +19,7 @@ const BADGE_LABELS = {
 };
 
 function toast(msg, type = 'info') {
-  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(msg, type);
-  }
+  notify(msg, type);
 }
 
 function renderBadgeChips(item) {

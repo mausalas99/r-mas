@@ -7,6 +7,7 @@ import { isClinicalLocalOnlyMode, readRpcSettings } from '../clinical-settings.m
 import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 import { needsProfileOnboarding } from './clinical-onboarding-gates.mjs';
 import { CLINICAL_SALAS, filterJoinedTeams } from './clinical-teams/shared.mjs';
+import { notify } from '../toast-notify.mjs';
 
 const PENDING_REJOIN_KEY = 'rpc-rotation-rejoin-pending';
 const EVER_JOINED_KEY = 'rpc-clinical-ever-joined-team';
@@ -183,7 +184,7 @@ async function persistSalaFromModal() {
 async function handleOpenMiRotacion() {
   const saved = await persistSalaFromModal();
   if (!saved.ok) {
-    if (typeof window.showToast === 'function') window.showToast(saved.error || 'Elige tu sala.', 'error');
+    notify(saved.error || 'Elige tu sala.', 'error');
     return;
   }
   closeRotationRejoinModal();

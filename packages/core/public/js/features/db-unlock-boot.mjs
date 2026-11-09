@@ -4,6 +4,7 @@ import { handleUnlockSuccess, tryAutoUnlockDb } from './db-unlock-completion.mjs
 import { delayMs, getClinicalBootDelays, isSqlcipherNativeReady } from './db-unlock-native.mjs';
 import { presentDbUnlockGate } from './db-unlock-overlay.mjs';
 import { electronApi } from './db-unlock-state.mjs';
+import { notify } from '../toast-notify.mjs';
 
 function isUnlockedDbStatus(status) {
   return !status || status.state === 'unlocked';
@@ -42,18 +43,12 @@ async function pollBootUnlockAttempt(electron) {
   return null;
 }
 
-function showToastIfAvailable(msg, kind) {
-  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(msg, kind);
-  }
-}
-
 async function handleNativeBlockedUnlock(status) {
   var nativeMsg = unlockErrorMessage(
     { code: 'DB_NATIVE_ABI_MISMATCH' },
     { nativeError: status.nativeError }
   );
-  showToastIfAvailable(nativeMsg, 'error');
+  notify(nativeMsg, 'error');
   return { unlocked: false, status: status };
 }
 
@@ -71,7 +66,7 @@ function buildAutoUnlockFailureResult(autoRes, status) {
   var errMsg =
     (autoRes && (autoRes.cause || autoRes.error || autoRes.message)) ||
     'No se pudo abrir la base de datos clínica.';
-  showToastIfAvailable(errMsg, 'error');
+  notify(errMsg, 'error');
   return { unlocked: false, status: autoRes || status };
 }
 

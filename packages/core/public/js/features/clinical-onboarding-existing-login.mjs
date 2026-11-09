@@ -32,6 +32,7 @@ import {
 } from './cloud-sync/register-during-onboarding.mjs';
 import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
 import { getCloudSyncRemember, getCloudSyncToken, getCloudSyncUrl } from './cloud-sync/settings.mjs';
+import { notify } from '../toast-notify.mjs';
 
 export function needsExistingAccountLogin(
   settings = readRpcSettings(),
@@ -136,8 +137,7 @@ async function tryResumeLocalIdentity(username, settings) {
  * }} ctx
  */
 export async function finishExistingAccountProfile(ctx) {
-  let settings = readRpcSettings();
-  settings = await tryResumeLocalIdentity(ctx.username, settings);
+  await tryResumeLocalIdentity(ctx.username, readRpcSettings());
 
   await bridgeCloudIdentityToLocal({
     username: ctx.username,
@@ -243,11 +243,7 @@ export async function handleExistingAccountLoginSubmit(ev) {
     if (statusEl) statusEl.textContent = t;
     if (errEl) errEl.hidden = true;
   };
-  const toast = (msg, kind = 'info') => {
-    if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-      window.showToast(msg, kind);
-    }
-  };
+  const toast = (msg, kind = 'info') => notify(msg, kind);
 
   const fields = readExistingLoginFields();
   if (!validateExistingLoginFields(fields, errEl)) return;

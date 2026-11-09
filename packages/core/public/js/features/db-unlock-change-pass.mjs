@@ -1,3 +1,4 @@
+import { notify } from '../toast-notify.mjs';
 import { changePassphraseErrorMessage } from './db-unlock-errors.mjs';
 import { electronApi } from './db-unlock-state.mjs';
 
@@ -74,9 +75,7 @@ export async function submitChangeMasterPassword() {
       return;
     }
     closeChangeMasterPasswordModal();
-    if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-      window.showToast('Contraseña maestra actualizada', 'success');
-    }
+    notify('Contraseña maestra actualizada', 'success');
   } catch (err) {
     setChangePassError((err && err.message) || 'No se pudo cambiar la contraseña.');
     if (submitBtn) submitBtn.disabled = false;

@@ -1,6 +1,7 @@
 /**
  * Client-side QR for interno panel (no LAN fetch; works in Electron file://).
  */
+import { notify } from './toast-notify.mjs';
 import qrcode from 'qrcode-generator';
 
 /** ~7" edge at 300 DPI — crisp when pasted or scaled on a full letter page. */
@@ -61,12 +62,7 @@ export function drawInternoQrCanvas(canvas, text, opts = {}) {
  * @param {(msg: string, kind?: string) => void} [showToast]
  */
 export async function copyInternoQrImage(url, showToast) {
-  const toast =
-    typeof showToast === 'function'
-      ? showToast
-      : (msg, kind) => {
-          if (typeof window.showToast === 'function') window.showToast(msg, kind);
-        };
+  const toast = typeof showToast === 'function' ? showToast : notify;
 
   try {
     const canvas = document.createElement('canvas');

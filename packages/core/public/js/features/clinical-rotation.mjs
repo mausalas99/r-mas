@@ -30,6 +30,7 @@ function toMillis(value) {
 
 import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 import { openConfirm } from './workbench/confirm.mjs';
+import { notify } from '../toast-notify.mjs';
 export function isIncomingPreviewWindow(cycle, nowDate) {
   if (!cycle?.preview_start_at || !cycle?.effective_at) return false;
   const now = toMillis(nowDate);
@@ -65,9 +66,7 @@ function formatEffectiveLabel(iso) {
 }
 
 function toast(msg, type = 'info') {
-  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(msg, type);
-  }
+  notify(msg, type);
 }
 
 function dbApi() {
