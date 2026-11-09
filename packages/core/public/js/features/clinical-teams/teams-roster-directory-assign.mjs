@@ -105,14 +105,7 @@ export async function handleLanDeleteDirectoryUserClick(btn) {
   }
 
   toast('Usuario eliminado de esta Mac.', 'success');
-  const { isBenignPushSkipCode } = await import('../../clinical-profile-cloud-stubs.mjs');
-  const lanPush = await publishClinicalTeamsToSync();
-  if (!lanPush.ok && !isBenignPushSkipCode(lanPush.code)) {
-    toast(
-      'Usuario eliminado aquí, pero no se pudo publicar el cambio a la sala ⇄. Revisa la conexión.',
-      'warning'
-    );
-  }
+  await publishClinicalTeamsToSync();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   const { reloadDirectoryUsersAfterMutation } = await import('./teams-roster-directory-load.mjs');
   await reloadDirectoryUsersAfterMutation();

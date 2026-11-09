@@ -42,9 +42,6 @@ import {
 } from './lab-panel-workbench.mjs';
 import { procesarReporte, renderOutput } from './lab-panel-parse.mjs';
 import {
-  openLabRepoImportModal,
-  closeLabRepoImportModal,
-  confirmLabRepoImport,
   registerLabRepoImportRuntime,
 } from './lab-repo-import.mjs';
 import {
@@ -275,9 +272,6 @@ export const windowHandlers = {
   stepLabHistoryDay,
   reprocessSelectedLabHistorySet,
   deleteSelectedLabHistorySet,
-  openLabRepoImportModal,
-  closeLabRepoImportModal,
-  confirmLabRepoImport,
   openLabRepoBatchModal,
   closeLabRepoBatchModal,
   confirmLabRepoBatchImport,

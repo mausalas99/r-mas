@@ -91,7 +91,7 @@ async function launch() {
     executablePath: electronPath,
     args: [repoRoot, `--user-data-dir=${userDataDir}`],
     cwd: repoRoot,
-    env: { ...process.env, R_PLUS_VERIFY_MODE: '1', R_PLUS_USER_DATA: userDataDir, R_PLUS_LAN_HTTP_PORT: '3792' },
+    env: { ...process.env, R_PLUS_VERIFY_MODE: '1', R_PLUS_USER_DATA: userDataDir },
     timeout: 60000,
   });
   await app.evaluate(({ ipcMain }) => {
@@ -254,7 +254,19 @@ async function fillVital(form, key, values) {
   }
 }
 
+/** The Registro form is a 4-step flow; «Registrar» only shows on the last step (Revisar). */
+async function goStep(page, n) {
+  await page.locator(`.ea-steps-rail [data-ea-step-go="${n}"]`).click();
+  await page.locator(`.ea-step-pane[data-ea-step="${n}"]`).waitFor({ state: 'visible' });
+}
+async function goReview(page) {
+  await goStep(page, 3);
+  await page.locator('.ea-registro-submit').waitFor({ state: 'visible' });
+}
+
 async function openRegistro(page) {
+  // Auto-advance would move the step under the test mid-fill; the test walks the steps itself.
+  await page.evaluate(() => localStorage.setItem('ea-registro-auto-advance', '0'));
   await page.getByRole('button', { name: 'Registro manual' }).click();
   const form = page.locator('#ea-form');
   await form.waitFor({ state: 'visible' });
@@ -291,6 +303,7 @@ async function busyRegistro(page) {
     await page.evaluate(() => document.activeElement?.getAttribute('data-ea-vital') === 'fc'));
   await form.locator('[data-ea-vital="fc"][data-ea-layer-idx="0"]').fill('112');
   check('fixing the value clears the mark', (await form.locator('.vital-doubt-mark').count()) === 0);
+  await goStep(page, 1);
   const glus = form.locator('[data-ea-glu-value]');
   await glus.nth(0).fill('182');
   await glus.nth(1).fill('146');
@@ -320,6 +333,7 @@ async function busyRegistro(page) {
     extraGluOptions
   );
   await form.locator('[data-ea-glu-remove]').last().click();
+  await goStep(page, 2);
   for (const [id, v] of [['ing-t1', '800'], ['ing-t2', '600'], ['ing-t3', '700'], ['egr-t1', '400'], ['egr-t3', '150']]) {
     await form.locator(`#ea-io-${id}`).fill(v);
   }
@@ -343,6 +357,7 @@ async function busyRegistro(page) {
   await extraCustom.locator('[data-ea-io-extra-custom]').fill('Sonda nasogástrica');
   await extraCustom.locator('[data-ea-io-extra-remove]').click();
 
+
   await form.locator('#ea-io-evac').fill('3');
   await form.locator('[data-ea-io-event-add]').selectOption('hemodialisis');
   const hd = form.locator('[data-ea-io-event-row]').last();
@@ -360,11 +375,14 @@ async function busyRegistro(page) {
   );
   await fst.locator('[data-ea-io-event-detail]').fill('80');
   await fst.locator('[data-ea-io-event-ml]').fill('150');
+  // 8.5.4: the live balance rolls per digit (rollText renders each character as an .ea-dg span), not via a .num-roll class.
+  const rolled = await page.evaluate(() => document.querySelectorAll('#ea-balance-turno-live > .ea-dg').length > 0);
   const fit = await page.evaluate(() => {
     const el = document.querySelector('.ea-registro-form-scroll');
     return { scroll: el.scrollHeight, client: el.clientHeight, vh: window.innerHeight };
   });
   // The side panel scrolls its body when busy; the footer with «Registrar» must stay on screen.
+  await goReview(page);
   const footIn = await page.evaluate(() => {
     const b = document.querySelector('#ea-registro-backdrop .ea-registro-submit');
     const r = b && b.getBoundingClientRect();
@@ -380,9 +398,9 @@ async function busyRegistro(page) {
     table.bal.join('|') === '+400|NC|+550' && /-450/.test(table.total),
     table
   );
-  check('live balance rolls in after a change',
-    await page.evaluate(() => document.getElementById('ea-balance-turno-live').classList.contains('num-roll')));
+  check('live balance rolls in after a change', rolled);
   await shot(page, 'registro-busy');
+  await goReview(page);
   await page.locator('.ea-registro-submit').click();
   await form.waitFor({ state: 'hidden' });
   await closeToasts(page);
@@ -395,6 +413,7 @@ async function vitalsOnlyRegistro(page) {
   await fillVital(form, 'tad', [78]);
   await fillVital(form, 'fc', [88]);
   await fillVital(form, 'sat', [95]);
+  await goReview(page);
   await page.locator('.ea-registro-submit').click();
   await form.waitFor({ state: 'hidden' });
   await closeToasts(page);
@@ -403,6 +422,7 @@ async function vitalsOnlyRegistro(page) {
 async function bombaRegistro(page) {
   const form = await openRegistro(page);
   await setRecordedAt(page, 0);
+  await goStep(page, 1);
   await form.locator('label.rpc-switch:has(#ea-bomba-enabled)').click();
   await form.locator('[data-ea-bomba-time]').first().focus();
   await page.keyboard.type('14');
@@ -417,6 +437,7 @@ async function bombaRegistro(page) {
   check('bomba: Enter walks the row, next row starts one hour later', times.join(' ') === '14:00 15:00 16:00 17:00', times);
   await form.locator('[data-ea-bomba-remove]').last().click();
   await shot(page, 'registro-bomba');
+  await goReview(page);
   await page.locator('.ea-registro-submit').click();
   await form.waitFor({ state: 'hidden' });
   await closeToasts(page);
@@ -434,6 +455,7 @@ async function section(name, fn) {
 }
 const dmOf = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
 async function submitRegistro(page, form) {
+  await goReview(page);
   await page.locator('.ea-registro-submit').click();
   await form.waitFor({ state: 'hidden' });
   await closeToasts(page);
@@ -553,6 +575,7 @@ async function turnsRegistros(page) {
     (await box.evaluate((el) => el.classList.contains('ea-vital-box--altered'))) && (recHm === '00:00' || altTime === recHm),
     { recHm, altTime }
   );
+  await goStep(page, 2);
   for (const t of ['t1', 't2', 't3']) {
     await form.locator(`#ea-io-ing-${t}`).fill('500');
     await form.locator(`#ea-io-egr-${t}`).fill('NC');
@@ -573,6 +596,7 @@ async function turnsRegistros(page) {
 
   form = await openRegistro(page);
   await setRecordedAt(page, 0.07);
+  await goStep(page, 2);
   for (const [t, v] of [['t1', '300'], ['t2', '400'], ['t3', '500']]) {
     await form.locator(`#ea-io-ing-${t}`).fill('100');
     await form.locator(`#ea-io-egr-${t}`).fill(v);
@@ -590,6 +614,7 @@ async function turnsRegistros(page) {
   await row.locator('[data-onclick="editarEstadoActualMedicion"]').click();
   form = page.locator('#ea-form');
   await form.waitFor({ state: 'visible' });
+  await goStep(page, 2);
   const c2 = form.locator('[data-ea-io-extra-row]').last();
   const rt = { name: await c2.locator('[data-ea-io-extra-custom]').inputValue(), value: await c2.locator('[data-ea-io-extra-value]').inputValue(), kindHidden: await c2.locator('[data-ea-io-extra-kind]').isHidden() };
   check('editing restores the custom source name and value', rt.name === 'Sonda nasogástrica' && rt.value === '250' && rt.kindHidden, rt);
@@ -607,11 +632,29 @@ async function keyboardAndHd(page) {
       const da = Array.from(el.attributes).map((a) => a.name).find((n) => n.startsWith('data-ea-') && n !== 'data-ea-layer-idx');
       return el.id || da || el.tagName;
     });
+  // The form is a 4-step flow, so Tab walks one step at a time: collect each step's spine in order.
+  // The Tab spine ends at the step's last field (focus stays put there), so stop when focus stops moving.
+  const tok = () =>
+    page.evaluate(() => {
+      const el = document.activeElement;
+      return el ? (el.__eaTok ||= (window.__eaTokN = (window.__eaTokN || 0) + 1)) : 0;
+    });
   await form.locator('#ea-recorded-at').focus();
   const seen = [await desc()];
-  for (let i = 0; i < 22; i++) {
-    await page.keyboard.press('Tab');
-    seen.push(await desc());
+  for (const n of [0, 1, 2]) {
+    if (n > 0) {
+      await goStep(page, n);
+      // Rail button just before the pane, so Tab enters the pane at its first field.
+      await page.locator(`.ea-steps-rail [data-ea-step-go="${n}"]`).focus();
+    }
+    let last = await tok();
+    for (let i = 0; i < 22; i++) {
+      await page.keyboard.press('Tab');
+      const t = await tok();
+      if (t === last) break;
+      last = t;
+      seen.push(await desc());
+    }
   }
   const skip = ['data-ea-vital-add', 'data-ea-altered', 'data-ea-glu-altered', 'data-ea-glu-remove', 'ea-add-glu', 'ea-bomba-enabled', 'data-ea-io-turno-nc'];
   const ids = ['ea-recorded-at', 'data-ea-vital', 'ea-io-ing-t1', 'ea-io-ing-t2', 'ea-io-ing-t3', 'ea-io-egr-t1', 'ea-io-egr-t2', 'ea-io-egr-t3', 'ea-io-evac'];
@@ -621,6 +664,7 @@ async function keyboardAndHd(page) {
     idx.every((v) => v >= 0) && idx.slice(2).every((v, i, a) => i === 0 || v > a[i - 1]) && !seen.some((d) => skip.includes(d)) && seen.filter((d) => d === 'data-ea-vital').length === 6 && seen.filter((d) => d === 'data-ea-glu-value').length === 3,
     seen
   );
+  await goStep(page, 1);
   const glus = form.locator('[data-ea-glu-value]');
   await glus.nth(0).focus();
   await page.keyboard.press('Enter');
@@ -816,6 +860,7 @@ async function rangesThresholds(page) {
   const a3 = [await altered('tas'), await altered('tad')];
   check('TAS and TAD alter separately (88/70, 120/52) and not at 140/90', a1.join() === 'true,false' && a2.join() === 'false,true' && a3.join() === 'false,false', { a1, a2, a3 });
   await put('tas', 130); await put('tad', 80);
+  await goStep(page, 1);
   const rows = form.locator('.ea-glu-row');
   const g0 = rows.nth(0); const g1 = rows.nth(1);
   await g0.locator('[data-ea-glu-value]').fill('110');
@@ -954,6 +999,7 @@ async function pasteParser(page) {
 async function ioTotals(page, app) {
   const form = await openRegistro(page);
   await setRecordedAt(page, 0.2);
+  await goStep(page, 2);
   const set = (id, val) => form.locator(id).fill(val);
   const total = async (id) => (await form.locator(id).innerText()).replace(/\s+/g, ' ').trim();
   await set('#ea-io-ing-t1', '200'); await set('#ea-io-ing-t2', 'NC'); await set('#ea-io-ing-t3', '500');
@@ -968,6 +1014,7 @@ async function ioTotals(page, app) {
   check('turn totals: a turn with two egress parts adds them (350), an NC turn is skipped', e1 === '350', e1);
   await set('#ea-io-ing-t1', '300');
   await set('#ea-io-evac', 'MELENA');
+  await goStep(page, 0);
   await fillVital(form, 'fc', [80]);
   await submitRegistro(page, form);
   const T = (await copyEa(page, app)).text;
@@ -1026,7 +1073,7 @@ async function run() {
   check(
     'empty Signos vitales title carries no date stamp',
     (await page.locator('#ea-snapshot .ea-snapshot-zone-stamp').count()) === 0,
-    await page.locator('#ea-snapshot .ea-snapshot-zone-title').first().innerText()
+    await page.locator('#ea-snapshot .ea-sys-title').first().innerText()
   );
 
   await addMeds(page);
@@ -1252,6 +1299,7 @@ async function run() {
   check('editing a historial row preloads its saved TAS', (await editTas.inputValue()) === '150', await editTas.inputValue());
   await editTas.fill('155');
   const histRowsBefore = await page.locator('.ea-historial-row').count();
+  await goReview(page);
   await page.locator('.ea-registro-submit').click();
   await editForm.waitFor({ state: 'hidden' });
   await closeToasts(page);

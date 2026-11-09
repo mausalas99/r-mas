@@ -98,10 +98,6 @@ function validateRegistrationFields_(fields, errEl) {
   return { username, safeRank: RANKS.includes(fields.rank) ? fields.rank : 'R1' };
 }
 
-async function connectShiftPinIfNeeded_(_shiftPin, _sala, _runtime) {
-  /* LAN shift-pin connect retired — Nube is authority. */
-}
-
 function readRpcSettingsFromStorage_() {
   return readRpcSettings();
 }
@@ -162,15 +158,6 @@ export async function handleClinicalRegistrationSubmit(deps) {
     settings = readRpcSettingsFromStorage_();
   }
 
-  var {
-    assertRoomForUsernameRegister,
-    flushClinicalProfileToCloud,
-    PROFILE_PUSH_FAILED_MSG,
-    isBenignPushSkipCode,
-    notifyProfilePushResult,
-  } = await import('../clinical-profile-cloud-stubs.mjs');
-  var lanRoom = await assertRoomForUsernameRegister({ sala });
-
   try {
     var savedUserId = await persistClinicalUserFromApi_(
       dbApi(),
@@ -210,17 +197,4 @@ export async function handleClinicalRegistrationSubmit(deps) {
   } catch {
     /* onboarding shell optional */
   }
-
-  void (async () => {
-    await connectShiftPinIfNeeded_(fields.shiftPin, sala, deps.runtime);
-    var lanPush = await flushClinicalProfileToCloud({ sala, roomId: lanRoom.roomId });
-    notifyProfilePushResult(lanPush, (msg, kind) => deps.runtime.showToast(msg, kind));
-    if (
-      !lanPush.ok &&
-      !isBenignPushSkipCode(lanPush.code) &&
-      !(lanPush.channels && lanPush.channels.outbox)
-    ) {
-      deps.runtime.showToast(PROFILE_PUSH_FAILED_MSG, 'warning');
-    }
-  })();
 }

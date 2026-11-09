@@ -5,9 +5,6 @@ import {
   claimUsername,
   attachClinicalIdentityByUsername,
   migrateTeamMemberships,
-  promoteTeamLeader,
-  getTeamById,
-  findUserTeamForAutoAssign,
   assignPatientToTeam,
   fetchActivePatientTeamId,
   fetchActiveGuardias,
@@ -135,27 +132,6 @@ function registerDbProfileIdentityHandlers(ctx) {
 /** @param {import('./ipc-handlers-context.mjs').IpcHandlerContext} ctx */
 function registerDbProfileTeamHandlers(ctx) {
   const { ipcMain, dbManager } = ctx;
-
-  bindIpcHandler(ipcMain, 'db:clinical-teams-promote-leader', async (payload) => {
-    const team = await dbManager.withTransaction((db) =>
-      promoteTeamLeader(db, String(payload.teamId || ''), String(payload.userId || ''))
-    );
-    return { ok: true, team: team ?? null };
-  });
-
-  bindIpcHandler(ipcMain, 'db:clinical-team-get-by-id', async (payload) => {
-    const team = await dbManager.withTransaction((db) =>
-      getTeamById(db, String(payload.teamId || ''))
-    );
-    return { ok: true, team: team ?? null };
-  });
-
-  bindIpcHandler(ipcMain, 'db:clinical-find-user-team', async (payload) => {
-    const row = await dbManager.withTransaction((db) =>
-      findUserTeamForAutoAssign(db, String(payload.userId || ''))
-    );
-    return { ok: true, teamId: row?.team_id ?? null };
-  });
 
   bindIpcHandler(ipcMain, 'db:clinical-assign-patient-to-team', async (payload) => {
     await dbManager.withTransaction((db) =>

@@ -12,8 +12,4 @@ function getLanDbManager() {
   return lanDbManager;
 }
 
-function resetLanDbManagerForTests() {
-  lanDbManager = null;
-}
-
-module.exports = { setLanDbManager, getLanDbManager, resetLanDbManagerForTests };
+module.exports = { setLanDbManager, getLanDbManager };

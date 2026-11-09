@@ -7,9 +7,6 @@ import { isMobileWeb } from './mobile-web.mjs';
 export const CONSOLIDATED_TABS_SALA = ['paciente', 'clinico', 'salida'];
 export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico'];
 
-/** @deprecated alias of CONSOLIDATED_TABS_INTER for backward compatibility */
-export const CONSOLIDATED_TABS = CONSOLIDATED_TABS_INTER;
-
 const CLINICO_GRANULAR_TABS = [
   'notas',
   'indica',
@@ -19,11 +16,6 @@ const CLINICO_GRANULAR_TABS = [
   'vpo',
 ];
 export const COMPOSITE_PANE_IDS = ['paciente', 'clinico', 'resultados', 'salida'];
-
-/** @deprecated Manejo eliminado — siempre oculto. */
-export function isClinicoTabHidden(settings) {
-  return isModeSala(settings);
-}
 
 /** @deprecated Manejo eliminado — siempre oculto. */
 export function isManejoSectionHidden(_settings) {
@@ -59,12 +51,8 @@ export function shouldShowConsolidatedTab(id, settings) {
 }
 
 export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'vpo'];
-export const CLINICO_SECTIONS_SALA = ['estadoActual', 'eventualidades', 'medAdmin'];
 export const RESULTADOS_SECTIONS = ['tend', 'cult'];
 export const SALIDA_SECTIONS_SALA = ['listado', 'vpo'];
-
-/** @deprecated use getClinicoSections(settings) */
-export const CLINICO_SECTIONS = CLINICO_SECTIONS_ALL;
 
 const GRANULAR_PANE_ORDER = [
   'datos',

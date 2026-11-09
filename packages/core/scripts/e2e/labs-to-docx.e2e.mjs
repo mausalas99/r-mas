@@ -71,7 +71,6 @@ async function launch() {
       ...process.env,
       R_PLUS_VERIFY_MODE: '1',
       R_PLUS_USER_DATA: userDataDir,
-      R_PLUS_LAN_HTTP_PORT: '3791',
     },
     timeout: 60000,
   });

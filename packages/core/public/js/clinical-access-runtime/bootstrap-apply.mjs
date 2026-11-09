@@ -81,11 +81,6 @@ async function refreshBootstrapScopeAndCensus(userId) {
       teamFilterId: '',
     });
   }
-  if (typeof document !== 'undefined') {
-    void import('../clinical-profile-cloud-stubs.mjs')
-      .then((mod) => mod.flushClinicalProfileToCloud())
-      .catch(() => {});
-  }
   migrateLocalPatientsClinicalSala();
 }
 

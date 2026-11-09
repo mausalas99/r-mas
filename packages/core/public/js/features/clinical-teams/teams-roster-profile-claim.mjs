@@ -97,8 +97,6 @@ export async function claimClinicalUsernameIfNeeded(username, sala, deps = {}) {
   if (!usernameWillChange) return null;
   if (!userId || !api) return false;
 
-  const { assertRoomForUsernameRegister } = await import('../../clinical-profile-cloud-stubs.mjs');
-  await assertRoomForUsernameRegister({ sala });
   if (!(await confirmUsernameChange(currentUsername, username, confirmFn))) return false;
 
   const claimed = await submitUsernameClaim(userId, username, confirmFn);

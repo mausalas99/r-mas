@@ -13,8 +13,6 @@ import {
   deleteDirectoryUser,
   addTeamMember,
   removeTeamMember,
-  setTeamGuardiaToday,
-  clearTeamGuardiaToday,
   getTeamGuardiaToday,
   listTeamMembers,
   buildActivePatientCountByTeam,
@@ -253,37 +251,8 @@ function registerDbTeamsMemberHandlers(ctx) {
 }
 
 /** @param {import('./ipc-handlers-context.mjs').IpcHandlerContext} ctx */
-function registerDbTeamsGuardiaHandlers(ctx) {
-  const { ipcMain, dbManager } = ctx;
-
-  bindIpcHandler(ipcMain, 'db:clinical-teams-guardia-set', async (payload) => {
-    await dbManager.withTransaction((db) => {
-      const userId = String(payload.userId || '');
-      // Admin can set another user's guardia — must not fake their last_activity_at.
-      setTeamGuardiaToday(db, String(payload.teamId || ''), userId);
-    });
-    return { ok: true };
-  });
-
-  bindIpcHandler(ipcMain, 'db:clinical-teams-guardia-clear', async (payload) => {
-    await dbManager.withTransaction((db) =>
-      clearTeamGuardiaToday(db, String(payload.teamId || ''))
-    );
-    return { ok: true };
-  });
-
-  bindIpcHandler(ipcMain, 'db:clinical-teams-guardia-get', async (payload) => {
-    const guardia = await dbManager.withTransaction((db) =>
-      getTeamGuardiaToday(db, String(payload.teamId || ''))
-    );
-    return { ok: true, guardia: guardia ?? null };
-  });
-}
-
-/** @param {import('./ipc-handlers-context.mjs').IpcHandlerContext} ctx */
 export function registerDbTeamsHandlers(ctx) {
   registerDbTeamsListHandlers(ctx);
   registerDbTeamsCrudHandlers(ctx);
   registerDbTeamsMemberHandlers(ctx);
-  registerDbTeamsGuardiaHandlers(ctx);
 }

@@ -1,10 +1,9 @@
 /**
- * Nube-native patient delete: local remove + local tombstone + cloud wipe.
+ * Nube-native patient delete: local remove + cloud wipe.
  * Used by sidebar × and bulk selection.
  */
 import { getPatients } from '../../app-state.mjs';
 import { removePatientLocally } from './patient-delete.mjs';
-import { rememberPatientDeleteTombstone } from './entity-versions-stub.mjs';
 import { enqueueCloudPatientDelete } from '../cloud-sync/mutate-bridge.mjs';
 
 function snapForId(patientId, list) {
@@ -19,7 +18,6 @@ function snapForId(patientId, list) {
  * @param {object} [partial]
  * @returns {{
  *   removeLocal: (id: string) => boolean,
- *   rememberTombstone: (snap: object) => void,
  *   enqueueCloudDelete: (snap: object) => void,
  *   patientsList: object[],
  * }}
@@ -28,7 +26,6 @@ function resolveDeps(partial) {
   var deps = partial || {};
   return {
     removeLocal: deps.removeLocal || removePatientLocally,
-    rememberTombstone: deps.rememberTombstone || rememberPatientDeleteTombstone,
     enqueueCloudDelete: deps.enqueueCloudDelete || enqueueCloudPatientDelete,
     patientsList: deps.patientsList || getPatients(),
   };
@@ -53,7 +50,6 @@ export async function commitOnePatientDelete(patientId, opts) {
   var cloudSnap = { ...snap, id: pid, registro: registro };
 
   deps.removeLocal(pid);
-  deps.rememberTombstone(cloudSnap);
   deps.enqueueCloudDelete(cloudSnap);
 
   return { id: pid, status: 'ok' };

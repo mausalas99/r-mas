@@ -316,13 +316,6 @@ export function getTodoDuePresets(overridesMap) {
   return presets;
 }
 
-/** @deprecated use getTodoDuePresets() */
-export function getTodoDuePresetsLegacyList() {
-  return getTodoDuePresets().map(function (preset) {
-    return { id: preset.id, label: preset.label };
-  });
-}
-
 function applyDeletedPresetOverride(next, id) {
   if (isCustomPresetId(id)) delete next[id];
   else next[id] = { deleted: true };

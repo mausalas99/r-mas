@@ -55,9 +55,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkForUpdates: function() {
     ipcRenderer.send('check-for-updates');
   },
-  checkForModuleUpdate: function() {
-    return ipcRenderer.invoke('check-for-module-update');
-  },
   reinstallCurrentRelease: function() {
     ipcRenderer.send('reinstall-current-release');
   },
@@ -186,9 +183,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalSaveAll: function(payload) {
     return ipcRenderer.invoke('db:clinical-save-all', payload);
   },
-  dbClinicalDeleteBlobs: function(payload) {
-    return ipcRenderer.invoke('db:clinical-delete-blobs', payload || {});
-  },
   dbCloudOutboxList: function() {
     return ipcRenderer.invoke('db:cloud-outbox-list');
   },
@@ -297,24 +291,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalTeamsMemberRemove: function(opts) {
     return ipcRenderer.invoke('db:clinical-teams-member-remove', opts);
   },
-  dbClinicalTeamsGuardiaSet: function(opts) {
-    return ipcRenderer.invoke('db:clinical-teams-guardia-set', opts);
-  },
-  dbClinicalTeamsGuardiaClear: function(opts) {
-    return ipcRenderer.invoke('db:clinical-teams-guardia-clear', opts);
-  },
-  dbClinicalTeamsGuardiaGet: function(opts) {
-    return ipcRenderer.invoke('db:clinical-teams-guardia-get', opts);
-  },
-  dbClinicalTeamsPromoteLeader: function(opts) {
-    return ipcRenderer.invoke('db:clinical-teams-promote-leader', opts);
-  },
-  dbClinicalTeamGetById: function(opts) {
-    return ipcRenderer.invoke('db:clinical-team-get-by-id', opts);
-  },
-  dbClinicalFindUserTeam: function(opts) {
-    return ipcRenderer.invoke('db:clinical-find-user-team', opts);
-  },
   dbClinicalAssignPatientToTeam: function(opts) {
     return ipcRenderer.invoke('db:clinical-assign-patient-to-team', opts);
   },
@@ -366,31 +342,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbInternoAccessSetActive: function(opts) {
     return ipcRenderer.invoke('db:interno-access-set-active', opts);
   },
-  dbEquiposAccessGet: function() {
-    return ipcRenderer.invoke('db:equipos-access-get');
-  },
-  dbEquiposAccessRotate: function(opts) {
-    return ipcRenderer.invoke('db:equipos-access-rotate', opts);
-  },
-  dbEquiposAccessSetActive: function(opts) {
-    return ipcRenderer.invoke('db:equipos-access-set-active', opts);
-  },
-  dbEquiposBoard: function() {
-    return ipcRenderer.invoke('db:equipos-board');
-  },
   dbEquiposReports: function(opts) {
     return ipcRenderer.invoke('db:equipos-reports', opts);
-  },
-  dbEquiposPurgeQueue: function(opts) {
-    return ipcRenderer.invoke('db:equipos-purge-queue', opts);
-  },
-  dbEquiposPromoteTemporaryHost: function(opts) {
-    return ipcRenderer.invoke('db:equipos-promote-temporary-host', opts);
-  },
-  dbEquiposExportMergeSnapshot: function() {
-    return ipcRenderer.invoke('db:equipos-export-merge-snapshot');
-  },
-  dbEquiposMergeSnapshot: function(opts) {
-    return ipcRenderer.invoke('db:equipos-merge-snapshot', opts);
   },
 });

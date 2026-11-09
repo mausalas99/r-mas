@@ -85,7 +85,7 @@ async function launch() {
     executablePath: electronPath,
     args: [repoRoot, `--user-data-dir=${userDataDir}`],
     cwd: repoRoot,
-    env: { ...process.env, R_PLUS_VERIFY_MODE: '1', R_PLUS_USER_DATA: userDataDir, R_PLUS_LAN_HTTP_PORT: '3793' },
+    env: { ...process.env, R_PLUS_VERIFY_MODE: '1', R_PLUS_USER_DATA: userDataDir },
     timeout: 60000,
   });
   await app.evaluate(({ ipcMain }) => {

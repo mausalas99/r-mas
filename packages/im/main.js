@@ -32,7 +32,6 @@ const {
   registerRendererProtocolSchemes,
   attachRendererProtocolHandler,
   rendererAppIndexUrl,
-  shouldUseLegacyHttpRenderer,
 } = require('../core/lib/renderer-protocol.cjs');
 // Boot timing. Enable with R_PLUS_BOOT_PERF=1.
 const BOOT_T0 = process.hrtime.bigint();
@@ -42,7 +41,7 @@ function bootMark(label) {
   console.log(`[R+ boot] ${label}: ${ms.toFixed(1)}ms`);
 }
 
-// Must run before app.ready — app://rplus serves public/ without :3738.
+// Must run before app.ready.
 registerRendererProtocolSchemes({ protocol });
 
 // One writer for userData Local Storage + cloud-sync-remember.json (npm start vs R+.app).
@@ -269,12 +268,7 @@ function createWindow() {
   }
   mainWindow = new BrowserWindow(winOpts);
 
-  if (shouldUseLegacyHttpRenderer()) {
-    const rendererPort = Number(process.env.R_PLUS_LAN_HTTP_PORT) || 3738;
-    mainWindow.loadURL(`http://localhost:${rendererPort}/?rpc-electron=1`);
-  } else {
-    mainWindow.loadURL(rendererAppIndexUrl());
-  }
+  mainWindow.loadURL(rendererAppIndexUrl());
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (isAllowedExternalUrl(url)) shell.openExternal(url);
@@ -1366,13 +1360,11 @@ app.whenReady().then(async () => {
   try {
     installElectronLanCors(session.defaultSession);
     await loadActiveModuleOrClear();
-    if (!shouldUseLegacyHttpRenderer()) {
-      attachRendererProtocolHandler(
-        { protocol, net },
-        path.join(__dirname, '..', 'core', 'public'),
-        { getActiveModuleDir: () => activeModuleDir }
-      );
-    }
+    attachRendererProtocolHandler(
+      { protocol, net },
+      path.join(__dirname, '..', 'core', 'public'),
+      { getActiveModuleDir: () => activeModuleDir }
+    );
     process.env.R_PLUS_USER_DATA = app.getPath('userData');
     applyUpdateChannel(readUpdateChannelFromDisk());
     captureDefaultUpdaterFeed();
@@ -1476,30 +1468,6 @@ app.whenReady().then(async () => {
         dialog.showErrorBox(
           'Recuperación de censo',
           recoverErr && recoverErr.message ? recoverErr.message : String(recoverErr)
-        );
-      }
-      app.quit();
-      return;
-    }
-
-    if (process.env.R_PLUS_FIND_REGISTRO) {
-      try {
-        await unlockPromise;
-        const { runFindRegistroInLog } = await import('../core/lib/db/find-registro-log.mjs');
-        const result = await runFindRegistroInLog({
-          app,
-          dbManager,
-          registro: process.env.R_PLUS_FIND_REGISTRO,
-        });
-        dialog.showMessageBox({
-          type: 'info',
-          title: 'Búsqueda de registro',
-          message: result.count + ' evento(s) en el registro de cambios.\n\n' + result.path,
-        });
-      } catch (findErr) {
-        dialog.showErrorBox(
-          'Búsqueda de registro',
-          findErr && findErr.message ? findErr.message : String(findErr)
         );
       }
       app.quit();

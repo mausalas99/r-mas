@@ -2079,23 +2079,6 @@ html.dark .lab-copy-fab:hover {
   flex-direction: column;
   gap: 16px;
 }
-.lab-repo-import-modal .lab-repo-import-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 12px;
-}
-.lab-repo-import-modal input[readonly] {
-  opacity: 0.85;
-  cursor: default;
-}
-.lab-repo-import-modal .rpc-date-field {
-  width: 100%;
-}
-.lab-repo-import-modal .rpc-date-field__trigger.profile-input {
-  width: 100%;
-  justify-content: space-between;
-}
 .lab-manual-entry-modal {
   display: flex;
   flex-direction: column;

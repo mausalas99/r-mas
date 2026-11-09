@@ -132,12 +132,6 @@ export function isStructuredVitalsFrequency(spec) {
   return norm.mode === 'interval' || norm.mode === 'shift';
 }
 
-/** @param {{ frequency?: unknown, metrics?: Record<string, boolean> }}|unknown} plan */
-export function vitalsMonitoringEnabled(plan) {
-  const norm = normalizeVitalsPlan(plan);
-  return VITALS_METRIC_KEYS.some((k) => norm.metrics[k]);
-}
-
 /** Intervalo o por turno con al menos una métrica activa (rutina = sin signos en interno). */
 export function vitalsStructuredMonitoringEnabled(plan) {
   const norm = normalizeVitalsPlan(plan);

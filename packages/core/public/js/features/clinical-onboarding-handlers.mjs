@@ -9,7 +9,6 @@ import {
   resumeClinicalIdentityByUsername,
 } from '../clinical-access-runtime.mjs';
 import {
-  isClinicalLocalOnlyMode,
   persistClinicalUserBinding,
   readRpcSettings,
 } from '../clinical-settings.mjs';
@@ -107,9 +106,6 @@ async function claimUsernameIfNeeded(api, sessionUserId, username, sala, setting
   const needsClaim = shouldClaimClinicalUsername(currentHandle, username, getClientId());
   if (!needsClaim) return { ok: true, needsClaim: false, sessionUserId, settings };
 
-  const { assertRoomForUsernameRegister } = await import('../clinical-profile-cloud-stubs.mjs');
-  await assertRoomForUsernameRegister({ sala });
-
   if (typeof api.dbClinicalUsernameClaim !== 'function') {
     return { ok: true, needsClaim: false, sessionUserId, settings };
   }
@@ -162,44 +158,15 @@ async function connectShiftPinIfProvided(_shiftPin, _sala) {
   /* LAN shift-pin connect retired */
 }
 
-async function pushProfileToLanAndNotify(sala, needsClaim) {
-  const {
-    flushClinicalProfileToCloud,
-    PROFILE_PUSH_FAILED_MSG,
-    PROFILE_NEEDS_CONNECT_MSG,
-    isBenignPushSkipCode,
-    isProfileNeedsConnectCode,
-    notifyProfilePushResult,
-  } = await import('../clinical-profile-cloud-stubs.mjs');
-  const lanPush = await flushClinicalProfileToCloud({
-    sala: sala || clinicalSessionContext.user?.sala,
-  });
-  notifyProfilePushResult(lanPush, toast);
-
-  const localOnly = isClinicalLocalOnlyMode();
-  if (!localOnly && !lanPush.ok && isProfileNeedsConnectCode(lanPush.code)) {
-    toast(PROFILE_NEEDS_CONNECT_MSG, 'info');
-    const rot = await import('./clinical-rotation-entry.mjs');
-    rot.syncClinicalRotationEntryChrome();
-    return;
-  }
-
-  if (
-    !lanPush.ok &&
-    !isBenignPushSkipCode(lanPush.code) &&
-    !(lanPush.channels && lanPush.channels.outbox)
-  ) {
-    toast(PROFILE_PUSH_FAILED_MSG, 'warning');
-  } else if (lanPush.ok && needsClaim) {
-    toast('@usuario publicado en la sala ⇄.', 'success');
-  }
+function notifyProfilePublished(needsClaim) {
+  if (needsClaim) toast('@usuario publicado en la sala ⇄.', 'success');
 }
 
 async function finishRegistrationLanSideEffects(fields, needsClaim) {
   try {
     if (isCloudSala(fields.sala)) return;
     await connectShiftPinIfProvided(fields.shiftPin, fields.sala);
-    await pushProfileToLanAndNotify(fields.sala, needsClaim);
+    notifyProfilePublished(needsClaim);
   } catch {
     /* LAN connect/push are best-effort after profile save */
   }

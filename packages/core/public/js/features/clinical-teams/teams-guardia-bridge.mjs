@@ -1,10 +1,6 @@
 /**
  * Mi rotación — self-serve teams and membership.
  */
-import {
-  isBenignPushSkipCode,
-  PROFILE_PUSH_FAILED_MSG,
-} from '../../clinical-profile-cloud-stubs.mjs';
 import { isCloudSyncActive } from '../cloud-sync/nube-sync-policy.mjs';
 import { getCloudSyncToken } from '../cloud-sync/settings.mjs';
 import { normalizeCloudSala } from '../cloud-sync/sala-allowlist.mjs';
@@ -51,11 +47,7 @@ export function toastTeamPublishResult(lanPush, localOkMessage) {
     toast(localOkMessage, 'success');
     return;
   }
-  if (isBenignPushSkipCode(lanPush.code)) {
-    toast(`${localOkMessage} (solo en esta Mac hasta conectar sala ⇄).`, 'info');
-    return;
-  }
-  toast(PROFILE_PUSH_FAILED_MSG, 'warn');
+  toast(`${localOkMessage} (solo en esta Mac hasta conectar sala ⇄).`, 'info');
 }
 
 const CLOUD_CLINICAL_OPS_PULL_MIN_MS = 12_000;

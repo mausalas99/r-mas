@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { loadAllBlobs, upsertBlob, deleteBlobs, getBlob } from './clinical-blobs.mjs';
+import { loadAllBlobs, upsertBlob, getBlob } from './clinical-blobs.mjs';
 import { clinicalDbPath, clinicalUnlockMetaPath } from './db-path.mjs';
 import { readHostState } from './host-state-persistence.mjs';
 import { verifyChainRows } from './forensic-audit.mjs';
@@ -209,12 +209,6 @@ function registerDbCoreClinicalHandlers(ctx) {
       return loaded;
     });
     return { ok: true, blobs };
-  });
-
-  bindIpcHandler(ipcMain, 'db:clinical-delete-blobs', async (payload) => {
-    const keys = Array.isArray(payload?.keys) ? payload.keys : [];
-    const deleted = await dbManager.withTransaction((db) => deleteBlobs(db, keys));
-    return { ok: true, deleted: Number(deleted) || 0 };
   });
 
   bindIpcHandler(ipcMain, 'db:clinical-save-all', async (payload) => {

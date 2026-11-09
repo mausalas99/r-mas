@@ -181,9 +181,6 @@ export const IC_HUB_MODULES = IC_CHAPTERS.map((ch) => ({
   stepCount: ch.stepIds.length,
 }));
 
-/** @deprecated Use SALA_HUB_MODULES — kept for legacy imports */
-export const HUB_MODULES = SALA_HUB_MODULES;
-
 function chaptersForBranch(branch) {
   if (branch === 'interconsulta') return IC_CHAPTERS;
   if (branch === 'guardia-v7') return GUARDIA_V7_CHAPTERS;

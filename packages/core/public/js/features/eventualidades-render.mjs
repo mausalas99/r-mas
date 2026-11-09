@@ -2,10 +2,6 @@ import { getPatients, persistClinicalState } from '../app-state.mjs';
 import { touchClinicalSessionActivity } from '../clinical-access-runtime.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
-import {
-  isClinicalRepoEventualidadesEnabled,
-  isClinicalRepoSyncProjectorEnabled,
-} from '../clinical-repo-flag.mjs';
 import { canExecuteClinicalCommand, executeClinicalCommand } from '../clinical-repo-client.mjs';
 import { drainClinicalSyncProjector } from '../clinical-repo-sync-drain.mjs';
 import { _applyPatientPatch } from '../clinical-read-model.mjs';
@@ -259,7 +255,6 @@ function refreshTendenciasAfterEventualidades() {
 
 function shouldPersistViaClinicalRepo(command) {
   return !!(
-    isClinicalRepoEventualidadesEnabled() &&
     canExecuteClinicalCommand() &&
     command &&
     typeof command === 'object' &&
@@ -374,11 +369,7 @@ export async function persistEventualidades(patient, store, command) {
     // Do not await projector/push before UI returns — a concurrent pull can
     // remount the pane from stale cloud state and look like "needs patient switch".
     // Full change_log drain also IPC-clones persistSnapshot lab blobs (~tens of seconds).
-    if (isClinicalRepoSyncProjectorEnabled()) {
-      scheduleEventualidadesSyncDrain(res.changeId);
-    } else {
-      scheduleCloudSyncPush();
-    }
+    scheduleEventualidadesSyncDrain(res.changeId);
     refreshTendenciasAfterEventualidades();
     return { ok: true, via: 'clinical-repo', changeId: res.changeId || null };
   }

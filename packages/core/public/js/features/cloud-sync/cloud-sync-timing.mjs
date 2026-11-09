@@ -13,11 +13,6 @@ export const CLOUD_POLL_IDLE_FALLBACK_MS = 8_000;
 export const CLOUD_POLL_MOBILE_IDLE_FALLBACK_MS = 5_000;
 export const CLOUD_POLL_ACTIVE_FALLBACK_MS = 3_000;
 
-/** @deprecated alias — use FALLBACK or WS constants */
-export const CLOUD_POLL_IDLE_MS = CLOUD_POLL_IDLE_FALLBACK_MS;
-export const CLOUD_POLL_MOBILE_IDLE_MS = CLOUD_POLL_MOBILE_IDLE_FALLBACK_MS;
-export const CLOUD_POLL_ACTIVE_MS = CLOUD_POLL_ACTIVE_FALLBACK_MS;
-
 export const CLOUD_POLL_ACTIVE_WINDOW_MS = 180_000;
 export const CLOUD_POLL_ERROR_MIN_MS = 30_000;
 export const CLOUD_POLL_ERROR_MAX_MS = 5 * 60_000;
@@ -128,24 +123,6 @@ export function isCloudTransientServerError(err) {
       (err && typeof err === 'object' && (err.data?.message || err.message)) || ''
     );
     return D1_OVERLOAD_MESSAGE_RE.test(msg);
-  }
-  return false;
-}
-
-/**
- * Errors a retry can never fix: bad request, auth/permission, not found,
- * payload too large, client too old, or a 409 that isn't a revision race.
- * @param {unknown} err
- */
-export function isCloudPermanentError(err) {
-  const status = Number(err && typeof err === 'object' ? err.status : 0);
-  if (status === 400 || status === 401 || status === 403 || status === 404 ||
-      status === 413 || status === 426) {
-    return true;
-  }
-  if (status === 409) {
-    const code = err && typeof err === 'object' ? err.data?.error : null;
-    return code !== 'revision_stale' && code !== 'conflict';
   }
   return false;
 }

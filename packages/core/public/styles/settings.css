@@ -3135,7 +3135,7 @@ select.profile-input.profile-select {
   align-content: start;
   min-width: 0;
 }
-.settings-perfil-form > .settings-perfil-id,
+.settings-perfil-form > .settings-perfil-idcard,
 .settings-perfil-form > .profile-row,
 .settings-perfil-form > .settings-perfil-hosts {
   grid-column: 1 / -1;
@@ -3159,11 +3159,7 @@ select.profile-input.profile-select {
 [data-profile-mode][hidden] {
   display: none !important;
 }
-/* Equipo en el censo (sala mode only) takes a full row under the three cards. */
-.settings-perfil-form > .settings-perfil-col[data-profile-mode] {
-  grid-column: 1 / -1;
-}
-/* Three cards in one row: Mi cuenta, Modo de trabajo, Firma en documentos. */
+/* Three cards in one row: Mi cuenta, Modo de trabajo (with the signing doctor), Equipo en el censo. */
 .settings-perfil-form > .settings-perfil-col:not([data-profile-mode]),
 .settings-perfil-form > .settings-perfil-col[data-profile-mode] {
   background: var(--card-bg);
@@ -3194,14 +3190,10 @@ select.profile-input.profile-select {
 .settings-perfil-form > .settings-perfil-col .settings-card {
   padding-block: var(--space-1);
 }
-/* Equipo en el censo spans the row: five names side by side. */
-.settings-perfil-form .settings-perfil-team {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--space-3);
-}
+/* Equipo en el censo: five names stacked, label left, name right. */
 .settings-perfil-form .settings-perfil-team .settings-card {
-  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-columns: 72px minmax(0, 1fr) !important;
+  align-items: center;
 }
 /* Narrow column: title + hint on top, control under it. */
 .settings-perfil-form .settings-card {
@@ -3293,6 +3285,30 @@ select.profile-input.profile-select {
 }
 .settings-perfil-form .settings-section-head .wb-btn {
   padding-inline: 0;
+}
+
+/* Mi perfil: name row and Sala chips share one card. */
+.settings-perfil-idcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5) 0;
+  border-radius: 16px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-1);
+}
+.settings-perfil-idcard .settings-perfil-sala {
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+}
+.settings-perfil-idcard .settings-perfil-chips {
+  padding-bottom: var(--space-3);
+}
+.settings-perfil-idcard .settings-perfil-sala:not([open]) > summary {
+  min-height: 40px;
 }
 
 /* Mi perfil: Sala chips (collapsible) and the account form. */
@@ -3400,6 +3416,24 @@ select.profile-input.profile-select {
 }
 .settings-perfil-equipo .settings-perfil-chips {
   padding-bottom: 0;
+}
+/* Team pills and «+ Crear equipo» share one row under the head. */
+.settings-perfil-equipo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
+}
+.settings-perfil-equipo-head {
+  flex: 1 1 100%;
+}
+.settings-perfil-equipo-grid {
+  flex: 1 1 0;
+  margin-bottom: 0;
+}
+.settings-perfil-equipo .settings-perfil-chips {
+  flex: 0 0 auto;
+  padding: 0;
 }
 .settings-perfil-sala .settings-acc-hint {
   margin: 0 0 12px;

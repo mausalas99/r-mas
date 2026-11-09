@@ -6,7 +6,6 @@ import path from 'node:path';
 import { registerDbIpcHandlers } from './ipc-handlers.mjs';
 import { createUnlockedDbManager } from './test-open-db.mjs';
 import { verifyChainRows } from './forensic-audit.mjs';
-import { getTeamById } from './clinical-access-db.mjs';
 
 function createFakeIpcMain() {
   const handlers = new Map();
@@ -203,44 +202,6 @@ describe('db IPC handlers — teams admin', () => {
       callerUserId: boot.user.userId,
     });
     assert.equal(removed.ok, true);
-  });
-});
-
-describe('db IPC handlers — teams promote', () => {
-  const harness = createIpcHarness();
-  beforeEach(() => harness.init());
-  afterEach(() => harness.teardown());
-
-  it('db:clinical-teams-promote-leader updates leader', async () => {
-    const boot = await harness.ipc.invoke('db:clinical-access-bootstrap', {
-      clientId: 'ipc-test-client',
-      rank: 'R4',
-      preferredUsername: 'promote_host',
-    });
-    const next = await harness.ipc.invoke('db:clinical-access-bootstrap', {
-      clientId: 'ipc-next',
-      rank: 'R3',
-      preferredUsername: 'promote_next',
-    });
-    const team = await harness.ipc.invoke('db:clinical-teams-create', {
-      name: 'Promote IPC',
-      service: 'Sala',
-      sala: 'Sala 1',
-      createdBy: boot.user.userId,
-      leaderUserId: boot.user.userId,
-    });
-    await harness.ipc.invoke('db:clinical-teams-member-add', {
-      teamId: team.team.team_id,
-      userId: next.user.userId,
-      callerUserId: boot.user.userId,
-    });
-    const promoted = await harness.ipc.invoke('db:clinical-teams-promote-leader', {
-      teamId: team.team.team_id,
-      userId: next.user.userId,
-    });
-    assert.equal(promoted.ok, true);
-    const dbTeam = await harness.mgr.withTransaction((db) => getTeamById(db, team.team.team_id));
-    assert.equal(dbTeam.leader_user_id, next.user.userId);
   });
 });
 

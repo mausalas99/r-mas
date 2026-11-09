@@ -95,7 +95,7 @@ function resolveRequestPath(root, rel, activeModuleDir) {
 }
 
 /**
- * Serve public/ over app://rplus/… so the desktop UI does not depend on :3738.
+ * Serve public/ over app://rplus/… so the desktop UI needs no local HTTP server.
  * @param {{ protocol: Electron.Protocol }} electron
  * @param {string} publicDir absolute path to public/
  * @param {{ getActiveModuleDir?: () => (string|null) }} [opts] when
@@ -141,16 +141,6 @@ function rendererAppIndexUrl() {
   return `${SCHEME}://${HOST}/index.html`;
 }
 
-/**
- * @returns {boolean} true when env forces legacy http://localhost:3738 UI host.
- * Default remains app://rplus so Electron localStorage (Recuérdame, rpc-settings,
- * cutover flags) survives updates — flipping origin would look like a wipe.
- * Nube HTTP uses IPC (`cloud-sync-fetch`) and does not need localhost.
- */
-function shouldUseLegacyHttpRenderer() {
-  return String(process.env.R_PLUS_RENDERER_HTTP || '').trim() === '1';
-}
-
 module.exports = {
   SCHEME,
   HOST,
@@ -158,6 +148,5 @@ module.exports = {
   attachRendererProtocolHandler,
   resolveRequestPath,
   rendererAppIndexUrl,
-  shouldUseLegacyHttpRenderer,
   contentTypeForPublicPath,
 };

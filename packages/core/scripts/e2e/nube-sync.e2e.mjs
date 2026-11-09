@@ -1312,10 +1312,12 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
     };
     const registerTas = async (page, tas) => {
       await openEA(page);
+      await page.evaluate(() => localStorage.setItem('ea-registro-auto-advance', '0'));
       await page.getByRole('button', { name: 'Registro manual' }).click();
       const form = page.locator('#ea-form');
       await form.waitFor({ state: 'visible' });
       await form.locator('[data-ea-vital="tas"][data-ea-layer-idx="0"]').fill(String(tas));
+      await page.locator('.ea-steps-rail [data-ea-step-go="3"]').click();
       await page.locator('.ea-registro-submit').click();
       await form.waitFor({ state: 'hidden' });
       await closeToasts(page);
@@ -1419,6 +1421,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
     await acceptAbxDias(B.page);
     await B.page.waitForTimeout(500);
     await openEA(B.page);
+    await B.page.evaluate(() => localStorage.setItem('ea-registro-auto-advance', '0'));
     await B.page.getByRole('button', { name: 'Registro manual' }).click();
     const formB = B.page.locator('#ea-form');
     await formB.waitFor({ state: 'visible' });
@@ -1432,6 +1435,7 @@ await r.finish('Nube sync: two devices, both ways, offline, restart, delete', as
     await B.page.waitForTimeout(2000);
     check('registro 81: the open form is not closed, reset or re-pointed by that pull',
       (await formB.isVisible()) && (await formB.locator('[data-ea-vital="tas"][data-ea-layer-idx="0"]').inputValue()) === '141' && !(await noRescateClass()));
+    await B.page.locator('.ea-steps-rail [data-ea-step-go="3"]').click();
     await B.page.locator('.ea-registro-submit').click();
     await B.page.waitForTimeout(1000);
     const submitLeftOpen = await formB.isVisible();

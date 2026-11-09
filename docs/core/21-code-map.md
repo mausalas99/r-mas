@@ -72,7 +72,7 @@ docs/
 | Topic | Primary locations |
 |-------|-------------------|
 | Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs`, `lib/db/ipc-handlers.test.mjs` (fake `ipcMain` harness) |
-| Clinical repo / commands | `lib/clinical-repo/`, `public/js/clinical-repo-client.mjs`, `clinical-repo-flag.mjs`, IPC `db:clinical-command`; eventualidades + sync projector flags (default on; opt-out `0`) |
+| Clinical repo / commands | `lib/clinical-repo/`, `public/js/clinical-repo-client.mjs`, IPC `db:clinical-command` |
 | Roles / privileges | `lib/clinical-scope/` (pure evaluate + sala/team/guardia/cycle), thin `public/js/clinico-access.mjs` + unlock; `lib/db/clinical-privileges.mjs`, `lib/db/clinical-access-*.mjs`; `public/js/clinical-privileges.mjs`; `patient-delete-auth.mjs` (Admin/R4 any chart; others team-only); session bootstrap in `clinical-access-runtime/` (scope-ops = I/O adapter) |
 | LAN LiveSync (retired) | Removed in 8.0.5; P3 fossils cleared (`lan-blob-retire`, `ci:forbid-lan`). Ward server (`server.js`) removed 2026-09-02. |
 | Clinical teams / guardia | `public/js/features/clinical-teams/` (`teams-roster-{panel,manage,create,directory,submit,shell}`, `teams-roster-users-*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |

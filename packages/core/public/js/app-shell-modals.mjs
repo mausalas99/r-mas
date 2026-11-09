@@ -18,7 +18,6 @@ import { closeLabSomeTablesModal } from './features/lab-some-tables-modal.mjs';
 import { closeLabDiagramsModal } from './features/diagrams-render.mjs';
 import { closeLabPasteModal } from './features/lab-paste-modal.mjs';
 import { closeLabBulkPreviewModal } from './features/lab-bulk-preview-modal.mjs';
-import { closeLabRepoImportModal } from './features/lab-repo-import.mjs';
 import {
   closeUnifiedSearch,
   closeExtraTemplatesManager,
@@ -189,9 +188,6 @@ function wireModalDismissLayers(registry) {
 
 /** @param {ReturnType<typeof createModalDismissRegistry>} registry */
 function wireQueuePanelDismissLayers(registry) {
-  regOpenClass(registry, 'lab-repo-import-modal', closeLabRepoImportModal, {
-    panelSelector: '.lab-repo-import-modal',
-  });
   regOpenClass(
     registry,
     'lab-manual-entry-modal',

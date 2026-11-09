@@ -1,9 +1,5 @@
 /** Mi rotación — clinical profile form submit from panel. */
 import { clinicalSessionContext, refreshClinicalUserProfile } from '../../clinical-access-runtime.mjs';
-import {
-  isBenignPushSkipCode,
-  PROFILE_PUSH_FAILED_MSG,
-} from '../../clinical-profile-cloud-stubs.mjs';
 import { hasProgramAdminPrivileges } from '../../clinical-privileges.mjs';
 import { isCloudSyncActive } from '../cloud-sync/nube-sync-policy.mjs';
 import { isCloudSala, normalizeCloudSala } from '../cloud-sync/sala-allowlist.mjs';
@@ -65,12 +61,8 @@ async function resolveProgramAdminChange(adminCb, wasProgramAdmin) {
   };
 }
 
-async function toastProfileSaveResult({ msg, usernameWillChange, sala }) {
-  const { flushClinicalProfileToCloud } = await import('../../clinical-profile-cloud-stubs.mjs');
-  const lanPush = await flushClinicalProfileToCloud({ sala });
-  if (!lanPush.ok && !isBenignPushSkipCode(lanPush.code)) {
-    toast(PROFILE_PUSH_FAILED_MSG, 'warning');
-  } else if (usernameWillChange && lanPush.ok) {
+function toastProfileSaveResult({ msg, usernameWillChange }) {
+  if (usernameWillChange) {
     toast(`${msg} @usuario publicado en la sala ⇄.`, 'success');
   } else {
     toast(msg, 'success');
@@ -234,7 +226,7 @@ async function saveProfileForm(form) {
     (adminChange.isProgramAdmin === true || adminChange.wasProgramAdmin)
       ? 'Perfil guardado. Privilegios de administración activos.'
       : 'Perfil guardado.';
-  await toastProfileSaveResult({ msg, usernameWillChange, sala: fields.sala });
+  toastProfileSaveResult({ msg, usernameWillChange });
   syncRotationConfigButton();
   // Sala must ride the event/push — otherwise switching to a rotation with no
   // local team yet never syncs (push targets only already-known team salas).

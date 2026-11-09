@@ -97,33 +97,6 @@ export function isLocalOnlyPlaceholderUsername(raw) {
   return /^local_[a-z0-9_]+$/.test(normalizeUsername(raw || ''));
 }
 
-/**
- * Ward shift PIN pre-filled during onboarding / ⇄ connect (rotate monthly in code).
- * @returns {string} six digits or ''
- */
-export function bundledWardShiftPin() {
-  const now = new Date();
-  if (now.getFullYear() === 2026 && now.getMonth() === 5) return '527953';
-  return '';
-}
-
-/**
- * Ward LAN host base URL pre-filled for client connect / discovery.
- * @returns {string} http://host:3738 or ''
- */
-export function bundledWardHostUrl() {
-  return 'http://10.0.57.65:3738';
-}
-
-/**
- * Ward sala invite link shipped with the release (rotate when R4 mints a new ticket).
- * Clients see it pre-filled in ⇄ → Unirse con enlace after updating.
- * @returns {string} http://host:3738/join/req_… or ''
- */
-export function bundledWardInviteUrl() {
-  return 'http://10.0.57.65:3738/join/req_5246cafe2d94?th=1407e41b';
-}
-
 /** @returns {Record<string, unknown>} */
 export function readRpcSettings() {
   try {

@@ -40,14 +40,17 @@ export function ProfileModal() {
       <div class="wb-modal-body">
         <div class="settings-perfil" id="profile-body">
           <div class="settings-perfil-form" data-perfil-autosave>
-            <div class="settings-perfil-id">
-              <span class="settings-perfil-avatar" data-perfil-avatar aria-hidden="true">?</span>
-              <div class="settings-perfil-id-text">
-                <p class="settings-perfil-name" data-perfil-name>—</p>
-                <p class="settings-perfil-meta" data-perfil-meta></p>
+            <div class="settings-perfil-idcard">
+              <div class="settings-perfil-id">
+                <span class="settings-perfil-avatar" data-perfil-avatar aria-hidden="true">?</span>
+                <div class="settings-perfil-id-text">
+                  <p class="settings-perfil-name" data-perfil-name>—</p>
+                  <p class="settings-perfil-meta" data-perfil-meta></p>
+                </div>
+                <span class="settings-perfil-saved" data-perfil-saved role="status" aria-live="polite">Se guarda solo</span>
+                <button type="button" class="wb-btn wb-btn-ghost wb-btn-sm" data-onclick="closeSettingsDropdown" data-onclick-2="resetAndStartOnboarding">Ver tutorial de inicio</button>
               </div>
-              <span class="settings-perfil-saved" data-perfil-saved role="status" aria-live="polite">Se guarda solo</span>
-              <button type="button" class="wb-btn wb-btn-ghost wb-btn-sm" data-onclick="closeSettingsDropdown" data-onclick-2="resetAndStartOnboarding">Ver tutorial de inicio</button>
+              <div class="settings-perfil-sala-host" data-perfil-sala-host></div>
             </div>
             <section class="profile-row" id="profile-nube-session" hidden>
               <div class="profile-row-head">
@@ -59,7 +62,6 @@ export function ProfileModal() {
               </div>
             </section>
             <div class="settings-perfil-hosts">
-              <div class="settings-perfil-sala-host" data-perfil-sala-host></div>
               <div class="settings-perfil-sala-host" data-perfil-equipo-host></div>
             </div>
             <div class="settings-perfil-col">
@@ -82,12 +84,7 @@ export function ProfileModal() {
                     <input class="profile-input" id="settings-default-servicio" type="text" placeholder="MEDICINA INTERNA" style="text-transform:uppercase;" data-onblur="onDefaultServicioBlur" />
                   </Action>
                 </Card>
-              </div>
-            </div>
-            <div class="settings-perfil-col">
-              <p class="settings-section-label">Firma en documentos</p>
-              <div class="settings-card-stack">
-                <Card forId="profile-doctor-pick" title="Médico tratante" desc="Elige de tu equipo en Nube.">
+                <Card forId="profile-doctor-pick" title="Médico tratante" desc="Firma tus documentos. Elige de tu equipo en Nube.">
                   <Action class="settings-perfil-doctor">
                     <select class="profile-input profile-select" id="profile-doctor-pick" data-perfil-doctor-pick></select>
                     <input class="profile-input" id="profile-doctor" type="text" placeholder="Dr. Nombre Apellido" aria-label="Médico tratante (otro)" hidden />
