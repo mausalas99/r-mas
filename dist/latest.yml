@@ -1,52 +1,36 @@
-version: 8.5.3
+version: 8.5.4
 files:
-  - url: R+-8.5.3-x64.exe
-    sha512: RmyyQY+6WUhbvQL2PWNizkwcr0KltHWxGpHPNyG91KzG5W3RpUfQLwP4wJ1HVE5ZnVrABV1B5ms/DH5uMrBc2g==
-    size: 138742029
-path: R+-8.5.3-x64.exe
-sha512: RmyyQY+6WUhbvQL2PWNizkwcr0KltHWxGpHPNyG91KzG5W3RpUfQLwP4wJ1HVE5ZnVrABV1B5ms/DH5uMrBc2g==
-releaseDate: '2026-11-03T20:10:49.000Z'
+  - url: R+-8.5.4-x64.exe
+    sha512: xfIIUBuQlHcAYwtR4M7NMQZI0amJeDlqzopTP9lBUnfvOtQn7QES0o2ZFptTuPpdnSvjiAqirShqR7b25tXvQQ==
+    size: 138852366
+path: R+-8.5.4-x64.exe
+sha512: xfIIUBuQlHcAYwtR4M7NMQZI0amJeDlqzopTP9lBUnfvOtQn7QES0o2ZFptTuPpdnSvjiAqirShqR7b25tXvQQ==
+releaseDate: '2026-11-09T21:04:32.000Z'
 releaseNotes: |
-  Los ajustes del censo y del listado se sincronizan por usuario en Nube. Los usuarios nuevos del iPad esperan la aprobación del escritorio. Se quita «Importar desde Drive». Los signos vitales imposibles se marcan, Tendencias muestra el valor bajo el cursor y los errores de paciente salen junto al campo. También corrige errores de sincronización, de la conversión de recetas y del encabezado del censo.
+  El antibiograma interpreta la CMI con CLSI y avisa de posible BLEE/AmpC y de resistencia esperada. Los cultivos nuevos quedan «sin revisar» y ⌘⇧C copia los del equipo. El censo marca en negrita solo lo anormal. El registro manual de Estado actual va por pasos. También corrige la sincronización de labs pesados.
   
-  Nuevo (Nube): doctor, plantilla de médicos, servicio, sala, torre y rótulo FIMI del censo se sincronizan por usuario entre dispositivos.
+  Nuevo (Cultivos): la CMI se interpreta con los puntos de corte de CLSI M100 (36.ª ed., 2026). Si hay duda, no se interpreta.
   
-  Nuevo (Admin): pestaña Solicitudes. Los usuarios nuevos del iPad quedan pendientes hasta que apruebes su sala con Aprobar o Rechazar.
+  Nuevo (Cultivos): pista de mecanismo BLEE/AmpC en Enterobacterales (EUCAST). Es cribado, no diagnóstico.
   
-  Nuevo (Nube): una pastilla «Sin sesión Nube» avisa si el dispositivo perdió la sesión sin cerrarla. Abre el inicio de sesión.
+  Nuevo (Cultivos): se marca la resistencia esperada (EUCAST, CLSI y hongos). Un «S» en esa combinación se ve sospechoso.
   
-  Nuevo (Tendencias): una línea fina sigue el cursor sobre la gráfica y el número grande muestra el valor bajo el cursor. Al salir, vuelve al último valor.
+  Nuevo (Cultivos): un aislamiento o antibiograma nuevo queda «sin revisar» hasta que lo marcas como visto.
   
-  Nuevo (Signos vitales): un valor físicamente imposible se marca con ⚠ y «Valor dudoso». Clic en ⚠ enfoca el campo.
+  Nuevo (Cultivos): tras Actualizar labs, R+ busca en segundo plano el antibiograma que faltaba y avisa de lo nuevo.
   
-  Nuevo (Gráficas): con las flechas ← y → pasas de una columna a otra en las gráficas de Estado actual.
+  Nuevo (Cultivos): ⌘⇧C en Cultivos copia los cultivos (positivos y negativos) de los pacientes fijados.
   
-  Nuevo (Medicamentos): al ocultar un medicamento sale un aviso con Deshacer.
+  Nuevo (Estado actual): el registro manual va por pasos: Signos, Glucosa, Balance y Revisar. Avanza solo y los números ruedan.
   
-  Nuevo (Nube): sin conexión, un aviso dice «Guardado en cola · se enviará al reconectar».
+  Nuevo (Labs): blastos o promielocitos en BH cuentan como valor crítico. Las células inmaduras se conservan al unir BH.
   
-  Cambio (Pacientes): los errores de edad, servicio, cuarto y cama salen bajo el campo y lo enfocan. Ya no sacuden el campo ni lanzan un aviso.
+  Cambio (Censo): negrita solo para lo anormal en Labs y Signos, en vista previa y PDF.
   
-  Cambio (Accesibilidad): la carga del censo y el valor grande de las gráficas avisan a lectores de pantalla.
+  Cambio (Censo): cultivos en una línea por sitio, solo el último resultado si es positivo, sin ATB ni cuenta.
   
-  Cambio (Importar): se quitó el botón «Importar desde Drive» y sus funciones.
+  Cambio (Censo): T°, FC y FR van en una línea. I, B y EVAC también.
   
-  Corrección (Nube): un grupo de labs que llegaba antes que su paciente ya no se pierde.
+  Corrección (Nube): un paciente con muchos labs ya no rompe el envío ni la descarga por el límite de 50 MB.
   
-  Corrección (Nube): un paciente sin nombre real ya no borra el registro bueno de otro dispositivo.
-  
-  Corrección (Nube): el nombre de un paciente ya no queda como marcador en otros dispositivos.
-  
-  Corrección (Antibiograma): el tamiz de cefoxitina positivo cuenta como resistente (MRSA). Negativo cuenta como sensible.
-  
-  Corrección (Recetas): conversión IV a oral, reclasificación de medicamentos y lista de medicamentos.
-  
-  Corrección (Registro): series de signos vitales y formato de signos en el censo.
-  
-  Corrección (Exportar): «µg» ya no se vuelve «ΜG» en los .docx. El PDF del censo parte las fechas largas.
-  
-  Corrección (Censo): R2 se puede dejar vacío, el título usa la sala de Mi perfil, y Sala profesor vacía ya no toma el profesor de las notas.
-  
-  Corrección (Perfil): «Médico tratante» empieza vacío con «Elige tu nombre» si no hay nombre guardado.
-  
-  Corrección (Resumen): la tarjeta Medicamentos ya no llena el espacio vacío cuando está sola.
+  Corrección (Admin): se puede recuperar un guardado anterior de una sala sin cortar sus operaciones.
