@@ -46,7 +46,6 @@ function formatSnapshotIngresos(ing) {
 /** Vitals shown as individual cards in the snapshot strip (T/A is combined). */
 var SNAPSHOT_STRIP_VITAL_KEYS = ['fc', 'fr', 'temp', 'sat'];
 
-/** Labels in the snapshot strip. */
 var SNAPSHOT_STRIP_LABELS = {
   fc: VITAL_LABELS.fc,
   fr: VITAL_LABELS.fr,

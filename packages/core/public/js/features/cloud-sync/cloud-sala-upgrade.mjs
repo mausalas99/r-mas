@@ -1,4 +1,4 @@
-import { readRpcSettings } from '../../clinical-settings.mjs';
+import { readRpcSettings, writeRpcSettings } from '../../clinical-settings.mjs';
 
 export const CLOUD_SALA_UPGRADE_KEY = 'cloudSyncSalaUpgrade';
 
@@ -11,7 +11,7 @@ export function setCloudSalaUpgradePending(value) {
   if (value) s[CLOUD_SALA_UPGRADE_KEY] = 'pending';
   else delete s[CLOUD_SALA_UPGRADE_KEY];
   try {
-    localStorage.setItem('rpc-settings', JSON.stringify(s));
+    writeRpcSettings(s);
   } catch (e) {
     console.warn('[cloud-sala-upgrade] failed to write rpc-settings', e);
   }

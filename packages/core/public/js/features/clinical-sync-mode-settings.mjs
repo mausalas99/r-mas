@@ -1,6 +1,7 @@
 /**
  * Ajustes: switch solo-equipo ↔ guardia LAN / Nube.
  */
+import { notify } from '../toast-notify.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
 import {
   isClinicalLocalOnlyMode,
@@ -11,9 +12,7 @@ import { shouldShowNubePanel } from './cloud-sync/nube-sync-policy.mjs';
 import { showConfirmDialog } from '../ui-approval-card.mjs';
 
 function toast(msg, type = 'info') {
-  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(msg, type);
-  }
+  notify(msg, type);
 }
 
 function settingsSala() {

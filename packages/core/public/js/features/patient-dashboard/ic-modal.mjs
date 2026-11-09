@@ -114,11 +114,6 @@ export function openInterconsultModal(opts) {
   };
 }
 
-export function closeInterconsultModal() {
-  if (icLayer && typeof icLayer.close === 'function') icLayer.close();
-  icLayer = null;
-}
-
 /* ── Single-service picker (Servicio solicitante) ──────────────────
  * Same catalog/category chips as the interconsultantes picker above,
  * but a single pick that closes the modal instead of a toggle-array.
@@ -212,9 +207,4 @@ export function openServicePickerModal(opts) {
     if (svc && onSelect) onSelect(svc.name);
     if (svcPickLayer) svcPickLayer.close();
   };
-}
-
-export function closeServicePickerModal() {
-  if (svcPickLayer && typeof svcPickLayer.close === 'function') svcPickLayer.close();
-  svcPickLayer = null;
 }

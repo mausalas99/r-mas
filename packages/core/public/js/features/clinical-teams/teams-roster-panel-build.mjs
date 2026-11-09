@@ -1,4 +1,5 @@
 /** Mi rotación — panel HTML builders extracted from renderClinicalTeamsPanelInto. */
+import { readRpcSettings } from '../../clinical-settings.mjs';
 import {
   effectiveClinicalRank,
   hasProgramAdminPrivileges,
@@ -31,7 +32,7 @@ export async function resolveClinicalTeamsPanelContext(user, joined) {
   let clientId = '';
   let settings = {};
   try {
-    settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    settings = readRpcSettings();
     clientId = String(settings.clientId || '');
   } catch (_e) { void _e; }
 

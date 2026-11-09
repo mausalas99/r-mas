@@ -33,7 +33,6 @@ import {
 } from './guardia-census-table.mjs';
 import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
 import { renderGuardiaBoard, showGuardiaSalaPicker } from './guardia-board-render.mjs';
-import { mountCountersBand } from './workbench/counters-band.mjs';
 import { clearGuardiaSala, isAppShellInstalled, markAppShellInstalled } from './guardia-board-state.mjs';
 
 export function resolveGuardiaGridRank(user) {
@@ -96,11 +95,6 @@ export function installGuardiaAppShell() {
     // instantly — Cambiar is a one-night manual override.
     showGuardiaSalaPicker(null);
   });
-}
-
-/** @param {string} pid */
-export function pendingTodoCount(pid) {
-  return storage.getTodos(pid).filter((t) => !t.completed).length;
 }
 
 /** @param {string} pid */
@@ -245,65 +239,6 @@ export function computeGuardiaSummary(censusPatients, guardiasMap) {
     admissionsToday,
     admissionsEnValoracion,
   };
-}
-
-function guardiaVitalsCounterDetail(summary) {
-  if (summary.vitalsOutOfRange > 0) return `${summary.vitalsOutOfRange} fuera de rango sin revisar`;
-  if (summary.vitalsOverdue > 0) return `${summary.vitalsOverdue} vencido${summary.vitalsOverdue === 1 ? '' : 's'}`;
-  if (summary.vitalsDueSoon > 0) return `${summary.vitalsDueSoon} pronto`;
-  return '';
-}
-
-/**
- * Counters band (workbench kit) — Toma de signos (progress) / Pendientes (alert
- * cell) / Ingresos, in that exact order (screen 6a/6b).
- * @param {ReturnType<typeof computeGuardiaSummary>} summary
- * @returns {import('./workbench/counters-band.mjs').CounterCell[]}
- */
-function guardiaCounterCells(summary) {
-  const vitalsPercent =
-    summary.vitalsMonitored > 0
-      ? Math.round((summary.vitalsReceivedToday / summary.vitalsMonitored) * 100)
-      : 0;
-  const pendientesDetail =
-    summary.pendientesOverdue > 0
-      ? `${summary.pendientesOverdue} vencido${summary.pendientesOverdue === 1 ? '' : 's'}`
-      : '';
-  const ingresosDetail =
-    summary.admissionsEnValoracion > 0 ? `${summary.admissionsEnValoracion} en valoración` : '';
-  return [
-    {
-      label: 'Toma de signos · 08:00',
-      figure:
-        summary.vitalsMonitored > 0
-          ? `${summary.vitalsReceivedToday} de ${summary.vitalsMonitored} recibidos`
-          : 'Sin plan de signos',
-      detail: guardiaVitalsCounterDetail(summary),
-      progress: { percent: vitalsPercent },
-    },
-    {
-      label: 'Pendientes',
-      figure: `${summary.pendientesOpen} abierto${summary.pendientesOpen === 1 ? '' : 's'}`,
-      detail: pendientesDetail,
-      tone: 'alert',
-    },
-    {
-      label: 'Ingresos',
-      figure: `${summary.admissionsToday} nuevo${summary.admissionsToday === 1 ? '' : 's'}`,
-      detail: ingresosDetail,
-    },
-  ];
-}
-
-/**
- * @param {ReturnType<typeof computeGuardiaSummary>} summary
- * @param {{ turnoActivo?: boolean }} [opts] unused — kept for call-site compatibility
- */
-export function renderGuardiaSummaryTiles(summary, opts = {}) {
-  void opts;
-  const host = document.getElementById('guardia-summary');
-  if (!host) return;
-  mountCountersBand(host, guardiaCounterCells(summary));
 }
 
 /**

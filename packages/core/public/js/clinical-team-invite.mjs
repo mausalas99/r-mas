@@ -140,14 +140,6 @@ export function buildClinicalTeamInviteMessage(team) {
   return lines.join('\n');
 }
 
-/**
- * @param {{ team_id?: string }} team
- */
-export function buildClinicalTeamInviteUrl(team) {
-  void team;
-  return '';
-}
-
 const BROWSER_GATE_ID = 'clinical-team-invite-browser-gate';
 
 /**

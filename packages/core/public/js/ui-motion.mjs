@@ -215,13 +215,6 @@ export function shakeField(el) {
   try { el.focus({ preventScroll: true }); } catch (_e) { void _e; }
 }
 
-export function shakeFields(els) {
-  (els || []).forEach(function (el) {
-    shakeField(el);
-  });
-}
-
-/** Maps patient-modal validation messages to input ids. */
 export function resolvePatientFieldIds(errorMessage, isFromLab) {
   var msg = String(errorMessage || '').toLowerCase();
   var ids = [];

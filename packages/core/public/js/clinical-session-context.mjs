@@ -1,3 +1,4 @@
+import { readRpcSettings } from './clinical-settings.mjs';
 /**
  * Shared clinical session bag — leaf module (no imports) to avoid ESM cycles
  * with LAN orchestrator / guardia-board / clinical-access-runtime.
@@ -26,7 +27,7 @@ export function resolveClinicalSessionUserId() {
   if (fromCtx) return fromCtx;
   if (typeof localStorage === 'undefined') return '';
   try {
-    const settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    const settings = readRpcSettings();
     return String(settings.clinicalUserId || '').trim();
   } catch {
     return '';

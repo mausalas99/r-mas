@@ -1,4 +1,5 @@
 /** Mi rotación — username claim / resume before profile save. */
+import { readRpcSettings } from '../../clinical-settings.mjs';
 import { clinicalSessionContext, resumeClinicalIdentityByUsername } from '../../clinical-access-runtime.mjs';
 import {
   isLegacyMachineUsername,
@@ -10,7 +11,7 @@ import { dbApi, toast, currentUserId } from './shared.mjs';
 
 export function clientIdFromSettings() {
   try {
-    return String(JSON.parse(localStorage.getItem('rpc-settings') || '{}').clientId || '');
+    return String(readRpcSettings().clientId || '');
   } catch {
     return '';
   }
@@ -35,7 +36,7 @@ async function confirmUsernameChange(currentUsername, username, confirmFn) {
 async function tryResumeExistingUsername(username, errMsg, confirmFn) {
   let settings = {};
   try {
-    settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    settings = readRpcSettings();
   } catch (_e) { void _e; }
   const result = await confirmFn({
     weight: 'consequence',

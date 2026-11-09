@@ -52,10 +52,3 @@ export function createTodoPrioChip(prio, onCycle) {
   });
   return chip;
 }
-
-export function syncTodoRowPriorityVisual(row, prio) {
-  if (!row) return;
-  var valid = normalizeTodoPriority(prio);
-  row.classList.remove('prio-alta', 'prio-media', 'prio-baja');
-  row.classList.add('prio-' + valid);
-}

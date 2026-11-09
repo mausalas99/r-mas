@@ -6,6 +6,7 @@ import {
   sweepLegacyClinicalLocalStorage,
 } from './db-unlock-migration.mjs';
 import { dbUnlockState, electronApi } from './db-unlock-state.mjs';
+import { notify } from '../toast-notify.mjs';
 
 async function hydrateAppStateFromDb() {
   try {
@@ -81,8 +82,8 @@ async function showReleasedPatientsNotice() {
     var api = electronApi();
     if (!api || typeof api.dbTakeUnlockNotice !== 'function') return;
     var n = (await api.dbTakeUnlockNotice()).releasedPatients | 0;
-    if (n > 0 && typeof window.showToast === 'function') {
-      window.showToast(
+    if (n > 0) {
+      notify(
         n === 1
           ? '1 paciente quedó sin equipo porque su equipo se archivó.'
           : n + ' pacientes quedaron sin equipo porque su equipo se archivó.',
@@ -99,12 +100,10 @@ export function handleUnlockSuccess(res) {
   if (res && res.migrationWarning) {
     var warnMsg =
       'La base cifrada se creó, pero la migración de datos locales falló: ' + res.migrationWarning;
-    if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-      window.showToast(warnMsg, 'error');
-    }
+    notify(warnMsg, 'error');
   }
-  if (res && res.archivedEncryptedDb && typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(
+  if (res && res.archivedEncryptedDb) {
+    notify(
       'Se encontró una base de datos cifrada antigua que ya no se puede abrir. R+ empezó con una base vacía. ' +
         'La copia anterior se guardó en: ' + res.archivedEncryptedDb +
         '. Si usas Nube, tus pacientes vuelven al sincronizar.',

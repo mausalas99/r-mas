@@ -8,6 +8,8 @@ import {
 } from './clinical-username.mjs';
 import { readMigratedClientId } from './live-sync-room.mjs';
 
+export const RPC_SETTINGS_KEY = 'rpc-settings';
+
 /** Done list of the in-app hint dots. Lives here, not in lazy feature-hints.mjs, to keep that module off the boot bundle. */
 export const FEATURE_HINTS_DONE_LS_KEY = 'rpc-feature-hints-done';
 
@@ -65,7 +67,7 @@ export function setClinicalSyncModeLocalOnly(localOnly) {
   const settings = readRpcSettings();
   settings.clinicalLocalOnly = !!localOnly;
   try {
-    localStorage.setItem('rpc-settings', JSON.stringify(settings));
+    writeRpcSettings(settings);
   } catch (e) { console.warn("[clinical-settings] failed to write rpc-settings", e); }
   return settings;
 }
@@ -85,7 +87,7 @@ export function setClinicalExistingAccountPath(enabled) {
     delete settings.clinicalOnboardingExistingAccount;
   }
   try {
-    localStorage.setItem('rpc-settings', JSON.stringify(settings));
+    writeRpcSettings(settings);
   } catch (e) { console.warn("[clinical-settings] failed to write rpc-settings", e); }
   return settings;
 }
@@ -125,10 +127,15 @@ export function bundledWardInviteUrl() {
 /** @returns {Record<string, unknown>} */
 export function readRpcSettings() {
   try {
-    return JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    return JSON.parse(localStorage.getItem(RPC_SETTINGS_KEY) || '{}');
   } catch {
     return {};
   }
+}
+
+/** Throws like localStorage.setItem; callers keep their own try/catch. */
+export function writeRpcSettings(settings) {
+  localStorage.setItem(RPC_SETTINGS_KEY, JSON.stringify(settings));
 }
 
 /** Device id for clinical bootstrap (rpc-settings → client id → desktop default). */
@@ -181,7 +188,7 @@ export function needsClinicalLanProfileGate(settings = readRpcSettings()) {
 export function markClinicalLanProfileGateComplete(settings = readRpcSettings()) {
   settings.clinicalLanProfileGateVersion = CLINICAL_LAN_PROFILE_GATE_VERSION;
   try {
-    localStorage.setItem('rpc-settings', JSON.stringify(settings));
+    writeRpcSettings(settings);
   } catch (e) { console.warn("[clinical-settings] failed to write rpc-settings", e); }
   return settings;
 }
@@ -225,7 +232,7 @@ export function ensureLanProfileGateDeviceReset(settings = readRpcSettings()) {
   }
   if (dirty) {
     try {
-      localStorage.setItem('rpc-settings', JSON.stringify(next));
+      writeRpcSettings(next);
     } catch (e) {
       console.warn("[clinical-settings] failed to write rpc-settings", e);
     }
@@ -266,7 +273,7 @@ export function persistClinicalUserBinding(patch) {
     settings.clinicalProgramAdmin = !!patch.isProgramAdmin;
   }
   try {
-    localStorage.setItem('rpc-settings', JSON.stringify(settings));
+    writeRpcSettings(settings);
   } catch (e) { console.warn("[clinical-settings] failed to write rpc-settings", e); }
   return settings;
 }

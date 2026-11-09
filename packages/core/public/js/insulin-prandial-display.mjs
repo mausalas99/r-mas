@@ -9,7 +9,6 @@ import {
   parseInsulinPrandialSlot,
   patientHasInsulinPrandialMeds,
   PRANDIAL_MEAL_ORDER,
-  PRANDIAL_SLOT_PATTERNS,
 } from './insulin-prandial-detect.mjs';
 
 export const INSULIN_PRANDIAL_GROUP_ID = '__insulin_prandial_group__';
@@ -35,19 +34,6 @@ function itemBlob(item) {
       return String(x || '');
     })
     .join(' ');
-}
-
-/**
- * @param {{ dosisRaw?: unknown, frecuenciaRaw?: unknown }} item
- * @returns {string}
- */
-export function formatInsulinPrandialSlotFragment(item) {
-  var slot = parseInsulinPrandialSlot(itemBlob(item));
-  if (!slot) return '';
-  var units = extractInsulinPrandialUnits(item.dosisRaw);
-  var label = insulinPrandialSlotLabel(slot);
-  if (units == null) return label;
-  return String(units).replace(/\.0$/, '') + ' UI SC ' + label;
 }
 
 /**

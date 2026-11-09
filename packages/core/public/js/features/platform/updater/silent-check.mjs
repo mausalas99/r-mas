@@ -56,8 +56,3 @@ export function requestSilentUpdateCheck() {
     return false;
   }
 }
-
-/** @visibleForTesting */
-export function resetSilentUpdateCheckForTests() {
-  lastSilentCheckAt = 0;
-}

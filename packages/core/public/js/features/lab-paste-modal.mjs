@@ -30,11 +30,6 @@ export function closeLabPasteModal() {
   backdrop.setAttribute('aria-hidden', 'true');
 }
 
-export function isLabPasteModalOpen() {
-  var backdrop = backdropEl();
-  return !!(backdrop && backdrop.classList.contains('open'));
-}
-
 export const windowHandlers = {
   openLabPasteModal,
   closeLabPasteModal,

@@ -1,3 +1,4 @@
+import { writeRpcSettings } from './clinical-settings.mjs';
 import { blockIfMobileDocExport, mobileDocExportToast } from './mobile-web.mjs';
 import { handleOutputDirFallback } from './output-dir-fallback.mjs';
 import { isOutputDirError } from './output-dir-fallback.mjs';
@@ -66,7 +67,7 @@ export function saveOutputDirSelection(dir, deps) {
     (deps && deps.loadSettings) || docExportRt.loadSettings;
   if (typeof getSettings === 'function') {
     getSettings().outputDir = dir;
-    localStorage.setItem('rpc-settings', JSON.stringify(getSettings()));
+    writeRpcSettings(getSettings());
   }
   syncApprovedOutputDir(dir);
   if (typeof loadSettings === 'function') loadSettings();

@@ -24,11 +24,6 @@ export function registerTourDemoPatientHooks(ctx) {
   Object.assign(hooks, ctx);
 }
 
-export function isTourDemoRegistro(registro) {
-  var r = String(registro || '').trim();
-  return r === DEMO_REGISTRO || r === DEMO_REGISTRO_2;
-}
-
 export function getDemoPatientIdForRegistro(registro) {
   return REGISTRO_TO_DEMO_ID[String(registro || '').trim()] || null;
 }

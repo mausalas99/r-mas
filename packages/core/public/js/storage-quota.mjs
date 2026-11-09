@@ -1,5 +1,7 @@
 /** Estimación de uso de localStorage y presión de cuota para R+. */
 
+import { notify } from './toast-notify.mjs';
+
 export const STORAGE_WARN_RATIO = 0.82;
 export const STORAGE_BLOCK_RATIO = 0.97;
 export const FALLBACK_LOCAL_STORAGE_QUOTA = 5 * 1024 * 1024;
@@ -97,17 +99,7 @@ export function warnIfLocalStorageNearFull() {
   if (bytes < LOCAL_STORAGE_WARN_BYTES) return;
   _warnedLocalStorageNearFull = true;
   console.warn('[R+] localStorage casi lleno:', bytes, 'bytes');
-  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(
-      'Almacenamiento local casi lleno. Exporta un respaldo y avisa a soporte.',
-      'error'
-    );
-  }
-}
-
-/** @internal tests */
-export function __resetLocalStorageWarnForTests() {
-  _warnedLocalStorageNearFull = false;
+  notify('Almacenamiento local casi lleno. Exporta un respaldo y avisa a soporte.', 'error');
 }
 
 export function isQuotaExceededError(err) {

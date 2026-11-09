@@ -1,4 +1,5 @@
 /** Start guided tour and lab demo patient hooks. */
+import { writeRpcSettings } from '../../clinical-settings.mjs';
 import { applyAppModeSwitchEffects } from '../profile.mjs';
 import { buildBulkLabPreview, extractLabPatientFromBulkBlock } from '../../lab-bulk-paste.mjs';
 import {
@@ -35,7 +36,7 @@ function setupNonGuardiaTourMode() {
   var prevMode = st.appMode;
   st.appMode = tourState.guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
   if (st.appMode !== prevMode) {
-    try { localStorage.setItem('rpc-settings', JSON.stringify(st)); } catch (e) { console.warn('[tour-flow-onboarding] failed to write rpc-settings', e); }
+    try { writeRpcSettings(st); } catch (e) { console.warn('[tour-flow-onboarding] failed to write rpc-settings', e); }
     applyAppModeSwitchEffects();
     rt.renderEstadoActualBar();
   }

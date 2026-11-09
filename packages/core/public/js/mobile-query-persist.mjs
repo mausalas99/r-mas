@@ -6,11 +6,3 @@ export function isMobileWebModePersisted() {
     return false;
   }
 }
-
-export function persistMobilePairingFromSearch() {}
-
-export function restoreMobilePairingFromStorage() {}
-
-export function resolveStoredMobileRoomId() {
-  return '';
-}

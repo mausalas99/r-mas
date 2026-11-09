@@ -408,7 +408,6 @@ async function deleteNetworkPatientsBatched(api, targets) {
 }
 
 /**
- * Bulk-delete every selected patient, one room each.
  * @param {object} deps
  */
 async function handleBulkDeleteNetwork(deps) {

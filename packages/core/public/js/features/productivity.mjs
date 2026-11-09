@@ -1,3 +1,4 @@
+import { writeRpcSettings } from '../clinical-settings.mjs';
 import { esc, escAttr } from '../dom-escape.mjs';
 // Undo, focus mode, unified search, plantillas extra, atajos (Bloque F)
 import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, replaceAppStateFromBackupData, persistClinicalState } from "../app-state.mjs";
@@ -179,7 +180,7 @@ export async function undoLastOperation() {
   } catch (e) {
     console.warn('[productivity] failed to write rpc-scheduled-procedures', e);
   }
-  localStorage.setItem("rpc-settings", JSON.stringify(snap.data.settings || {}));
+  writeRpcSettings(snap.data.settings || {});
   if (snap.data.medCatalog && typeof snap.data.medCatalog === "object") {
     storage.saveMedCatalog(snap.data.medCatalog);
   }
@@ -415,7 +416,7 @@ function ensureExtraTemplatesArray() {
 }
 
 function persistSettings() {
-  localStorage.setItem("rpc-settings", JSON.stringify(rt.getSettings()));
+  writeRpcSettings(rt.getSettings());
 }
 
 export function openExtraTemplatesManager() {

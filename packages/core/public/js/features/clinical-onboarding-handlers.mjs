@@ -1,6 +1,7 @@
 /**
  * Clinical onboarding form handlers.
  */
+import { notify } from '../toast-notify.mjs';
 import {
   clinicalSessionContext,
   lookupClinicalUserByUsername,
@@ -39,9 +40,7 @@ function dbApi() {
 }
 
 function toast(msg, type = 'info') {
-  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(msg, type);
-  }
+  notify(msg, type);
 }
 
 function readUsernameFormFields() {

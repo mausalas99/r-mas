@@ -13,15 +13,6 @@ export const PRANDIAL_NM_LINE_RE = /^INSULINA\s+PREPRANDIAL:/i;
 export const BOMBA_NM_LINE_RE = /BOMBA\s+DE\s+INSULINA/i;
 
 /**
- * @param {unknown} nombreRaw
- * @returns {boolean}
- */
-export function isAntidiabeticMedNombre(nombreRaw) {
-  var n = normalizeNombreForSoapClassify(nombreRaw);
-  return ANTIDIABETIC_MED_RE.test(n);
-}
-
-/**
  * @param {unknown} line
  * @returns {boolean}
  */

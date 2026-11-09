@@ -6,6 +6,7 @@ import { isDbMode } from '../db-storage-bridge.mjs';
 import { ensureLanProfileGateDeviceReset, isClinicalLocalOnlyMode, needsClinicalLanProfileGate, readRpcSettings } from '../clinical-settings.mjs';
 import { handleClinicalRegistrationSubmit } from './clinical-registration-submit.mjs';
 import { setSalaPickerValue } from './sala-picker.mjs';
+import { notify } from '../toast-notify.mjs';
 
 /** @type {((ok: boolean) => void)|null} */
 let pendingResolve = null;
@@ -54,12 +55,6 @@ function backdropEl() {
   return document.getElementById('clinical-registration-backdrop');
 }
 
-function registrationRuntimeToast(msg, kind) {
-  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(msg, kind);
-  }
-}
-
 function wireRegistrationFormOnce() {
   const form = document.getElementById('clinical-registration-form');
   if (!form || form._rpcClinicalRegWired) return;
@@ -67,7 +62,7 @@ function wireRegistrationFormOnce() {
   form.addEventListener('submit', (ev) => {
     ev.preventDefault();
     void handleClinicalRegistrationSubmit({
-      runtime: { showToast: registrationRuntimeToast },
+      runtime: { showToast: notify },
       closeModal: closeClinicalRegistrationModal,
       getPendingResolve: () => pendingResolve,
       setPendingResolve: (fn) => {
@@ -113,17 +108,6 @@ export function closeClinicalRegistrationModal() {
   closeModalAnimated(bd);
 }
 
-
-/**
- * @param {Record<string, unknown>} settings
- * @returns {Promise<boolean>}
- */
-export function promptClinicalRegistrationIfNeeded(settings) {
-  if (!needsClinicalRegistration(settings)) return Promise.resolve(false);
-  return import('./clinical-onboarding-main.mjs').then((mod) =>
-    mod.showMainClinicalOnboarding().then(() => true)
-  );
-}
 
 export const windowHandlers = {
   openClinicalRegistrationModal,

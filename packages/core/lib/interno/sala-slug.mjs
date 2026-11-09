@@ -1,4 +1,4 @@
-import { CLINICAL_SALA_VALUES, clinicalSalaRoomSlug } from '../clinical-salas.mjs';
+import { clinicalSalaRoomSlug } from '../clinical-salas.mjs';
 
 /** @param {string} slug */
 export function salaFromSlug(slug) {
@@ -15,6 +15,3 @@ export function salaFromSlug(slug) {
 export function slugFromSala(sala) {
   return clinicalSalaRoomSlug(sala);
 }
-
-/** @type {readonly string[]} */
-export const INTERNOS_SALA_VALUES = CLINICAL_SALA_VALUES;

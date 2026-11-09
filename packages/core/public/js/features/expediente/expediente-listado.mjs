@@ -1,4 +1,5 @@
 // Listado de problemas UI + docx export
+import { writeRpcSettings } from '../../clinical-settings.mjs';
 import { getPatients, getListadoProblemas, persistClinicalState } from '../../app-state.mjs';
 import { scheduleCloudSyncPush } from '../cloud-sync/mutate-bridge.mjs';
 import { setAsyncButtonLoading } from '../../ui-motion.mjs';
@@ -300,7 +301,7 @@ function saveOutputDir(dir) {
   if (!dir) return;
   var st = rt.getSettings() || {};
   st.outputDir = dir;
-  localStorage.setItem('rpc-settings', JSON.stringify(st));
+  writeRpcSettings(st);
   syncApprovedOutputDir(dir);
 }
 

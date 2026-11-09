@@ -4,6 +4,7 @@ import {
   shouldShowLocalServerOfflineBanner,
 } from '../../document-export-client.mjs';
 import { getPlatformRuntime } from './runtime.mjs';
+import { isCloudMobileClient } from '../cloud-mobile/origin.mjs';
 
 const rt = getPlatformRuntime();
 
@@ -92,25 +93,8 @@ function setRpcOffline(offline) {
 
 function isRpcOffline() { return rpcOffline; }
 
-function isCloudMobileSurface() {
-  try {
-    if (typeof globalThis !== 'undefined' && globalThis.__RPC_CLOUD_MOBILE__) return true;
-    if (
-      typeof document !== 'undefined' &&
-      document.documentElement &&
-      (document.documentElement.dataset.cloudMobile === '1' ||
-        document.documentElement.classList.contains('rpc-cloud-mobile'))
-    ) {
-      return true;
-    }
-  } catch (_e) {
-    void _e;
-  }
-  return false;
-}
-
 function checkRpcServerHealth() {
-  if (isCloudMobileSurface()) {
+  if (isCloudMobileClient()) {
     try {
       rpcOffline = false;
       setRpcOfflineVisible(false);
@@ -158,7 +142,7 @@ function checkRpcServerHealth() {
 }
 
 function initRpcServerHealthWatch() {
-  if (isCloudMobileSurface()) {
+  if (isCloudMobileClient()) {
     checkRpcServerHealth();
     return;
   }

@@ -2,7 +2,6 @@
  * Monitoreo demo para el tour guiado (DEMO PÉREZ).
  * Fechas relativas a «hoy»; patrón inspirado en hoja de enfermería por turno (TM/TV/TN).
  */
-import { medicionHasCoreData } from './features/estado-actual-data.mjs';
 import {
   buildTourMonitoreoEstadoClinico,
   buildTourMonitoreoHistorialEntries,
@@ -29,13 +28,4 @@ export function getTourRegistroFormSample() {
     glucometrias: [{ value: 144, time: '08:00' }],
     io: { ing: 200, egr: 100, evac: 'NO' },
   };
-}
-
-/** @param {unknown[]} historial */
-export function countTourHistorialWithCoreData(historial) {
-  let n = 0;
-  for (const m of historial || []) {
-    if (medicionHasCoreData(m)) n += 1;
-  }
-  return n;
 }

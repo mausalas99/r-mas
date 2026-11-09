@@ -1,3 +1,4 @@
+import { writeRpcSettings } from '../clinical-settings.mjs';
 /** Perfil — format template editor navigation. */
 import { isModeSala } from "../mode-features.mjs";
 import {
@@ -30,7 +31,7 @@ function ensureInterconsultaModeForFormats() {
   var st = settingsRef();
   if (!isModeSala(st)) return;
   st.appMode = "interconsulta";
-  localStorage.setItem("rpc-settings", JSON.stringify(st));
+  writeRpcSettings(st);
   var modeSalaEl = document.getElementById("app-mode-sala");
   var modeInterEl = document.getElementById("app-mode-inter");
   if (modeInterEl) modeInterEl.checked = true;
@@ -115,7 +116,7 @@ export function saveDefaultFormatsFromEditor() {
   syncDraftFromFormatEditorDom();
   var st = settingsRef();
   applyDraftToSettings(st);
-  localStorage.setItem("rpc-settings", JSON.stringify(st));
+  writeRpcSettings(st);
   loadSettings();
   getProfileRuntime().showToast("Formatos guardados ✓", "success");
 }
@@ -133,7 +134,7 @@ export function resetProfileTemplates() {
   var st = settingsRef();
   resetProfileTemplatesToBlank(st);
   resetDraftToBlank();
-  localStorage.setItem("rpc-settings", JSON.stringify(st));
+  writeRpcSettings(st);
   loadSettings();
   var mode = getFormatsEditMode();
   if (mode === "nota") {

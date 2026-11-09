@@ -5,6 +5,7 @@ import {
   readRpcSettings,
   setClinicalExistingAccountPath,
   setClinicalSyncModeLocalOnly,
+  writeRpcSettings,
 } from '../clinical-settings.mjs';
 import {
   buildOnboardingStageHtml,
@@ -56,7 +57,7 @@ export async function handleSyncModeBack() {
   delete settings.clinicalLocalOnly;
   delete settings.clinicalOnboardingExistingAccount;
   try {
-    localStorage.setItem('rpc-settings', JSON.stringify(settings));
+    writeRpcSettings(settings);
   } catch (e) { console.warn("[clinical-onboarding-sync-mode] failed to write rpc-settings", e); }
   await refreshOnboardingHost();
 }

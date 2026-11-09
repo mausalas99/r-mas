@@ -1,4 +1,4 @@
-const SETTINGS_KEY = 'rpc-settings';
+import { readRpcSettings, writeRpcSettings } from '../../clinical-settings.mjs';
 /** Deployed Free-pilot Worker (override in ⇄ → Avanzado). */
 export const DEFAULT_CLOUD_SYNC_URL =
   'https://rplus-sync.rmas-workersdev.workers.dev';
@@ -10,16 +10,12 @@ const REMEMBER_KEY = 'rpc-cloud-sync-remember';
 
 /** @returns {Record<string, unknown>} */
 function readSettings() {
-  try {
-    return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-  } catch {
-    return {};
-  }
+  return readRpcSettings();
 }
 
 /** @param {Record<string, unknown>} settings */
 function writeSettings(settings) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  writeRpcSettings(settings);
 }
 
 export function getCloudSyncUrl() {

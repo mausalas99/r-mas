@@ -35,16 +35,6 @@ export {
   archiveLegacyRepoTodos,
 };
 
-export function todoCompareForSort(a, b) {
-  if (!!a.completed !== !!b.completed) return a.completed ? 1 : -1;
-  var prioOrder = { alta: 0, media: 1, baja: 2 };
-  var pa = prioOrder[a.priority] != null ? prioOrder[a.priority] : 1;
-  var pb = prioOrder[b.priority] != null ? prioOrder[b.priority] : 1;
-  if (pa !== pb) return pa - pb;
-  if (a.createdAt && b.createdAt) return String(b.createdAt).localeCompare(String(a.createdAt));
-  return 0;
-}
-
 export const todosWindowHandlers = {
   renderTodoForm,
   addTodo,

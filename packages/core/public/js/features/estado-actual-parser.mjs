@@ -92,12 +92,6 @@ export function splitGlucoseList(rest) {
   return tokens;
 }
 
-/** @deprecated use parseIoEgresoLine */
-export function parseIoEgresoFromText(raw) {
-  var parts = parseIoEgresoLine(raw);
-  return diuresisValueFromParts(parts);
-}
-
 /**
  * @param {string} line
  * @returns {{ temp?: number, time?: string } | null}

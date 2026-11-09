@@ -2,6 +2,7 @@
  * Start Nube sync runtime on desktop boot when session already has room + token.
  */
 import { isCloudSala } from './sala-allowlist.mjs';
+import { isCloudMobileClient } from '../cloud-mobile/origin.mjs';
 import {
   getCloudSyncToken,
   getCloudSyncRoomId,
@@ -18,8 +19,7 @@ import { OUTBOX_STORAGE_KEY } from './outbox.mjs';
 
 /** @returns {boolean} */
 export function canAutostartCloudSync() {
-  if (typeof globalThis !== 'undefined' && globalThis.__RPC_CLOUD_MOBILE__) return false;
-  return !!getCloudSyncToken();
+  return !isCloudMobileClient() && !!getCloudSyncToken();
 }
 
 /**

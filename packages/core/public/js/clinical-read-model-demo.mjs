@@ -40,16 +40,6 @@ export function getPatientsForDisplay(baseGetPatients) {
 }
 
 /** @param {Array<Record<string, unknown>>} list */
-export function setDemoPatientsForTests(list) {
-  demoPatients = Array.isArray(list) ? list.slice() : [];
-}
-
-/** @param {Array<Record<string, unknown>>} list */
 export function setDemoPatients(list) {
   demoPatients = Array.isArray(list) ? list.slice() : [];
-}
-
-/** @returns {Array<Record<string, unknown>>} */
-export function getDemoPatients() {
-  return demoPatients.slice();
 }

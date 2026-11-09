@@ -30,21 +30,6 @@ export function registerSoapEstadoRuntime(ctx) {
   Object.assign(rt, ctx);
 }
 
-/** Volcado medicinal → campos SOAP (desde pestaña Medicamentos). */
-export function mergeSoapMedField(fieldId, fragment) {
-  var el = document.getElementById(fieldId);
-  if (!el || !fragment) return;
-  var f = String(fragment).trim();
-  if (!f) return;
-  var cur = el.value.trim();
-  el.value = cur ? cur + " | " + f : f;
-}
-
-export function openSOAPModalDirect() {
-  var bd = document.getElementById("soap-modal-backdrop");
-  if (bd) bd.classList.add("open");
-}
-
 /**
  * @param {string} text texto plano.
  * @param {string} [html] versión con formato (ej. `<strong>` para negritas). Si se

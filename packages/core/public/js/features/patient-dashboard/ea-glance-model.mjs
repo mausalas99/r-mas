@@ -99,31 +99,6 @@ export function glanceMedName(raw) {
   return prettyPhrase(s);
 }
 
-/**
- * Compact ronda token. Empty when the default (VO / c/24 h) is enough.
- * @returns {{ text: string, emphasis: boolean }}
- */
-export function glanceMedToken(raw) {
-  const s = String(raw || '');
-  const dia = s.match(/\bD[IÍ]A\s*(\d+)/i);
-  if (dia) return { text: 'día ' + dia[1], emphasis: true };
-  if (/\b(PRN|SOS|EN CASO)\b/i.test(s)) return { text: 'PRN', emphasis: false };
-  const rate = s.match(/(\d+(?:[.,]\d+)?)\s*mcg\s*\/\s*kg\s*\/\s*min/i);
-  if (rate) return { text: rate[1].replace(',', '.'), emphasis: true };
-  const freq = s.match(/\bC\/\s*(\d+)\s*H/i) || s.match(/\bCADA\s+(\d+)\s+HORAS?/i);
-  if (freq && freq[1] !== '24') {
-    const n = Number(freq[1]);
-    return { text: 'c/' + freq[1] + ' h', emphasis: n <= 12 };
-  }
-  if (/\bNEB(?:ULIZAR)?\b/i.test(s)) return { text: 'NEB', emphasis: false };
-  if (/\b(?:IV|EV|INTRAVENOS)/i.test(s) && !/\bVO\b/i.test(s) && !/\bORAL\b/i.test(s)) {
-    return { text: 'IV', emphasis: false };
-  }
-  const ui = s.match(/\b(\d+)\s*UI\b/i);
-  if (ui && /insulina/i.test(s)) return { text: ui[1] + ' UI', emphasis: false };
-  return { text: '', emphasis: false };
-}
-
 /** Name only, except the antibiotic day («DIA 6» → «día 6»), which rounds need at a glance. */
 function glanceMedItem(raw) {
   const name = glanceMedName(raw);

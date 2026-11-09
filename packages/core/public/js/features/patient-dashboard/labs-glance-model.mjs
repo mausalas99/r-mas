@@ -46,23 +46,6 @@ function bodyTokensFromRow(row) {
   return tokens.slice(1);
 }
 
-function isNumericChipLabel(label) {
-  return /^[\d.,]+$/.test(String(label || '').replace(/\*$/, ''));
-}
-
-/**
- * Glance chip copy: analyte + value (`Cr 1.4*`), never a bare number.
- * @param {{ label?: string, value?: string, raw?: string }} chip
- */
-export function formatAlteredChip(chip) {
-  const value = String((chip && (chip.value || chip.raw)) || '').trim();
-  const label = String((chip && chip.label) || '').trim();
-  if (!label || isNumericChipLabel(label)) return value;
-  if (!value) return label;
-  if (value === label || value.startsWith(label)) return value;
-  return label + ' ' + value;
-}
-
 /**
  * One pass over a row's tokens: altered chips (label + value with `*`) plus a
  * count of in-range numeric values and a label→value map for trend lookups.

@@ -2,7 +2,7 @@
  * localStorage-backed overlay store for extended lab panel defs.
  */
 import { LAB_EXTENDED_PANEL_DEFS } from './labs-panel-defs.mjs';
-import { applyOverlayToBuiltins, mergeLabPanelOverlayLww } from './labs-panel-overlay.mjs';
+import { applyOverlayToBuiltins } from './labs-panel-overlay.mjs';
 
 var LS_KEY = 'rpc-lab-panel-overlay';
 var memory = null; // null = not loaded; array = authoritative for session/tests
@@ -31,12 +31,6 @@ export function saveLabPanelOverlays(arr) {
       localStorage.setItem(LS_KEY, JSON.stringify({ overlays: memory }));
     }
   } catch (e) { console.warn('[labs-panel-overlay-store] failed to write ' + LS_KEY, e); }
-}
-
-export function upsertLabPanelOverlay(record) {
-  var next = mergeLabPanelOverlayLww(loadLabPanelOverlays(), [record]);
-  saveLabPanelOverlays(next);
-  return next;
 }
 
 export function getEffectivePanelDefs() {

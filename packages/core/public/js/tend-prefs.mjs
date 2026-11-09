@@ -178,12 +178,6 @@ export function readGroupPanelOrder(patientId, sectionKey) {
   return Array.isArray(arr) ? arr.slice() : null;
 }
 
-export function writeGroupPanelOrder(patientId, sectionKey, familyKeys) {
-  var map = readJson(LS_GROUP_PANEL_ORDER, {});
-  map[groupKey(patientId, sectionKey)] = (familyKeys || []).slice();
-  writeJson(LS_GROUP_PANEL_ORDER, map);
-}
-
 /** Orden de tarjetas spark (claves sectionKey|fieldKey) por paciente y sección de laboratorio. */
 export function readTendCardOrder(patientId, sectionKey) {
   var map = readJson(LS_TEND_CARD_ORDER, {});

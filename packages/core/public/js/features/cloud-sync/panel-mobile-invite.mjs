@@ -1,6 +1,7 @@
 /**
  * Nube ⇄ iPad / R+ Móvil invite card (cloud room deep link + QR).
  */
+import { readRpcSettings } from '../../clinical-settings.mjs';
 import { copyToClipboardSafe } from '../soap-estado.mjs';
 import { buildCloudMobileJoinUrl } from '../cloud-mobile/invite-url.mjs';
 import {
@@ -9,9 +10,6 @@ import {
 } from './settings.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { copyInternoQrImage, drawInternoQrCanvas } from '../../interno-qr-render.mjs';
-
-/** @deprecated Collapsible state key — kept for sessionStorage cleanup only. */
-export const CLOUD_INVITE_MOBILE_OPEN_KEY = 'rpc-cloud-invite-mobile-open';
 
 /** @param {HTMLElement} host @param {string} url */
 function mountCloudMobileQrPreview(host, url) {
@@ -61,7 +59,7 @@ function resolveCloudMobileInviteUrl() {
     .replace(/^@+/, '');
   if (!user) {
     try {
-      const raw = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+      const raw = readRpcSettings();
       user = String(raw.clinicalUsername || '').trim().replace(/^@+/, '');
     } catch {
       /* ignore */

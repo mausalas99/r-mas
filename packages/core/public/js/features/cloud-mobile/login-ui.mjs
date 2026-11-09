@@ -29,6 +29,7 @@ import {
   CLOUD_MOBILE_ROOM_RESOLVE_TIMEOUT_MS,
   withCloudMobileBootTimeout,
 } from './boot-timeout.mjs';
+import { notify } from '../../toast-notify.mjs';
 
 function resolveApiBaseUrl() {
   try {
@@ -50,11 +51,7 @@ function createApi() {
 
 /** @param {string} msg @param {string} [kind] */
 function toast(msg, kind) {
-  try {
-    window.showToast?.(msg, kind);
-  } catch {
-    /* ignore */
-  }
+  try { notify(msg, kind); } catch { /* a failing toast must not break login */ }
 }
 
 /** @param {{ recoveryCode?: string } | null | undefined} data */
@@ -84,21 +81,6 @@ export function rewriteCloudMobileBookmarkUrl(user) {
   } catch {
     /* ignore */
   }
-}
-
-/** @param {HTMLElement} gate */
-export function showCloudMobileConnecting(gate) {
-  document.body.classList.add('rpc-cloud-mobile-gated');
-  gate.hidden = false;
-  gate.innerHTML =
-    '<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="dialog" aria-modal="true" aria-labelledby="rpc-cloud-mobile-modal-title">' +
-    '<div class="rpc-cloud-mobile-modal__head">' +
-    '<h4 id="rpc-cloud-mobile-modal-title" class="rpc-cloud-mobile-modal__title">R+ Móvil</h4>' +
-    '<p class="rpc-cloud-mobile-modal__sub">Conectando al turno…</p>' +
-    '</div>' +
-    '<div class="rpc-cloud-mobile-modal__body rpc-cloud-mobile-modal__body--center">' +
-    '<span class="rpc-cloud-mobile-spinner" aria-hidden="true"></span>' +
-    '</div></div>';
 }
 
 /** @param {HTMLElement} gate */

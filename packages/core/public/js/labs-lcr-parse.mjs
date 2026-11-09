@@ -25,13 +25,6 @@ export function collectLcrBlocks_(textoBruto) {
   return blocks;
 }
 
-/** Normalized blob(s) for stripping LCR from QS / chemistry parsers. */
-export function lcrBlocksNormText_(textoBruto) {
-  return collectLcrBlocks_(textoBruto).map(function (b) {
-    return b.replace(/\r/g, '').replace(/\s+/g, ' ');
-  });
-}
-
 function parseLcrFieldsFromBlock_(bloque) {
   var lineas = bloque
     .split(/\r?\n/)

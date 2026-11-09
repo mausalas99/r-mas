@@ -35,27 +35,3 @@ export function buildFilterChipsHtml(chips, activeId, opts = {}) {
   return `<div class="wb-chips">${(chips || []).map((c) => buildFilterChipHtml(c, activeId, variant)).join('')}</div>`;
 }
 
-/**
- * @param {HTMLElement|null|undefined} container
- * @param {FilterChip[]} chips
- * @param {{ activeId?: string, variant?: 'default'|'teal', onChange?: (id: string) => void }} [opts]
- */
-export function mountFilterChips(container, chips, opts = {}) {
-  if (!container) return undefined;
-  const state = { activeId: opts.activeId };
-
-  function render() {
-    container.innerHTML = buildFilterChipsHtml(chips, state.activeId, opts);
-    container.querySelectorAll('[data-wb-chip-id]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-wb-chip-id');
-        state.activeId = id;
-        render();
-        if (typeof opts.onChange === 'function') opts.onChange(id);
-      });
-    });
-  }
-
-  render();
-  return container;
-}

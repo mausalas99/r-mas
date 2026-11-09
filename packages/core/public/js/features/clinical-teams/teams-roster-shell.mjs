@@ -8,6 +8,7 @@ import {
 } from '../clinical-panel-host.mjs';
 import { renderClinicalTeamsPanel } from './teams-roster-render.mjs';
 import { isEquipoEmbedActive } from '../cloud-sync/panel-equipo-embed.mjs';
+import { notify } from '../../toast-notify.mjs';
 
 export function teamsModalEl() {
   return document.getElementById('clinical-teams-backdrop');
@@ -57,9 +58,7 @@ export async function openClinicalTeamsPanel(opts = {}) {
   const { openConexionEquipoPanel } = await import('../cloud-sync/panel-equipo-nav.mjs');
   await openConexionEquipoPanel({
     skipProfileGate: opts.skipProfileGate,
-    toast(msg, kind) {
-      if (typeof window.showToast === 'function') window.showToast(msg, kind);
-    },
+    toast: notify,
   });
 }
 
@@ -91,9 +90,7 @@ export async function openClinicalTeamsPanelModal(opts = {}) {
     closeClinicalTeamsPanel();
     const mainMod = await import('../clinical-onboarding-main.mjs');
     const msg = await mainMod.describeOnboardingSessionBlock();
-    if (typeof window.showToast === 'function') {
-      window.showToast(msg, 'error');
-    }
+    notify(msg, 'error');
     if (!opts.skipProfileGate && !mainMod.focusMainClinicalOnboarding()) {
       await mainMod.showMainClinicalOnboarding();
     }

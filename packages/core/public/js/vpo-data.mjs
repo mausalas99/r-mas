@@ -174,13 +174,6 @@ export function ensureDuracionKey(state) {
   }
 }
 
-/** @param {object} state @param {string} key */
-export function applyDuracionKey(state, key) {
-  state.duracionCirugiaKey = key || '';
-  var h = duracionKeyToHours(key);
-  state.duracionCirugiaHoras = h != null ? String(h) : '';
-}
-
 /** @param {unknown} monitoreoLike */
 export function getVitalsFromMonitoreo(monitoreoLike) {
   /** @type {any} */
@@ -287,13 +280,6 @@ export function getLatestLabValues(labHistoryPatient, _patient) {
     creatinina: pick('Cr'),
     hemoglobina: hb,
   };
-}
-
-/** @param {object} state @param {{ creatinina?: *, hemoglobina?: *, fecha?: string }} vals */
-export function applyLabValues(state, vals) {
-  if (vals.creatinina != null && vals.creatinina !== '') state.creatinina = String(vals.creatinina);
-  if (vals.hemoglobina != null && vals.hemoglobina !== '') state.hemoglobina = String(vals.hemoglobina);
-  state.lastLabApplied = { fecha: vals.fecha || '', creatinina: state.creatinina, hemoglobina: state.hemoglobina };
 }
 
 /** @param {object} state @param {object|null} patient */

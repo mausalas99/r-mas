@@ -227,8 +227,3 @@ export function vitalsPlanSummary(plan) {
   }
   return `${enabled.map((k) => VITALS_METRIC_LABELS[k]).join(', ')} · ${freqLabel}`;
 }
-
-/** @deprecated Use vitalsFrequencyForDb(spec) */
-export function inferStructuredFrequency(raw) {
-  return vitalsFrequencyForDb(raw);
-}

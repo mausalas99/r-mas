@@ -26,7 +26,6 @@ export function ensureClinicalUser(db, { clientId, rank = 'R1', clinicalName, sa
         'SELECT user_id, username, rank, public_key, encrypted_private_key, is_program_admin FROM users WHERE user_id = ?'
       )
       .get(existing.user_id);
-    // Update clinical_name and sala if provided
     if (clinicalName != null || sala != null) {
       const sets = [];
       const vals = [];

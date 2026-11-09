@@ -10,10 +10,6 @@ export function setLastRondaNavIds(ids) {
   _lastRondaNavIds = ids;
 }
 
-export function getLastRondaNavIds() {
-  return _lastRondaNavIds;
-}
-
 export function onPatientSearchInput(val) {
   setPatientSearchFilter(val);
   patientsBridge.renderPatientList();

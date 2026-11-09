@@ -4,6 +4,7 @@
 import { normalizeUsername, isValidUsernameFormat } from '../clinical-username.mjs';
 import {
   persistClinicalUserBinding,
+  readRpcSettings,
   resolveClinicalClientId,
 } from '../clinical-settings.mjs';
 import { resumeClinicalIdentityByUsername } from '../clinical-access-runtime.mjs';
@@ -102,11 +103,7 @@ async function connectShiftPinIfNeeded_(_shiftPin, _sala, _runtime) {
 }
 
 function readRpcSettingsFromStorage_() {
-  try {
-    return JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-  } catch {
-    return {};
-  }
+  return readRpcSettings();
 }
 
 function showRegistrationError_(errEl, message) {

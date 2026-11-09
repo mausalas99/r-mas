@@ -1,6 +1,7 @@
 /**
  * Guardia census — patient chip action sheet (expediente vs eventualidad).
  */
+import { notify } from '../toast-notify.mjs';
 import { getPatients, persistClinicalState } from '../app-state.mjs';
 import { toClinicalHistoryText } from '../../../lib/clinical-text.mjs';
 import { getUiDensity, setUiDensity } from './chrome.mjs';
@@ -26,9 +27,7 @@ let dismissWired = false;
 let _sheetCtx = null;
 
 function toast(msg, type = 'info') {
-  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(msg, type);
-  }
+  notify(msg, type);
 }
 
 function backdropEl() {
@@ -49,21 +48,6 @@ function findPatient(patientId) {
   );
 }
 
-/**
- * @param {{
- *   turnoActivo?: boolean,
- *   entregaActive?: boolean,
- *   onCallGuardiaReceiver?: boolean,
- *   gridViewContext?: 'GUARDIA'|'HANDOFF',
- * }} ctx
- */
-export function shouldShowGuardiaPatientActionMenu(ctx) {
-  const turnoActivo = !!ctx?.turnoActivo;
-  const entregaActive = !!ctx?.entregaActive;
-  if (entregaActive && !turnoActivo) return false;
-  return turnoActivo;
-}
-
 function closeGuardiaPatientActionSheet() {
   const bd = backdropEl();
   if (!bd) return;
@@ -74,15 +58,6 @@ function closeGuardiaPatientActionSheet() {
   const body = bodyEl();
   if (body) body.innerHTML = '';
   _sheetCtx = null;
-}
-
-function openBackdrop() {
-  const bd = backdropEl();
-  if (!bd) return false;
-  bd.classList.add('open');
-  bd.setAttribute('aria-hidden', 'false');
-  document.documentElement.classList.add('guardia-patient-action-open');
-  return true;
 }
 
 function wireUppercaseTextarea(textarea) {
@@ -351,37 +326,6 @@ async function submitEventualidad(patientId, patientLabel, rawText) {
   } finally {
     if (saveBtn) saveBtn.disabled = false;
   }
-}
-
-/**
- * @param {{ patientId: string, patientLabel?: string, dxText?: string, onMarksSaved?: () => void }} opts
- */
-export function openGuardiaPatientActionSheet(opts) {
-  const patientId = String(opts?.patientId || '');
-  if (!patientId) return;
-  if (!openBackdrop()) {
-    openPatientChart(patientId);
-    return;
-  }
-  wireCancelButton();
-
-  const patient = findPatient(patientId);
-  const patientLabel =
-    String(opts?.patientLabel || '').trim() ||
-    String(patient?.name || '').trim() ||
-    'Paciente';
-
-  const title = document.getElementById('guardia-patient-action-title');
-  if (title) title.textContent = patientLabel;
-
-  const ctx = {
-    patientId,
-    patientLabel,
-    dxText: opts?.dxText ? String(opts.dxText) : '',
-    onMarksSaved: opts?.onMarksSaved,
-  };
-  _sheetCtx = ctx;
-  renderMenuStep(ctx);
 }
 
 export { openPatientChart };

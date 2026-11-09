@@ -26,8 +26,3 @@ export async function purgeExpiredEquiposPhotos(db, bucket, nowMs = Date.now()) 
   await clearEquiposPhotoReferences(db, ids);
   return { purged: true, removed: ids.length, cutoff };
 }
-
-/** @deprecated Use purgeExpiredEquiposPhotos */
-export async function purgeEquiposPhotosIfIdle(db, bucket) {
-  return purgeExpiredEquiposPhotos(db, bucket);
-}

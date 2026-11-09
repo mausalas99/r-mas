@@ -32,36 +32,6 @@ export const PROFILE_TEMPLATE_DEFAULTS = {
   defaultIndicacionesInterconsultas: '',
 };
 
-/** Fragmentos de plantillas antiguas con contenido demasiado específico (demo / ejemplos). */
-var LEGACY_IDENTIFIABLE_SNIPPETS = [
-  'HIPOSÓDICA',
-  'HIPOSODICA',
-  'PARACETAMOL',
-  'CEFEPIME',
-  'LOSARTÁN',
-  'LOSARTAN',
-  'GLUCOMETRÍA C/6',
-  'GLUCOMETRIA C/6',
-  'INFECTOLOGÍA',
-  'INFECTOLOGIA',
-  'DIETA NORMAL DIABÉTICA',
-  'SONDA FOLEY',
-  'MAURICIO',
-];
-
-/**
- * @param {string} text
- * @returns {boolean}
- */
-export function looksLikeLegacyIdentifiableTemplate(text) {
-  var u = String(text || '').toUpperCase();
-  if (!u.trim()) return false;
-  for (var i = 0; i < LEGACY_IDENTIFIABLE_SNIPPETS.length; i++) {
-    if (u.indexOf(LEGACY_IDENTIFIABLE_SNIPPETS[i]) >= 0) return true;
-  }
-  return false;
-}
-
 /**
  * Completa claves de plantilla faltantes (no sobrescribe valores ya guardados).
  * @param {Record<string, unknown>} st

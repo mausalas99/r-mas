@@ -56,43 +56,6 @@ export function censoFileName(servicio, date) {
 }
 
 /**
- * @param {string} dateStamp YYYY-MM-DD
- * @returns {RegExp}
- */
-export function censoDailyFilePattern(dateStamp) {
-  var escaped = String(dateStamp).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp('^Censo_.*_' + escaped + '(_\\d{2}-\\d{2}-\\d{2})?\\.pdf$', 'i');
-}
-
-/**
- * Nombres de PDF de censo del día (cualquier servicio).
- * @param {string} dir
- * @param {string} dateStamp
- * @returns {string[]}
- */
-export function listCensoFilesForDate(dir, dateStamp) {
-  var re = censoDailyFilePattern(dateStamp);
-  return fs.readdirSync(dir).filter(function (name) {
-    return re.test(name);
-  });
-}
-
-/**
- * Elimina censos previos del mismo día antes de guardar uno nuevo.
- * @param {string} dir
- * @param {string} dateStamp
- * @returns {string[]}
- */
-export function removeCensoFilesForDate(dir, dateStamp) {
-  var removed = [];
-  listCensoFilesForDate(dir, dateStamp).forEach(function (name) {
-    fs.unlinkSync(path.join(dir, name));
-    removed.push(name);
-  });
-  return removed;
-}
-
-/**
  * Escribe un PDF de censo sin borrar otros archivos del mismo día.
  * @param {string} destDir
  * @param {string} fileName
@@ -103,9 +66,4 @@ export function writeCensoPdf(destDir, fileName, buffer) {
   fs.mkdirSync(destDir, { recursive: true });
   fs.writeFileSync(path.join(destDir, fileName), buffer);
   return { fileName: fileName };
-}
-
-/** @deprecated alias de writeCensoPdf */
-export function writeCensoPdfForToday(destDir, fileName, buffer) {
-  return writeCensoPdf(destDir, fileName, buffer);
 }

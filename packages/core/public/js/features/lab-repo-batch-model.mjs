@@ -149,7 +149,6 @@ export function setLabRepoBatchJobStatus(jobs, patientId, status) {
 }
 
 /**
- * Mark all still-pending/running jobs as aborted.
  * @param {LabRepoBatchJob[]} jobs
  */
 export function abortPendingLabRepoBatchJobs(jobs) {
@@ -160,16 +159,6 @@ export function abortPendingLabRepoBatchJobs(jobs) {
     }
     return j;
   });
-}
-
-/** @param {LabRepoBatchJobStatus} status */
-export function labRepoBatchJobStatusLabel(status) {
-  if (status === 'running') return 'Consultando…';
-  if (status === 'ok') return 'Actualizado';
-  if (status === 'empty') return 'Sin estudios';
-  if (status === 'error') return 'Error';
-  if (status === 'aborted') return 'Detenido';
-  return 'En cola';
 }
 
 /**
@@ -231,7 +220,6 @@ export function formatLabRepoBatchSummaryToast(summary) {
 }
 
 /**
- * Classify one patient fetch for batch control flow.
  * @param {unknown[]} studies
  * @param {{ message?: string }[]} errors
  * @returns {'ok'|'empty'|'connection'|'error'}
