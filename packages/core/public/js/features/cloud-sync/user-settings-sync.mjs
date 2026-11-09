@@ -2,6 +2,7 @@
  * Glue for the per-user "datos para documentos" sync: outbox push on local
  * change, apply newer server values on pull. Model rules: user-settings-model.mjs.
  */
+import { writeRpcSettings } from '../../clinical-settings.mjs';
 import { createCloudSyncApi } from './api-client.mjs';
 import { getCloudSyncToken, getCloudSyncUrl } from './settings.mjs';
 import {
@@ -44,7 +45,7 @@ function readSettings() {
 }
 
 function writeSettings(settings) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  writeRpcSettings(settings);
 }
 
 function readStamp() {

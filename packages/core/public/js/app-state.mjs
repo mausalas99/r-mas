@@ -1,3 +1,4 @@
+import { readRpcSettings } from './clinical-settings.mjs';
 import { storage, ensureStorageHydrated } from './storage.js';
 import { warnIfLocalStorageNearFull } from './storage-quota.mjs';
 import { isWebClinicalClient } from './db-storage-bridge.mjs';
@@ -309,7 +310,7 @@ export function initAppState() {
   }
   var salaMigrated = 0;
   try {
-    var rpcSettings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    var rpcSettings = readRpcSettings();
     var clinicalSala = String(rpcSettings.clinicalSala || '').trim();
     // Elevated accounts (R4/Admin/program admin) can hold a full-ward pull
     // with patients missing their own `sala` — stamping them with the

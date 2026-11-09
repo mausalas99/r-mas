@@ -1,11 +1,12 @@
 /**
  * Clinical session helpers for Conexión / Nube (formerly features/lan/panel-clinical-context).
  */
+import { readRpcSettings } from '../../clinical-settings.mjs';
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 
 export function getClinicalSettings() {
   try {
-    return JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    return readRpcSettings();
   } catch {
     return {};
   }

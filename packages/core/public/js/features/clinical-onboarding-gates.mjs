@@ -44,7 +44,7 @@ export function needsUsernameClaim() {
   if (!user?.user_id) return true;
   if (isLegacyMachineUsername(user.username, getClientId())) return true;
   try {
-    const settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    const settings = readRpcSettings();
     const cached = String(settings.clinicalUsername || '').trim();
     if (cached && !isValidUsernameFormat(normalizeUsername(cached))) return true;
     if (cached && isLegacyMachineUsername(user.username, getClientId())) return true;

@@ -1,3 +1,4 @@
+import { writeRpcSettings } from '../clinical-settings.mjs';
 import { esc, escAttr } from '../dom-escape.mjs';
 // Expediente · nota evolución, indicaciones, Word
 import { getPatients, getNotes, getIndicaciones, persistClinicalState } from "../app-state.mjs";
@@ -224,7 +225,7 @@ function generateWord() {
     if (!dir) return;
     var st = rt.getSettings() || {};
     st.outputDir = dir;
-    localStorage.setItem('rpc-settings', JSON.stringify(st));
+    writeRpcSettings(st);
     syncApprovedOutputDir(dir);
   }
   exportWithOutputDirFallback({
@@ -435,7 +436,7 @@ function generateIndicaciones() {
     if (!dir) return;
     var st = rt.getSettings() || {};
     st.outputDir = dir;
-    localStorage.setItem('rpc-settings', JSON.stringify(st));
+    writeRpcSettings(st);
     syncApprovedOutputDir(dir);
   }
   exportWithOutputDirFallback({
@@ -484,7 +485,7 @@ function pdfExport(fileName, html, btn, onDone) {
       if (!dir) return;
       var st = rt.getSettings() || {};
       st.outputDir = dir;
-      localStorage.setItem('rpc-settings', JSON.stringify(st));
+      writeRpcSettings(st);
       syncApprovedOutputDir(dir);
     },
     onSuccess: function (data) {

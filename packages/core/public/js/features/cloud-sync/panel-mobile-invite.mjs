@@ -1,6 +1,7 @@
 /**
  * Nube ⇄ iPad / R+ Móvil invite card (cloud room deep link + QR).
  */
+import { readRpcSettings } from '../../clinical-settings.mjs';
 import { copyToClipboardSafe } from '../soap-estado.mjs';
 import { buildCloudMobileJoinUrl } from '../cloud-mobile/invite-url.mjs';
 import {
@@ -58,7 +59,7 @@ function resolveCloudMobileInviteUrl() {
     .replace(/^@+/, '');
   if (!user) {
     try {
-      const raw = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+      const raw = readRpcSettings();
       user = String(raw.clinicalUsername || '').trim().replace(/^@+/, '');
     } catch {
       /* ignore */

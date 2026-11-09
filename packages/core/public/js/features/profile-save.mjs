@@ -1,3 +1,4 @@
+import { writeRpcSettings } from '../clinical-settings.mjs';
 /** Perfil — save settings from modal form. */
 import { getNotes, persistClinicalState } from "../app-state.mjs";
 import { applyProfileToNoteIfEmpty } from "./notes-indicaciones.mjs";
@@ -39,7 +40,7 @@ function applyProfileFormToSettings(st) {
 export function saveSettings(opts) {
   var st = settingsRef();
   applyProfileFormToSettings(st);
-  localStorage.setItem("rpc-settings", JSON.stringify(st));
+  writeRpcSettings(st);
   void publishUserSettingsChange();
   var backfill = false;
   Object.keys(getNotes()).forEach(function (pid) {
@@ -57,7 +58,7 @@ export function saveSettings(opts) {
 export function saveQuickOutputFormat(format) {
   var st = settingsRef();
   st.quickOutputFormat = normalizeQuickOutputFormat(format);
-  localStorage.setItem("rpc-settings", JSON.stringify(st));
+  writeRpcSettings(st);
   loadSettings();
   getProfileRuntime().showToast("Formato de salida rápida actualizado", "success");
 }

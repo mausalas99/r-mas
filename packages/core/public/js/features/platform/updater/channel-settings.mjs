@@ -1,4 +1,5 @@
 /** Update channel, telemetry, and hardware acceleration settings UI. */
+import { writeRpcSettings } from '../../../clinical-settings.mjs';
 import { getPlatformRuntime } from '../runtime.mjs';
 import { updaterState, UPDATE_TELEMETRY_URL } from './state.mjs';
 
@@ -15,7 +16,7 @@ function setUpdateChannel(channel) {
   var previous = getUpdateChannel();
   var s = rt.getSettings();
   s.updateChannel = normalized;
-  localStorage.setItem('rpc-settings', JSON.stringify(s));
+  writeRpcSettings(s);
   syncUpdateChannelUI();
   if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === 'function') {
     try { window.electronAPI.setUpdateChannel(normalized); } catch (_e) { void _e; }
@@ -64,7 +65,7 @@ function migrateUpdateChannelToStableDefault() {
   if (getUpdateChannel() !== 'beta') return;
   var s = rt.getSettings();
   s.updateChannel = 'estable';
-  localStorage.setItem('rpc-settings', JSON.stringify(s));
+  writeRpcSettings(s);
   if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === 'function') {
     try { window.electronAPI.setUpdateChannel('estable'); } catch (_e) { void _e; }
     if (typeof window.electronAPI.checkForUpdates === 'function') {
@@ -85,7 +86,7 @@ function setUpdateTelemetryEnabled(enabled) {
   var value = !!enabled;
   var s = rt.getSettings();
   s.updateTelemetryEnabled = value;
-  localStorage.setItem('rpc-settings', JSON.stringify(s));
+  writeRpcSettings(s);
   syncUpdateTelemetryUI();
   rt.showToast(value ? 'Telemetría de actualización activada.' : 'Telemetría desactivada.', 'success');
 }

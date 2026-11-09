@@ -1,3 +1,4 @@
+import { writeRpcSettings } from '../clinical-settings.mjs';
 /** Perfil — shared runtime and settings accessor. */
 
 /** @type {{
@@ -93,7 +94,7 @@ export function setLastLoadSettingsSnapshot(value) {
 
 export function persistSettingsToLocalStorage() {
   try {
-    localStorage.setItem("rpc-settings", JSON.stringify(settingsRef()));
+    writeRpcSettings(settingsRef());
   } catch {
     rt.showToast(
       "No se pudo guardar en el almacenamiento local. El modo puede no persistir al recargar.",

@@ -3,7 +3,7 @@
  * Persisted in rpc-settings + localStorage fallback.
  */
 
-import { readRpcSettings } from './clinical-settings.mjs';
+import { readRpcSettings, writeRpcSettings } from './clinical-settings.mjs';
 
 const URL_KEY = 'rpc-equipos-cloud-url';
 const ADMIN_KEY = 'rpc-equipos-admin-key';
@@ -108,7 +108,7 @@ export function setEquiposCloudConfig(cfg) {
     }
   }
   try {
-    localStorage.setItem('rpc-settings', JSON.stringify(settings));
+    writeRpcSettings(settings);
   } catch (e) {
     console.warn("[equipos-cloud-config] failed to write rpc-settings", e);
   }

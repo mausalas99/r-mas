@@ -1,3 +1,4 @@
+import { readRpcSettings } from './clinical-settings.mjs';
 /** Guardia mode DOM + board rerender helpers (extracted for complexity budget). */
 
 const GUARDIA_CENSUS_FILTER_HINT_ON = 'Solo pacientes que te entregaron en este turno.';
@@ -22,7 +23,7 @@ export function rerenderGuardiaBoardIfRequested(opts) {
   let settings = opts.settings;
   if (!settings) {
     try {
-      settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+      settings = readRpcSettings();
     } catch {
       settings = {};
     }

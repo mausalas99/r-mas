@@ -9,7 +9,6 @@ import {
   parseInsulinPrandialSlot,
   patientHasInsulinPrandialMeds,
   PRANDIAL_MEAL_ORDER,
-  PRANDIAL_SLOT_PATTERNS,
 } from './insulin-prandial-detect.mjs';
 
 export const INSULIN_PRANDIAL_GROUP_ID = '__insulin_prandial_group__';

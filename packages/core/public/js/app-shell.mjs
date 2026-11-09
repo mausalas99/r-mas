@@ -1,3 +1,4 @@
+import { writeRpcSettings } from './clinical-settings.mjs';
 /**
  * Shell de aplicación: chrome de contexto, toast, modales, export clínico, atajos y arranque diferido.
  */
@@ -166,7 +167,7 @@ function onDefaultServicioBlur() {
   var v = (el.value || '').trim().toUpperCase();
   el.value = v;
   shellCtx.getSettings().defaultServicio = v;
-  localStorage.setItem('rpc-settings', JSON.stringify(shellCtx.getSettings()));
+  writeRpcSettings(shellCtx.getSettings());
   void publishUserSettingsChange();
   var w = document.getElementById('default-servicio-warning');
   var looksAbbrev = v.length > 0 && v.length <= 3 && /^[A-Z]+$/.test(v);
@@ -186,7 +187,7 @@ function onLabPortalUrlBlur() {
   if (v === (settings.labPortalUrl || '')) return;
   if (v) settings.labPortalUrl = v;
   else delete settings.labPortalUrl;
-  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  writeRpcSettings(settings);
   if (v) showToast('Dirección del portal guardada ✓', 'success');
 }
 
@@ -198,7 +199,7 @@ function onMedicoTemplateBlur() {
     tpl[k] = inp ? (inp.value || '').trim() : '';
   });
   shellCtx.getSettings().medicosPlantilla = tpl;
-  localStorage.setItem('rpc-settings', JSON.stringify(shellCtx.getSettings()));
+  writeRpcSettings(shellCtx.getSettings());
   void publishUserSettingsChange();
 }
 

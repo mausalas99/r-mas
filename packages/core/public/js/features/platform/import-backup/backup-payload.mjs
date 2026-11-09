@@ -1,4 +1,5 @@
 /** In-memory backup snapshot and full payload persistence. */
+import { writeRpcSettings } from '../../../clinical-settings.mjs';
 import { storage } from '../../../storage.js';
 import { getPatients, getNotes, getIndicaciones, getLabHistory, getMedRecetaByPatient, getMedPharmProfileByPatient, getListadoProblemas, replaceAppStateFromBackupData, persistClinicalState } from '../../../app-state.mjs';
 import { GUIDED_TOUR_LS_KEY } from '../../settings-help/tour-state.mjs';
@@ -76,7 +77,7 @@ async function persistFullBackupPayload(payload) {
       )
     );
   } catch (e) { console.warn('[backup-payload] failed to write rpc-scheduled-procedures', e); }
-  localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
+  writeRpcSettings(payload.data.settings || {});
   if (payload.data.medCatalog && typeof payload.data.medCatalog === 'object') {
     storage.saveMedCatalog(payload.data.medCatalog);
   }
