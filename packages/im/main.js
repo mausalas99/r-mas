@@ -1481,6 +1481,30 @@ app.whenReady().then(async () => {
       app.quit();
       return;
     }
+
+    if (process.env.R_PLUS_FIND_REGISTRO) {
+      try {
+        await unlockPromise;
+        const { runFindRegistroInLog } = await import('../core/lib/db/find-registro-log.mjs');
+        const result = await runFindRegistroInLog({
+          app,
+          dbManager,
+          registro: process.env.R_PLUS_FIND_REGISTRO,
+        });
+        dialog.showMessageBox({
+          type: 'info',
+          title: 'Búsqueda de registro',
+          message: result.count + ' evento(s) en el registro de cambios.\n\n' + result.path,
+        });
+      } catch (findErr) {
+        dialog.showErrorBox(
+          'Búsqueda de registro',
+          findErr && findErr.message ? findErr.message : String(findErr)
+        );
+      }
+      app.quit();
+      return;
+    }
   } catch (e) {
     const detail = e && e.message ? e.message : String(e);
     dialog.showErrorBox(

@@ -109,7 +109,8 @@ function indicacionesMinCols_(tipoEarly) {
 }
 
 var PLACEHOLDER_DRUG_RE =
-  /(?:\/\/|DILUIR\s+EN:)\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s/-]{3,}?\s+\d+(?:[.,]\d+)?\s*(?:MG|MCG|G|UI|MEQ|ML)\b)\s*(V[IÍ]A\s+[A-ZÁÉÍÓÚ]+)?/i;
+  /(?:\/\/|DILUIR\s+EN:)\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s/-]{3,}?\s+\d+(?:[.,]\d+)?\s*(?:MG|MCG|G|UI|MEQ|ML)\b)\s*(V[IÍ]A\s+[A-ZÁÉÍÓÚ]+|VO\b)?/i;
+var AGUA_PLACEHOLDER_RE = /\bAGUA\s+(?:INYECTABLE|SOLUCION)\b/i;
 var PLACEHOLDER_NOT_DRUG_RE = /^(?:EN|AGUA|SSN|SOL|SOLUCION|CLORURO|GLUCOSA|DEXTROSA|HARTMANN)\b/i;
 
 /**
@@ -118,13 +119,14 @@ var PLACEHOLDER_NOT_DRUG_RE = /^(?:EN|AGUA|SSN|SOL|SOLUCION|CLORURO|GLUCOSA|DEXT
  * @param {string} nombre @param {string} dosis
  */
 export function unwrapAguaInyectablePlaceholder(nombre, dosis) {
-  if (!/\bAGUA\s+INYECTABLE\b/i.test(nombre)) return null;
+  if (!AGUA_PLACEHOLDER_RE.test(nombre)) return null;
   var m = PLACEHOLDER_DRUG_RE.exec(dosis);
   if (!m || PLACEHOLDER_NOT_DRUG_RE.test(m[1])) return null;
-  var nombreReal = trimStr(m[1].replace(/\s+/g, ' '));
+  var nombreReal = trimStr(m[1].replace(/\s+/g, ' ').replace(/\s+(?:TABLETAS?|C[AÁ]PSULAS?)(?=\s+\d)/i, ''));
+  var via = m[2] ? trimStr(m[2]).toUpperCase().replace('VÍA', 'VIA') : '';
   return {
     nombreRaw: nombreReal,
-    viaRaw: m[2] ? trimStr(m[2]).toUpperCase().replace('VÍA', 'VIA') : '',
+    viaRaw: via === 'VO' ? 'VIA ORAL' : via,
     dosisRaw: trimStr((/\d+(?:[.,]\d+)?\s*[A-Z]+$/i.exec(nombreReal) || [''])[0]),
   };
 }
@@ -148,6 +150,7 @@ var PLACEHOLDER_UNIT_RE = /^(?:\d+(?:[.,]\d+)?(?:MG|MCG|G|UI|MEQ|ML)?|MG|MCG|G|U
  */
 function drugNameFromText(texto) {
   var words = texto
+    .replace(/,/g, ' ')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase()
@@ -172,7 +175,7 @@ function drugNameFromText(texto) {
  * @returns {{ item: object, texto: string, farmaco: string, dosis: string, viaRaw: string } | null}
  */
 export function aguaInyectableMissHint(item) {
-  if (!/\bAGUA\s+INYECTABLE\b/i.test(String(item.nombreRaw || ''))) return null;
+  if (!AGUA_PLACEHOLDER_RE.test(String(item.nombreRaw || ''))) return null;
   var m = /(?:\/\/|DILUIR\s+EN:)(.*)$/i.exec(String(item.dosisRaw || ''));
   if (!m) return null;
   var texto = trimStr(m[1].replace(/VEL\.INF:|\/\//gi, ' ').replace(/\s+/g, ' '));

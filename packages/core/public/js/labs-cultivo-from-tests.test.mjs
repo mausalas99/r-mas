@@ -475,6 +475,22 @@ NEGATIVO A LA FECHA.`;
   assert.ok(isParsedCultivoHeaderLine(lines[1]));
 });
 
+test('buildAtbRisSummaryHtml: línea Int saca la R por especie y marca la S', () => {
+  const amp = { med: 'AMPICILINA', mic: '>16', interp: 'R' };
+  const cro = { med: 'CEFTRIAXONA', mic: '<=1', interp: 'S' };
+  const cip = { med: 'CIPROFLOXACINA', mic: '4', interp: 'R' };
+  const h = buildAtbRisSummaryHtml([amp, cro, cip], {
+    intr: new Set([amp]),
+    marks: new Map([[cro, 'AmpC']]),
+    fuente: 'EUCAST',
+  });
+  assert.match(h, /atb-chip--x[^>]*>Int 1</);
+  assert.match(h, /atb-chip--r[^>]*>R 1</);
+  assert.match(h, /atb-chip--x[^>]*>Int 1<.*?cult-atb-name">Ampicilina</);
+  assert.match(h, /cult-atb-mk">AmpC</);
+  assert.doesNotMatch(buildAtbRisSummaryHtml([amp, cro]), /atb-chip--x/);
+});
+
 test('buildAtbRisSummaryHtml: títulos por categoría y orden S por CMI ascendente', () => {
   const sens = [
     { med: 'AAA', mic: '16', interp: 'S' },

@@ -146,6 +146,16 @@ describe('lab-history-set', () => {
     assert.match(salaText, /Hb 12/);
   });
 
+  it('copiar un día con dos envíos fusiona TROP en TnI1 TnI2 Δ%', () => {
+    const sets = [
+      { id: '1', fecha: '06/11/2026', hora: '17:55', resLabs: ['BH\tHb 12.5', 'TROP\tTnI 390'] },
+      { id: '2', fecha: '06/11/2026', hora: '21:19', resLabs: ['TROP\tTnI 390.7'] },
+    ];
+    const text = buildEstudiosCopyLinesFromLabSets(sets).join('\n');
+    assert.match(text, /TROP\tTnI1 390 TnI2 390\.7 Δ% 0\.2%/);
+    assert.equal((text.match(/TROP/g) || []).length, 1);
+  });
+
   it('rebuildEstudiosFromLabHistory en interconsulta deja solo labs recientes', () => {
     registerLabHistoryMaintRuntime({
       getSettings() {

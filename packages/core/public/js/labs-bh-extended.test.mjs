@@ -222,6 +222,22 @@ describe('parseBH_ extended', () => {
     assert.strictEqual(extras.Blastos, '0');
   });
 
+  it('immature cells >0 show in the main BH line; Mielo is not read from METAMIELOCITOS', () => {
+    const t = BH_REAL + '\n\nDIFERENCIAL MANUAL\nMETAMIELOCITOS\nA\n1\n%\t0 - 0\nMIELOCITOS\nA\n5\n%\t0 - 0\nPROMIELOCITOS\n*\n0\n%\t0 - 0\nBLASTOS\nA\n3\n%\t0 - 0';
+    const { visible, extras } = parseBH_(t);
+    assert.strictEqual(extras.Mielo, '5');
+    assert.match(visible, /Mielo 5%\*/);
+    assert.match(visible, /Blast 3%\*/);
+    assert.doesNotMatch(visible, /Prom/);
+  });
+
+  it('merging a re-pasted BH row keeps Mielo/Meta/Blast', () => {
+    const { bh } = mergeBhResLabRows_(['BH\tHb 8*  Leu 2.86*  Plt 71.1*  Mielo 5%*  Meta 1%  Blast 3%*']);
+    assert.match(bh, /Mielo 5%\*/);
+    assert.match(bh, /Meta 1%/);
+    assert.match(bh, /Blast 3%\*/);
+  });
+
   it('returns empty visible (`""`) when no BH or coag data present', () => {
     const r = parseBH_('NO HAY BH AQUI');
     assert.strictEqual(r.visible, '');

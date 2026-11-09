@@ -21,6 +21,7 @@ import { wireAtbRisHoverPanels, removeAtbRisPanelsFromBody } from './expediente/
 import {
   renderListadoForm,
   generateListado,
+  previewListado,
   updateListadoMeta,
   updateProblemaField,
   addProblemaUI,
@@ -61,6 +62,7 @@ export const windowHandlers = Object.assign(
     removeProblemaUI,
     copyListadoProblemasAiPrompt,
     generateListado,
+    previewListado,
     _autoGrowTextarea,
     renderPatientDataPane,
     updateListadoMedico,

@@ -78,7 +78,18 @@ function commitPreviewEdits() {
 function renderPreviewFrame() {
   var frame = previewFrame();
   if (!frame || !current) return;
+  var scrollY = frame.contentWindow ? frame.contentWindow.scrollY : 0;
   frame.onload = function () {
+    frame.contentWindow?.scrollTo(0, scrollY);
+    frame.contentDocument?.addEventListener('click', function (e) {
+      // El iframe tiene su propio Element: no usar instanceof.
+      var btn = e.target && e.target.closest ? e.target.closest('.censo-cult-toggle') : null;
+      var row = btn && current ? current.payload.rows[Number(btn.dataset.r)] : null;
+      if (!row) return;
+      commitPreviewEdits();
+      row.cultivosHidden = !row.cultivosHidden;
+      renderPreviewFrame();
+    });
     frame.contentDocument?.querySelectorAll('td[data-k]').forEach(function (td) {
       td.dataset.orig = td.innerText.trim();
     });

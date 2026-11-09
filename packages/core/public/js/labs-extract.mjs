@@ -85,7 +85,14 @@ function esContextoUrinario_(texto, idxNombre, nombreLen) {
   // el mismo reporte traía electrolitos de orina a continuación.
   var after = texto.substring(idxNombre + nombreLen, idxNombre + nombreLen + 48).toUpperCase();
   if (/^\s*(EN\s+ORINA|URINARIO|URINARIA)\b/.test(after)) return true;
-  return false;
+  return esCloroDeOrina_(texto.substring(idxNombre, idxNombre + 300));
+}
+
+/** «CLORO» a secas es urinario si su COMENTARIO DE LA MUESTRA dice ORINA (el SOME no lo rotula). `desde` empieza en la palabra CLORO. */
+export function esCloroDeOrina_(desde) {
+  if (!/^CLORO\b/i.test(desde)) return false;
+  var m = desde.match(/COMENTARIO\s+DE\s+LA\s+MUESTRA[\s*]*([^\n]*)/i);
+  return !!m && /ORINA/i.test(m[1]);
 }
 
 /** True si «COLESTEROL» es en realidad HDL/LDL (no total). */
@@ -143,6 +150,10 @@ export function extraerConRangoBH(nombres, texto) {
     while (true) {
       var idx = t.indexOf(nombre, start);
       if (idx === -1) break;
+      if (idx > 0 && /[A-ZÁÉÍÓÚÑ]/.test(t.charAt(idx - 1)) && /^[A-ZÁÉÍÓÚÑ]/.test(nombre)) {
+        start = idx + nombre.length;
+        continue;
+      }
       if (esContextoSedimentoOrina_(texto, idx, nombre.length, t, marcas)) {
         start = idx + nombre.length;
         continue;

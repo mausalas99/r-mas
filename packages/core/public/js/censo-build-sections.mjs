@@ -25,7 +25,13 @@ function medsLines(patient, ctx, pid) {
     block && Array.isArray(block.items) && block.items.length
       ? formatCensoMedsFromReceta(block, ctx.now)
       : String(patient.censoMedsText || '').trim();
-  return splitLines(meds).slice(0, 6);
+  // Un renglón corrido ("A (Día 2) · B · C") en vez de un fármaco por línea: ocupa menos alto.
+  var items = [];
+  splitLines(meds).forEach(function (l) {
+    if (/^Día\s*\d+/i.test(l) && items.length) items[items.length - 1] += ' (' + l + ')';
+    else items.push(l);
+  });
+  return items.length ? [items.slice(0, 6).join(' · ')] : [];
 }
 
 function atbLines(patient, ctx, pid) {

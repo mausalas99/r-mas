@@ -66,12 +66,13 @@ export function censoSlot(tpl, key, legacy) {
 
 /**
  * @param {Record<string, unknown>} settings
- * @returns {{ r2: string, r1a: string, r1b: string, maestro: string }}
+ * @returns {{ r4: string, r2: string, r1a: string, r1b: string, maestro: string }}
  */
 export function resolveCensoEquipoMembers(settings) {
   var st = settings || {};
   var tpl = medTpl(st);
   return {
+    r4: censoSlot(tpl, 'r4', ''),
     r2: censoSlot(tpl, 'r2', st.residenteR2),
     r1a: censoSlot(tpl, 'r1a', st.residenteR1a || st.residenteR1),
     r1b: censoSlot(tpl, 'r1b', st.residenteR1b),
@@ -85,7 +86,7 @@ export function resolveCensoEquipoMembers(settings) {
  */
 export function formatCensoEquipoLine(settings) {
   var m = resolveCensoEquipoMembers(settings);
-  return [m.r2, m.r1a, m.r1b, m.maestro].filter(Boolean).join(' · ');
+  return [m.maestro, m.r4, m.r2, m.r1a, m.r1b].filter(Boolean).join(' · ');
 }
 
 /**

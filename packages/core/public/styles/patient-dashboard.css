@@ -993,6 +993,12 @@ html.dark .ic-cf--svc.is-picked::before {
   gap: 6px;
 }
 
+.patient-dash .cultivos-h .cult-pending-chip {
+  background: color-mix(in oklab, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+  font-weight: var(--fw-strong);
+}
+
 .patient-dash .cultivos-h .card-h-count {
   border: 0;
   cursor: pointer;
@@ -1155,4 +1161,59 @@ html.dark .ic-cf--svc.is-picked::before {
 }
 .patient-dash .vital.hi .vital-input {
   color: var(--color-danger);
+}
+
+/* Board D3 (2026-11-09): compact lab tiles, glucose + balance band, cultivos beside Pendientes. */
+.patient-dash .draw-grid {
+  grid-template-columns: repeat(auto-fill, minmax(104px, 132px));
+  justify-content: start;
+}
+.patient-dash .vital b,
+.patient-dash .vital-input,
+.patient-dash .draw-value {
+  font-size: 1.7em;
+}
+.patient-dash .bento.metab:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
+.patient-dash .glu-bars {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.patient-dash .glu-bar {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: var(--color-ink-muted);
+}
+.patient-dash .glu-bar i {
+  display: block;
+  width: 100%;
+  border-radius: 6px 6px 2px 2px;
+  background: color-mix(in oklab, var(--color-ink) 8%, transparent);
+}
+.patient-dash .glu-bar.hi i { background: var(--color-danger-tint-strong); }
+.patient-dash .glu-bar b { font: 600 1.2em/1 var(--font-mono); color: var(--color-ink); }
+.patient-dash .glu-bar.hi b { color: var(--color-danger); }
+.patient-dash .glu-bar small { font: var(--type-wb-mono); }
+.patient-dash .bal-tiles { display: flex; gap: 8px; }
+.patient-dash .bal-tiles > div {
+  flex: 1 1 0;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--color-ink) 4%, transparent);
+}
+.patient-dash .bal-tiles small { display: block; color: var(--color-ink-muted); font-size: 0.85em; font-weight: 600; }
+.patient-dash .bal-tiles b { font: 600 1.7em/1.2 var(--font-mono); }
+.patient-dash .bal-tiles .is-total b { color: var(--color-warn); }
+.patient-dash .dash-bottom:has(.meds-band) .bento.rest.rest-2 { flex-direction: row; }
+.patient-dash .bento.rest.rest-2 > .card { flex: 1 1 0; min-width: 0; }
+.patient-dash .cultivos-card .cultivos { margin-top: 0; }
+.patient-dash .cultivos-card .cult-grid { grid-template-columns: minmax(0, 1fr); }
+/* Only Medicamentos on screen: the card takes the height left on the page. */
+.patient-dash .dash-bottom:has(> .meds-band:only-child) {
+  grid-template-rows: minmax(0, 1fr);
+  align-content: stretch;
 }

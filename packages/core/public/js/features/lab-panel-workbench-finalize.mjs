@@ -9,6 +9,7 @@ import { storeBulkLabBlocks, pickDisplayLabResult } from './lab-panel-workbench-
 import { getNotes, persistClinicalState } from '../app-state.mjs';
 import { stampDocUpdatedAt } from '../patient-merge.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
+import { ensureCultivoSeenBaseline, scheduleCultivoBackgroundCheck } from './cultivo-pending.mjs';
 
 export function storeProcessableBulkBlocks(blocks, processable, opts) {
   if (!processable.length) {
@@ -20,6 +21,7 @@ export function storeProcessableBulkBlocks(blocks, processable, opts) {
       storedByPatient: {},
     };
   }
+  ensureCultivoSeenBaseline();
   var storeSummary = storeBulkLabBlocks(blocks, processable, opts);
   // User paste only: stamp each touched note so Nube pushes the regenerated estudios.
   var pids = Object.keys(storeSummary.storedByPatient || {});
@@ -29,6 +31,8 @@ export function storeProcessableBulkBlocks(blocks, processable, opts) {
   if (pids.length) {
     persistClinicalState();
     scheduleCloudSyncPush();
+    // Solo Actualizar labs (repositorio): el pegado manual no dispara consultas.
+    if (opts && opts.replaceOnMatch) scheduleCultivoBackgroundCheck(pids);
   }
   if (typeof rt.addAuditEntry === 'function') {
     rt.addAuditEntry(

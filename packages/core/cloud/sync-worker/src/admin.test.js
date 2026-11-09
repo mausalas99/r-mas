@@ -6,6 +6,7 @@ import {
   assertAdmin,
   buildDeleteUserStatements,
   buildPurgeRoomStatements,
+  handleRoomMutations,
   handleRotateCode,
   timingSafeEqual,
 } from './admin.js';
@@ -291,5 +292,45 @@ describe('handleRotateCode (admin «Cambiar código»)', () => {
   it('unknown sala → not_found', async () => {
     const db = fakeRoomDb({ id: 'r1', code: 'OLD111', wrapped_dek_ct: null });
     await assert.rejects(() => handleRotateCode(db, rotateReq({}), 'nope'), (err) => err.code === 'not_found');
+  });
+});
+
+describe('handleRoomMutations', () => {
+  const big = JSON.stringify([{ path: 'clinicalOps', v: 'x'.repeat(900) }]);
+  function fakeMutationsDb() {
+    const calls = [];
+    return {
+      calls,
+      prepare(sql) {
+        return {
+          bind(...args) {
+            return {
+              first: async () => ({ id: 'r1' }),
+              all: async () => {
+                calls.push({ sql, args });
+                return { results: [{ revision: 7, client_mutation_id: 'c', actor_id: 'a', ops_json: big, created_at: 't' }] };
+              },
+            };
+          },
+        };
+      },
+    };
+  }
+
+  it('cuts ops at 500 chars by default', async () => {
+    const res = await handleRoomMutations({}, fakeMutationsDb(), 'r1', 50);
+    const { mutations } = await res.json();
+    assert.equal(mutations[0].opsJsonTruncated, true);
+    assert.equal(mutations[0].opsJson.length, 500);
+  });
+
+  it('returns one revision uncut with revision + full', async () => {
+    const db = fakeMutationsDb();
+    const res = await handleRoomMutations({}, db, 'r1', 50, { revision: 7, full: true });
+    const { mutations } = await res.json();
+    assert.equal(mutations[0].opsJsonTruncated, false);
+    assert.equal(mutations[0].opsJson, big);
+    assert.match(db.calls[0].sql, /AND revision = \?/);
+    assert.deepEqual(db.calls[0].args, ['r1', 7, 50]);
   });
 });

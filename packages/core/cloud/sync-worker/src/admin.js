@@ -374,21 +374,22 @@ async function handlePurgeRoom(db, roomId) {
 }
 
 /** @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId @param {number} limit */
-async function handleRoomMutations(env, db, roomId, limit) {
+export async function handleRoomMutations(env, db, roomId, limit, { revision = null, full = false } = {}) {
   const room = await db.prepare('SELECT id FROM rooms WHERE id = ?').bind(roomId).first();
   if (!room) {
     throw new SyncError('not_found', 'Sala no encontrada.');
   }
 
+  // `revision` + `full`: one mutation, ops not cut at OPS_JSON_TRUNC (recover a past save).
   const { results } = await db
     .prepare(
       `SELECT revision, client_mutation_id, actor_id, ops_json, ciphertext, iv, created_at
        FROM mutations
-       WHERE room_id = ?
+       WHERE room_id = ?${revision == null ? '' : ' AND revision = ?'}
        ORDER BY revision DESC
        LIMIT ?`
     )
-    .bind(roomId, limit)
+    .bind(...(revision == null ? [roomId, limit] : [roomId, revision, limit]))
     .all();
 
   const mutations = await Promise.all((results ?? []).map(async (row) => {
@@ -396,7 +397,7 @@ async function handleRoomMutations(env, db, roomId, limit) {
       ? await decodeRoomState(env, row.ciphertext, row.iv)
       : JSON.parse(String(row.ops_json || '[]'));
     const opsJson = JSON.stringify(decoded);
-    const truncated = opsJson.length > OPS_JSON_TRUNC;
+    const truncated = !full && opsJson.length > OPS_JSON_TRUNC;
     const summary = summarizeMutationOpsJson(opsJson);
     return {
       revision: row.revision,
@@ -671,7 +672,12 @@ export async function handleAdmin(request, env, subpath) {
       200,
       Math.max(1, Number.parseInt(limitRaw ?? String(DEFAULT_MUTATIONS_LIMIT), 10) || DEFAULT_MUTATIONS_LIMIT)
     );
-    return handleRoomMutations(env, db, roomMutationsMatch[1], limit);
+    const revRaw = url.searchParams.get('revision');
+    const revision = revRaw == null || !/^\d+$/.test(revRaw) ? null : Number(revRaw);
+    return handleRoomMutations(env, db, roomMutationsMatch[1], limit, {
+      revision,
+      full: revision != null && url.searchParams.get('full') === '1',
+    });
   }
 
   const rotateMatch = /^\/rooms\/([^/]+)\/rotate-code$/.exec(subpath);

@@ -92,9 +92,6 @@ export function classifyCensoTableLine(line, colKey, lineIndex) {
 
   if (colKey === 'paciente') return classifyCensoPacienteLine(s);
   if (colKey === 'labs') return classifyCensoLabsLine(s);
-  if (colKey === 'signos' && SIGNOS_LABEL_RE.test(s)) {
-    return 'label-led';
-  }
-  if (colKey === 'dx') return 'emphasis';
+  // Negrita solo para lo anormal (censo-emphasis.mjs); Dx y Signos en peso normal.
   return 'default';
 }

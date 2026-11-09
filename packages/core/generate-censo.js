@@ -7,6 +7,7 @@
 import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
 import { parseCamaCellForCenso, formatCamaCellLabel } from './public/js/censo-build.mjs';
 import { classifyCensoTableLine } from './public/js/censo-table-style.mjs';
+import { censoEmphasisSegments } from './public/js/censo-emphasis.mjs';
 import {
   CENSO_OPTIONAL_COL_KEYS,
   resolveCensoColWeights,
@@ -60,11 +61,11 @@ function isEmptyCellLines(lines) {
 /** Centrado horizontal del bloque en la celda. */
 const CENTER_COLS = { num: true, paciente: true, dx: true, atb: true, meds: true };
 /** Reducir tamaño antes de elipsis (evita «…» en # y cortes dentro de un fármaco). */
-const SHRINK_FIT_COLS = { num: true, atb: true, meds: true };
+const SHRINK_FIT_COLS = { num: true, atb: true };
 /** Sin partir líneas (solo saltos explícitos \\n). */
-const NO_WRAP_COLS = { num: true, atb: true, meds: true };
+const NO_WRAP_COLS = { num: true, atb: true };
 /** Envolver ancho completo; nunca elipsis por columna estrecha. */
-const FULL_WRAP_COLS = { labs: true, pend: true, signos: true, dx: true };
+const FULL_WRAP_COLS = { labs: true, pend: true, signos: true, dx: true, meds: true };
 /** Cama en negrita. */
 const BOLD_COLS = { cama: true };
 
@@ -288,7 +289,7 @@ function rowCells(row) {
     labs: row.labs || pickSection(row, 'Laboratorios'),
     signos: signosIo,
     accesos: accesos,
-    cultivos: cultivos,
+    cultivos: row.cultivosHidden ? '' : cultivos,
     pend: pend,
   };
 }
@@ -717,9 +718,9 @@ function cellLineStyle(font, fontBold, colKey, role, _lineIndex) {
     return { font: font, color: COLORS.muted, size: Math.max(7, size - 0.5) };
   }
   if (role === 'lab-date') {
-    return { font: fontBold, color: COLORS.accent, size: size };
+    return { font: font, color: COLORS.accent, size: size };
   }
-  if (role === 'lab-panel' || role === 'emphasis' || role === 'label-led') {
+  if (role === 'emphasis') {
     return { font: fontBold, color: COLORS.ink, size: size };
   }
   if (colKey === 'num' || colKey === 'cama') {
@@ -787,6 +788,21 @@ function drawCellText(page, lines, tx, colW, innerW, yTop, rowH, font, fontBold,
   toDraw.forEach(function (item) {
     if (y < minY) return;
     var x = centered ? tx + (colW - item.textW) / 2 : tx + CELL_PAD_X;
+    if (colKey === 'labs' || colKey === 'signos') {
+      // Negrita solo en valores anormales: se dibuja por tramos.
+      censoEmphasisSegments(colKey, item.fitted).forEach(function (sg) {
+        var f = sg.bold ? fontBold : item.style.font;
+        var spaceW = f.widthOfTextAtSize(' ', item.style.size);
+        var body = sg.text.trim();
+        var lead = sg.text.length - sg.text.trimStart().length;
+        var trail = sg.text.length - lead - body.length;
+        x += lead * spaceW;
+        safeDrawText(page, body, { x: x, y: y, size: item.style.size, font: f, color: item.style.color });
+        x += (body ? f.widthOfTextAtSize(pdfSafeLine(body), item.style.size) : 0) + trail * spaceW;
+      });
+      y -= lineStep;
+      return;
+    }
     safeDrawText(page, item.fitted, {
       x: x,
       y: y,
@@ -906,12 +922,13 @@ function drawPageHeader(page, data, font, fontBold) {
 function buildEquipoLine(header) {
   if (header.equipoLine) return String(header.equipoLine).trim();
   var parts = [];
+  var maestro = header.maestro || header.profesor;
+  if (maestro) parts.push(String(maestro));
+  if (header.r4) parts.push(String(header.r4));
   if (header.r2) parts.push(String(header.r2));
   if (header.r1a) parts.push(String(header.r1a));
   else if (header.r1) parts.push(String(header.r1));
   if (header.r1b) parts.push(String(header.r1b));
-  var maestro = header.maestro || header.profesor;
-  if (maestro) parts.push(String(maestro));
   return parts.filter(Boolean).join(' · ');
 }
 

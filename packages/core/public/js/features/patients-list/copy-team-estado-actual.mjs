@@ -5,6 +5,7 @@
 import { getPatients } from '../../clinical-read-model.mjs';
 import { getEstadoActualTextForPatient } from '../estado-actual-panel-clinico.mjs';
 import { formatPatientNameForCenso } from '../../censo-build.mjs';
+import { stripEaReviewFlags } from '../estado-actual-clipboard.mjs';
 import { copyTableText } from '../../tend-export.mjs';
 
 export function buildTeamEstadoActualCopyText() {
@@ -14,7 +15,7 @@ export function buildTeamEstadoActualCopyText() {
 
   var blocks = [];
   pinned.forEach(function (p) {
-    var text = getEstadoActualTextForPatient(p, { bold: true });
+    var text = stripEaReviewFlags(getEstadoActualTextForPatient(p, { bold: true }));
     if (!text) return;
     blocks.push(formatPatientNameForCenso(p.nombre) + '\n' + text);
   });

@@ -5,7 +5,6 @@ import {
   formatEvacForText,
   formatIoBalanceDisplay,
   toEaSalidaText,
-  ioTurnosBreakdown,
   formatIoTurnoEvent,
 } from './estado-actual-io.mjs';
 import { isGlucometriaMarkedAltered, isVitalAltered } from './estado-actual-ranges.mjs';
@@ -112,49 +111,6 @@ export function getVitalHistoryEntries(vitalKey, snapshot) {
  */
 export function vitalHasHistory(vitalKey, snapshot) {
   return getVitalHistoryEntries(vitalKey, snapshot).length > 1;
-}
-
-/**
- * @param {Array<{ value: string, unit?: string, stamp?: string, altered?: boolean }>} entries
- */
-export function renderVitalHistoryListHtml(entries) {
-  if (!entries.length) {
-    return '<p class="ea-muted">Sin lecturas registradas.</p>';
-  }
-  return (
-    '<ol class="ea-vital-history-list">' +
-    entries
-      .map(function (entry, idx) {
-        var cls = 'ea-vital-history-row' + (idx === 0 ? ' ea-vital-history-row--latest' : '');
-        if (entry.altered) cls += ' ea-vital-history-row--altered';
-        var badge =
-          idx === 0 ? '<span class="ea-vital-history-badge">Actual</span>' : '';
-        var unitHtml = entry.unit
-          ? '<span class="ea-vital-history-unit">' + escHtml(entry.unit) + '</span>'
-          : '';
-        var stampHtml = entry.stamp
-          ? '<span class="ea-vital-history-stamp">' + escHtml(entry.stamp) + '</span>'
-          : '';
-        return (
-          '<li class="' +
-          cls +
-          '">' +
-          '<div class="ea-vital-history-metric">' +
-          '<span class="ea-vital-history-value">' +
-          escHtml(entry.value) +
-          '</span>' +
-          unitHtml +
-          '</div>' +
-          '<div class="ea-vital-history-meta">' +
-          stampHtml +
-          badge +
-          '</div>' +
-          '</li>'
-        );
-      })
-      .join('') +
-    '</ol>'
-  );
 }
 
 /**
@@ -348,6 +304,20 @@ export function renderSnapshotVitalsHtml(snapshot) {
     .map(function (r) {
       return renderSnapshotVitalRow(r, headStamp);
     })
+    .join('');
+}
+
+/**
+ * Only the vital rows named in `keys` ('bp', 'fc', 'fr', 'temp', 'sat'), for the per-system cards.
+ * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
+ * @param {string[]} keys
+ */
+export function renderSnapshotVitalsByKeys(snapshot, keys) {
+  var rows = snapshotVitalRowsOpts(snapshot);
+  var headStamp = vitalsHeadStamp(rows);
+  return rows
+    .filter(function (r) { return keys.indexOf(r.vitalKey) >= 0; })
+    .map(function (r) { return renderSnapshotVitalRow(r, headStamp); })
     .join('');
 }
 
@@ -547,42 +517,4 @@ export { isIoNumericValue, toEaSalidaText };
 /** @param {{ eventos?: unknown[] }} turnos */
 function hasIoTurnoEvents(turnos) {
   return Array.isArray(turnos.eventos) && turnos.eventos.length > 0;
-}
-
-/** @param {number | 'NC' | null} v */
-function turnoCell(v) {
-  if (v == null) return '—';
-  if (v === 'NC') return 'NC';
-  return String(v);
-}
-
-/**
- * Tabla T1/T2/T3 del último registro con turnos: ingresos, egresos, balance y eventos.
- * @param {{ ingTurnos?: unknown[], egrTurnos?: unknown[], eventos?: unknown[] } | null | undefined} turnos
- */
-export function renderTurnosBalanceHtml(turnos) {
-  var rows = ioTurnosBreakdown(turnos);
-  return (
-    '<table class="ea-turnos-table">' +
-    '<thead><tr><th>Turno</th><th>Ingresos</th><th>Egresos</th><th>Balance</th><th>Eventos</th></tr></thead><tbody>' +
-    rows
-      .map(function (r) {
-        var balCls = typeof r.bal === 'number' ? (r.bal > 0 ? ' ea-balance-live--pos' : r.bal < 0 ? ' ea-balance-live--neg' : '') : '';
-        return (
-          '<tr><th scope="row">' + r.turno + '</th>' +
-          '<td>' + turnoCell(r.ing) + '</td>' +
-          '<td>' + turnoCell(r.egr) + '</td>' +
-          '<td class="ea-turnos-bal' + balCls + '">' +
-          (typeof r.bal === 'number' ? (r.bal > 0 ? '+' : '') + r.bal : turnoCell(r.bal)) +
-          '</td>' +
-          '<td class="ea-turnos-events">' + (r.eventos.length ? r.eventos.map(escHtml).join('<br>') : '') + '</td></tr>'
-        );
-      })
-      .join('') +
-    '</tbody></table>' +
-    '<p class="ea-muted ea-turnos-foot">' +
-    (turnos ? 'Valores en mL del último registro.' : 'Aún no hay ingresos ni egresos por turno.') +
-    '</p>' +
-    '<button type="button" class="ea-btn ea-turnos-add" data-onclick="closeEaVitalHistoryModal" data-onclick-2="openEstadoActualRegistroModal">Capturar turnos o evento</button>'
-  );
 }

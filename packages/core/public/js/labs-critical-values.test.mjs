@@ -29,6 +29,12 @@ describe('labs-critical-values', () => {
     var sets = [{ fecha: '01/01/2026', parsedBySection: { GASES: { Bica: 42 } } }];
     assert.equal(hasCriticalLabValue(sets), true);
   });
+  it('blastos / promielocitos > 0 are critical, 0 is not', () => {
+    assert.equal(isCriticalLabValue('Blast', '3%*'), true);
+    assert.equal(isCriticalLabValue('Prom', '1'), true);
+    assert.equal(isCriticalLabValue('Blast', '0%'), false);
+  });
+
   it('isCriticalLabValue: label + shown value, Plt in miles or units', () => {
     assert.equal(isCriticalLabValue('K', '6.8'), true);
     assert.equal(isCriticalLabValue('K', '5.5'), false);

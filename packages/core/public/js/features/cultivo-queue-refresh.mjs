@@ -8,7 +8,8 @@ import {
   labRepoToDateInputValue,
 } from './lab-repo-import.mjs';
 import { classifyLabRepoBatchFetch } from './lab-repo-batch-model.mjs';
-import { applyBatchStudyGroups } from './lab-repo-batch-bulk-apply.mjs';
+import { applyBatchStudyGroups, applyBatchStudyGroupNow } from './lab-repo-batch-bulk-apply.mjs';
+import { rt as labRt } from './lab-panel-runtime-state.mjs';
 import {
   extractCultivoFollowUpCandidates,
   classifyCultivoFollowUps,
@@ -128,10 +129,11 @@ async function applyCultivoLabRepoBatch(patientId, registro, studies, errors) {
   await import('../lazy-feature-routes.mjs').then(function (routes) {
     return routes.ensureLabsLoaded();
   });
-  applyBatchStudyGroups(
-    [{ row: { id: String(patientId), registro: registro }, studies: studies, errors: errors }],
-    { findPatientByRegistro: findPatientByRegistro }
-  );
+  var group = { row: { id: String(patientId), registro: registro }, studies: studies, errors: errors };
+  var rt = { findPatientByRegistro: findPatientByRegistro, getActiveId: function () { return labRt.getActiveId(); } };
+  // Otro paciente (fondo): se guarda sin cambiar de paciente ni abrir revisión.
+  if (String(labRt.getActiveId() || '') !== String(patientId)) applyBatchStudyGroupNow(group, rt);
+  else applyBatchStudyGroups([group], rt);
 }
 
 /**
@@ -139,7 +141,23 @@ async function applyCultivoLabRepoBatch(patientId, registro, studies, errors) {
  * @param {{ fecha?: string }[]} items
  * @returns {Promise<{ ok: boolean, kind?: string, reason?: string }>}
  */
+var refreshDepth = 0;
+
+/** true mientras un refresco de cultivos guarda labs: ese guardado no debe disparar otro. */
+export function isCultivoRefreshInFlight() {
+  return refreshDepth > 0;
+}
+
 export async function refreshCultivoLabsForPatient(patientId, items) {
+  refreshDepth++;
+  try {
+    return await refreshCultivoLabsForPatientInner(patientId, items);
+  } finally {
+    refreshDepth--;
+  }
+}
+
+async function refreshCultivoLabsForPatientInner(patientId, items) {
   var inputs = resolveCultivoRefreshInputs(patientId, items);
   if ('reason' in inputs) return { ok: false, reason: inputs.reason };
 

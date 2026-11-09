@@ -175,18 +175,42 @@ function formatAtbDetailRowHtml(s) {
   );
 }
 
+/** Nombres con su CMI junto a la letra (solo en las tarjetas de Cultivos, de menor a mayor CMI). */
+function atbNamesHtml(sorted, key, marks) {
+  var items = sorted.map(function (s) {
+    var m = String(s.med || '').trim().toLowerCase();
+    // «<=» y «>=» se ven como ≤ y ≥ (el signo importa: ≤0.5 no es 0.5).
+    var mic = String(s.mic || '').trim().replace(/<=/g, '\u2264').replace(/>=/g, '\u2265');
+    var mk = marks && marks.get(s);
+    return (
+      '<span class="cult-atb-item"><span class="cult-atb-name">' +
+      escTxt(m.charAt(0).toUpperCase() + m.slice(1)) +
+      '</span>' +
+      (mic ? '<span class="cult-atb-mic">' + escTxt(mic) + '</span>' : '') +
+      (mk ? '<span class="cult-atb-mk">' + escTxt(mk) + '</span>' : '') +
+      '</span>'
+    );
+  });
+  return '<span class="cult-atb-ris-names">' + items.join(' ') + '</span>';
+}
+
 /**
  * Resumen antibiograma: como mucho tres letras (R, I, S), cada una una sola vez.
  * Hover / foco en cada letra abre solo el bloque correspondiente.
  */
-export function buildAtbRisSummaryHtml(sensCrudas) {
+export function buildAtbRisSummaryHtml(sensCrudas, ext) {
   if (!sensCrudas || !sensCrudas.length) return '';
-  var buckets = { r: [], i: [], s: [] };
+  // ext (opcional, solo Cultivos): { intr: Set de filas R por especie, marks: Map fila → etiqueta }.
+  var intr = ext && ext.intr;
+  var marks = ext && ext.marks;
+  var buckets = { r: [], x: [], i: [], s: [] };
   sensCrudas.forEach(function (s) {
-    buckets[classifyAtbInterp(s.interp)].push(s);
+    var k = classifyAtbInterp(s.interp);
+    buckets[k === 'r' && intr && intr.has(s) ? 'x' : k].push(s);
   });
   var order = [
     { key: 'r', label: 'R', panelTitle: 'Resistencias' },
+    { key: 'x', label: 'Int', panelTitle: 'Resistencia intrínseca' },
     { key: 'i', label: 'I', panelTitle: 'Indeterminado' },
     { key: 's', label: 'S', panelTitle: 'Sensible' },
   ];
@@ -194,33 +218,37 @@ export function buildAtbRisSummaryHtml(sensCrudas) {
   order.forEach(function (o) {
     var list = buckets[o.key];
     if (!list.length) return;
-    var sorted = sortSensByGradeInBucket(list, o.key);
+    var sorted = sortSensByGradeInBucket(list, ext ? 's' : o.key === 'x' ? 'r' : o.key);
     var items = sorted.map(formatAtbDetailRowHtml).join('');
+    // Tarjetas de Cultivos (ext): nombres visibles junto a la letra, sin panel al pasar el cursor.
+    var panelHtml = ext
+      ? ''
+      : '<div class="atb-ris-hover-panel atb-ris-hover-panel--' +
+        o.key +
+        '" role="region" aria-label="' +
+        escTxt(o.panelTitle) +
+        '"><div class="atb-ris-panel-head">' +
+        escTxt(o.panelTitle) +
+        '</div><ul class="atb-ris-detail-list">' +
+        items +
+        '</ul></div>';
     wraps.push(
       '<span class="cult-atb-ris-chip-wrap">' +
-      '<span class="atb-chip atb-chip--' +
-      o.key +
-      '" tabindex="0" role="button">' +
-      escTxt(o.label + ' ' + list.length) +
-      '</span>' +
-      '<div class="atb-ris-hover-panel atb-ris-hover-panel--' +
-      o.key +
-      '" role="region" aria-label="' +
-      escTxt(o.panelTitle) +
-      '">' +
-      '<div class="atb-ris-panel-head">' +
-      escTxt(o.panelTitle) +
-      '</div>' +
-      '<ul class="atb-ris-detail-list">' +
-      items +
-      '</ul>' +
-      '</div>' +
-      '</span>'
+        '<span class="atb-chip atb-chip--' +
+        o.key +
+        '"' +
+        (ext ? ' tabindex="0"' : ' tabindex="0" role="button"') +
+        '>' +
+        escTxt(o.label + ' ' + list.length) +
+        '</span>' +
+        atbNamesHtml(sorted, o.key, marks) +
+        panelHtml +
+        '</span>'
     );
   });
   return (
     '<div class="cult-atb-ris-summary">' +
-    '<div class="cult-atb-ris-chips" role="group" aria-label="Antibiograma (R / I / S); coloca el cursor sobre cada letra para el detalle">' +
+    '<div class="cult-atb-ris-chips" role="group" aria-label="Antibiograma (R / I / S)">' +
     wraps.join('') +
     '</div>' +
     '</div>'

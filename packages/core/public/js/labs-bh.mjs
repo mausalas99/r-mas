@@ -465,6 +465,17 @@ function buildBhCorePairs_(f) {
   return corePairs;
 }
 
+/** Células inmaduras (>0) van en la línea BH principal: no depender de «BH ext». */
+function pushBhImmatureCore_(corePairs, extras, tNorm, priorRefs) {
+  if (!corePairs.length) return;
+  ['Mielo', 'Metamielo', 'Promielo', 'Blastos'].forEach(function (k) {
+    if (!(parseFloat(String(extras[k]).replace(',', '.')) > 0)) return;
+    var txt = formatBhDiffPctDisplay_(k, extras[k], tNorm, priorRefs);
+    var sp = txt.indexOf(' ');
+    corePairs.push(txt.slice(0, sp), txt.slice(sp + 1));
+  });
+}
+
 function buildBhCoagDisplay_(f) {
   var coagDisplay = [];
   if (f.TP !== '---') coagDisplay.push('TP ' + f.TP);
@@ -564,6 +575,7 @@ export function parseBH_(tNorm, priorRefs, priorBhValues) {
   if (!bhHasAnyData_(f, extras)) return { visible: '', coagVisible: '', extras: {} };
 
   var corePairs = buildBhCorePairs_(f);
+  pushBhImmatureCore_(corePairs, extras, tNorm, priorRefs);
   var hasCompactBody = corePairs.length > 0;
   var coagDisplay = buildBhCoagDisplay_(f);
   if (hasCompactBody || coagDisplay.length) mergeBhIndexExtras_(extras, f);

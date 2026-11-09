@@ -12,6 +12,7 @@ import {
 } from './tend-core.mjs';
 import { inferFechaLabSetFromId } from './lab-set-date.mjs';
 import { isModeSala } from './mode-features.mjs';
+import { mergeTroponinaResLabRows_ } from './labs-troponin.mjs';
 import { looksLikeLabSectionChunk } from './labs-reslabs-sanitize.mjs';
 import { isCultivoBlockStartLine } from './cultivo-block-core.mjs';
 
@@ -271,13 +272,41 @@ export function buildEstudiosCopyLinesFromLabSets(orderedSets, options) {
     if (allowDay && !allowDay.has(group.dayKey)) return;
     var sets = group.sets;
     var multiOnDay = sets.length > 1;
+    // Varios envíos el mismo día: una sola línea TROP (TnI1 TnI2 Δ%) en el envío más antiguo con TROP.
+    var tropOwner = null;
+    var tropMerged = '';
+    if (multiOnDay) {
+      var seenTrop = Object.create(null);
+      var tropRows = [];
+      sets
+        .slice()
+        .reverse()
+        .forEach(function (set) {
+          splitResLabsByTipo(set.resLabs).labs.forEach(function (row) {
+            var t = String(row == null ? '' : row).trim();
+            if (!/^TROP\b/i.test(t) || seenTrop[t]) return;
+            seenTrop[t] = true;
+            if (!tropOwner) tropOwner = set;
+            tropRows.push(t);
+          });
+        });
+      if (tropRows.length > 1) tropMerged = mergeTroponinaResLabRows_(tropRows);
+    }
     sets.forEach(function (set) {
       var sp = splitResLabsByTipo(set.resLabs);
       var labsAcc = [];
+      var tropPlaced = false;
       var cultAcc = [];
       sp.labs.forEach(function (row) {
         var clean = String(row == null ? '' : row).trim();
         if (!clean || isCitoquimInterpretacionResLabChunk(clean)) return;
+        if (tropMerged && /^TROP\b/i.test(clean)) {
+          if (set === tropOwner && !tropPlaced) {
+            tropPlaced = true;
+            labsAcc.push(tropMerged);
+          }
+          return;
+        }
         labsAcc.push(row);
       });
       sp.cultivo.forEach(function (row) {

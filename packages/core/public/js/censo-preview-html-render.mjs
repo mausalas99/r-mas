@@ -1,6 +1,7 @@
 import { parseCamaCellForCenso, formatCamaCellLabel } from './censo-build.mjs';
 import { CENSO_FULL_SET_W } from './censo-labs-diagrams-layout.mjs';
 import { classifyCensoTableLine } from './censo-table-style.mjs';
+import { censoEmphasisSegments } from './censo-emphasis.mjs';
 import {
   censoColgroupCssRules,
   censoColgroupHtml,
@@ -32,7 +33,12 @@ export function renderCensoLines(text, colKey) {
     .filter(Boolean)
     .map(function (l, i) {
       var role = classifyCensoTableLine(l, colKey, i);
-      return '<span class="' + censoLineClass(role) + '">' + escCensoHtml(l) + '</span>';
+      var inner = censoEmphasisSegments(colKey, l)
+        .map(function (sg) {
+          return sg.bold ? '<b>' + escCensoHtml(sg.text) + '</b>' : escCensoHtml(sg.text);
+        })
+        .join('');
+      return '<span class="' + censoLineClass(role) + '">' + inner + '</span>';
     })
     .join('');
 }
@@ -113,7 +119,7 @@ function renderCensoLabsCell(row) {
   );
 }
 
-function renderCensoPreviewCell(row, key) {
+function renderCensoPreviewCell(row, key, idx, editable) {
   if (key === 'num') {
     return (
       '<td class="censo-data-cell censo-center censo-bold censo-num">' +
@@ -158,7 +164,15 @@ function renderCensoPreviewCell(row, key) {
     return '<td class="censo-data-cell censo-acc">' + renderCensoSectionCell(row, 'accesos', 'Accesos') + '</td>';
   }
   if (key === 'cultivos') {
-    return '<td class="censo-data-cell censo-cult">' + renderCensoSectionCell(row, 'cultivos', 'Cultivos') + '</td>';
+    // cultivosHidden: oculto en vista previa, PDF e impresión; el texto sigue en row.cultivos.
+    var hidCult = !!row.cultivosHidden;
+    var bodyCult = hidCult ? '' : renderCensoSectionCell(row, 'cultivos', 'Cultivos');
+    var toggleCult =
+      editable && (hidCult || bodyCult)
+        ? '<button type="button" contenteditable="false" class="censo-cult-toggle" data-r="' +
+          idx + '" data-hidden="' + (hidCult ? '1' : '0') + '"></button>'
+        : '';
+    return '<td class="censo-data-cell censo-cult">' + toggleCult + bodyCult + '</td>';
   }
   if (key === 'pend') {
     return '<td class="censo-data-cell censo-pend">' + renderCensoSectionCell(row, 'pendientes', 'Pendientes') + '</td>';
@@ -178,7 +192,7 @@ export function buildCensoPreviewBodyHtml(rows, weights, editable) {
         '">' +
         cols
           .map(function (col) {
-            var cell = renderCensoPreviewCell(row, col.key);
+            var cell = renderCensoPreviewCell(row, col.key, idx, editable);
             if (!editable || (col.key === 'labs' && row.labsDiagrams)) return cell;
             return cell.replace('<td ', '<td contenteditable="plaintext-only" data-r="' + idx + '" data-k="' + col.key + '" ');
           })
@@ -196,27 +210,32 @@ export const CENSO_PREVIEW_STYLES =
   '.sub{color:#5c6778;font-size:8.5px;margin-bottom:10px;line-height:1.4}' +
   '.mes{text-align:center;font-weight:700;color:var(--color-accent);font-size:11px;margin:-24px 0 10px;letter-spacing:0.04em}' +
   'table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}' +
-  'th,td{border:1px solid #d4dae3;padding:5px 6px;word-wrap:break-word;overflow-wrap:anywhere}' +
+  'th,td{border:1px solid #d4dae3;padding:3px 6px;word-wrap:break-word;overflow-wrap:anywhere}' +
   'th.censo-th{background:#eef1f6;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--color-ink-muted);vertical-align:middle;text-align:center;white-space:nowrap;line-height:1.2;padding:6px 4px}' +
   'th.censo-th.censo-bold{font-weight:800}' +
   'tbody td.censo-data-cell{vertical-align:middle}' +
   'tr.alt td{background:#f7f8fb}' +
-  '.censo-line{display:block;line-height:1.28;margin:0}' +
-  '.censo-line + .censo-line{margin-top:1px}' +
+  '.censo-line{display:block;line-height:1.15;margin:0}' +
+  '.censo-line + .censo-line{margin-top:0}' +
   '.censo-line--empty{color:#9aa3b2;font-weight:400}' +
   'td.censo-center .censo-line{text-align:center;margin-left:auto;margin-right:auto}' +
   '.censo-line--muted{color:#5c6778;font-size:8px;font-weight:400}' +
   '.censo-line--emphasis{font-weight:700;color:#1a2332}' +
-  '.censo-line--lab-date{font-weight:700;color:var(--color-accent);font-size:8px;margin-bottom:2px}' +
-  '.censo-line--lab-panel{font-weight:600;font-size:7.5px;font-family:"IBM Plex Mono",ui-monospace,monospace;letter-spacing:-0.01em}' +
-  '.censo-line--label-led{font-size:8px;font-weight:600}' +
-  'td.censo-labs .censo-line{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:7.5px;line-height:1.28}' +
+  '.censo-line b{font-weight:700}' +
+  '.censo-line--lab-date{font-weight:400;color:var(--color-accent);font-size:8px;margin-bottom:2px}' +
+  '.censo-line--lab-panel{font-weight:400;font-size:7.5px;font-family:"IBM Plex Mono",ui-monospace,monospace;letter-spacing:-0.01em}' +
+  '.censo-line--label-led{font-size:8px;font-weight:400}' +
+  'td.censo-labs .censo-line{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:7.5px;line-height:1.15}' +
   'td.censo-signos,td.censo-pend,td.censo-acc,td.censo-cult{font-size:8px;text-align:left}' +
   'td.censo-paciente,td.censo-dx,td.censo-atb,td.censo-meds{text-align:center}' +
   'td.censo-paciente{font-size:8.5px}' +
-  'td.censo-dx{font-weight:700;font-size:8px;line-height:1.25}' +
-  'td.censo-atb,td.censo-meds{font-size:7.5px;line-height:1.28}' +
+  'td.censo-dx{font-weight:400;font-size:8px;line-height:1.25}' +
+  'td.censo-atb,td.censo-meds{font-size:7.5px;line-height:1.15}' +
   'td.censo-acc,td.censo-cult{font-size:8px}' +
+  '.censo-cult-toggle{display:block;margin:0 0 2px auto;font:inherit;font-size:7.5px;color:#5c6778;background:none;border:1px solid #d4dae3;border-radius:999px;padding:0 6px;cursor:pointer}' +
+  '.censo-cult-toggle::before{content:"Ocultar"}' +
+  '.censo-cult-toggle[data-hidden="1"]::before{content:"Mostrar cultivos"}' +
+  '@media print{.censo-cult-toggle{display:none}}' +
   '.censo-center{text-align:center;vertical-align:middle}' +
   '.censo-bold{font-weight:700}' +
   'td.censo-num,td.censo-cama{padding:4px 2px;text-align:center;vertical-align:middle}' +

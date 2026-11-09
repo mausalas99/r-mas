@@ -24,6 +24,12 @@ import {
 } from './estado-actual-io.mjs';
 import { persistEstadoClinicoLight } from './estado-actual-panel-clinico.mjs';
 import { VITAL_KEYS } from './estado-actual-panel-constants.mjs';
+import {
+  wireEaRegistroSteps,
+  resetEaRegistroSteps,
+  syncEaRegistroSteps,
+  rollText,
+} from './estado-actual-registro-steps.mjs';
 import { findActivePatient, getEaFormOpenPatientId } from './estado-actual-panel-core.mjs';
 import { toDatetimeLocalValue } from './estado-actual-panel-format.mjs';
 import {
@@ -174,12 +180,12 @@ export function syncIoBalanceFromForm(form) {
   var ingValues = ingInputs.map(function (el) { return parseIoIngresoField(el.value); });
   var ingTotals = sumIoTurnos(ingValues);
   var ingTotalEl = form.querySelector('#ea-io-ing-total');
-  if (ingTotalEl) ingTotalEl.textContent = ioRowTotalText(ingInputs, ingTotals);
+  if (ingTotalEl) rollText(ingTotalEl, ioRowTotalText(ingInputs, ingTotals));
 
   var egrPartsPerTurno = egrInputs.map(function (el) { return parseIoEgresoLine(el.value); });
   var egrTotals = sumIoTurnos(egrPartsPerTurno.map(ioTurnoEgresoValue));
   var egrTotalEl = form.querySelector('#ea-io-egr-total');
-  if (egrTotalEl) egrTotalEl.textContent = ioRowTotalText(egrInputs, egrTotals);
+  if (egrTotalEl) rollText(egrTotalEl, ioRowTotalText(egrInputs, egrTotals));
 
   ingInputs.concat(egrInputs).forEach(function (el) {
     if (!el) return;
@@ -199,13 +205,7 @@ export function syncIoBalanceFromForm(form) {
     egr: diuresisValueFromParts(combinedParts),
   });
   var touched = ingInputs.concat(egrInputs).some(hasIoValue) || extraParts.length > 0;
-  var prevText = out.textContent;
-  out.textContent = touched ? String(label).replace(/\s*CC$/i, '') : '—';
-  if (out.textContent !== prevText) {
-    out.classList.remove('num-roll');
-    void out.offsetWidth;
-    out.classList.add('num-roll');
-  }
+  rollText(out, touched ? String(label).replace(/\s*CC$/i, '') : '—');
   out.classList.remove('ea-balance-live--pos', 'ea-balance-live--neg');
   if (/^\+\d/.test(String(label))) out.classList.add('ea-balance-live--pos');
   else if (/^-\d/.test(String(label))) out.classList.add('ea-balance-live--neg');
@@ -235,7 +235,7 @@ function syncIoTableDerivedCells(form, ingInputs, egrInputs) {
   rows.forEach(function (r, i) {
     var el = form.querySelector('#ea-io-bal-' + IO_TURNO_IDS[i]);
     if (!el) return;
-    el.textContent = signedBalance(r.bal);
+    rollText(el, signedBalance(r.bal));
     el.classList.toggle('ea-balance-live--pos', typeof r.bal === 'number' && r.bal > 0);
     el.classList.toggle('ea-balance-live--neg', typeof r.bal === 'number' && r.bal < 0);
   });
@@ -581,6 +581,7 @@ export function applyEstadoActualParsedToForm(parsed) {
   fillIoFields(form, parsed.io);
   syncIoBalanceFromForm(form);
   applyParsedSoporte(parsed.soporteHint);
+  syncEaRegistroSteps(form);
 }
 
 function buildRegistroVitalsSectionHtml(vitalFields) {
@@ -945,12 +946,53 @@ function buildRegistroLeadHtml(activeId) {
   return reminderHtml ? '<div class="ea-registro-lead">' + reminderHtml + '</div>' : '';
 }
 
+var REGISTRO_STEP_NAMES = ['Signos', 'Glucosa', 'Balance', 'Revisar'];
+
+/** Progress bars, step rail and the four panes (all stay in the form so the reader finds every field). */
+function buildRegistroStepsHtml(vitalFields) {
+  var bars = REGISTRO_STEP_NAMES.map(function () {
+    return '<div class="ea-steps-bar"><i></i></div>';
+  }).join('');
+  var rail = REGISTRO_STEP_NAMES.map(function (name, i) {
+    return (
+      '<button type="button" class="ea-steps-item" data-ea-step-go="' + i + '">' +
+      '<span class="ea-steps-dot" aria-hidden="true">' + (i + 1) + '</span>' +
+      '<span class="ea-steps-text"><span class="ea-steps-name">' + name + '</span>' +
+      '<span class="ea-steps-sub">' + (i === 3 ? 'Un solo envío' : 'Sin datos') + '</span></span>' +
+      '</button>'
+    );
+  }).join('');
+  return (
+    '<div class="ea-steps-progress" aria-hidden="true">' + bars + '</div>' +
+    '<div class="ea-steps">' +
+    '<nav class="ea-steps-rail" aria-label="Pasos del registro">' + rail + '</nav>' +
+    '<div class="ea-steps-panes">' +
+    '<div class="ea-step-pane" data-ea-step="0">' + buildRegistroVitalsSectionHtml(vitalFields) + '</div>' +
+    '<div class="ea-step-pane" data-ea-step="1" hidden>' + buildRegistroGluSectionHtml() + '</div>' +
+    '<div class="ea-step-pane" data-ea-step="2" hidden>' + buildRegistroIoSectionHtml() + '</div>' +
+    '<div class="ea-step-pane" data-ea-step="3" hidden><section class="ea-registro-section">' +
+    '<div class="ea-registro-section-head"><h4 class="ea-registro-section-label">Revisar</h4></div>' +
+    '<div id="ea-step-review"></div></section></div>' +
+    '</div>' +
+    '</div>'
+  );
+}
+
 function buildRegistroFooterHtml() {
   return (
+    '<div class="ea-steps-advance" aria-hidden="true"><i></i></div>' +
     '<footer class="ea-registro-modal-foot wb-modal-foot">' +
-    '<button type="button" class="wb-btn wb-btn-ghost ea-registro-paste-btn" style="margin-right:auto" data-onclick="openEstadoActualPasteModal" data-onclick-args=\'[{"skipRegistro":true}]\'>Pegar monitoreo</button>' +
+    '<button type="button" class="wb-btn wb-btn-ghost ea-registro-paste-btn" data-onclick="openEstadoActualPasteModal" data-onclick-args=\'[{"skipRegistro":true}]\'>Pegar monitoreo</button>' +
+    '<label class="ea-steps-auto"><span class="rpc-switch">' +
+    '<input type="checkbox" class="rpc-switch-input" role="switch" data-ea-auto checked>' +
+    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></span>' +
+    '<span>Avance automático</span></label>' +
+    '<span class="ea-steps-msg ea-muted" data-ea-step-msg role="status" aria-live="polite"></span>' +
+    '<span class="ea-steps-spacer"></span>' +
+    '<button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-ea-step-back>Atrás</button>' +
     '<button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-onclick="closeEstadoActualRegistroModal">Cancelar</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg ea-registro-submit" data-onclick="registrarEstadoActualMedicion">Registrar</button>' +
+    '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-ea-step-next>Siguiente: Glucosa</button>' +
+    '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg ea-registro-submit" data-onclick="registrarEstadoActualMedicion" hidden>Registrar</button>' +
     '</footer>'
   );
 }
@@ -978,15 +1020,7 @@ export function buildRegistroFormMarkup() {
     '</div>' +
     '<p class="ea-registro-hint">Basta un dato para registrar · <span class="ea-registro-kbd-hint">⌘↵</span></p>' +
     '</div>' +
-    '<div class="ea-registro-cols">' +
-    '<div class="ea-registro-col">' +
-    buildRegistroVitalsSectionHtml(vitalFields) +
-    buildRegistroGluSectionHtml() +
-    '</div>' +
-    '<div class="ea-registro-col">' +
-    buildRegistroIoSectionHtml() +
-    '</div>' +
-    '</div>' +
+    buildRegistroStepsHtml(vitalFields) +
     '</form>' +
     '</div>' +
     buildRegistroFooterHtml() +
@@ -1005,6 +1039,7 @@ export function wireEaRegistroForm(monitoreo) {
   var bombaList = document.getElementById('ea-bomba-list');
   if (bombaList && !bombaList.querySelector('.ea-bomba-row')) bombaList.appendChild(buildBombaRow());
   syncEaGluMode(form);
+  wireEaRegistroSteps(form);
 }
 
 export function syncEaRegistroGluMode() {
@@ -1061,4 +1096,5 @@ export function resetEaRegistroForm(_patient) {
   syncEaGluMode(form);
   syncIoBalanceFromForm(form);
   syncAllVitalAddButtonVisibility(form);
+  resetEaRegistroSteps(form);
 }

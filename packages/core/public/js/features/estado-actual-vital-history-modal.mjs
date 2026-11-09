@@ -3,10 +3,9 @@ import { findActivePatient } from './estado-actual-panel-core.mjs';
 import {
   getVitalHistoryEntries,
   vitalHasHistory,
-  renderVitalHistoryListHtml,
   vitalHistoryTitle,
-  renderTurnosBalanceHtml,
 } from './estado-actual-panel-snapshot-html.mjs';
+import { drawVitalHistoryList, drawTurnosBalance } from './estado-actual-vital-history-view.jsx';
 
 /** @type {{ showToast(msg: string, type?: string): void }} */
 let rt = {
@@ -61,7 +60,7 @@ export function openEaVitalHistoryModal(vitalKey) {
   if (!vitalHasHistory(key, snapshot)) return;
   var entries = getVitalHistoryEntries(key, snapshot);
   title.textContent = vitalHistoryTitle(key);
-  body.innerHTML = renderVitalHistoryListHtml(entries);
+  drawVitalHistoryList(body, entries);
   backdrop.classList.add('open');
   backdrop.setAttribute('aria-hidden', 'false');
 }
@@ -76,7 +75,7 @@ export function openEaTurnosBalanceModal() {
   ensureMonitoreo(patient);
   var turnos = deriveSnapshot(patient.monitoreo).io.turnos;
   title.textContent = 'Balance por turno';
-  body.innerHTML = renderTurnosBalanceHtml(turnos);
+  drawTurnosBalance(body, turnos);
   backdrop.classList.add('open');
   backdrop.setAttribute('aria-hidden', 'false');
 }

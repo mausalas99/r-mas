@@ -111,11 +111,17 @@ function formatBalanceShort(io, balTurno) {
 }
 
 function appendCensoVitalLines(lines, v) {
-  if (v.temp != null && v.temp !== '') lines.push('T°: ' + v.temp + ' °C');
-  if (v.fc != null && v.fc !== '') lines.push('FC: ' + v.fc + ' LPM');
-  if (v.fr != null && v.fr !== '') lines.push('FR: ' + v.fr + ' RPM');
-  var hasTas = v.tas != null && v.tas !== '';
-  var hasTad = v.tad != null && v.tad !== '';
+  var has = function (x) {
+    return x != null && x !== '';
+  };
+  // T°, FC y FR en una sola línea (sin unidades) para ahorrar alto.
+  var head = [];
+  if (has(v.temp)) head.push('T° ' + v.temp);
+  if (has(v.fc)) head.push('FC ' + v.fc);
+  if (has(v.fr)) head.push('FR ' + v.fr);
+  if (head.length) lines.push(head.join(' · '));
+  var hasTas = has(v.tas);
+  var hasTad = has(v.tad);
   if (hasTas || hasTad) {
     lines.push('TA: ' + (hasTas ? v.tas : '—') + '/' + (hasTad ? v.tad : '—') + ' MMHG');
   }
@@ -178,22 +184,21 @@ export function formatCensoIoColumn(io, balTurno) {
   io = io && typeof io === 'object' ? io : {};
   var lines = [];
 
+  // Una línea para I, B y EVAC (cortos); E va aparte porque puede ser largo.
+  var short = [];
   if (io.ing != null && io.ing !== '') {
     var ing = formatCc(io.ing);
-    if (ing) lines.push('I: ' + ing);
+    if (ing) short.push('I: ' + ing);
   }
-  var egrText = formatEgresoShort(io.egr, /** @type {import('./features/estado-actual-io.mjs').IoEgresoPart[] | undefined} */ (io.egrParts));
-  if (egrText) lines.push('E: ' + egrText);
-  else if (ioNumericEgressTotal(io) == null && (io.egr != null || (Array.isArray(io.egrParts) && io.egrParts.length))) {
-    lines.push('E: NO CUANTIFICADA');
-  }
-
   var bal = formatBalanceShort(io, balTurno);
-  if (bal) lines.push('B: ' + bal);
+  // "NC" no aporta: se omite.
+  if (bal && bal !== 'NC') short.push('B: ' + bal);
+  if (io.evac != null && io.evac !== '') short.push('EVAC: ' + formatEvacShort(io.evac));
+  if (short.length) lines.push(short.join(' · '));
 
-  if (io.evac != null && io.evac !== '') {
-    lines.push('EVAC: ' + formatEvacShort(io.evac));
-  }
+  var egrText = formatEgresoShort(io.egr, /** @type {import('./features/estado-actual-io.mjs').IoEgresoPart[] | undefined} */ (io.egrParts));
+  // "No cuantificada" tampoco aporta.
+  if (egrText && egrText !== 'NO CUANTIFICADA') lines.push('E: ' + egrText);
 
   return lines;
 }

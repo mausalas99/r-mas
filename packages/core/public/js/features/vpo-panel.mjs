@@ -12,7 +12,9 @@ import {
   applyProcedureSelection,
   applyAsaSuggestion,
 } from '../vpo-data.mjs';
-import { focusMissingInput, renderCalcInputsHtml } from './vpo-calc-form.mjs';
+import { focusMissingInput, mountCalcForm, unmountCalcForm } from './vpo-calc-form.jsx';
+import { toast } from '../ui-kit/toast.mjs';
+import { vpoOpenDialog } from './vpo-ui-state.mjs';
 import { autofillCalc, buildScaleLines } from '../vpo-calc.mjs';
 import { isVpoCalculatorEnabled } from './profile-prefs.mjs';
 import { formatDiagnosticosCopy } from '../patient-diagnosticos.mjs';
@@ -34,12 +36,11 @@ import {
   handleVpoDxRemoveRow,
 } from './vpo-panel-helpers.mjs';
 
-/** @type {{ getActiveId(): string|null, showToast(msg: string, type?: string): void, switchAppTab(tab: string): void }} */
+/** @type {{ getActiveId(): string|null, switchAppTab(tab: string): void }} */
 let rt = {
   getActiveId() {
     return null;
   },
-  showToast() {},
   switchAppTab() {},
 };
 
@@ -61,21 +62,16 @@ function scheduleSave() {
 function copyText(label, text) {
   var t = String(text || '').trim();
   if (!t) {
-    rt.showToast('Nada que copiar en ' + label, 'error');
+    toast('Nada que copiar en ' + label, 'error');
     return;
   }
   copyToClipboardSafe(t).then(function (ok) {
-    rt.showToast(ok ? label + ' copiado' : 'No se pudo copiar', ok ? 'success' : 'error');
+    toast(ok ? label + ' copiado' : 'No se pudo copiar', ok ? 'success' : 'error');
   });
 }
 
 /* UI copy only. Copy-output labels stay in vpo-text.mjs. */
 var VPO_SCALE_UI_LABEL = { rcri: 'RCRI (Lee)', ahaCv: 'Riesgo CV AHA/ACC', ahaSurg: 'Riesgo quirúrgico AHA/ACC', guptaResp: 'Gupta resp.', guptaPneu: 'Gupta neumonía' };
-
-/** Which EKG/Rx dialog is open; a re-render reopens it. */
-var _openDialog = '';
-/** Which «Otras escalas» tab is showing. */
-var _scaleTab = '';
 
 /** Names of scales that lacked data on the last «Calcular todo»; shown once on the next render. */
 var _missingNote = '';
@@ -121,8 +117,8 @@ function renderScaleRows(state) {
 function showVpoDialog(mount, key) {
   var dlg = mount.querySelector('dialog[data-vpo-dialog="' + key + '"]');
   if (!dlg || dlg.open) return;
-  _openDialog = key;
   dlg.showModal();
+  vpoOpenDialog.set(key);
 }
 
 function renderRiskScalesOnlyBody(state) {
@@ -131,7 +127,7 @@ function renderRiskScalesOnlyBody(state) {
   _missingNote = '';
   return (
     '<div class="vpo-risk-grid">' +
-    (isVpoCalculatorEnabled() ? '<div class="vpo-risk-in">' + renderCalcInputsHtml(state, esc, _scaleTab) + '</div>' : '') +
+    (isVpoCalculatorEnabled() ? '<div class="vpo-risk-in"></div>' : '') +
     '<div class="vpo-risk-out">' +
     (note ? '<p class="vpo-disclaimer">' + esc(note) + '</p>' : '') +
     renderScaleRows(state) +
@@ -192,19 +188,19 @@ function wireVpoImportActions(mount, state, patientId) {
       return p.id === patientId;
     });
     if (!applyVitalsFromMonitoreo(state, patient || null)) {
-      rt.showToast('Sin FC o SpO₂ en Estado actual', 'error');
+      toast('Sin FC o SpO₂ en Estado actual', 'error');
       return;
     }
     scheduleSave();
     renderVpoPanel(mount, patientId);
-    rt.showToast('FC y SpO₂ tomados de Estado actual', 'success');
+    toast('FC y SpO₂ tomados de Estado actual', 'success');
   });
 
   mount.querySelector('[data-vpo-action="calc-fill"]')?.addEventListener('click', function () {
     var n = autofillCalc(state, { labHistory: getLabHistory()[patientId], patient: getPatients().find(function (p) { return p.id === patientId; }) }).length;
     scheduleSave();
     renderVpoPanel(mount, patientId);
-    rt.showToast(n ? n + ' datos tomados de R+' : 'Nada nuevo en R+', n ? 'success' : 'error');
+    toast(n ? n + ' datos tomados de R+' : 'Nada nuevo en R+', n ? 'success' : 'error');
   });
 
   mount.querySelector('[data-vpo-action="calc-all"]')?.addEventListener('click', function () {
@@ -224,7 +220,7 @@ function wireVpoImportActions(mount, state, patientId) {
     _missingNote = missing.length ? 'Faltan datos: ' + missing.join('; ') + '.' : '';
     scheduleSave();
     renderVpoPanel(mount, patientId);
-    rt.showToast(done + ' escalas calculadas', done ? 'success' : 'error');
+    toast(done + ' escalas calculadas', done ? 'success' : 'error');
   });
 
   mount.querySelectorAll('[data-vpo-open]').forEach(function (btn) {
@@ -232,20 +228,10 @@ function wireVpoImportActions(mount, state, patientId) {
       showVpoDialog(mount, btn.getAttribute('data-vpo-open'));
     });
   });
-  mount.querySelectorAll('[data-vpo-tab]').forEach(function (tab) {
-    tab.addEventListener('click', function () {
-      _scaleTab = tab.getAttribute('data-vpo-tab');
-      mount.querySelectorAll('[data-vpo-tab]').forEach(function (t) {
-        t.setAttribute('aria-selected', String(t === tab));
-      });
-      mount.querySelectorAll('[data-vpo-panel]').forEach(function (panel) {
-        panel.hidden = panel.getAttribute('data-vpo-panel') !== _scaleTab;
-      });
-    });
-  });
-  mount.querySelectorAll('dialog[data-vpo-dialog]').forEach(function (dlg) {
+  // Kit dialogs (data-kit-dialog) close themselves and clear vpoOpenDialog; the string-built ones are wired here.
+  mount.querySelectorAll('dialog[data-vpo-dialog]:not([data-kit-dialog])').forEach(function (dlg) {
     dlg.addEventListener('close', function () {
-      if (_openDialog === dlg.getAttribute('data-vpo-dialog')) _openDialog = '';
+      if (vpoOpenDialog.get() === dlg.getAttribute('data-vpo-dialog')) vpoOpenDialog.set('');
     });
     dlg.addEventListener('click', function (ev) {
       if (ev.target === dlg || (ev.target.closest && ev.target.closest('[data-vpo-close]'))) dlg.close();
@@ -266,23 +252,23 @@ function wireVpoImportActions(mount, state, patientId) {
       _missingNote = ln && ln.missing ? 'Faltan datos: ' + ln.missing.join(', ') + '.' : '';
       scheduleSave();
       renderVpoPanel(mount, patientId);
-      rt.showToast(ln && ln.text ? 'Escala calculada' : 'Faltan datos', ln && ln.text ? 'success' : 'error');
+      toast(ln && ln.text ? 'Escala calculada' : 'Faltan datos', ln && ln.text ? 'success' : 'error');
     });
   });
 
   mount.querySelector('[data-vpo-action="tomar-dx"]')?.addEventListener('click', function () {
     var note = getNotes()[patientId] || {};
     if (state.diagnosticosTouched && (state.diagnosticosList || []).some(function (d) { return String(d).trim(); })) {
-      rt.showToast('Diagnósticos ya editados — no se sobrescriben', 'error');
+      toast('Diagnósticos ya editados — no se sobrescriben', 'error');
       return;
     }
     if (!importDiagnosticosFromNota(state, note.diagnosticos || [])) {
-      rt.showToast('Sin diagnósticos en la nota', 'error');
+      toast('Sin diagnósticos en la nota', 'error');
       return;
     }
     scheduleSave();
     renderVpoPanel(mount, patientId);
-    rt.showToast('Diagnósticos importados', 'success');
+    toast('Diagnósticos importados', 'success');
   });
 
   mount.querySelector('[data-vpo-action="push-dx-datos"]')?.addEventListener('click', function () {
@@ -294,26 +280,26 @@ function wireVpoImportActions(mount, state, patientId) {
       return String(d).trim();
     });
     if (!list.length) {
-      rt.showToast('Sin diagnósticos en VPO para enviar', 'error');
+      toast('Sin diagnósticos en VPO para enviar', 'error');
       return;
     }
     pushDiagnosticosToPatient(patient, list);
     stampCensoFieldsClock(patient, undefined, 'diagnosticosList');
     persistClinicalState();
     scheduleCloudSyncPush();
-    rt.showToast('Diagnósticos guardados en Datos del paciente', 'success');
+    toast('Diagnósticos guardados en Datos del paciente', 'success');
   });
 
   mount.querySelector('[data-vpo-action="tomar-meds"]')?.addEventListener('click', function () {
     var block = getMedRecetaByPatient()[patientId];
     if (!block || !block.items || !block.items.length) {
-      rt.showToast('Procesa la receta en Medicamentos primero', 'error');
+      toast('Procesa la receta en Medicamentos primero', 'error');
       return;
     }
     mergeFarmacosFromMedReceta(state, block.items);
     scheduleSave();
     renderVpoPanel(mount, patientId);
-    rt.showToast('Fármacos actualizados desde SOME', 'success');
+    toast('Fármacos actualizados desde SOME', 'success');
   });
 
 }
@@ -462,7 +448,7 @@ function ensureVpoMountDelegation(mount) {
 
   var dxDeps = {
     showToast: function (msg, type) {
-      rt.showToast(msg, type);
+      toast(msg, type);
     },
     scheduleSave: scheduleSave,
     refreshDxListDom: refreshDxListDom,
@@ -526,6 +512,7 @@ function ensureVpoMountDelegation(mount) {
  */
 export function renderVpoPanel(mount, patientId) {
   if (!mount) return;
+  unmountCalcForm(mount);
   if (!patientId) {
     mount.innerHTML = '<p class="overview-hint vpo-panel">Selecciona un paciente para valoración preoperatoria.</p>';
     return;
@@ -546,6 +533,7 @@ export function renderVpoPanel(mount, patientId) {
     renderDiagnosticosSection,
     renderFarmacosList
   );
+  if (isVpoCalculatorEnabled()) mountCalcForm(mount, state);
 
   mount.querySelectorAll('.vpo-farm-nota').forEach(function (ta) {
     ta.addEventListener('input', function () {
@@ -563,7 +551,7 @@ export function renderVpoPanel(mount, patientId) {
   var form = mount.querySelector('.vpo-form');
   if (form) form._vpoWired = false;
   wireForm(mount, state, patientId);
-  if (_openDialog) showVpoDialog(mount, _openDialog);
+  if (vpoOpenDialog.get()) showVpoDialog(mount, vpoOpenDialog.get());
 }
 
 export function stashVpoForPatient(_patientId) {

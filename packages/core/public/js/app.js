@@ -4,6 +4,8 @@ import { sweepDeadLocalStorageKeys } from './legacy-ls-sweep.mjs';
 
 sweepDeadLocalStorageKeys();
 
+mountProfileModal();
+
 initInlineActionDispatch();
 
 if (typeof globalThis !== 'undefined' && globalThis.__RPC_CLOUD_MOBILE__) {
@@ -124,6 +126,7 @@ import { wireClinicalTeamsControls } from './features/clinical-teams.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { syncGuardiaModeButtonVisibility } from './features/guardia-mode-button.mjs';
 import { resolveClinicalClientId } from './clinical-settings.mjs';
+import { mountProfileModal } from './features/profile-modal-view.jsx';
 
 function lazyWindowHandler(exportName, loader) {
   return function lazyHandlerProxy() {

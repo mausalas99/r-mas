@@ -4290,3 +4290,425 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   line-height: 1;
   cursor: pointer;
 }
+
+/* --- Registro manual por pasos (iOS Signos flow). Springs = iOS Motion tokens as CSS curves. --- */
+.ea-registro-modal {
+  --ea-spring-fast: linear(0.001, 0.027, 0.087, 0.157, 0.234, 0.325, 0.404, 0.489, 0.558, 0.621, 0.685, 0.734, 0.777, 0.82, 0.851, 0.878, 0.904, 0.923, 0.938, 0.953, 0.963, 0.972, 0.979, 0.984, 0.989, 0.992, 0.994, 0.997, 1);
+  --ea-spring-mod: linear(0, 0.041, 0.134, 0.243, 0.359, 0.481, 0.584, 0.675, 0.757, 0.821, 0.872, 0.914, 0.944, 0.967, 0.984, 0.995, 1.002, 1.006, 1.009, 1.01, 1.01, 1.009, 1.008, 1.007, 1.006, 1.005, 1.004, 1.003, 1);
+  --ea-spring-slow: linear(0, 0.038, 0.124, 0.236, 0.357, 0.473, 0.583, 0.681, 0.764, 0.833, 0.888, 0.93, 0.962, 0.985, 1, 1.01, 1.016, 1.019, 1.019, 1.018, 1.017, 1.014, 1.012, 1.01, 1.008, 1.006, 1.004, 1.003, 1);
+}
+
+.ea-steps-progress {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0 16px;
+}
+
+.ea-steps-bar {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--color-border-strong);
+}
+
+.ea-steps-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transform-origin: left;
+  transform: scaleX(var(--fill, 0));
+  transition: transform 374ms var(--ea-spring-mod);
+}
+
+.ea-steps {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.ea-steps-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ea-steps-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 207ms var(--ea-spring-fast), transform 207ms var(--ea-spring-fast);
+}
+
+.ea-steps-item:active {
+  transform: scale(0.97);
+}
+
+.ea-steps-item.is-active {
+  background: var(--color-accent-soft);
+}
+
+.ea-steps-dot {
+  display: flex;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 207ms var(--ea-spring-fast), transform 207ms var(--ea-spring-fast);
+}
+
+.ea-steps-item.is-active .ea-steps-dot {
+  background: var(--accent);
+  color: var(--color-on-accent);
+  transform: scale(1.1);
+}
+
+.ea-steps-item.is-done .ea-steps-dot {
+  background: color-mix(in oklab, var(--success) 22%, transparent);
+  color: var(--success);
+}
+
+.ea-steps-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ea-steps-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ea-steps-sub {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.ea-steps-panes {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ea-step-pane[hidden] {
+  display: none;
+}
+
+.ea-step-in-r {
+  animation: ea-step-in-r 838ms var(--ea-spring-slow) both;
+}
+
+.ea-step-in-l {
+  animation: ea-step-in-l 838ms var(--ea-spring-slow) both;
+}
+
+@keyframes ea-step-in-r {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ea-step-in-l {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: none; }
+}
+
+.ea-steps-advance {
+  height: 3px;
+  background: color-mix(in oklab, var(--color-border-strong) 50%, transparent);
+}
+
+.ea-steps-advance > i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--accent);
+}
+
+.ea-steps-advance.is-running > i {
+  width: 100%;
+  transition: width 700ms linear;
+}
+
+.ea-registro-modal-foot {
+  flex-wrap: wrap;
+}
+
+.ea-steps-spacer {
+  flex: 1;
+}
+
+.ea-steps-auto {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ea-steps-msg {
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ea-step-review-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 12px;
+}
+
+.ea-step-review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+}
+
+.ea-step-review-row + .ea-step-review-row {
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.ea-step-review-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ea-step-review-note {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+.ea-dg {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1000px) {
+  .ea-steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ea-steps-rail {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ea-step-in-r,
+  .ea-step-in-l {
+    animation: none;
+  }
+  .ea-steps-bar > i,
+  .ea-steps-item,
+  .ea-steps-dot {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* Registro por pasos: taller modal, roomier vital chips, hidden footer buttons stay hidden. */
+.ea-registro-modal {
+  height: min(94vh, 860px);
+}
+
+.ea-registro-modal .ea-registro-form-scroll {
+  padding: 20px 24px 16px;
+}
+
+.ea-registro-modal .ea-form--registro {
+  gap: 20px;
+}
+
+.ea-steps-panes .ea-vitals-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.ea-steps-panes .ea-vital-chip {
+  max-height: none;
+  aspect-ratio: auto;
+  min-height: 7.5rem;
+}
+
+.ea-steps-panes .ea-vital-stack .ea-vital-chip {
+  height: 7.5rem;
+}
+
+.ea-steps-panes .ea-vital-value-wrap .ea-vital-input {
+  font-size: 28px;
+}
+
+.ea-registro-modal-foot [hidden] {
+  display: none !important;
+}
+
+.ea-registro-modal-foot {
+  padding: 16px 24px 20px;
+}
+
+/* Estado actual "Por sistemas": one card per body system. iOS springs and radii. */
+.estado-actual-panel .ea-sys-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.estado-actual-panel .ea-sys-grid > * { min-width: 0; }
+
+.estado-actual-panel .ea-sys-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  background: var(--surface);
+  transition: border-color 207ms cubic-bezier(.2, .9, .3, 1.15);
+}
+
+.estado-actual-panel .ea-sys-card:hover { border-color: var(--text-muted); }
+
+.estado-actual-panel .ea-sys-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.estado-actual-panel .ea-sys-card .ea-snapshot-vitals {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+}
+
+.estado-actual-panel .ea-sys-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+  gap: 8px 12px;
+}
+
+.estado-actual-panel .ea-sys-card--nutri,
+.estado-actual-panel .ea-sys-card--soporte:has(.ea-soporte-vent-block) { grid-column: 1 / -1; }
+
+.estado-actual-panel .ea-sys-card--nutri .ea-sys-fields {
+  grid-template-columns: minmax(10rem, 2fr) repeat(auto-fit, minmax(5.5rem, 1fr));
+}
+
+.estado-actual-panel .ea-sys-grid > .ea-diet-proposal-bar,
+.estado-actual-panel .ea-sys-grid > .ea-soporte-vent-block,
+.estado-actual-panel .ea-sys-grid > :not(.ea-sys-card) { grid-column: 1 / -1; }
+
+.estado-actual-panel .ea-sys-card .ea-soporte-params-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
+  gap: 8px 12px;
+}
+
+.estado-actual-panel .ea-sys-card .ea-field { flex: none; }
+
+.estado-actual-panel .ea-estado-clinico > summary { display: none; }
+.estado-actual-panel .ea-estado-clinico { border: 0; background: none; padding: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .estado-actual-panel .ea-sys-card { transition: none; }
+}
+
+/* Medicamentos as one system card. Add buttons sit in flow, never over the med names. */
+.estado-actual-panel .ea-clinico-med-grid {
+  padding: 14px 16px 10px;
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  background: var(--surface);
+  column-gap: 32px;
+}
+
+.estado-actual-panel .ea-clinico-med-grid::before {
+  content: 'Medicamentos';
+  flex-basis: 100%;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.estado-actual-panel .ea-med-cat + .ea-med-cat,
+.estado-actual-panel .ea-med-cat + .ea-med-subcat {
+  border-top: 1px solid var(--divider);
+}
+
+.estado-actual-panel .ea-med-cat { padding: 6px 0; }
+.estado-actual-panel .ea-med-cat-title { color: var(--text-muted); }
+
+.estado-actual-panel .ea-med-cat-body > .ea-med-add-row {
+  position: static;
+  padding: 2px 0 0;
+  background: none;
+  opacity: 0.55;
+}
+
+.estado-actual-panel .ea-med-cat:hover > .ea-med-cat-body > .ea-med-add-row,
+.estado-actual-panel .ea-med-cat:focus-within > .ea-med-cat-body > .ea-med-add-row { opacity: 1; }
+
+.estado-actual-panel .ea-med-cat:hover > .ea-med-cat-summary > .ea-confirmed-badge,
+.estado-actual-panel .ea-med-cat:hover > .ea-med-cat-summary > .ea-pendiente-badge,
+.estado-actual-panel .ea-med-cat:focus-within > .ea-med-cat-summary > .ea-confirmed-badge,
+.estado-actual-panel .ea-med-cat:focus-within > .ea-med-cat-summary > .ea-pendiente-badge { visibility: visible; }
+
+/* Two full-width 12-column rows of cards, no empty cells. */
+.estado-actual-panel .ea-sys-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 10px 12px; }
+.estado-actual-panel .ea-sys-grid > .ea-sys-card { grid-column: span 4; }
+.estado-actual-panel .ea-sys-card--meta { grid-column: span 5 !important; }
+.estado-actual-panel .ea-sys-card--renal { grid-column: span 7 !important; }
+.estado-actual-panel .ea-sys-card--neuro,
+.estado-actual-panel .ea-sys-card--soporte { grid-column: span 3 !important; }
+.estado-actual-panel .ea-sys-card--soporte:has(.ea-soporte-vent-block) { grid-column: 1 / -1 !important; }
+.estado-actual-panel .ea-sys-card--nutri { grid-column: span 6 !important; }
+.estado-actual-panel .ea-sys-card--nutri .ea-sys-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.estado-actual-panel .ea-sys-card--nutri .ea-field--dieta { grid-column: 1 / -1; }
+.estado-actual-panel .ea-sys-card { padding: 10px 14px; gap: 6px; }
+.estado-actual-panel .ea-sys-grid > :not(.ea-sys-card) { grid-column: 1 / -1; }
+.estado-actual-panel .ea-med-cat,
+.estado-actual-panel .ea-med-subcat { grid-template-columns: 7rem minmax(0, 1fr); }
+
+@media (max-width: 1000px) {
+  .estado-actual-panel .ea-sys-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .estado-actual-panel .ea-sys-grid > .ea-sys-card { grid-column: span 1 !important; }
+}
+
+/* Tidy pass: rows align on top and stretch evenly, balance fits one line. */
+.estado-actual-panel .ea-sys-grid { align-items: stretch !important; }
+.estado-actual-panel .ea-sys-card--renal .ea-snapshot-io {
+  display: grid;
+  grid-template-columns: repeat(5, auto);
+  justify-content: space-between;
+  gap: 8px 20px;
+}
+.estado-actual-panel .ea-sys-card--renal .ea-snapshot-io-egr { grid-column: auto; }
+.estado-actual-panel .ea-sys-card--renal .ea-snapshot-io > div { min-width: 0; }
+.estado-actual-panel .ea-med-cat,
+.estado-actual-panel .ea-med-subcat { grid-template-columns: 11rem minmax(0, 1fr); }

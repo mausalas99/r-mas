@@ -17,6 +17,7 @@ import { openInterconsultModal } from './ic-modal.mjs';
 import { switchLabInner } from './lab-inner.mjs';
 import { onLabHistoryRevision, TREND_REFRESH_DEBOUNCE_MS } from '../../lab-history-cache.mjs';
 import { scheduleCloudSyncPush } from '../cloud-sync/mutate-bridge.mjs';
+import { pendingCultivosForPatient } from '../cultivo-pending.mjs';
 
 /**
  * Loaded lazily (not a top-level import) so the 10b Interconsulta chrome
@@ -104,7 +105,7 @@ function collectDashboardModel(inner, opts) {
   var patient = activePatient() || {};
   var pid = patient.id;
   var skipLabs = !!(opts && opts.skipLabs);
-  return buildDashboardModel({
+  var model = buildDashboardModel({
     patient: patient,
     inner: inner || rt.getActiveInner(),
     labSets: skipLabs ? null : pid ? getLabHistory()[pid] || [] : [],
@@ -112,6 +113,8 @@ function collectDashboardModel(inner, opts) {
     pendientes: collectPendientes(pid),
     skipLabs: skipLabs,
   });
+  if (pid && model.labs && !skipLabs) model.labs.cultivosSinRevisar = pendingCultivosForPatient(pid).length;
+  return model;
 }
 
 export function syncPacienteCompositeVisibility(inner) {
@@ -331,14 +334,14 @@ function localTodayKey() {
 
 function fillDashboardLabs(targets, pid) {
   if (String(rt.getActiveId() || '') !== String(pid || '')) return false;
-  var html = renderLabsHtml({
-    labs: pid
-      ? buildLabsForDashboard({
-          todayKey: localTodayKey(),
-          orderedSets: getLabHistory()[pid] || [],
-        })
-      : { envios: [] },
-  });
+  var labs = pid
+    ? buildLabsForDashboard({
+        todayKey: localTodayKey(),
+        orderedSets: getLabHistory()[pid] || [],
+      })
+    : { envios: [] };
+  if (pid) labs.cultivosSinRevisar = pendingCultivosForPatient(pid).length;
+  var html = renderLabsHtml({ labs: labs });
   targets.forEach(function (mount) {
     if (!mount || !mount.isConnected) return;
     var slot = mount.querySelector('[data-dash-labs]');

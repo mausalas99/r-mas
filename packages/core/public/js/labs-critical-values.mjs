@@ -10,6 +10,9 @@ var CRITICAL_LAB_CHECKS = [
   { section: 'QS', field: 'Glu', low: 40, high: 500 },
   { section: 'BH', field: 'Hb', low: 7 },
   { section: 'BH', field: 'Plt', low: 20000 },
+  // Sospecha de neoplasia hematológica: cualquier blasto o promielocito en sangre periférica.
+  { section: 'BH', field: 'Blastos', label: 'Blast', high: 0 },
+  { section: 'BH', field: 'Promielo', label: 'Prom', high: 0 },
   { section: 'QS', field: 'Cr', high: 4 },
   { section: 'GASES', field: 'pH', low: 7.2, high: 7.6 },
   { section: 'GASES', field: 'Bica', low: 10, high: 40 },
@@ -25,7 +28,7 @@ export function isCriticalLabValue(label, value) {
   if (Number.isNaN(v)) return false;
   var key = String(label || '').trim().toUpperCase();
   return CRITICAL_LAB_CHECKS.some(function (c) {
-    if (c.field.toUpperCase() !== key) return false;
+    if (c.field.toUpperCase() !== key && String(c.label || '').toUpperCase() !== key) return false;
     var n = c.field === 'Plt' && v < 1000 ? v * 1000 : v;
     return (c.low != null && n < c.low) || (c.high != null && n > c.high);
   });

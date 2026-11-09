@@ -225,7 +225,7 @@ function renderListadoForm() {
           (isHideListadoProblemasAiPromptEnabled()
             ? ''
             : '<button type="button" class="listado-link" data-onclick="copyListadoProblemasAiPrompt" title="Copia el prompt para usar en un chat de IA">Copiar prompt IA</button>') +
-          '<button type="button" class="wb-btn wb-btn-primary wb-btn-block rpc-doc-export" data-onclick="generateListado" id="btn-gen-listado">Generar Listado (.docx)</button>' +
+          '<button type="button" class="wb-btn wb-btn-primary wb-btn-block rpc-doc-export" data-onclick="previewListado" id="btn-gen-listado">Generar Listado</button>' +
         '</div>' +
       '</div>' +
     '</div>'
@@ -292,6 +292,18 @@ async function copyListadoProblemasAiPrompt() {
   var ok = await rt.copyToClipboardSafe(LISTADO_PROBLEMAS_AI_PROMPT);
   rt.showToast(ok ? 'Prompt copiado al portapapeles ✓' : 'No se pudo copiar el prompt', ok ? 'success' : 'error');
 }
+function selectOutputDir() {
+  if (!window.electronAPI || !window.electronAPI.selectOutputDir) return Promise.resolve(undefined);
+  return window.electronAPI.selectOutputDir();
+}
+function saveOutputDir(dir) {
+  if (!dir) return;
+  var st = rt.getSettings() || {};
+  st.outputDir = dir;
+  localStorage.setItem('rpc-settings', JSON.stringify(st));
+  syncApprovedOutputDir(dir);
+}
+
 function generateListado() {
   if (rt.guardMobileDocExport()) return;
   if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
@@ -310,17 +322,6 @@ function generateListado() {
   rt.incrementPendingJobs();
   function buildPayload() {
     return { patient: patient, listado: lst, medicos: medicos };
-  }
-  function selectOutputDir() {
-    if (!window.electronAPI || !window.electronAPI.selectOutputDir) return Promise.resolve(undefined);
-    return window.electronAPI.selectOutputDir();
-  }
-  function saveOutputDir(dir) {
-    if (!dir) return;
-    var st = rt.getSettings() || {};
-    st.outputDir = dir;
-    localStorage.setItem('rpc-settings', JSON.stringify(st));
-    syncApprovedOutputDir(dir);
   }
   exportWithOutputDirFallback({
     url: '/generate-listado',
@@ -344,9 +345,58 @@ function generateListado() {
   });
 }
 
+function slug(x) { return String(x || '').normalize('NFC').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]/g, '_').slice(0, 80); }
+
+// The preview module carries the hospital logo (48 KB): load it on the first click, not at boot.
+async function previewListado() {
+  if (rt.guardMobileDocExport()) return;
+  if (!aid()) { rt.showToast('Selecciona un paciente primero', 'error'); return; }
+  var patient = getPatients().find(function(p){ return p.id === aid(); });
+  var lst = ensureListadoForActive();
+  if (!patient || !lst) return;
+  if (!(lst.activos && lst.activos.length) && !(lst.inactivos && lst.inactivos.length)) {
+    rt.showToast('Agrega al menos un problema antes de generar.', 'error');
+    return;
+  }
+  var dp = await import('../../doc-preview-html.mjs');
+  var html = dp.buildListadoPreviewHtml(patient, lst, getMedicosForListado(lst));
+  var fileName = 'Listado_Problemas_' + slug(patient.nombre || patient.registro) + '_' + slug(lst.fecha) + '_' + new Date().toTimeString().slice(0, 8).replace(/:/g, '-') + '.pdf';
+  dp.openDocPreview({
+    title: 'Vista previa del listado',
+    html: html,
+    onDocx: function() { dp.closeDocPreview(); generateListado(); },
+    onPdf: function(btn) {
+      if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
+      setAsyncButtonLoading(btn, true, { showElapsed: true, loadingText: 'Generando…' });
+      rt.incrementPendingJobs();
+      exportWithOutputDirFallback({
+        url: '/generate-html-pdf',
+        buildPayload: function() { return { html: html, fileName: fileName }; },
+        defaultFileName: fileName,
+        selectOutputDir: selectOutputDir,
+        saveOutputDir: saveOutputDir,
+        onSuccess: function(data) {
+          rt.showToast('PDF guardado: ' + ((data && (data.fileName || data.path)) ? (data.fileName || String(data.path).split(/[/\\]/).pop()) : fileName), 'success');
+          dp.closeDocPreview();
+        },
+        onPrompt: function() { rt.showToast('Selecciona una carpeta para guardar el documento.', 'error'); },
+        onCancel: function() { rt.showToast('No se guardó el documento: no se eligió carpeta.', 'error'); },
+        onError: function(msg) { rt.showToast('Error: ' + msg, 'error'); },
+      })
+      .catch(function(e){ if (!(e && e.reported)) rt.showToast('Error de conexión', 'error'); })
+      .finally(function(){
+        setAsyncButtonLoading(btn, false);
+        rt.decrementPendingJobs();
+        rt.syncOfflineButtonStates();
+      });
+    },
+  });
+}
+
 export {
   renderListadoForm,
   generateListado,
+  previewListado,
   updateListadoMeta,
   updateProblemaField,
   addProblemaUI,

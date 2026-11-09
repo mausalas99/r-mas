@@ -1,4 +1,4 @@
-import { extraerConRango, fmtLabRanged_ } from './labs-extract.mjs';
+import { extraerConRango, fmtLabRanged_, esCloroDeOrina_ } from './labs-extract.mjs';
 import { valorTrasEtiqueta } from './labs-ego-parse-helpers.mjs';
 
 var HECES_ROW_DEFS = [
@@ -412,6 +412,12 @@ export function parseElectrolitosOrina_(textoBruto) {
       : null;
   var mCl = textoBruto.match(/CLORO\s+EN\s+ORINA\s*:?\s*(\d+[.,]?\d*)/i);
   var cl = mCl ? mCl[1].replace(',', '.') : null;
+  // «CLORO» sin rótulo de orina: urinario si su comentario de muestra dice ORINA.
+  for (var i = 0; i < lineas.length && !cl; i++) {
+    if (lineas[i].toUpperCase() === 'CLORO' && esCloroDeOrina_(lineas.slice(i, i + 14).join('\n'))) {
+      cl = valorTrasEtiqueta(lineas.slice(i), ['CLORO']);
+    }
+  }
 
   var parts = [];
   if (na) parts.push('Na', na);

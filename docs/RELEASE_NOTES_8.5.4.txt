@@ -1,0 +1,34 @@
+R+ 8.5.4 (estable — release 8.5.4)
+======================================
+
+Fecha: 2026-11-09
+
+## Resumen
+
+El antibiograma interpreta la CMI con CLSI y avisa de posible BLEE/AmpC y de resistencia esperada. Los cultivos nuevos quedan «sin revisar» y ⌘⇧C copia los del equipo. El censo marca en negrita solo lo anormal. El registro manual de Estado actual va por pasos. También corrige la sincronización de labs pesados.
+
+## Nuevo / mejorado
+
+- **Nuevo (Cultivos):** la CMI se interpreta con los puntos de corte de CLSI M100 (36.ª ed., 2026). Si hay duda, no se interpreta.
+- **Nuevo (Cultivos):** pista de mecanismo BLEE/AmpC en Enterobacterales (EUCAST). Es cribado, no diagnóstico.
+- **Nuevo (Cultivos):** se marca la resistencia esperada (EUCAST, CLSI y hongos). Un «S» en esa combinación se ve sospechoso.
+- **Nuevo (Cultivos):** un aislamiento o antibiograma nuevo queda «sin revisar» hasta que lo marcas como visto.
+- **Nuevo (Cultivos):** tras Actualizar labs, R+ busca en segundo plano el antibiograma que faltaba y avisa de lo nuevo.
+- **Nuevo (Cultivos):** ⌘⇧C en Cultivos copia los cultivos (positivos y negativos) de los pacientes fijados.
+- **Nuevo (Estado actual):** el registro manual va por pasos: Signos, Glucosa, Balance y Revisar. Avanza solo y los números ruedan.
+- **Nuevo (Labs):** blastos o promielocitos en BH cuentan como valor crítico. Las células inmaduras se conservan al unir BH.
+- **Cambio (Censo):** negrita solo para lo anormal en Labs y Signos, en vista previa y PDF.
+- **Cambio (Censo):** cultivos en una línea por sitio, solo el último resultado si es positivo, sin ATB ni cuenta.
+- **Cambio (Censo):** T°, FC y FR van en una línea. I, B y EVAC también.
+- **Corrección (Nube):** un paciente con muchos labs ya no rompe el envío ni la descarga por el límite de 50 MB.
+- **Corrección (Admin):** se puede recuperar un guardado anterior de una sala sin cortar sus operaciones.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.5.4-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.5.4-Mac-Intel.dmg`
+- Windows: `Instalar-R+-8.5.4-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

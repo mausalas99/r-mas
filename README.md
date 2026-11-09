@@ -51,9 +51,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.5.3](https://github.com/mausalas99/r-mas/releases/tag/v8.5.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.5.4](https://github.com/mausalas99/r-mas/releases/tag/v8.5.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.5.4 (estable — release 8.5.4)
+
+- **Cultivos:** CMI con CLSI M100; pista BLEE/AmpC; resistencia esperada; cultivos «sin revisar»; ⌘⇧C copia los del equipo.
+- **Censo:** negrita solo en lo anormal; cultivos y signos en menos líneas.
+- **Estado actual:** registro manual por pasos.
+- **Nube:** arreglo de sincronización con labs pesados.
+
+Notas: `docs/RELEASE_NOTES_8.5.4.txt`.
 
 ## R+ 8.5.3 (estable — release 8.5.3)
 

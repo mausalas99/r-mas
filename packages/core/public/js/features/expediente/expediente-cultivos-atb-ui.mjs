@@ -7,6 +7,137 @@ import {
 } from '../../labs.js';
 import { esc } from './expediente-runtime.mjs';
 import { escAttr } from '../../dom-escape.mjs';
+import { intrinsicMatchesIn, isAmpcOrganism } from '../../cultivo-intrinsic-resistance.mjs';
+import { mechanismHintFor } from '../../cultivo-mechanism.mjs';
+// Puntos de corte CLSI: módulo pesado (~40 KB de datos), carga diferida para no inflar el arranque.
+var bpMod_ = null;
+import('../../cultivo-breakpoints.mjs').then(function (m) {
+  bpMod_ = m;
+});
+
+var AMPC_CEF_RE = /CEFTRIAXONA|CEFOTAXIMA|CEFTAZIDIMA/i;
+var AMINOGLUCOSIDO_RE = /GENTAMICINA|AMIKACINA|ESTREPTOMICINA|TOBRAMICINA|KANAMICINA|NETILMICINA/i;
+
+function atbNameCap_(med) {
+  var m = String(med || '').trim().toLowerCase();
+  return m.charAt(0).toUpperCase() + m.slice(1);
+}
+
+/** 'EUCAST', 'CLSI' o 'EUCAST y CLSI' a partir de los `estado` de las filas. */
+function srcNames_(hits) {
+  var t = [];
+  hits.forEach(function (h) {
+    h.estado.split('+').forEach(function (x) {
+      if (t.indexOf(x) < 0) t.push(x);
+    });
+  });
+  return t.sort().map(function (x) { return x.toUpperCase(); }).join(' y ');
+}
+
+function noteSources_(hits) {
+  var f = [];
+  hits.forEach(function (h) {
+    h.fuentes.forEach(function (x) {
+      if (f.indexOf(x) < 0) f.push(x);
+    });
+  });
+  return f.join('; ');
+}
+
+/** Filas cuya categoría no coincide con CLSI para su CMI; las marca. [] mientras el módulo de datos no ha cargado. */
+function markMism_(r, sens, marks) {
+  var mism = bpMod_ ? bpMod_.flagInterpMismatch(r.organismo, sens, { orina: r.tipoKey === 'uro' }) : [];
+  mism.forEach(function (m) {
+    if (!marks.has(m.row)) marks.set(m.row, 'no coincide con CLSI');
+  });
+  return mism;
+}
+
+function mismNote_(mism) {
+  var m = mism[0];
+  return (
+    (mism.length === 1
+      ? atbNameCap_(m.row.med) + ': CMI ' + m.mic + ' da ' + m.esperada + ' en CLSI; el laboratorio informó ' + m.reportada + '.'
+      : mism.length + ' antibióticos cuya CMI da otra categoría en CLSI.') + ' Revisa la edición del punto de corte.'
+  );
+}
+
+/** Resistencia por especie (EUCAST/CLSI) y riesgo AmpC para un aislamiento. Siempre un objeto: marca la tarjeta de Cultivos (sin panel al pasar el cursor). */
+function cultivoAtbExt(r, sens) {
+  var hits = intrinsicMatchesIn(r.organismo, sens);
+  var ampc = isAmpcOrganism(r.organismo);
+  var intr = new Set();
+  var marks = new Map();
+  var doubt = [];
+  var doubtHits = [];
+  var intrHits = [];
+  var ampcRows = [];
+  hits.forEach(function (h) {
+    var k = classifyAtbInterp(h.row.interp);
+    if (k === 'r') {
+      intr.add(h.row);
+      intrHits.push(h);
+    } else if (k === 's') {
+      marks.set(h.row, 'inesperada');
+      doubt.push(h.row);
+      doubtHits.push(h);
+    }
+  });
+  var mism = markMism_(r, sens, marks); // CMI contra CLSI
+  var hint = mechanismHintFor(r.organismo, sens);
+  if (hint) {
+    hint.evidencia.forEach(function (e) {
+      if (e.k !== 's' && !marks.has(e.row) && /^Activa/.test(e.nota)) marks.set(e.row, 'cribado BLEE');
+    });
+  }
+  if (ampc) {
+    sens.forEach(function (s) {
+      if (classifyAtbInterp(s.interp) === 's' && AMPC_CEF_RE.test(String(s.med || ''))) {
+        marks.set(s, 'AmpC');
+        ampcRows.push(s);
+      }
+    });
+  }
+  var notes = [];
+  if (ampcRows.length) {
+    notes.push(
+      'AmpC: ' +
+        (ampcRows.length === 1 ? 'la ' + String(ampcRows[0].med).trim().toLowerCase() : 'las cefalosporinas de 3.ª generación') +
+        ' puede' + (ampcRows.length === 1 ? '' : 'n') + ' fallar aunque salga' + (ampcRows.length === 1 ? '' : 'n') + ' S.'
+    );
+  }
+  if (doubt.length) {
+    notes.push(
+      (doubt.length === 1 ? atbNameCap_(doubt[0].med) + ' S es inesperada.' : doubt.length + ' antibióticos con S inesperada.') +
+        ' ' + srcNames_(doubtHits) + ' espera R en esta especie. Revisa la identificación y la prueba.'
+    );
+    if (/ENTEROCOCC/i.test(r.organismo) && doubt.some(function (s) { return AMINOGLUCOSIDO_RE.test(s.med); })) {
+      notes.push('Aminoglucósido solo: se espera resistencia baja. Solo se combina con ampicilina o vancomicina.');
+    }
+  }
+  if (mism.length) notes.push(mismNote_(mism));
+  var info = intr.size ? 'Int: resistencia natural de la especie (' + srcNames_(intrHits) + '). No es resistencia adquirida.' : '';
+  return { intr: intr, marks: marks, notes: notes, info: info, hint: hint, noteSource: [doubtHits.length ? noteSources_(doubtHits) : '', mism.length ? bpMod_.BREAKPOINT_SOURCE : ''].filter(Boolean).join('; ') };
+}
+
+/** Panel «Por qué el cribado de BLEE sale positivo»: details nativo, abierto. */
+function mechHintHtml_(h) {
+  var tiles = h.evidencia
+    .map(function (e) {
+      return (
+        '<div class="cult-mech-tile"><span class="cult-mech-drug">' + esc(atbNameCap_(e.row.med)) +
+        ' <span class="atb-chip atb-chip--' + e.k + '">' + e.k.toUpperCase() + '</span></span>' +
+        '<span class="cult-mech-note">' + esc(e.nota) + '</span></div>'
+      );
+    })
+    .join('');
+  return (
+    '<details class="cult-mech" open><summary class="cult-mech-title">' + esc(h.titulo) + '</summary>' +
+    '<div class="cult-mech-tiles">' + tiles + '</div>' +
+    '<p class="cult-mech-text">' + esc(h.texto) + '</p>' +
+    '<p class="cult-mech-src">Fuente: ' + esc(h.fuente) + '.</p></details>'
+  );
+}
 
 function cultivoSetAndSens(r, patientId) {
   var sets = getLabHistory()[patientId] || [];
@@ -18,13 +149,15 @@ function cultivoSetAndSens(r, patientId) {
   return { set: set, sens: sens };
 }
 
-/** How many antibiotics this isolate is resistant to (0 when no antibiogram). */
-export function cultivoResistantCount(r, patientId) {
-  if (!patientId) return 0;
-  var sens = cultivoSetAndSens(r, patientId).sens || [];
-  return sens.filter(function (s) {
-    return classifyAtbInterp(s.interp) === 'r';
-  }).length;
+/** Huella R/I/S del antibiograma de un aislamiento ('' si no hay): dos aislamientos iguales se juntan en la tarjeta. */
+export function cultivoAtbSignature(r, patientId) {
+  var sens = (patientId && cultivoSetAndSens(r, patientId).sens) || [];
+  return sens
+    .map(function (s) {
+      return String(s.med || '').trim().toUpperCase() + ':' + classifyAtbInterp(s.interp);
+    })
+    .sort()
+    .join('|');
 }
 
 export function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
@@ -39,19 +172,30 @@ export function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
         '\' title="Copiar informe completo">Copiar</button>'
       : '';
   if (sens && sens.length) {
+    var ext = cultivoAtbExt(r, sens);
     return (
       '<div class="cultivos-atb-wrap">' +
       '<div class="cultivos-atb-chips">' +
-      buildAtbRisSummaryHtml(sens) +
+      (ext && ext.hint ? mechHintHtml_(ext.hint) : '') +
+      buildAtbRisSummaryHtml(sens, ext) +
+      (ext && ext.info ? '<div class="cult-atb-note cult-atb-note--info">' + esc(ext.info) + '</div>' : '') +
+      (ext && ext.notes.length ? '<div class="cult-atb-note">' + esc(ext.notes.join(' ')) + '</div>' : '') +
+      (ext && ext.noteSource ? '<div class="cult-atb-note cult-atb-note--info">Fuente: ' + esc(ext.noteSource) + '.</div>' : '') +
       '</div>' +
       copyBtn +
       '</div>'
     );
   }
   var fallback = r.resistencias || r.risSummary || '';
+  var hasFallback = fallback && fallback !== '—';
+  // Aislamiento sin antibiograma todavía (no aplica a Gram, micobacterias ni hongos).
+  var missingAtb =
+    !hasFallback && !r.negativo && !/CONTAMINAD|MICROBIOTA|NEGATIV/i.test(r.organismo || '') &&
+    !/^(gram|myco|fungi)$/.test(r.tipoKey || '');
   return (
     '<div class="cultivos-atb-wrap">' +
-    (fallback && fallback !== '—' ? '<pre class="cultivos-atb-fallback">' + esc(fallback) + '</pre>' : '') +
+    (hasFallback ? '<pre class="cultivos-atb-fallback">' + esc(fallback) + '</pre>' : '') +
+    (missingAtb ? '<span class="cult-atb-missing">Antibiograma pendiente</span>' : '') +
     copyBtn +
     '</div>'
   );

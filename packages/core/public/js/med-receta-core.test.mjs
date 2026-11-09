@@ -109,6 +109,21 @@ test('parseMedicationPaste saca el fármaco real de AGUA INYECTABLE placeholder'
   assert.equal(shouldIncludeMedicationInSoap(byName['FINERRENONA 10MG']), true);
 });
 
+test('parseMedicationPaste saca el fármaco de AGUA SOLUCION con VO', () => {
+  var paste = [
+    '07/11/2026 09:27:45 a.m.\tMEDICAMENTOS\tAGUA SOLUCION 2000 ML\tVIA ORAL\t1 ML DILUIR EN: DAPAGLIFOZINA TABLETAS 10 MG VO VEL.INF: EN BOLO // DAPAGLIFOZINA 10 MG VO C/24\tCADA 24 HORAS\tNW',
+    '07/11/2026 09:27:47 a.m.\tMEDICAMENTOS\tAGUA SOLUCION 2000 ML\tVIA ORAL\t1 ML DILUIR EN: FINERENONA 20 MG VO C/24H VEL.INF: EN BOLO // FINERENONA 20 MG VO C/24H\tCADA 24 HORAS\tNW',
+  ].join('\n');
+  var r = parseMedicationPaste(paste);
+  assert.deepEqual(
+    r.items.map((it) => [it.nombreRaw, it.viaRaw, it.dosisRaw]),
+    [
+      ['DAPAGLIFOZINA 10 MG', 'VIA ORAL', '10 MG'],
+      ['FINERENONA 20 MG', 'VIA ORAL', '20 MG'],
+    ]
+  );
+});
+
 test('parseIndicacionesPaste avisa AGUA INYECTABLE con fármaco no reconocido', () => {
   var rows = [
     '1 ML // SEMAGLUTIDA SUBCUTANEA SEMANAL',

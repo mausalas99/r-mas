@@ -1,9 +1,7 @@
 import { getPatients, getMedRecetaByPatient, persistClinicalState } from '../app-state.mjs';
-import { esc } from '../dom-escape.mjs';
 import { dayKeyFromIso } from './eventualidades-store.mjs';
 import { medAdminScheduleForItem } from '../med-admin-schedule.mjs';
-import { extractMedBaseName } from '../med-pharm-profile-core.mjs';
-import { effectiveDiaTratamiento } from '../med-receta-dates.mjs';
+import { clearMedAdminPanel, drawMedAdminEmpty, drawMedAdminPanel, drawMedAdminPrnModal } from './med-admin-view.jsx';
 import { showUndoToast } from './workbench/undo-toast.mjs';
 
 let rt = {
@@ -81,120 +79,6 @@ export function allDoseTimesSorted(scheduledItems) {
   return Object.keys(set).sort();
 }
 
-function prnCriterion(dosisRaw) {
-  return esc(String(dosisRaw || '').split('//').pop().trim());
-}
-
-export function buildMedAdminGridHtml(scheduledItems, times, medAdmin, fechaActualizacion, prnFabHtml) {
-  var html =
-    '<div class="med-pharm-grid-scope med-admin-panel">' +
-    '<div class="med-admin-head"><span class="med-admin-title">Administración</span>' +
-    '<span class="med-admin-sub">hoy · ' + scheduledItems.length + ' medicamentos</span>' +
-    (prnFabHtml || '') + '</div>' +
-    '<div class="some-grid-wrap med-pharm-scroll">' +
-    '<table class="some-grid-unified"><colgroup><col class="col-med med-admin-col-med">' +
-    times.map(function () { return '<col class="col-day">'; }).join('') +
-    '</colgroup><thead><tr class="hdr-row-1"><th class="col-meta-hdr col-med">Medicamento</th>' +
-    times.map(function (t) { return '<th class="day-hdr">' + esc(t) + '</th>'; }).join('') +
-    '</tr></thead><tbody>';
-
-  scheduledItems.forEach(function (item) {
-    var sched = medAdminScheduleForItem(item);
-    var diaDisplay =
-      item.diaTratamiento != null ? effectiveDiaTratamiento(item.diaTratamiento, fechaActualizacion) : null;
-    html += '<tr><td class="col-med"><div class="med-admin-row-head">' +
-      '<span class="med-cell-name" title="' + esc(item.nombreRaw) + '">' + esc(extractMedBaseName(item.nombreRaw)) + '</span>' +
-      (diaDisplay != null
-        ? '<span class="med-admin-dia-pill">día ' + esc(String(diaDisplay)) + '</span>'
-        : '') +
-      '<button type="button" class="med-admin-hide-btn" data-med-admin-hide="' + esc(String(item.id)) + '" ' +
-      'aria-label="Ocultar ' + esc(item.nombreRaw) + ' de la lista">×</button>' +
-      '</div></td>';
-    times.forEach(function (t) {
-      if (sched.defaultTimes.indexOf(t) === -1) {
-        html += '<td class="day-pad day-pad-empty"></td>';
-        return;
-      }
-      var key = item.id + '|' + t;
-      var given = !medAdmin.notAdmin[key];
-      html += '<td class="day-pad indicated' + (given ? '' : ' not-admin') + '" tabindex="0" role="button" ' +
-        'data-med-admin-key="' + esc(key) + '" aria-pressed="' + given + '" aria-label="' +
-        esc(item.nombreRaw) + ', toma de las ' + esc(t) + ', ' +
-        (given ? 'administrada. Activar para marcar que no se dio.' : 'no administrada. Activar para marcar que sí se dio.') +
-        '"></td>';
-    });
-    html += '</tr>';
-  });
-  html += '</tbody></table></div></div>';
-
-  html += '<div class="med-admin-legend">' +
-    '<span><span class="med-admin-legend-swatch med-admin-legend-swatch--on"></span>Dado (por defecto)</span>' +
-    '<span><span class="med-admin-legend-swatch med-admin-legend-swatch--off"></span>No dado · clic en la toma</span>' +
-    '</div>';
-  return html;
-}
-
-export function buildMedAdminHiddenFooterHtml(hiddenItems, expanded) {
-  if (!hiddenItems.length) return '';
-  var count = hiddenItems.length;
-  var label = count + (count === 1 ? ' medicamento oculto' : ' medicamentos ocultos');
-  var rows = hiddenItems
-    .map(function (item) {
-      return '<div class="med-admin-hidden-row"><span title="' + esc(item.nombreRaw) + '">' + esc(extractMedBaseName(item.nombreRaw)) + '</span>' +
-        '<button type="button" class="med-admin-unhide-btn" data-med-admin-unhide="' + esc(String(item.id)) + '">Mostrar</button></div>';
-    })
-    .join('');
-  return '<div class="med-admin-hidden-footer">' +
-    '<button type="button" class="med-admin-hidden-toggle" data-med-admin-toggle-hidden aria-expanded="' + !!expanded + '">' +
-    '<span class="rp-dot" aria-hidden="true"></span> ' + esc(label) + '</button>' +
-    (expanded ? '<div class="med-admin-hidden-list">' + rows + '</div>' : '') +
-    '</div>';
-}
-
-function nowHHMM() {
-  var d = new Date();
-  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-}
-
-export function buildMedAdminPrnHtml(prnItems, medAdmin) {
-  if (!prnItems.length) return '';
-  var log = (medAdmin && medAdmin.prnLog) || {};
-  var html = '';
-  prnItems.forEach(function (item) {
-    var times = (log[item.id] || []).slice().sort();
-    html += '<div class="med-admin-prn-row">' +
-      '<div class="med-admin-prn-info">' +
-      '<span class="med-admin-name">' + esc(item.nombreRaw) + '</span>' +
-      '<span class="med-admin-meta">' + esc(item.viaRaw) + ' · ' + prnCriterion(item.dosisRaw) + '</span>' +
-      (times.length
-        ? '<div class="med-admin-prn-log">' +
-          times.map(function (t) {
-            return '<span class="med-admin-prn-chip">' + esc(t) +
-              '<button type="button" class="med-admin-prn-chip-x" data-med-admin-prn-remove="' +
-              esc(String(item.id)) + '|' + esc(t) + '" aria-label="Quitar registro de las ' + esc(t) + '">×</button></span>';
-          }).join('') +
-          '</div>'
-        : '') +
-      '</div>' +
-      '<div class="med-admin-prn-add">' +
-      '<input type="time" class="med-admin-prn-time" data-med-admin-prn-time="' + esc(String(item.id)) + '" value="' + esc(nowHHMM()) + '">' +
-      '<button type="button" class="med-admin-prn-register" data-med-admin-prn-register="' + esc(String(item.id)) + '">Registrar</button>' +
-      '</div></div>';
-  });
-  return html;
-}
-
-export function buildMedAdminPrnModalHtml(prnItems, medAdmin) {
-  return '<div class="lab-conflict-modal med-admin-prn-modal">' +
-    '<div class="med-admin-prn-modal-header">' +
-    '<span class="med-admin-prn-modal-title">Registrar PRN</span>' +
-    '<button type="button" class="med-admin-prn-modal-close" data-med-admin-prn-close aria-label="Cerrar">×</button>' +
-    '</div>' +
-    '<div class="med-admin-prn-modal-subtitle">No se marcan por defecto. Elige la hora y registra cada dosis administrada.</div>' +
-    '<div class="med-admin-prn-modal-body">' + buildMedAdminPrnHtml(prnItems, medAdmin) + '</div>' +
-    '</div>';
-}
-
 function findMedAdminOverflowHost(el) {
   var node = el;
   while (node && node !== document.body) {
@@ -232,13 +116,13 @@ export function renderMedAdminPanel(mountEl) {
   if (!mountEl) return;
   var patient = activePatient();
   if (!patient) {
-    mountEl.innerHTML = '';
+    clearMedAdminPanel(mountEl);
     return;
   }
   var items = activeMedItems(String(patient.id));
   var fechaActualizacion = recetaFechaActualizacion(String(patient.id));
   if (!items.length) {
-    mountEl.innerHTML = '<div class="med-admin-panel med-admin-empty">Sin medicamentos activos en la receta.</div>';
+    drawMedAdminEmpty(mountEl);
     return;
   }
   var medAdmin = ensureMedAdmin(patient);
@@ -248,15 +132,10 @@ export function renderMedAdminPanel(mountEl) {
   var hiddenItems = scheduled.filter(function (it) { return !!medAdmin.hidden[it.id]; });
   var times = allDoseTimesSorted(visible);
   var expanded = mountEl.dataset.medAdminHiddenExpanded === '1';
-  var prnFabHtml = prn.length
-    ? '<button type="button" class="med-admin-prn-fab" data-med-admin-open-prn>PRN' +
-      '<span class="med-admin-prn-fab-count">' + prn.length + '</span></button>'
-    : '';
-  mountEl.innerHTML =
-    (visible.length
-      ? buildMedAdminGridHtml(visible, times, medAdmin, fechaActualizacion, prnFabHtml)
-      : '<div class="med-admin-panel med-admin-empty">Todos los medicamentos con horario están ocultos.</div>' + prnFabHtml) +
-    buildMedAdminHiddenFooterHtml(hiddenItems, expanded);
+  drawMedAdminPanel(mountEl, {
+    items: visible, times: times, medAdmin: medAdmin, fecha: fechaActualizacion,
+    prnCount: prn.length, hiddenItems: hiddenItems, expanded: expanded,
+  });
   wireMedAdminClicks(mountEl);
   wireMedAdminResize(mountEl);
   fitMedAdminRows(mountEl);
@@ -294,7 +173,7 @@ function renderMedAdminPrnModalContent() {
     closeMedAdminPrnModal();
     return;
   }
-  backdrop.innerHTML = buildMedAdminPrnModalHtml(prn, ensureMedAdmin(patient));
+  drawMedAdminPrnModal(backdrop, { prnItems: prn, medAdmin: ensureMedAdmin(patient) });
 }
 
 function registerPrnDose(itemId, time) {

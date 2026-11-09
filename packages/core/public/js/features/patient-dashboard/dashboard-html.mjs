@@ -311,7 +311,7 @@ function envioChipCount(envio) {
   }, 0);
 }
 
-var MAX_DRAW_CELLS = 8;
+var MAX_DRAW_CELLS = 6;
 
 /**
  * Orders altered-lab chips for display: worsening values (trend 'down', a
@@ -432,6 +432,11 @@ function renderCultivosHtml(labs) {
   var more = (Number(labs.cultivosTotal) || 0) - list.length;
   return (
     '<div class="cultivos"><div class="cultivos-h"><span>Cultivos</span>' +
+    (labs.cultivosSinRevisar > 0
+      ? '<button type="button" class="card-h-count cult-pending-chip" data-dash-action="cultivos">' +
+        labs.cultivosSinRevisar +
+        ' sin revisar</button>'
+      : '') +
     (more > 0
       ? '<button type="button" class="card-h-count" data-dash-action="cultivos">+' + more + ' más</button>'
       : '') +
@@ -511,7 +516,6 @@ export function renderLabsHtml(model) {
     labsHeaderHtml(pending ? [] : visibleEnvios, enRango, labs.prevFecha) +
     '<div class="card-b">' +
     body +
-    (pending ? '' : renderCultivosHtml(labs)) +
     '</div></div>'
   );
 }
@@ -655,6 +659,60 @@ function renderListCardHtml(title, action, items, total, markOverdue) {
   );
 }
 
+/** Board D3: today's glucometries as bars (last 5), no click target. */
+function renderGlucoseHtml(model) {
+  var list = readingsFromModel(model).glucometrias.slice(-5);
+  if (!list.length) return '';
+  return (
+    '<div class="card glu-card"><div class="card-h"><span>Glucosa de hoy</span></div>' +
+    '<div class="card-b"><div class="glu-bars">' +
+    list
+      .map(function (g) {
+        var obj = g && typeof g === 'object' ? g : { value: g };
+        var n = Number(obj.value);
+        var h = Number.isFinite(n) ? Math.max(12, Math.min(52, Math.round(n / 4))) : 12;
+        return (
+          '<div class="glu-bar' +
+          (isGlucometriaMarkedAltered(obj) ? ' hi' : '') +
+          '"><i style="height:' +
+          h +
+          'px"></i><b>' +
+          escHtml(numText(obj.value) || '—') +
+          '</b><small>' +
+          escHtml(String(obj.time || '')) +
+          '</small></div>'
+        );
+      })
+      .join('') +
+    '</div></div></div>'
+  );
+}
+
+/** Board D3: ingresos, egresos and balance, own card. Nothing recorded → no card. */
+function renderBalanceHtml(model) {
+  var io = readingsFromModel(model).io;
+  var ing = numText(io.ing);
+  var egr = numText(io.egr);
+  if (!ing && !egr) return '';
+  return (
+    '<div class="card bal-card"><div class="card-h"><span>Balance hídrico</span></div>' +
+    '<div class="card-b"><div class="bal-tiles">' +
+    '<div><small>Ingresos</small><b>' +
+    escHtml(ing || '—') +
+    '</b></div><div><small>Egresos</small><b>' +
+    escHtml(egr || '—') +
+    '</b></div><div class="is-total"><small>Balance</small><b>' +
+    escHtml(ioBalance(io) || '—') +
+    '</b></div></div></div></div>'
+  );
+}
+
+function renderCultivosCardHtml(model) {
+  var labs = (model && model.labs) || {};
+  var body = labs.pending ? '' : renderCultivosHtml(labs);
+  return body ? '<div class="card cultivos-card"><div class="card-b">' + body + '</div></div>' : '';
+}
+
 /**
  * @param {ReturnType<import('./dashboard-model.mjs').buildDashboardModel>} model
  * @returns {string}
@@ -663,7 +721,12 @@ export function renderDashboardHtml(model) {
   var m = model || {};
   // 8.4.3 (board A1): no Eventualidades card; Medicamentos then Pendientes, both full width.
   var lists = renderListCardHtml('Pendientes', 'pendientes', m.pendientes, m.pendientesTotal, true);
-  var bottom = renderMedsHtml(m) + (lists ? '<div class="bento rest">' + lists + '</div>' : '');
+  var cult = renderCultivosCardHtml(m);
+  var rest = lists + cult;
+  var bottom =
+    renderMedsHtml(m) +
+    (rest ? '<div class="bento rest' + (lists && cult ? ' rest-2' : '') + '">' + rest + '</div>' : '');
+  var metab = renderGlucoseHtml(m) + renderBalanceHtml(m);
   return (
     '<div class="patient-dash dash">' +
     renderIdentityHtml(m) +
@@ -672,6 +735,7 @@ export function renderDashboardHtml(model) {
     renderVitalsHtml(m) +
     renderLabsHtml(m) +
     '</div>' +
+    (metab ? '<div class="bento metab">' + metab + '</div>' : '') +
     (bottom ? '<div class="dash-bottom">' + bottom + '</div>' : '') +
     '</div>'
   );

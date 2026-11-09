@@ -1584,39 +1584,165 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 #cultivos-table-container .cultivo-refresh-repo-btn {
   margin-left: auto;
   height: auto;
-  padding: 0;
+  min-height: 36px;
+  padding: 0 var(--space-4);
   border: 0;
-  border-radius: 0;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: var(--fw-strong);
+}
+/* Sin ATB pendiente: sigue legible (mobile.css lo ponía en gris). */
+#cultivos-table-container .cultivo-refresh-repo-btn.cultivo-refresh-idle {
+  color: var(--color-on-accent);
+}
+#cultivos-table-container .cultivo-refresh-repo-btn:disabled,
+#cultivos-table-container .cultivo-refresh-repo-btn[aria-busy='true'] {
+  background: color-mix(in oklab, var(--color-accent) 55%, var(--card-bg));
+  color: var(--color-on-accent);
+  cursor: progress;
+}
+#cultivos-table-container .cultivo-seen-btn {
+  margin-left: auto;
+  padding: 4px var(--space-3);
+  border: 0;
+  border-radius: 999px;
   background: none;
-  color: var(--color-accent);
+  color: color-mix(in oklab, var(--color-accent) 60%, var(--text));
+  font-size: var(--fs-13);
   font-weight: var(--fw-strong);
+  cursor: pointer;
 }
-#cultivos-table-container .cultivos-alert {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  border: 0;
+#cultivos-table-container .cultivo-seen-btn + .cultivo-refresh-repo-btn {
+  margin-left: 0;
+}
+#cultivos-table-container .cult-site .cultivos-table tr.cult-row--new {
+  margin: var(--space-2) calc(var(--space-3) * -1) 0;
+  padding: var(--space-2) var(--space-3);
   border-radius: 12px;
-  background: color-mix(in oklab, var(--danger) 12%, transparent);
-  color: var(--text);
-  font-size: var(--fs-14);
+  background: color-mix(in oklab, var(--color-accent) 10%, transparent);
 }
-#cultivos-table-container .cultivos-alert svg {
-  flex: none;
-  color: var(--danger);
+#cultivos-table-container .cult-site .cult-row--new .cultivos-copy-full-btn {
+  right: var(--space-3);
+  bottom: var(--space-2);
 }
-#cultivos-table-container .cultivos-alert-org {
-  font-style: italic;
+#cultivos-table-container .cult-org-tag--alert {
+  color: color-mix(in oklab, var(--danger) 70%, var(--text));
+}
+#cultivos-table-container .cult-org-n {
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-regular);
+}
+/* Negativos y contaminados: una línea compacta al final de la tarjeta. */
+#cultivos-table-container .cult-site .cultivos-table tr.cultivos-row-neg,
+#cultivos-table-container .cult-site .cultivos-table tr.cult-row-muted {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35em;
+  padding: 2px 0;
+  border-top: 0;
+  margin-top: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+}
+#cultivos-table-container .cult-site .cultivos-row-neg td,
+#cultivos-table-container .cult-site .cult-row-muted td {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-regular);
+}
+#cultivos-table-container .cult-site .cultivos-row-neg .cultivos-cell-fecha,
+#cultivos-table-container .cult-site .cult-row-muted .cultivos-cell-fecha {
+  width: auto;
+  min-width: 0;
+}
+#cultivos-table-container .cult-site .cultivos-row-neg .cultivos-cell-fecha::after,
+#cultivos-table-container .cult-site .cult-row-muted .cultivos-cell-fecha::after {
+  content: ' ·';
+}
+#cultivos-table-container .cult-site .cultivos-row-neg .cultivos-cell-org,
+#cultivos-table-container .cult-site .cult-row-muted .cultivos-cell-org {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-regular);
+}
+#cultivos-table-container .cult-site .cultivos-row-neg .cultivos-cuenta,
+#cultivos-table-container .cult-site .cult-row-muted .cultivos-cuenta {
+  display: inline;
+  font-size: var(--fs-13);
+}
+#cultivos-table-container .cult-site .cultivos-row-neg .cultivos-cuenta::before,
+#cultivos-table-container .cult-site .cult-row-muted .cultivos-cuenta::before {
+  content: ' · ';
+}
+#cultivos-table-container .cult-site .cultivos-row-neg .cultivos-cell-remove,
+#cultivos-table-container .cult-site .cult-row-muted .cultivos-cell-remove {
+  margin-left: auto;
+}
+#cultivos-table-container .cult-org-tag--new {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+#cultivos-table-container .cultivo-row-seen-btn {
+  margin-right: var(--space-1);
+  padding: 2px var(--space-3);
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: color-mix(in oklab, var(--color-accent) 60%, var(--text));
+  font-size: var(--fs-13);
   font-weight: var(--fw-strong);
+  cursor: pointer;
 }
 #cultivos-table-container .cult-sites-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
-  align-items: start;
+  columns: 560px;
+  column-gap: var(--space-4);
 }
+#cultivos-table-container .cult-sites-grid > .cult-site--solo {
+  max-width: 640px;
+}
+#cultivos-table-container .cult-sites-grid > .cult-site,
+#cultivos-table-container .cult-sites-grid > .cultivos-neg-fold {
+  break-inside: avoid;
+  margin: 0 0 var(--space-6);
+}
+#cultivos-table-container .cult-org-toggle {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+/* Reporte plegado: solo las pastillas R / I / S. Los nombres salen al pasar el cursor o enfocar. */
+#cultivos-table-container .cult-site tr.cult-row--collapsed .cultivos-atb-chips {
+  margin-top: var(--space-2);
+}
+#cultivos-table-container .cult-site tr.cult-row--collapsed .cult-atb-ris-chips {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+#cultivos-table-container .cult-site tr.cult-row--collapsed .cult-atb-ris-chip-wrap {
+  position: relative;
+  display: inline-flex;
+}
+#cultivos-table-container .cult-site tr.cult-row--collapsed .atb-chip {
+  width: auto;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: color-mix(in oklab, currentColor 14%, transparent);
+  cursor: default;
+}
+#cultivos-table-container .cult-site tr.cult-row--collapsed .cult-atb-note,
+#cultivos-table-container .cult-site tr.cult-row--collapsed .cultivos-copy-full-btn {
+  display: none;
+}
+#cultivos-table-container .cult-site tr.cult-row--collapsed .cult-atb-ris-names {
+  display: none;
+  margin: 0;
+}
+
 @media (max-width: 720px) {
   #cultivos-table-container .cult-sites-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -1624,7 +1750,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 }
 #cultivos-table-container .cult-site {
   margin: 0;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-5) var(--space-5);
   border: 0;
   border-radius: 16px;
   background: var(--card-bg);
@@ -1632,21 +1758,44 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 }
 #cultivos-table-container .cult-site-head {
   display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  padding: 0 0 var(--space-2);
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: 0 0 var(--space-3);
   border-bottom: 0;
+  cursor: pointer;
+  list-style: none;
 }
-#cultivos-table-container .cult-site[open] > .cult-site-head {
-  border-bottom: 0;
-}
-#cultivos-table-container .cult-site-head .rp-dot,
-#cultivos-table-container .cult-site-dots,
-#cultivos-table-container .cult-site-last {
+#cultivos-table-container .cult-site-head::-webkit-details-marker {
   display: none;
 }
+#cultivos-table-container .cult-site-head .rp-dot {
+  display: none;
+}
+#cultivos-table-container .cult-status-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-top: 0.5rem;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--text-muted) 45%, transparent);
+}
+#cultivos-table-container .cult-status-dot--pos {
+  background: var(--danger);
+}
+#cultivos-table-container .cult-site-headtext {
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+}
+#cultivos-table-container .cult-site-ultimo {
+  display: block;
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+}
 #cultivos-table-container .cult-site-title {
-  font-size: var(--fs-16);
+  display: block;
+  min-width: 0;
+  font-size: var(--fs-18, 18px);
   font-weight: var(--fw-strong);
   letter-spacing: 0;
   text-transform: lowercase;
@@ -1655,65 +1804,442 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
   text-transform: uppercase;
 }
 #cultivos-table-container .cult-site-tipo {
-  margin-left: var(--space-1);
+  color: inherit;
+  font-weight: inherit;
+  text-transform: none;
+}
+#cultivos-table-container .cult-site-detail {
+  display: block;
   color: var(--text-muted);
   font-size: var(--fs-13);
   font-weight: var(--fw-regular);
-  text-transform: none;
+  overflow-wrap: anywhere;
 }
-#cultivos-table-container .cult-site .cultivos-table {
+#cultivos-table-container .cult-site-detail::first-letter {
+  text-transform: uppercase;
+}
+#cultivos-table-container .cult-site-head > .cult-org-tag {
+  flex: none;
+  margin-top: 0.25rem;
+}
+#cultivos-table-container .cult-site-last {
+  display: block;
+  flex: none;
+  margin-top: 0.25rem;
+  white-space: nowrap;
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-regular);
+}
+#cultivos-table-container .cult-site[open] > .cult-site-head .cult-site-last {
+  display: block;
+}
+#cultivos-table-container .cult-site-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--space-4);
+}
+#cultivos-table-container .cult-site-dots {
+  flex-wrap: wrap;
+}
+#cultivos-table-container .cult-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+#cultivos-table-container .cult-dot--new {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+#cultivos-table-container .cult-dot-line {
+  width: 24px;
+  height: 2px;
+  background: color-mix(in oklab, var(--text-muted) 25%, transparent);
+}
+#cultivos-table-container .cult-dots-text {
+  flex: 1 1 10rem;
+  margin-left: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--fs-12);
+}
+#cultivos-table-container .cult-site .cultivos-table,
+#cultivos-table-container .cult-site .cultivos-table tbody {
+  display: block;
   width: 100%;
-  font-size: var(--fs-14);
+}
+#cultivos-table-container .cult-site .cultivos-table tr {
+  display: grid;
+  position: relative;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: 'org fecha remove' 'atb atb atb';
+  column-gap: var(--space-2);
+  row-gap: 0;
+  padding: var(--space-2) 0 0;
+}
+#cultivos-table-container .cult-site .cultivos-table tr + tr {
+  margin-top: var(--space-2);
+  border-top: 1px solid color-mix(in oklab, var(--border) 35%, transparent);
+}
+#cultivos-table-container .cult-site .cultivos-table tr:first-child {
+  padding-top: 0;
 }
 #cultivos-table-container .cult-site .cultivos-table td {
-  padding: var(--space-2) 0;
+  padding: 0;
   border: 0;
-  vertical-align: middle;
+  background: none;
+}
+#cultivos-table-container .cult-site .cultivos-cell-org {
+  grid-area: org;
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
 }
 #cultivos-table-container .cult-site .cultivos-cell-fecha {
-  width: 56px;
+  grid-area: fecha;
+  min-width: 0;
   color: var(--text-muted);
   font-size: var(--fs-13);
   white-space: nowrap;
 }
-#cultivos-table-container .cult-site .cultivos-cell-atb {
-  width: 1%;
-  white-space: nowrap;
+#cultivos-table-container .cult-site .cultivos-cell-remove {
+  grid-area: remove;
+  width: auto;
+  padding: 0;
+}
+#cultivos-table-container .cult-site .cultivos-cell-atb,
+#cultivos-table-container .cult-site .cultivos-atb-wrap {
+  display: contents;
+  white-space: normal;
+}
+#cultivos-table-container .cult-site .cultivos-atb-chips,
+#cultivos-table-container .cult-site .cultivos-atb-fallback,
+#cultivos-table-container .cult-site .cult-atb-missing {
+  grid-area: atb;
+  min-width: 0;
+  margin-top: var(--space-3);
+}
+#cultivos-table-container .cult-site .cult-atb-missing {
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+}
+#cultivos-table-container .cult-site .cult-org-name--isolate {
+  font-style: normal;
+}
+#cultivos-table-container .cult-site .cult-org-tag {
+  padding: 2px 10px;
+  font-size: var(--fs-12);
+  font-weight: var(--fw-strong);
+}
+#cultivos-table-container .cult-site .cultivos-cuenta {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-regular);
 }
 #cultivos-table-container .cult-site .cultivos-row-neg td,
 #cultivos-table-container .cult-site .cult-row-muted td {
   color: var(--text-muted);
 }
+#cultivos-table-container .cult-site .cultivos-atb-chips,
+#cultivos-table-container .cult-site .cult-atb-ris-summary,
+#cultivos-table-container .cult-site .cult-atb-ris-chips {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+#cultivos-table-container .cult-site .cult-atb-ris-chip-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
 #cultivos-table-container .cult-site .atb-chip {
-  height: 24px;
-  min-width: 24px;
-  padding: 0 var(--space-2);
+  flex: none;
+  width: 2.75rem;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  justify-content: flex-start;
   border: 0;
-  border-radius: 6px;
-  font-size: var(--fs-12);
+  border-radius: 0;
+  background: none;
+  font-size: var(--fs-13);
   font-weight: var(--fw-strong);
+  letter-spacing: 0;
 }
 #cultivos-table-container .cult-site .atb-chip--r {
-  background: color-mix(in oklab, var(--danger) 16%, transparent);
   color: var(--danger);
 }
 #cultivos-table-container .cult-site .atb-chip--i {
-  background: color-mix(in oklab, #c98a00 16%, transparent);
   color: var(--warn);
 }
 #cultivos-table-container .cult-site .atb-chip--s {
-  background: color-mix(in oklab, var(--success) 14%, transparent);
   color: var(--success);
 }
-#cultivos-table-container .cultivos-neg-fold {
-  margin-top: var(--space-4);
+#cultivos-table-container .cult-site .cult-atb-ris-chip-wrap {
+  min-width: 0;
 }
-#cultivos-table-container .cultivos-neg-head {
-  display: inline-block;
-  color: var(--color-accent);
+#cultivos-table-container .cult-site .cult-atb-ris-names {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: var(--fs-13);
+  line-height: 1.6;
+}
+#cultivos-table-container .cult-site .atb-chip--s ~ .cult-atb-ris-names,
+#cultivos-table-container .cult-site .atb-chip--x ~ .cult-atb-ris-names {
+  color: var(--text-muted);
+}
+#cultivos-table-container .cult-site .atb-chip--x {
+  color: var(--text-muted);
+}
+#cultivos-table-container .cult-site .cult-org-tag:not(.cult-org-tag--alert):not(.cult-org-tag--new) {
+  color: color-mix(in oklab, var(--text-muted) 50%, var(--text));
+}
+#cultivos-table-container .cult-site .cult-atb-ris-names {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0 var(--space-6);
+  align-items: baseline;
+}
+#cultivos-table-container .cult-atb-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--text-muted) 18%, transparent);
+}
+#cultivos-table-container .cult-atb-name {
+  flex: 1;
+  min-width: 0;
+}
+#cultivos-table-container .cult-atb-mic {
+  order: 3;
+  --mic-c: var(--text-muted);
+  min-width: 56px;
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--mic-c) 14%, transparent);
+  color: color-mix(in oklab, var(--mic-c) 60%, var(--text));
+  font-size: var(--fs-12);
+  font-weight: var(--fw-medium, 500);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+#cultivos-table-container .cult-site .atb-chip--r ~ .cult-atb-ris-names .cult-atb-mic {
+  --mic-c: var(--danger);
+}
+#cultivos-table-container .cult-site .atb-chip--i ~ .cult-atb-ris-names .cult-atb-mic {
+  --mic-c: var(--warn);
+}
+#cultivos-table-container .cult-site .atb-chip--s ~ .cult-atb-ris-names .cult-atb-mic {
+  --mic-c: var(--success);
+}
+#cultivos-table-container .cult-site tr.cult-row--folded:not(.cult-row--open) {
+  display: none;
+}
+#cultivos-table-container .cult-date-btn {
+  margin: 0;
+  padding: 1px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--danger) 16%, transparent);
+  color: var(--text);
+  font: inherit;
   cursor: pointer;
 }
+#cultivos-table-container .cult-date-btn[aria-expanded='true'] {
+  background: var(--danger);
+  color: var(--color-on-accent);
+}
+#cultivos-table-container .cult-atb-more {
+  grid-column: 1 / -1;
+  padding-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--fs-12);
+}
+#cultivos-table-container .cult-atb-mk {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--warn) 16%, var(--surface));
+  color: var(--warn);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-strong);
+}
+#cultivos-table-container .cult-site .cult-atb-ris-names,
+#cultivos-table-container .cult-site .cult-atb-note {
+  margin-right: 88px; /* sitio para el botón Copiar */
+}
+#cultivos-table-container .cult-mech {
+  margin: var(--space-2) 88px var(--space-3) 0; /* sitio para el botón Copiar */
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--space-3);
+  background: var(--selected-bg);
+  color: var(--text);
+  font-size: var(--fs-13);
+  line-height: 1.5;
+}
+#cultivos-table-container .cult-mech-title {
+  min-height: 28px;
+  color: var(--selected-fg);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
+  cursor: pointer;
+}
+#cultivos-table-container .cult-mech-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+#cultivos-table-container .cult-mech-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--space-3);
+  background: var(--card-bg);
+}
+#cultivos-table-container .cult-mech-drug {
+  font-weight: var(--fw-strong);
+}
+#cultivos-table-container .cult-mech-note {
+  color: var(--text-muted);
+  font-size: var(--fs-12);
+}
+#cultivos-table-container .cult-mech-src {
+  color: var(--text);
+  font-size: var(--fs-12);
+}
+#cultivos-table-container .cult-mech-text {
+  margin: 0 0 var(--space-1);
+}
+#cultivos-table-container .cult-mech-src {
+  margin: 0;
+}
+#cultivos-table-container .cult-atb-note.cult-atb-note--info {
+  background: none;
+  padding: 0;
+  color: var(--text-muted);
+}
+#cultivos-table-container .cult-atb-note {
+  margin-top: var(--space-2);
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--warn) 12%, var(--surface));
+  color: var(--warn);
+  font-size: var(--fs-13);
+  line-height: 1.4;
+}
+.atb-ris-panel-note {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: var(--fs-12);
+  line-height: 1.4;
+}
+#cultivos-table-container .cult-site .cultivos-copy-full-btn {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+#cultivos-table-container .cultivos-neg-fold {
+  margin-top: 0;
+  padding: var(--space-4) var(--space-5);
+  border-radius: 16px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-1);
+}
+#cultivos-table-container .cultivos-neg-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  font-size: var(--fs-14);
+  cursor: pointer;
+  list-style: none;
+}
+#cultivos-table-container .cultivos-neg-head::-webkit-details-marker {
+  display: none;
+}
+#cultivos-table-container .cultivos-neg-count {
+  padding: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-regular);
+}
+#cultivos-table-container .cultivos-neg-names {
+  font-size: var(--fs-13);
+  overflow-wrap: anywhere;
+}
+#cultivos-table-container .cultivos-neg-list {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+  color: var(--text-muted);
+}
+#cultivos-table-container .cultivos-neg-fold[open] .cultivos-neg-list {
+  display: none;
+}
 #cultivos-table-container .cultivos-neg-fold[open] > .cultivos-neg-head {
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+/* Cuadro de nombres de un reporte plegado: vive en <body> para salir de la tarjeta. */
+.cult-atb-pop {
+  position: fixed;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 0 var(--space-6);
+  width: max-content;
+  max-width: min(560px, calc(100vw - 16px));
+  padding: var(--space-3) var(--space-4);
+  border-radius: 12px;
+  background: var(--card-bg);
+  color: var(--text);
+  box-shadow: var(--shadow-2, 0 8px 24px rgb(0 0 0 / 0.35));
+  font-size: var(--fs-13);
+  line-height: 1.6;
+}
+.cult-atb-pop .cult-atb-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--text-muted) 18%, transparent);
+}
+.cult-atb-pop .cult-atb-name {
+  flex: 1;
+  min-width: 0;
+}
+.cult-atb-pop .cult-atb-mic {
+  --mic-c: var(--text-muted);
+  order: 3;
+  min-width: 56px;
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--mic-c) 14%, transparent);
+  color: color-mix(in oklab, var(--mic-c) 60%, var(--text));
+  font-size: var(--fs-12);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+.cult-atb-pop--r .cult-atb-mic {
+  --mic-c: var(--danger);
+}
+.cult-atb-pop--i .cult-atb-mic {
+  --mic-c: var(--warn);
+}
+.cult-atb-pop--s .cult-atb-mic {
+  --mic-c: var(--success);
 }

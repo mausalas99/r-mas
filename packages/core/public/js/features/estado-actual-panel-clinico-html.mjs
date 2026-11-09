@@ -313,7 +313,9 @@ function renderSoporteOptions(ec) {
 function renderVitalsRowHtml(ec, vitalsCtx) {
   var soporteBlock = renderSoporteVentilatorioBlockHtml(ec, vitalsCtx);
   return (
-    '<div class="ea-clinico-vitals-row">' +
+    '<div class="ea-sys-card ea-sys-card--neuro">' +
+    '<h4 class="ea-sys-title">Neurológico</h4>' +
+    '<div class="ea-sys-fields">' +
     '<label class="ea-field">' +
     '<span class="ea-label">FOUR (/16)</span>' +
     '<input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value="' +
@@ -326,16 +328,20 @@ function renderVitalsRowHtml(ec, vitalsCtx) {
     escAttrNumeric(ec.esferas) +
     '">' +
     '</label>' +
+    '</div>' +
+    '</div>' +
+    '<div class="ea-sys-card ea-sys-card--soporte">' +
+    '<h4 class="ea-sys-title">Soporte respiratorio</h4>' +
     '<div class="ea-field ea-field--soporte">' +
     renderSoporteHeadHtml(ec, vitalsCtx) +
     '<select class="ea-input" data-ea-ec="soporte" aria-label="Soporte respiratorio">' +
     renderSoporteOptions(ec) +
     '</select>' +
     '</div>' +
-    '</div>' +
     (soporteBlock
       ? '<div class="ea-soporte-vent-block" data-ea-soporte-wrap>' + soporteBlock + '</div>'
-      : '')
+      : '') +
+    '</div>'
   );
 }
 
@@ -368,7 +374,9 @@ function renderNutritionRowHtml(ec, dietPending, dietaSuplemento, kcalDisplay, d
     }
   }
   return (
-    '<div class="ea-clinico-nutrition-row">' +
+    '<div class="ea-sys-card ea-sys-card--nutri">' +
+    '<h4 class="ea-sys-title">Nutrición</h4>' +
+    '<div class="ea-sys-fields">' +
     '<label class="ea-field ea-field--dieta">' +
     '<span class="ea-label">Dieta' +
     (dietPending ? ' <span class="ea-pendiente-badge">Propuesta</span>' : '') +
@@ -378,6 +386,7 @@ function renderNutritionRowHtml(ec, dietPending, dietaSuplemento, kcalDisplay, d
     '">' +
     '</label>' +
     caloricHtml +
+    '</div>' +
     '</div>'
   );
 }
@@ -435,7 +444,7 @@ function renderDietProposalBarHtml(dietOptions, selectedIndex) {
 export function renderEstadoClinicoBodyHtml(ec, dietPending, dietaSuplemento, kcalDisplay, dietWeightHint, medFieldsHtml, anyPending, dietOptions, dietOptionSelected, dietaParenteral, vitalsCtx) {
   return (
     '<div class="ea-clinico-body">' +
-    '<div class="ea-clinico-grid">' +
+    '<div class="ea-clinico-grid ea-sys-grid">' +
     renderVitalsRowHtml(ec, vitalsCtx) +
     renderNutritionRowHtml(ec, dietPending, dietaSuplemento, kcalDisplay, dietaParenteral) +
     (dietPending ? renderDietProposalBarHtml(dietOptions, dietOptionSelected == null ? 0 : dietOptionSelected) : '') +

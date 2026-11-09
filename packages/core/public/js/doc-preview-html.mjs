@@ -48,6 +48,10 @@ var CSS =
   '.nota .tx{columns:2;column-gap:.25in;margin-top:.05in}.nota .tx div{break-inside:avoid;margin:.08in 0;border-bottom:1px solid #000;min-height:.19in;font-size:8pt}' +
   '.nota .fl{margin-top:.08in;font-size:8pt}.nota .fl u{font-size:8pt}' +
   '.nota .foot{margin-top:auto;text-align:right;font-size:7pt}' +
+  '.lst{width:100%;height:8.2in;border-collapse:collapse;margin-top:.08in;border:2px solid #000;font:8pt/1.5 "Times New Roman",Times,serif}' +
+  '.lst th,.lst td{border:1px solid #000;padding:.04in .08in;vertical-align:top;white-space:pre-wrap}' +
+  '.lst th{background:#d9d9d9;text-align:center}.lst .f{width:.9in}.lst .n{width:.4in;text-align:center}' +
+  '.lst .fill{height:100%}.lst .fill td{border-top:0;border-bottom:0}.lst .m td{border-top:2px solid #000;font-weight:700;font-size:8pt;white-space:nowrap}' +
   '@media print{body{background:#fff;padding:0}.page{box-shadow:none;margin:0;width:auto;min-height:0;padding:0}}';
 
 function lines(v) {
@@ -129,6 +133,29 @@ export function buildIndicacionesPreviewHtml(patient, ind) {
   return page(
     'Indicaciones', patient, 'INDICACIONES MÉDICAS',
     '<div class="tbl">' + leftCol(ind, '<div>' + medicos + '</div>') + '<div class="r">' + right + '</div></div>'
+  );
+}
+
+/** Lista de problemas: mismo formato que el .docx (fecha, no., activos, inactivos, médicos). */
+export function buildListadoPreviewHtml(patient, lst, medicos) {
+  lst = lst || {};
+  medicos = medicos || {};
+  var act = lst.activos || [];
+  var ina = lst.inactivos || [];
+  var rows = '';
+  for (var i = 0; i < Math.max(act.length, ina.length); i += 1) {
+    var a = act[i] || {};
+    var b = ina[i] || {};
+    rows +=
+      '<tr><td class="f">' + escHtml(a.fecha || b.fecha || '') + '</td><td class="n">' + (i + 1) +
+      '</td><td>' + escHtml(a.descripcion || '') + '</td><td>' + escHtml(b.descripcion || '') + '</td></tr>';
+  }
+  var med = [medicos.profesor, medicos.r4, medicos.r2, medicos.r1a, medicos.r1b].filter(Boolean).map(escHtml).join('<br>');
+  return page(
+    'Lista de problemas', patient, 'LISTA DE PROBLEMAS',
+    '<table class="lst"><tr><th class="f">FECHA</th><th class="n">No.</th><th>ACTIVOS</th><th>INACTIVOS</th></tr>' +
+      rows + '<tr class="fill"><td></td><td></td><td></td><td></td></tr>' +
+      '<tr class="m"><td colspan="3"></td><td>' + med + '</td></tr></table>'
   );
 }
 

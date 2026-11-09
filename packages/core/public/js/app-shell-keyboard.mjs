@@ -20,6 +20,7 @@ import {
 } from './app-shell-tab-shortcuts.mjs';
 import { markTabShortcutsAdopted } from './keyboard-shortcuts-nudge.mjs';
 import { copyTeamLabsForToday } from './features/patients-list/copy-team-labs.mjs';
+import { copyTeamCultivos } from './features/patients-list/copy-team-cultivos.mjs';
 import { copyTeamEstadoActualForToday } from './features/patients-list/copy-team-estado-actual.mjs';
 import { getActiveInnerTab } from './features/expediente-navigation.mjs';
 import { rt } from './features/app-tabs-runtime.mjs';
@@ -153,6 +154,8 @@ function handleShellCopyTeamLabsShortcut(e, key, showToast) {
   e.preventDefault();
   if (rt.getActiveAppTab() === 'nota' && getActiveInnerTab() === 'estadoActual') {
     copyTeamEstadoActualForToday(showToast);
+  } else if (getActiveInnerTab() === 'cult') {
+    copyTeamCultivos(showToast);
   } else {
     copyTeamLabsForToday(showToast);
   }

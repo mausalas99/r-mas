@@ -49,12 +49,6 @@ import { renderEstadoActualPanel, navigateToEstadoActualPanel } from './estado-a
 eaPanelBridge.renderEstadoActualPanel = renderEstadoActualPanel;
 eaPanelBridge.registrarEstadoActualMedicion = registrarEstadoActualMedicion;
 
-try {
-  if (typeof window !== 'undefined') window.eaPanelBridge = eaPanelBridge;
-} catch (_eaBridge) {
-  void _eaBridge;
-}
-
 if (typeof document !== 'undefined' && !document._rpcInternoVitalsEaWired) {
   document._rpcInternoVitalsEaWired = true;
   document.addEventListener('rpc-interno-vitals-synced', function (ev) {

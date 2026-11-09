@@ -196,6 +196,7 @@ export function buildCensusPayload(opts) {
     torre: docHead.torre,
     profesor: equipo.maestro,
     doctor: String(settings.doctorName || '').trim(),
+    r4: equipo.r4,
     r2: equipo.r2,
     r1: equipo.r1a,
     r1a: equipo.r1a,

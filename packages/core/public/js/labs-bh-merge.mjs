@@ -2,6 +2,7 @@
  * Union BH compact fields across same-cluster rows (CBC + Ret from another study).
  */
 import {
+  bhExtraDisplayLabel,
   flattenBhHemOnlyVisible,
   mergeCoagResLabRows_,
   parseBhTrendValuesFromResLab,
@@ -10,6 +11,8 @@ import { lineRichnessScore_ } from './labs-gaso-section.mjs';
 import { computeRetiCorregido_ } from './labs-reticulocito-corregido.mjs';
 
 var BH_COMPACT_MERGE_ORDER_ = ['Hb', 'Hto', 'VCM', 'HCM', 'Ret', 'Leu', 'Neu', 'Eos', 'Plt'];
+/** Células inmaduras (%): se conservan en el merge para no perder la alerta de la línea BH. */
+var BH_IMMATURE_MERGE_ORDER_ = ['Mielo', 'Metamielo', 'Promielo', 'Blastos'];
 
 function extractCoagBodyFromBhLine_(line) {
   var m = String(line || '').match(/^(?:COAG|Coag\.?)\t(.+)/i);
@@ -35,7 +38,7 @@ function collectBhCompactFields_(rows) {
   var byField = Object.create(null);
   (rows || []).forEach(function (row) {
     var cells = parseBhTrendValuesFromResLab(flattenBhHemOnlyVisible(row));
-    BH_COMPACT_MERGE_ORDER_.forEach(function (fk) {
+    BH_COMPACT_MERGE_ORDER_.concat(BH_IMMATURE_MERGE_ORDER_).forEach(function (fk) {
       if (byField[fk] || !cells[fk]) return;
       byField[fk] = cells[fk];
     });
@@ -79,6 +82,11 @@ function formatBhMergedCompactLine_(byField, rows) {
     pairs.push(fk, disp);
   });
   if (!pairs.length) return '';
+  BH_IMMATURE_MERGE_ORDER_.forEach(function (fk) {
+    var cell = byField[fk];
+    if (!cell || !(parseFloat(cell.val) > 0)) return;
+    pairs.push(bhExtraDisplayLabel(fk), cell.val + '%' + (cell.ab ? '*' : ''));
+  });
   insertRetCPair_(pairs, byField, rows);
   return 'BH\t' + pairListToDisplay_(pairs);
 }

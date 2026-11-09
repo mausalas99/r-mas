@@ -264,7 +264,7 @@ export async function loadAdminMutations(root, getApi, toast) {
   }
   list.innerHTML = '<p class="cloud-sync-hint">Cargando…</p>';
   try {
-    const data = await getApi().adminMutations(roomId, 50);
+    const data = await getApi().adminMutations(roomId, 100);
     const mutations = data.mutations || [];
     if (!mutations.length) {
       list.innerHTML = '<p class="cloud-sync-hint">Sin cambios registrados en esta sala.</p>';

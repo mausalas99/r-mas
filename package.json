@@ -1,6 +1,6 @@
 {
   "name": "r-plus",
-  "version": "8.5.3",
+  "version": "8.5.4",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "packages/im/main.js",
   "workspaces": [
@@ -41,11 +41,11 @@
     "rebuild:db-native": "node scripts/rebuild-native-db.mjs",
     "postinstall": "node scripts/rebuild-native-db.mjs || true",
     "metrics": "node scripts/metrics/run.mjs",
-    "metrics:check": "node scripts/metrics/check.mjs && node scripts/ci/build-output-ignored.mjs && node scripts/ci/no-duplicate-files.mjs && node scripts/ci/structure-pinning-tests.mjs && node scripts/ci/forbid-lan-imports.mjs && node scripts/ci/module-boundaries.mjs && node scripts/ci/mirror-drift.mjs && node scripts/ci/core-drift-report.mjs",
+    "metrics:check": "node scripts/metrics/check.mjs && node scripts/ci/build-output-ignored.mjs && node scripts/ci/no-duplicate-files.mjs && node scripts/ci/structure-pinning-tests.mjs && node scripts/ci/forbid-lan-imports.mjs && node scripts/ci/no-innerhtml-in-preact.mjs && node scripts/ci/vendor-manifests.mjs && node scripts/ci/module-boundaries.mjs && node scripts/ci/mirror-drift.mjs && node scripts/ci/core-drift-report.mjs",
     "lint:tier1": "node scripts/metrics/lint-tier1.mjs",
     "lint:tier1:full": "node scripts/metrics/lint-tier1.mjs --full",
     "metrics:top-complexity": "npx eslint public/js lib --format json --max-warnings 99999 | node scripts/metrics/top-complexity.mjs",
-    "lint": "eslint main.js preload.js generate-censo.js \"scripts/**/*.{mjs,js,cjs}\"",
+    "lint": "eslint main.js preload.js generate-censo.js \"scripts/**/*.{mjs,js,cjs}\" \"public/js/**/*.jsx\"",
     "metrics:baseline": "node scripts/metrics/run.mjs --write-baseline",
     "dev:lan-peer-app": "node scripts/dev-lan-peer-app.mjs",
     "dev:lan-peer-fresh": "node scripts/dev-lan-peer-app.mjs --fresh",
@@ -128,6 +128,8 @@
     "jscpd": "^5.3.3",
     "lintapple": "^0.1.19",
     "playwright": "^1.62.1",
+    "preact": "^11.2.0",
+    "preact-render-to-string": "^6.8.2",
     "ts-api-utils": "^2.5.0"
   },
   "build": {

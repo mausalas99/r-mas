@@ -10,11 +10,19 @@ function escEaHtml_(s) {
 }
 
 /**
+ * `¿INESTABLE?` es alerta para el residente en pantalla; nunca sale por copiar.
+ * @param {string} text
+ */
+export function stripEaReviewFlags(text) {
+  return String(text == null ? '' : text).replace(/¿INESTABLE\?,?[ \t]*/g, '');
+}
+
+/**
  * @param {string} text texto con pares `**negrita**`
  * @returns {{ text: string, html: string }}
  */
 export function estadoActualTextToClipboardPayload(text) {
-  var t = String(text == null ? '' : text);
+  var t = stripEaReviewFlags(text);
   var html = t
     .split('\n')
     .map(function (line) {

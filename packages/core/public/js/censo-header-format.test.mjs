@@ -19,3 +19,8 @@ test('census profesor comes from the Sala team list, not the note profesor', () 
   assert.equal(resolveCensoEquipoMembers({ profesorName: 'IC prof', medicosPlantilla: { profesor: '' } }).maestro, '');
   assert.equal(resolveCensoEquipoMembers({ profesorName: 'IC prof', medicosPlantilla: { profesor: 'Sala prof' } }).maestro, 'Sala prof');
 });
+
+test('equipoLine order: profesor, R4, R2, R1, R1 (2)', () => {
+  const medicosPlantilla = { profesor: 'P', r4: 'A', r2: 'B', r1a: 'C', r1b: 'D' };
+  assert.equal(buildCensoDocumentHeader({ medicosPlantilla }).equipoLine, 'P · A · B · C · D');
+});

@@ -1,6 +1,6 @@
 /** Snapshot strip + historial section HTML for Estado Actual panel. */
 import {
-  renderSnapshotVitalsHtml,
+  renderSnapshotVitalsByKeys,
   renderSnapshotVitalsZoneTitle,
   renderSnapshotGluHtml,
   renderSnapshotGluZoneTitle,
@@ -19,27 +19,25 @@ export { formatSnapshotEgresos } from './estado-actual-panel-snapshot-html.mjs';
  * @param {number} balGlobal
  */
 export function renderSnapshotSection(snapshot, balTurno, balGlobal) {
+  var stamp = renderSnapshotVitalsZoneTitle(snapshot).replace(/^Signos vitales/, '');
   return (
-    '<section class="ea-section ea-card ea-snapshot-strip ea-snapshot-strip--primary" id="ea-snapshot">' +
-    '<div class="ea-snapshot-strip-body">' +
-    '<div class="ea-snapshot-zone ea-snapshot-zone--vitals">' +
-    '<h4 class="ea-snapshot-zone-title">' + renderSnapshotVitalsZoneTitle(snapshot) + '</h4>' +
-    '<div class="ea-snapshot-vitals">' +
-    renderSnapshotVitalsHtml(snapshot) +
-    '</div>' +
-    '</div>' +
-    '<div class="ea-snapshot-zone">' +
-    '<h4 class="ea-snapshot-zone-title">' + renderSnapshotGluZoneTitle(snapshot) + '</h4>' +
-    '<div class="ea-snapshot-glu">' +
-    renderSnapshotGluHtml(snapshot) +
-    '</div>' +
-    '</div>' +
-    '<div class="ea-snapshot-zone">' +
-    '<h4 class="ea-snapshot-zone-title">Balance hídrico</h4>' +
-    renderSnapshotIoHtml(snapshot, balGlobal) +
-    '</div>' +
-    '</div>' +
+    '<section class="ea-section ea-sys-grid ea-snapshot-strip" id="ea-snapshot">' +
+    sysCard('hemo', 'Hemodinámico' + stamp, '<div class="ea-snapshot-vitals">' + renderSnapshotVitalsByKeys(snapshot, ['bp', 'fc']) + '</div>') +
+    sysCard('resp-lectura', 'Respiratorio', '<div class="ea-snapshot-vitals">' + renderSnapshotVitalsByKeys(snapshot, ['fr', 'sat']) + '</div>') +
+    sysCard('inf', 'Infeccioso', '<div class="ea-snapshot-vitals">' + renderSnapshotVitalsByKeys(snapshot, ['temp']) + '</div>') +
+    sysCard('meta', renderSnapshotGluZoneTitle(snapshot), '<div class="ea-snapshot-glu">' + renderSnapshotGluHtml(snapshot) + '</div>') +
+    sysCard('renal', 'Renal y balance', renderSnapshotIoHtml(snapshot, balGlobal)) +
     '</section>'
+  );
+}
+
+/** One system card: small title, then its readings. */
+function sysCard(id, titleHtml, bodyHtml) {
+  return (
+    '<div class="ea-sys-card ea-sys-card--' + id + '">' +
+    '<h4 class="ea-sys-title">' + titleHtml + '</h4>' +
+    bodyHtml +
+    '</div>'
   );
 }
 

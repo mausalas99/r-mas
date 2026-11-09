@@ -639,8 +639,27 @@ export function mergeBulkParseResults(parsedItems) {
       clustered.add(item);
     });
   });
+  // Same-type undated reports (bare paste) form one set, in paste order, stamped with paste time.
+  var undatedByTipo = Object.create(null);
   withLabs.forEach(function (item) {
-    if (!clustered.has(item)) clusters.push([item]);
+    if (clustered.has(item)) return;
+    var t = primaryTipoForResLabs(item.result.resLabs || []);
+    if (!undatedByTipo[t]) undatedByTipo[t] = [];
+    undatedByTipo[t].push(item);
+  });
+  var pasteStamp = new Date();
+  var pasteFecha = normalizeFechaLabHistory(
+    String(pasteStamp.getDate()).padStart(2, '0') + '/' + String(pasteStamp.getMonth() + 1).padStart(2, '0') + '/' + pasteStamp.getFullYear()
+  );
+  var pasteHora = String(pasteStamp.getHours()).padStart(2, '0') + ':' + String(pasteStamp.getMinutes()).padStart(2, '0');
+  Object.keys(undatedByTipo).forEach(function (t) {
+    var group = undatedByTipo[t];
+    group.forEach(function (item) {
+      var pat = item.result.patient || (item.result.patient = {});
+      if (!normalizeFechaLabHistory(pat.fecha)) pat.fecha = pasteFecha;
+      if (!normalizeHoraLabHistory(pat.hora)) pat.hora = pasteHora;
+    });
+    clusters.push(group);
   });
   var payloads = clusters.map(function (cluster) {
     var tipo = primaryTipoForResLabs(cluster[0].result.resLabs || []);
@@ -734,10 +753,50 @@ export function pickLatestDayMergedLabDisplay(parsedItems) {
   var targetCluster = dayClusters.find(function (cluster) {
     return cluster.indexOf(latestItem) !== -1;
   }) || [latestItem];
-  if (targetCluster.length === 1) return wrapSingleParsedLabDisplay(targetCluster[0]);
+  var display;
+  if (targetCluster.length === 1) {
+    display = wrapSingleParsedLabDisplay(targetCluster[0]);
+  } else {
+    var tipo = primaryTipoForResLabs(targetCluster[0].result.resLabs || []);
+    display = buildMergedPayloadFromGroup(targetCluster, tipo);
+  }
+  return withEarlierGasoRows(display, dayClusters, targetCluster);
+}
 
-  var tipo = primaryTipoForResLabs(targetCluster[0].result.resLabs || []);
-  return buildMergedPayloadFromGroup(targetCluster, tipo);
+/** Gasos de otros sets del mismo día (más viejos) también salen en la página de Labs. */
+function withEarlierGasoRows(display, dayClusters, targetCluster) {
+  var earlier = [];
+  dayClusters.forEach(function (cluster) {
+    if (cluster === targetCluster) return;
+    cluster.forEach(function (item) {
+      var ms = timestampMsFromParsedItem(item);
+      (item.result.resLabs || []).forEach(function (row) {
+        if (isGasoChunk(row)) earlier.push({ ms: ms == null ? 0 : ms, row: row });
+      });
+    });
+  });
+  if (!earlier.length) return display;
+  var rows = (display.resLabs || []).slice();
+  var seen = Object.create(null);
+  rows.forEach(function (r) {
+    seen[normalizeLabLine(String(r))] = true;
+  });
+  var extra = earlier
+    .sort(function (a, b) {
+      return a.ms - b.ms;
+    })
+    .map(function (e) {
+      return e.row;
+    })
+    .filter(function (r) {
+      var k = normalizeLabLine(String(r));
+      if (seen[k]) return false;
+      seen[k] = true;
+      return true;
+    });
+  var at = rows.findIndex(isGasoChunk);
+  rows.splice(at < 0 ? rows.length : at, 0, ...extra);
+  return Object.assign({}, display, { resLabs: rows });
 }
 
 function bulkBlocksHaveProcessablePatient(blocks) {

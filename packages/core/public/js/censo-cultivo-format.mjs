@@ -1,6 +1,6 @@
 /**
- * Cultivos para censo: versión condensada de una línea por cultivo,
- * con sitio y organismo abreviados para ocupar menos espacio.
+ * Cultivos para censo: una línea por sitio, solo el resultado más reciente
+ * si es positivo. Sitio y agente abreviados; sin ATB ni cuenta.
  */
 import {
   sortLabHistoryChronological,
@@ -9,13 +9,10 @@ import {
   splitResLabsByTipo as splitResLabsByTipoCore,
   isCultureTableHeaderLine,
   parseCultureBlockFromLineArray,
-  findCultivoChunkInSet,
   cultivoSeriesKey,
 } from './cultivo-block-core.mjs';
 
 export { splitResLabsByTipo } from './cultivo-block-core.mjs';
-
-var CENSO_MAX_CULTIVO_REPORTS = 3;
 
 var SITIO_ABBREV_MAP = [
   [/\bLIQUIDO\s+CEFALORRAQUIDEO\b/gi, 'LCR'],
@@ -37,6 +34,8 @@ var SITIO_ABBREV_MAP = [
   [/\bPERIFERIC[AO]\b/gi, 'PERIF'],
   [/\bABDOMINAL\b/gi, 'ABD'],
   [/\bGASTRICO\b/gi, 'GAST'],
+  [/\bIZQUIERD[OA]\b/gi, 'IZQ'],
+  [/\bDERECH[OA]\b/gi, 'DER'],
   [/\bHEMOCULTIVO\b/gi, 'HEMOC'],
   [/\bUROCULTIVO\b/gi, 'UROC'],
   [/\bFUNGICULTIVO\b/gi, 'FUNGIC'],
@@ -46,6 +45,9 @@ var SITIO_ABBREV_MAP = [
 function abbreviateSitioCultivo(sitio) {
   var s = String(sitio || '').trim();
   if (!s) return s;
+  // "TEJIDO CUTANEO (TEJIDO DE HER TOBILLO IZQUIERDO)": lo útil es el paréntesis.
+  var generic = s.match(/^(?:TEJIDO|PRODUCTOS?\s+DIVERSOS?|MUESTRA|OTROS?)\b[^(]*\(([^)]+)\)/i);
+  if (generic) s = generic[1].replace(/^TEJIDO(\s+DE)?\s+/i, '');
   SITIO_ABBREV_MAP.forEach(function (pair) {
     s = s.replace(pair[0], pair[1]);
   });
@@ -69,26 +71,12 @@ function abbreviateOrganismoScientific(organismo) {
   return (genus.charAt(0).toUpperCase() + '. ' + species.toLowerCase() + (rest ? ' ' + rest : '')).trim();
 }
 
-function extractAtbLineFromChunk(chunk) {
-  var lines = String(chunk || '').split(/\r?\n/);
-  for (var i = 0; i < lines.length; i++) {
-    var l = lines[i].replace(/\*+$/g, '').trim();
-    if (/^ATB\b/i.test(l)) return l;
-  }
-  return '';
-}
-
-/** Une sitio+fecha+organismo+ATB+Cuenta en una sola línea condensada. */
-function buildCompactCultivoLine(r, atbLine) {
+/** Una línea: sitio fecha: agente. */
+function buildCompactCultivoLine(r) {
   var sitio = abbreviateSitioCultivo(r.sitio);
   var fechaCorta = String(r.fechaMuestra || '').replace(/\/\d{4}$/, '');
   var fecha = fechaCorta && fechaCorta !== '—' ? ' ' + fechaCorta : '';
-  var organismo = abbreviateOrganismoScientific(r.organismo);
-  var head = (sitio + fecha).trim() + ': ' + organismo;
-  var parts = [head];
-  if (atbLine) parts.push(atbLine);
-  if (r.cuenta) parts.push('Cuenta: ' + r.cuenta);
-  return parts.join(' · ');
+  return (sitio + fecha).trim() + ': ' + abbreviateOrganismoScientific(r.organismo);
 }
 
 function extractCultivoTableRowsFromLabHistory(history) {
@@ -119,67 +107,35 @@ function extractCultivoTableRowsFromLabHistory(history) {
   return rows;
 }
 
-/** Mismo criterio que la tabla de cultivos. */
-function filterCultivoRowsSignificantFlip(rows) {
-  var bySeries = Object.create(null);
-  rows.forEach(function (r) {
-    var k = cultivoSeriesKey(r);
-    if (!bySeries[k]) bySeries[k] = [];
-    bySeries[k].push(r);
-  });
-  var out = [];
-  Object.keys(bySeries).forEach(function (k) {
-    var arr = bySeries[k].slice().sort(function (a, b) {
-      var da = a.sortKeyMs != null ? a.sortKeyMs : a.sortMs || 0;
-      var db = b.sortKeyMs != null ? b.sortKeyMs : b.sortMs || 0;
-      if (da !== db) return da - db;
-      return (a._seq || 0) - (b._seq || 0);
-    });
-    for (var i = 0; i < arr.length; i++) {
-      var r = arr[i];
-      if (!r.negativo) {
-        out.push(r);
-        continue;
-      }
-      var prev = arr[i - 1];
-      var next = arr[i + 1];
-      if ((prev && !prev.negativo) || (next && !next.negativo)) out.push(r);
-    }
-  });
-  return out;
+function rowMs(r) {
+  return r.sortKeyMs != null ? r.sortKeyMs : r.sortMs || 0;
 }
 
 /**
  * @param {unknown[]} labHistory
- * @param {number} [maxReports]
  * @returns {string}
  */
-export function formatCultivosForCenso(labHistory, maxReports) {
-  var max = maxReports != null ? maxReports : CENSO_MAX_CULTIVO_REPORTS;
-  var flat = extractCultivoTableRowsFromLabHistory(labHistory);
-  var display = filterCultivoRowsSignificantFlip(flat);
-  display.sort(function (a, b) {
-    var da = a.sortKeyMs != null ? a.sortKeyMs : a.sortMs || 0;
-    var db = b.sortKeyMs != null ? b.sortKeyMs : b.sortMs || 0;
-    if (db !== da) return db - da;
-    return (b._seq || 0) - (a._seq || 0);
+export function formatCultivosForCenso(labHistory) {
+  var latest = Object.create(null);
+  var order = [];
+  extractCultivoTableRowsFromLabHistory(labHistory).forEach(function (r) {
+    var k = cultivoSeriesKey(r);
+    var cur = latest[k];
+    if (!cur) order.push(k);
+    if (!cur || rowMs(r) > rowMs(cur) || (rowMs(r) === rowMs(cur) && (r._seq || 0) > (cur._seq || 0))) {
+      latest[k] = r;
+    }
   });
-  if (!display.length) return '';
-
-  var setById = Object.create(null);
-  (labHistory || []).forEach(function (set) {
-    if (set && set.id != null) setById[String(set.id)] = set;
-  });
-
-  var blocks = [];
-  for (var i = 0; i < display.length && blocks.length < max; i++) {
-    var r = display[i];
-    var set = setById[String(r.labSetId)];
-    if (!set) continue;
-    var chunk = findCultivoChunkInSet(set, r.organismo);
-    if (!chunk) continue;
-    var line = buildCompactCultivoLine(r, extractAtbLineFromChunk(chunk));
-    if (line.trim()) blocks.push(line.trim());
-  }
-  return blocks.join('\n');
+  return order
+    .map(function (k) {
+      return latest[k];
+    })
+    .filter(function (r) {
+      return !r.negativo;
+    })
+    .sort(function (a, b) {
+      return rowMs(b) - rowMs(a) || (b._seq || 0) - (a._seq || 0);
+    })
+    .map(buildCompactCultivoLine)
+    .join('\n');
 }

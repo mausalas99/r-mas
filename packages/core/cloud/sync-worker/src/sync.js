@@ -10,6 +10,7 @@ import {
 import { applyOps } from './lww.js';
 import {
   mutationPruneCeiling,
+  PULL_OPS_MAX_BYTES,
   PULL_REVISION_GAP,
   shouldReturnSnapshotPull,
 } from './pull-strategy.js';
@@ -138,7 +139,7 @@ const LAB_FILTER_MAX_IDS = 90;
  * shards + per-set lab shards. Callers never see the split — same flat shape
  * as before sharding.
  * @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId
- * @param {{ skipLabShards?: boolean, labPatientIds?: string[], labsSince?: number, labsHave?: Set<string> }} [opts]
+ * @param {{ skipLabShards?: boolean, labBytesOnly?: boolean, labPatientIds?: string[], labsSince?: number, labsHave?: Set<string> }} [opts]
  *   `labsSince` + `labsHave`: catch-up snapshot read (see below).
  *   `labPatientIds`: read lab shards for these patients only (reported as
  *   `labsSkipped`, so callers take the lab total from rooms.storage_bytes).
@@ -220,14 +221,27 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
   // Whole-patient legacy shard rows (schema 008). Frozen: read here as a base
   // layer, never rewritten — a patient migrates one set at a time into
   // room_state_lab_sets below, only when that set is next touched.
+  // `labBytesOnly` (push): only sizes come back. A push replaces whole sets and
+  // needs the old size for the storage total, never the old content. Reading
+  // every ciphertext of a lab-heavy patient hit D1's 50 MB response cap on
+  // 2026-11-04 (BLOBs travel as JSON digit lists, ~4x their size).
+  const bytesOnly = !!opts.labBytesOnly;
   const { results: legacyRows } =
     labIds && !labIds.length
       ? { results: [] }
       : await db
-          .prepare(`SELECT patient_id, ciphertext, iv FROM room_state_labs WHERE room_id = ?${patientFilter}`)
+          .prepare(
+            bytesOnly
+              ? `SELECT patient_id, length(ciphertext) AS n FROM room_state_labs WHERE room_id = ?${patientFilter}`
+              : `SELECT patient_id, ciphertext, iv FROM room_state_labs WHERE room_id = ?${patientFilter}`
+          )
           .bind(...labBinds)
           .all();
   for (const shardRow of legacyRows ?? []) {
+    if (bytesOnly) {
+      legacyShardBytes.set(shardRow.patient_id, Number(shardRow.n));
+      continue;
+    }
     state.labSidecars[shardRow.patient_id] = await decodeRoomState(
       env,
       shardRow.ciphertext,
@@ -241,13 +255,20 @@ export async function loadRoomState(env, db, roomId, opts = {}) {
   // long a patient's history grows. Overrides legacy values for the same set.
   const { results: setRows } = await db
     .prepare(
-      `SELECT patient_id, set_id, ciphertext, iv FROM room_state_lab_sets WHERE room_id = ?${setFilter}`
+      `SELECT patient_id, set_id, ${
+        bytesOnly ? 'length(ciphertext) AS n' : 'ciphertext, iv'
+      } FROM room_state_lab_sets WHERE room_id = ?${setFilter}`
     )
     .bind(...setBinds)
     .all();
   for (const setRow of setRows ?? []) {
     const pid = setRow.patient_id;
     const sid = setRow.set_id;
+    if (bytesOnly) {
+      if (!labSetBytes.has(pid)) labSetBytes.set(pid, new Map());
+      labSetBytes.get(pid).set(sid, Number(setRow.n));
+      continue;
+    }
     if (!state.labSidecars[pid] || typeof state.labSidecars[pid] !== 'object') {
       state.labSidecars[pid] = {};
     }
@@ -706,6 +727,7 @@ async function handleMutations(request, env, db, roomId, t = null, ctx = undefin
   // A bigger bulk push falls back to the full read (D1 bound-param cap).
   const labLoadOpts = {
     skipLabShards: !hasLabSidecarOps,
+    labBytesOnly: true,
     labPatientIds: labPatientIds.length <= LAB_FILTER_MAX_IDS ? labPatientIds : undefined,
   };
 
@@ -894,7 +916,10 @@ async function handlePull(request, env, db, roomId, t = null) {
   // The mutations select rides in the auth batch: one trip, one snapshot.
   // Nothing from it is used unless auth passes. It stops at the revision the
   // batch sees and returns nothing past the snapshot gap, so a big gap never
-  // loads a big history into the D1 isolate.
+  // loads a big history into the D1 isolate. Same for bytes: D1 sends BLOBs as
+  // digit lists (~4x), so ~94 rows of 16 MB hit the 50 MB response cap on
+  // 2026-11-04. Over PULL_OPS_MAX_BYTES it returns no rows and the snapshot
+  // path below answers.
   const [authRes, mutationsRes] = await db.batch([
     authStmt,
     db
@@ -903,9 +928,11 @@ async function handlePull(request, env, db, roomId, t = null) {
          WHERE room_id = ? AND revision > ?
            AND revision <= (SELECT revision FROM rooms WHERE id = ?)
            AND (SELECT revision FROM rooms WHERE id = ?) - ? <= ?
+           AND (SELECT COALESCE(SUM(COALESCE(LENGTH(ciphertext), LENGTH(ops_json))), 0) FROM mutations
+                WHERE room_id = ? AND revision > ?) <= ?
          ORDER BY revision ASC`
       )
-      .bind(roomId, since, roomId, roomId, since, PULL_REVISION_GAP),
+      .bind(roomId, since, roomId, roomId, since, PULL_REVISION_GAP, roomId, since, PULL_OPS_MAX_BYTES),
   ]);
   t?.lap('auth');
   const { user, room } = memberFromRow(authRes?.results?.[0] ?? null);

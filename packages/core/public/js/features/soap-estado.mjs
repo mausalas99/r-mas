@@ -8,6 +8,7 @@ import { closeModalAnimated } from "../ui-motion.mjs";
 import { ensureMonitoreo, migratePatientMonitoreo } from "./estado-actual-data.mjs";
 import { formatNmDietClause } from "./estado-actual-diet-text.mjs";
 import { resolveHemodynamicLabel } from "./estado-actual-text-build.mjs";
+import { stripEaReviewFlags } from "./estado-actual-clipboard.mjs";
 import {
   joinSoapMedSegments,
   soapMedCategorySegment,
@@ -292,7 +293,7 @@ export async function estadoActualSaveAndCopy() {
   };
   persistClinicalState();
   renderEstadoActualBar();
-  var ok = await copyToClipboardSafe(text);
+  var ok = await copyToClipboardSafe(stripEaReviewFlags(text));
   rt.showToast(
     ok ? "Estado Actual guardado y copiado ✓" : "Guardado, pero no se pudo copiar",
     ok ? "success" : "error"
