@@ -45,7 +45,7 @@
  *   npm run e2e:lab-repo-update
  */
 import { createRun, onboardLocalOnly, closeToasts, pasteAndSave, openPatient, setPortalScript, goArea } from './harness.mjs';
-import { fullLabs, gas } from './some-fixtures.mjs';
+import { fullLabs, gas, header } from './some-fixtures.mjs';
 import {
   portalIndexHtml,
   portalResultsHtml,
@@ -131,6 +131,24 @@ await r.finish('Actualizar labs', async () => {
   await modal.waitFor({ state: 'hidden' }).catch(() => {});
   let aDays = await days(A);
   check('A now has the 20/01 labs', aDays.includes('20/01/2026'), aDays);
+
+  // ── Segundo plano: un cultivo sin antibiograma dispara una segunda consulta ──
+  // (Actualizar labs → guardar → buscar el ATB pendiente sin que nadie pulse nada)
+  const KLEB_NO_ATB = header(A, 'Jan 22 2026 8:00AM') +
+    'BACTERIOLOGIA\nUROCULTIVO POR SONDA\nPRODUCTO\t\n*\nMICROORGANISMO\t\n*\nKlebsiella pneumoniae\n' +
+    'CUENTA DE KASS\t\n*\n25,000 UFC/mL\n';
+  await openUpdate();
+  await modal.waitFor({ state: 'visible' });
+  await setRange('2026-01-22', '2026-01-22');
+  await reply({ studies: [{ text: KLEB_NO_ATB }], errors: [] });
+  await reply({ studies: [], errors: [] }); // respuesta de la consulta de fondo
+  await page.locator('#lab-repo-batch-confirm').click();
+  await toast(/1 paciente actualizado/);
+  await page.waitForTimeout(2500);
+  calls = await repoCalls();
+  check('cultivo sin ATB → consulta de fondo extra, mismo expediente',
+    calls.length === 2 && calls.every((c) => c.registro === A.exp), calls.map((c) => c.registro));
+  await modal.waitFor({ state: 'hidden' }).catch(() => {});
 
   // At rest (queue visible from the run above, nothing in flight): no `hidden`
   // on the spinner or Detener — they toggle by CSS class only; spinner inactive,

@@ -359,6 +359,43 @@ async function run() {
     { calced, miss: await page.locator('.vpo-row-miss').allInnerTexts() }
   );
 
+  // «Otras escalas» is the Preact kit Dialog; its tab and open state live in vpo-ui-state.mjs.
+  const scalesOpen = () => page.evaluate(() => document.querySelector('dialog[data-vpo-dialog="scales"]').open);
+  await page.locator('[data-vpo-open="scales"]').click();
+  const opened = await scalesOpen();
+  await page.locator('[data-vpo-tab="hasbled"]').click();
+  const tabState = await page.evaluate(() => ({
+    sel: Array.from(document.querySelectorAll('[data-vpo-tab]')).filter((t) => t.getAttribute('aria-selected') === 'true').map((t) => t.getAttribute('data-vpo-tab')),
+    shown: Array.from(document.querySelectorAll('[data-vpo-panel]')).filter((p) => !p.hidden).map((p) => p.getAttribute('data-vpo-panel')),
+  }));
+  check(
+    'Otras escalas opens and a tab click shows only that scale',
+    opened && tabState.sel.join() === 'hasbled' && tabState.shown.join() === 'hasbled',
+    { opened, tabState }
+  );
+  // «Calcular» inside the dialog redraws the whole panel: the dialog and its tab must survive.
+  await page.locator('[data-vpo-panel="hasbled"] [data-vpo-calc-one]').click();
+  await closeToasts(page);
+  const afterRedraw = await page.evaluate(() => ({
+    open: document.querySelector('dialog[data-vpo-dialog="scales"]').open,
+    tab: (document.querySelector('[data-vpo-tab][aria-selected="true"]') || {}).dataset?.vpoTab,
+  }));
+  check('a panel redraw keeps Otras escalas open on the same tab', afterRedraw.open && afterRedraw.tab === 'hasbled', afterRedraw);
+  const closedBy = {};
+  await page.locator('dialog[open] [data-vpo-close]').click();
+  closedBy.cerrar = !(await scalesOpen());
+  await page.locator('[data-vpo-open="scales"]').click();
+  await page.mouse.click(4, 4);
+  closedBy.backdrop = !(await scalesOpen());
+  await page.locator('[data-vpo-action="calc-fill"]').click();
+  await closeToasts(page);
+  closedBy.stayedClosedAfterRedraw = !(await scalesOpen());
+  // Esc last: the app also leaves the VPO view on Esc, so nothing can follow it.
+  await page.locator('[data-vpo-open="scales"]').click();
+  await page.keyboard.press('Escape');
+  closedBy.esc = !(await scalesOpen());
+  check('Otras escalas closes with Cerrar, a backdrop click and Esc, and a redraw does not reopen it', Object.values(closedBy).every(Boolean), closedBy);
+
   check('no page errors', pageErrors.length === 0, pageErrors);
   await app.close();
 }

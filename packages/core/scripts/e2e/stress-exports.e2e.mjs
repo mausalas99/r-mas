@@ -257,6 +257,7 @@ await r.finish('Worst-case input through every export: Word x3, census PDF, VPO 
   await shot(page, 'listado-45-problems');
   t0 = Date.now();
   await page.locator('#btn-gen-listado').click();
+  await page.locator('#doc-preview-docx').click();
   const listadoText = await checkDocx(page, 'listado', await newFile('.docx', t0, 'listado'),
     ['L-ACTIVOS-1', 'L-ACTIVOS-40', 'L-INACTIVOS-5', 'L-MED-0', 'L-MED-4']);
   const lostProblems = [...Array(40).keys()].filter((i) => !listadoText.includes(`L-ACTIVOS-${i + 1} `) && !listadoText.includes(`L-ACTIVOS-${i + 1}\n`));

@@ -36,7 +36,7 @@ export const until = async (fn, timeout = 30000, step = 500) => {
  */
 export function createRun(name, { hints: runHints = false } = {}) {
   const runId = new Date().toISOString().replace(/[:.]/g, '-');
-  const artifactDir = path.join(repoRoot, 'e2e-artifacts', name, runId);
+  const artifactDir = process.env.E2E_ARTIFACT_DIR || path.join(repoRoot, 'e2e-artifacts', name, runId);
   // One throwaway userData per profile: a second profile is a second device (Nube sync runs).
   const userDataDirs = {};
   const userDataFor = (profile) =>

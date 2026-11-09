@@ -340,6 +340,8 @@ export async function bundleCloudMobileRenderer(outDir) {
     format: 'esm',
     platform: 'browser',
     target: ['es2020'],
+    jsx: 'automatic',
+    jsxImportSource: 'preact',
     sourcemap: true,
     metafile: true,
     logLevel: 'info',

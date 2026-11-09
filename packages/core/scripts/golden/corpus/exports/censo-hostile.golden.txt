@@ -24,7 +24,12 @@ $` 100% café  5
 µg >= 3 <= 8 -> ok
 ? ?? ctl bell?
 MEROPENEM D2
-Ñandú & cía <b>"cit…
+Ñandú & cía
+<b>"cita"</b>
+'apóstrofo' $1 $&
+$' $` 100% café 
+5 µg >= 3 <= 8 ->
+ok ? ?? ctl bell?
 Ñandú & cía <b>"cita"</b> 'apóstrofo' $1 $& $' $` 100% café
  5 µg >= 3 <= 8 -> ok ? ?? ctl bell?
 TA 111/61 FC 61

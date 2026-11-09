@@ -1,0 +1,2 @@
+# Preact files allowed to write HTML strings, one path per line (relative to packages/core).
+# Keep this empty. A new line needs the owner's OK.

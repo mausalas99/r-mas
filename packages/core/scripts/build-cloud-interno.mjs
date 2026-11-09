@@ -99,6 +99,8 @@ export async function bundleInternoApp(entryPath, outfile) {
     format: 'esm',
     platform: 'browser',
     target: ['es2020'],
+    jsx: 'automatic',
+    jsxImportSource: 'preact',
     sourcemap: true,
     logLevel: 'info',
   });

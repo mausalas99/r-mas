@@ -183,11 +183,12 @@ await r.finish('Cultivos table + Actualizar', async () => {
   }
   const tableRows = () =>
     container.locator('.cultivos-table tr').evaluateAll((trs) =>
-      trs.filter((tr) => tr.querySelector('td')).map((tr) => {
+      trs.filter((tr) => tr.querySelector('td')).flatMap((tr) => {
         const clean = (el) => (el?.innerText || '').replace(/\s+/g, ' ').trim();
         const td = [...tr.querySelectorAll('td')].map(clean);
-        // cells: fecha, sitio (from the site header), organismo, antibiograma
-        return { neg: tr.classList.contains('cultivos-row-neg'), cells: [tr.dataset.fecha || td[0], clean(tr.closest('.cult-site')?.querySelector('.cult-site-title')), td[1], td[2]] };
+        // cells: fecha, sitio (from the site header), organismo, antibiograma. Merged twins give one entry per date.
+        const fechas = (tr.dataset.fechas || '').split('|').filter(Boolean);
+        return (fechas.length ? fechas : [tr.dataset.fecha || td[0]]).map((f) => ({ neg: tr.classList.contains('cultivos-row-neg'), cells: [f, clean(tr.closest('.cult-site')?.querySelector('.cult-site-title')), td[1], td[2]] }));
       })
     );
 
@@ -219,25 +220,18 @@ await r.finish('Cultivos table + Actualizar', async () => {
     hemoPos.length === 1 && /PERIF[EÉ]RICO/i.test(hemoPos[0].cells[1]) && /IZQUIERDO/i.test(hemoPos[0].cells[2]) &&
     /Pseudomonas/i.test(hemoPos[0].cells[2]) && /\bR\b/.test(hemoPos[0].cells[3]), hemoPos);
 
-  // R chip panel from the keyboard.
-  const chip = container.locator('.atb-chip--r').first();
-  const panelOpen = () =>
-    page.evaluate(() => [...document.querySelectorAll('.atb-ris-hover-panel')].some((p) => p.classList.contains('is-open')));
-  await page.mouse.move(1, 1);
-  await page.evaluate(() => document.activeElement && document.activeElement.blur());
-  await page.waitForTimeout(300);
-  const closedAtRest = !(await panelOpen());
-  await chip.focus();
-  await page.waitForTimeout(300);
-  const openOnFocus = await panelOpen();
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(200);
-  const openAfterEnter = await panelOpen();
-  await page.evaluate(() => document.activeElement && document.activeElement.blur());
-  await page.waitForTimeout(400);
-  const closedOnLeave = !(await panelOpen());
-  check('R chip panel: closed at rest, opens by keyboard, closes when focus leaves',
-    closedAtRest && openOnFocus && openAfterEnter && closedOnLeave, { closedAtRest, openOnFocus, openAfterEnter, closedOnLeave });
+  // No hover panel on Cultivos cards: names are already visible next to each letter.
+  const hoverState = await page.evaluate(() => {
+    const c = document.getElementById('cultivos-table-container');
+    return {
+      panels: c.querySelectorAll('.atb-ris-hover-panel').length,
+      focusableChips: c.querySelectorAll('.atb-chip[tabindex]').length,
+      chips: c.querySelectorAll('.atb-chip').length,
+      titledChips: c.querySelectorAll('.atb-chip[title], .cult-atb-ris-names[title], .cult-atb-ris-chip-wrap[title]').length,
+    };
+  });
+  check('Cultivos cards: R/I/S chips have no hover panel, no title',
+    hoverState.chips > 0 && hoverState.panels === 0 && hoverState.titledChips === 0, hoverState);
   await r.shot(page, 'atb-panel');
 
   // ── More real-world report shapes ─────────────────────────────────────────
@@ -253,22 +247,19 @@ await r.finish('Cultivos table + Actualizar', async () => {
   check('glued PDF-extraction report: both organisms show (E. coli + Enterococcus)',
     glued12.length === 2 && glued12.some((x) => /coli/i.test(x.cells[2])) && glued12.some((x) => /faecalis/i.test(x.cells[2])), glued12);
   // Drug names live in the (visibility-hidden) hover panel, so read innerHTML, not innerText.
-  const coliChips = page.locator('tr[data-fecha^="12/05"]').filter({ hasText: 'ESCHERICHIA COLI' }).locator('.cultivos-atb-chips').first();
+  const coliChips = page.locator('tr[data-fechas*="|12/05"]').filter({ hasText: 'ESCHERICHIA COLI' }).locator('.cultivos-atb-chips').first();
   const coliHtml = (await coliChips.count()) ? await coliChips.innerHTML() : '';
   check('glued antibiogram parses: E. coli carries AMIKACINA/AMPICILINA', /AMIKACINA/i.test(coliHtml) && /AMPICILINA/i.test(coliHtml), coliHtml.slice(0, 300));
   check('E. coli chips exclude the Enterococcus-only drugs (no NITROFURANTOINA, no PENICILINA)',
     !/NITROFURANTOINA/i.test(coliHtml) && !/PENICILINA/i.test(coliHtml), coliHtml.slice(0, 300));
-  check('E. coli chips carry CMI + interp detail: AMP/SULBACTAM 16/8 I, AMIKACINA <=16 S, AMPICILINA >16 R',
-    /AMP\/SULBACTAM/.test(coliHtml) && /16\/8/.test(coliHtml) && />I</.test(coliHtml) &&
-    /AMIKACINA/.test(coliHtml) && /(&lt;|<)=16/.test(coliHtml) && />S</.test(coliHtml) &&
-    /AMPICILINA/.test(coliHtml) && /(&gt;|>)16/.test(coliHtml) && />R</.test(coliHtml), coliHtml.slice(0, 600));
+  check('E. coli chips show names under R / I / S: Amp/sulbactam I, Amikacina S, Ampicilina R',
+    /atb-chip--i/.test(coliHtml) && /atb-chip--s/.test(coliHtml) && /atb-chip--r/.test(coliHtml) &&
+    /Amp\/sulbactam/i.test(coliHtml) && /Amikacina/i.test(coliHtml) && /Ampicilina/i.test(coliHtml), coliHtml.slice(0, 600));
 
   const entChips = container.locator('.cultivos-atb-chips', { has: page.locator('text=NITROFURANTOINA') }).first();
   const entHtml = (await entChips.count()) ? await entChips.innerHTML() : '';
-  check('Enterococcus chips carry CMI + interp detail: AMPICILINA <=2 S, NITROFURANTOINA <=32 S, PENICILINA 8 S',
-    /AMPICILINA/.test(entHtml) && /(&lt;|<)=2\b/.test(entHtml) &&
-    /NITROFURANTOINA/.test(entHtml) && /(&lt;|<)=32/.test(entHtml) &&
-    /PENICILINA/.test(entHtml) && /CMI<\/span>\s*8\b/.test(entHtml), entHtml.slice(0, 600));
+  check('Enterococcus chips show Ampicilina, Nitrofurantoina, Penicilina as sensitive',
+    /Ampicilina/i.test(entHtml) && /Nitrofurantoina/i.test(entHtml) && /Penicilina/i.test(entHtml) && /atb-chip--s/.test(entHtml), entHtml.slice(0, 600));
 
   // "Copiar informe completo" on the glued-PDF rows.
   async function copyFullFor(row) {
@@ -278,7 +269,7 @@ await r.finish('Cultivos table + Actualizar', async () => {
     await page.waitForTimeout(200);
     return app.evaluate(({ clipboard }) => clipboard.readText());
   }
-  const coliCopy = await copyFullFor(page.locator('tr[data-fecha^="12/05"]').filter({ hasText: 'ESCHERICHIA COLI' }).first());
+  const coliCopy = await copyFullFor(page.locator('tr[data-fechas*="|12/05"]').filter({ hasText: 'ESCHERICHIA COLI' }).first());
   check('"Copiar informe completo" on the glued-PDF E. coli row → "ATB R: AMP | I: AMP-SULB | S: AMIK"',
     /ATB R: AMP \| I: AMP-SULB \| S: AMIK/.test(coliCopy), coliCopy);
   const entCopy = await copyFullFor(page.locator('tr', { has: page.locator('text=NITROFURANTOINA') }).first());
@@ -314,12 +305,12 @@ await r.finish('Cultivos table + Actualizar', async () => {
   const klebChips = container.locator('tr', { hasText: 'KLEBSIELLA' }).locator('.cultivos-atb-chips').first();
   const klebHtml = (await klebChips.count()) ? await klebChips.innerHTML() : '';
   check('Klebsiella row now carries the antibiogram (not the ATB-less early copy)', /CEFTRIAXONA/i.test(klebHtml), klebHtml.slice(0, 200));
-  check('R/I/S chips are split into Resistencias / Indeterminado / Sensible',
-    /Resistencias/.test(klebHtml) && /Indeterminado/.test(klebHtml) && /Sensible/.test(klebHtml), klebHtml.slice(0, 400));
-  const idxAmik = klebHtml.indexOf('>AMIKACINA<');
-  const idxGent = klebHtml.indexOf('>GENTAMICINA<');
-  check('Sensible drugs sort by CMI ascending (AMIKACINA CMI 2 before GENTAMICINA CMI 8)',
-    idxAmik >= 0 && idxGent >= 0 && idxAmik < idxGent, { idxAmik, idxGent });
+  check('R/I/S chips are split into R / I / S',
+    /atb-chip--r/.test(klebHtml) && /atb-chip--i/.test(klebHtml) && /atb-chip--s/.test(klebHtml), klebHtml.slice(0, 400));
+  const idxAmik = klebHtml.indexOf('Amikacina');
+  const idxGent = klebHtml.indexOf('Gentamicina');
+  check('Sensible names sort by CMI ascending (Amikacina CMI 2 before Gentamicina CMI 8, S shows 5 at most)',
+    idxAmik >= 0 && (idxGent < 0 || idxAmik < idxGent), { idxAmik, idxGent });
   // `has: klebChips` matched nothing (klebChips is itself container-scoped) — anchor
   // on the same page-level locator klebChips used, like coliChips above.
   const copyBtn = container
@@ -370,6 +361,32 @@ await r.finish('Cultivos table + Actualizar', async () => {
   await r.shot(page, 'after-refresh');
   check('peritoneal row now has its antibiogram (R chip)', perit.length === 1 && /\bR\b/.test(perit[0].cells[3]), perit);
 
+  // ── «Sin revisar»: filas resaltadas dentro de cada tarjeta, sin banners ────
+  const newRows = container.locator('tr.cult-row--new');
+  const nNew = await newRows.count();
+  check('new cultures: highlighted rows with «Nuevo» tag and «Visto», no big banners',
+    nNew > 1 && /Nuevo/.test(await newRows.first().innerText()) &&
+    (await newRows.first().locator('.cultivo-row-seen-btn').count()) === 1 &&
+    (await container.locator('.cultivos-pending, .cultivos-alert').count()) === 0, nNew);
+  const newHead = container.locator('.cult-site-head:has(.cult-org-tag--new)');
+  check('site card header carries the «Nuevo» tag and its newest dot is ringed',
+    (await newHead.count()) > 0 && (await container.locator('.cult-dot--new').count()) > 0, await newHead.count());
+  check('«Marcar todo como visto» shows while cultures are pending', await container.locator('.cultivo-seen-btn').isVisible());
+  await newRows.first().locator('.cultivo-row-seen-btn').click();
+  check('«Visto» clears only that row', (await container.locator('tr.cult-row--new').count()) === nNew - 1, await container.locator('tr.cult-row--new').count());
+  await closeToasts(page);
+  await container.locator('.cultivo-seen-btn').click();
+  check('after «Marcar todo»: no header tag, no ringed dot',
+    (await container.locator('.cult-site-head .cult-org-tag--new, .cult-dot--new').count()) === 0);
+  check('«Marcar todo como visto» → toast, no highlighted rows, button gone',
+    (await toastText(/Cultivos marcados como vistos/)) &&
+    (await container.locator('tr.cult-row--new').count()) === 0 &&
+    (await container.locator('.cultivo-seen-btn').count()) === 0);
+  await openCultivos();
+  check('seen state is stored and stays cleared after re-opening',
+    (await container.locator('tr.cult-row--new').count()) === 0 &&
+    !!(await page.evaluate(() => localStorage.getItem('rplus.cultSeen.v1'))));
+
   // Group + count: the peritoneal row sits under "Líquido estéril" and shows its Cuenta.
   const groupedRows = await container.locator('.cultivos-table tr').evaluateAll((trs) =>
     trs.reduce((acc, tr) => {
@@ -398,9 +415,10 @@ await r.finish('Cultivos table + Actualizar', async () => {
   // this scenario runs, 07/05's peritoneal report has aged out; 15/05's Klebsiella
   // urocultivo is the freshest one still inside the cap.
   const cultLine = censoText.split('\n').map((l) => l.trim()).find((l) => /UROC POR SONDA/.test(l));
-  check('censo preview Cultivos line: "UROC POR SONDA 15/05: K. pneumoniae · ATB … · Cuenta: …", no "/2026", no full uppercase organism',
-    !!cultLine && /^UROC POR SONDA 15\/05: K\. pneumoniae/.test(cultLine) && /ATB R:/.test(cultLine) &&
-    /Cuenta: 25,000 UFC\/ML/.test(cultLine) && !/\/2026/.test(cultLine) && !/KLEBSIELLA PNEUMONIAE/.test(cultLine),
+  // The censo line is site + latest positive agent only: no ATB, no Cuenta.
+  check('censo preview Cultivos line: "UROC POR SONDA 15/05: K. pneumoniae", no ATB, no Cuenta, no "/2026", no full uppercase organism',
+    !!cultLine && /^UROC POR SONDA 15\/05: K\. pneumoniae$/.test(cultLine) && !/ATB|Cuenta/.test(cultLine) &&
+    !/\/2026/.test(cultLine) && !/KLEBSIELLA PNEUMONIAE/.test(cultLine),
     cultLine);
   await r.shot(page, 'censo-preview');
   await closeToasts(page);
@@ -489,11 +507,19 @@ await r.finish('Cultivos table + Actualizar', async () => {
     'MICROORGANISMO\n*\nStenotrophomonas maltophilia\nCOMENTARIO:\n*\nCUENTA\n*\n50,000 UFC/mL\n*\n' +
     'MICROORGANISMO\n*\nCOMENTARIO:\n*\nCUENTA\n*\n*';
 
+  const AMPC_ENTEROBACTER =
+    header(P, 'Jul 3 2026 8:00AM') +
+    'BACTERIOLOGIA\nLIQUIDO PLEURAL\nPRODUCTO\n*\nMICROORGANISMO\n*\nEnterobacter cloacae complex\nCUENTA\n*\n30,000 UFC/mL\nANTIBIOGRAMA\n*\nAMPICILINA\n>16\tR\nCEFAZOLINA\n>16\tR\nCEFOXITINA\n>16\tR\nCEFTRIAXONA\n<=1\tS\nMEROPENEM\n<=0.25\tS\n';
+
+  const ENTERO_S_INESPERADA =
+    header(P, 'Jul 5 2026 8:00AM') +
+    'BACTERIOLOGIA\nHEMOCULTIVO\nPRODUCTO\n*\nPERIFERICO IZQUIERDO\nMICROORGANISMO\n*\nEnterococcus faecalis\nCUENTA\n*\n50,000 UFC/mL\nANTIBIOGRAMA\n*\nAMPICILINA\n<=2\tS\nCIPROFLOXACINA\n>4\tR\nCEFTRIAXONA\n<=1\tS\nGENTAMICINA\n<=4\tS\nVANCOMICINA\n<=1\tS\n';
+
   await page.locator('#lab-inner-labs-btn').click();
   await pasteAndSave(page, [
-    TAB_LABEL_URO, DOUBLE_LABEL_RASPADO, TINCION_NOT_SAMPLE, HEMO_CATETER_NIAGARA, CATETER_PUNTA_CVC,
+    ENTERO_S_INESPERADA, TAB_LABEL_URO, DOUBLE_LABEL_RASPADO, TINCION_NOT_SAMPLE, HEMO_CATETER_NIAGARA, CATETER_PUNTA_CVC,
     SECRECION_HERIDA, NDM1_KLEB, CARBR_ACINETO, G1_LIKE_ASPIRADO, G3_LIKE_ASPIRADO, G4_LIKE_PERITONEAL,
-    CMI_SORT_URO, PRELIM_NO_DATE, CULTURE_THEN_BH, HEMO_POS_PAIR, HEMO_NEG_PAIR, G5_LIKE_PRELIM,
+    CMI_SORT_URO, PRELIM_NO_DATE, CULTURE_THEN_BH, HEMO_POS_PAIR, HEMO_NEG_PAIR, G5_LIKE_PRELIM, AMPC_ENTEROBACTER,
   ].join('\n\n'));
   await openCultivos();
   rows = await tableRows();
@@ -533,7 +559,7 @@ await r.finish('Cultivos table + Actualizar', async () => {
   const aureusRow = container.locator('.cultivos-table tr', { hasText: 'STAPHYLOCOCCUS AUREUS' });
   const aureusChips = aureusRow.locator('.cultivos-atb-chips').first();
   const aureusHtml = (await aureusChips.count()) ? await aureusChips.innerHTML() : '';
-  check('G3 S. aureus PENICILINA chip carries the BLAC interpretation', /BLAC/i.test(aureusHtml), aureusHtml.slice(0, 400));
+  check('G3 S. aureus PENICILINA (BLAC) shows in the R names', /Penicilina/i.test(aureusHtml), aureusHtml.slice(0, 400));
 
   check('G4 líquido peritoneal: one organism, empty MICROORGANISMO slot ignored',
     byDate('26/06').length === 1 && /Pseudomonas/i.test(byDate('26/06')[0].cells[2]), byDate('26/06'));
@@ -546,12 +572,13 @@ await r.finish('Cultivos table + Actualizar', async () => {
     g5.some((x) => /Stenotrophomonas maltophilia/i.test(x.cells[2]) && /50,000/.test(x.cells.join(' '))) &&
     !g5.some((x) => /^R$|^I$|^S$/.test(x.cells[3])), g5);
 
-  const cmiChips = container.locator('.cultivos-atb-chips', { has: page.locator('text=CEFTAZIDIMA') }).first();
-  const cmiHtml = (await cmiChips.count()) ? await cmiChips.innerHTML() : '';
-  const idxCaz = cmiHtml.indexOf('>CEFTAZIDIMA<');
-  const idxMero = cmiHtml.indexOf('>MEROPENEM<');
-  check('CMI ">=256" and "≥64" sort as numbers (R bucket: higher CMI first, CEFTAZIDIMA 256 before MEROPENEM 64)',
-    idxCaz >= 0 && idxMero >= 0 && idxCaz < idxMero, { idxCaz, idxMero, sample: cmiHtml.slice(0, 400) });
+  const cmiRow = container.locator('tr[data-fechas*="|27/06"]').filter({ hasText: 'Escherichia coli' }).first();
+  const cmiHtml = (await cmiRow.locator('.atb-chip--r ~ .cult-atb-ris-names').count())
+    ? await cmiRow.locator('.atb-chip--r ~ .cult-atb-ris-names').first().innerHTML() : '';
+  const idxCaz = cmiHtml.indexOf('Ceftazidima');
+  const idxMero = cmiHtml.indexOf('Meropenem');
+  check('CMI ">=256" and "≥64" sort as numbers, lowest first (Meropenem 64 before Ceftazidima 256), CMI shown',
+    idxCaz >= 0 && idxMero >= 0 && idxMero < idxCaz && /cult-atb-mic/.test(cmiHtml), { idxCaz, idxMero, cmiHtml: cmiHtml.slice(0, 300) });
 
   const prelim = byDate('28/06');
   let prelimCopy = '';
@@ -592,7 +619,7 @@ await r.finish('Cultivos table + Actualizar', async () => {
   await pasteAndSave(page, [PERI_COPY, POLY_URO, KLEB_LETTERHEAD].join('\n\n'));
   await openCultivos();
   rows = await tableRows();
-  const copyOf = (d, germ) => copyFullFor(container.locator(`tr[data-fecha^="${d}"]`).filter({ hasText: germ }).first());
+  const copyOf = (d, germ) => copyFullFor(container.locator(`tr[data-fechas*="|${d}"]`).filter({ hasText: germ }).first());
 
   const peri03 = byDate('03/08');
   check('peritoneal row: one row, count shown, Ubicación never in the row',
@@ -620,9 +647,9 @@ await r.finish('Cultivos table + Actualizar', async () => {
 
   check('micobacterias NEGATIVO texts show as negative rows ("NEGATIVO" and "NEGATIVO A LA FECHA")',
     /NEGATIVO A LA FECHA/i.test(mico14Text) && /BACILOSCOPIA[^]*NEGATIVO/i.test(mico14Text), mico14);
-  const uroRis = container.locator('tr[data-fecha^="05/05"] .cultivos-atb-chips').first();
+  const uroRis = container.locator('tr[data-fechas*="|05/05"] .cultivos-atb-chips').first();
   const uroRisHtml = (await uroRis.count()) ? await uroRis.innerHTML() : '';
-  check('carbapenemase urocultivo chips: IMIPENEM listed, PIP/TAZO listed', />IMIPENEM</.test(uroRisHtml) && />PIP\/TAZO</.test(uroRisHtml), uroRisHtml.slice(0, 400));
+  check('carbapenemase urocultivo chips: IMIPENEM listed, PIP/TAZO listed', /Imipenem/i.test(uroRisHtml) && /Pip\/tazo/i.test(uroRisHtml), uroRisHtml.slice(0, 400));
 
   // ── Antibiogram copies (labs-cultivo-atb gaps) ──
   const ecoli = (when, atb, extra = '') => header(P, when) +
@@ -646,27 +673,186 @@ await r.finish('Cultivos table + Actualizar', async () => {
   await openCultivos();
   rows = await tableRows();
   const chipsHtml = async (d, sel = '') => {
-    const c = container.locator(`tr[data-fecha^="${d}"]${sel}`).locator('.cultivos-atb-chips').first();
+    const c = container.locator(`tr[data-fechas*="|${d}"]${sel}`).locator('.cultivos-atb-chips').first();
     return (await c.count()) ? c.innerHTML() : '';
   };
   const dup = byDate('06/08');
   const dupHtml = await chipsHtml('06/08');
-  check('1-drug copy then 3-drug copy: one row carrying all 3 drugs', dup.length === 1 && /AMIKACINA/.test(dupHtml) && /AMPICILINA/.test(dupHtml) && /CEFTRIAXONA/.test(dupHtml), { dup, dupHtml: dupHtml.slice(0, 200) });
+  check('1-drug copy then 3-drug copy: one row carrying all 3 drugs', dup.length === 1 && /AMIKACINA/i.test(dupHtml) && /AMPICILINA/i.test(dupHtml) && /CEFTRIAXONA/i.test(dupHtml), { dup, dupHtml: dupHtml.slice(0, 200) });
   const fplHtml = await chipsHtml('07/08');
-  check('field-per-line antibiogram: 3 drugs, CEFTRIAXONA with CMI 1 and S; AMPICILINA R',
-    byDate('07/08').length === 1 && /AMIKACINA/.test(fplHtml) && /AMPICILINA/.test(fplHtml) && /CEFTRIAXONA/.test(fplHtml) && /CMI<\/span>\s*1\b/.test(fplHtml) && />R</.test(fplHtml), fplHtml.slice(0, 500));
-  const noAtbUro = container.locator('tr[data-fecha^="08/08"]').filter({ hasText: /UROCULTIVO|Escherichia/i });
+  check('field-per-line antibiogram: 3 drugs, CEFTRIAXONA S; AMPICILINA R',
+    byDate('07/08').length === 1 && /AMIKACINA/i.test(fplHtml) && /AMPICILINA/i.test(fplHtml) && /CEFTRIAXONA/i.test(fplHtml) && /atb-chip--s/.test(fplHtml) && /atb-chip--r/.test(fplHtml), fplHtml.slice(0, 500));
+  const noAtbUro = container.locator('tr[data-fechas*="|08/08"]').filter({ hasText: /UROCULTIVO|Escherichia/i });
   const noAtbHtml = (await noAtbUro.count()) ? await noAtbUro.first().innerHTML() : '';
   check('ATB-less urocultivo of the same germ as a hemocultivo with antibiogram: row exists, count kept',
     byDate('08/08').length >= 2 && /25,000/.test(noAtbHtml), byDate('08/08'));
-  const noAtbCopy = await copyFullFor(container.locator('.cult-site', { hasText: 'UROCULTIVO POR SONDA' }).locator('tr[data-fecha^="08/08"]').first());
+  const noAtbCopy = await copyFullFor(container.locator('.cult-site', { hasText: 'UROCULTIVO POR SONDA' }).locator('tr[data-fechas*="|08/08"]').first());
   const noAtbChips = await chipsHtml('08/08', ':has(.cultivos-copy-full-btn)');
   check('ATB-less urocultivo falls back to the same germ\'s antibiogram from the other culture (CEFTAZIDIMA/MEROPENEM chips + copy has the ATB line)',
-    /MEROPENEM/.test(noAtbChips) && /^ATB /m.test(noAtbCopy) && /Cuenta: \d/.test(noAtbCopy), { noAtbChips: noAtbChips.slice(0, 200), noAtbCopy });
+    /Meropenem/i.test(noAtbChips) && /^ATB /m.test(noAtbCopy) && /Cuenta: \d/.test(noAtbCopy), { noAtbChips: noAtbChips.slice(0, 200), noAtbCopy });
   const longCopy = await copyOf('09/08', 'ESCHERICHIA');
   const longAtbLen = (longCopy.split('\n').filter((l) => /^(ATB |I: |ESBL: |S: |R: )/.test(l.trim())).join('').length);
   check('ATB block over 220 chars keeps every wrapped line (R/I/ESBL/S) in the copy',
     longAtbLen > 220 && /^ATB R: /m.test(longCopy) && /^I: /m.test(longCopy) && /^ESBL: /m.test(longCopy) && /^S: /m.test(longCopy) && /^Cuenta: 25,000 UFC\/ML$/m.test(longCopy), longCopy);
+
+  // ── Long wound-site names (synthetic): header, no-ATB card, single sample, negatives bar ──
+  const WOUND_A =
+    header(P, 'Oct 27 2026 9:00AM') +
+    'BACTERIOLOGIA\nTEJIDO CUTANEO\nPRODUCTO\n*\nTEJIDO DE HERIDA TOBILLO IZQUIERDO\nMICROORGANISMO\n*\nStreptococcus dysgalactiae\nCOMENTARIO:\n*\n';
+  const WOUND_B =
+    header(P, 'Oct 25 2026 9:00AM') +
+    'BACTERIOLOGIA\nPRODUCTOS DIVERSOS\nPRODUCTO\n*\nTEJIDO PIE IZQUIERDO\nMICROORGANISMO\n*\nStreptococcus dysgalactiae\nCOMENTARIO:\n*\n';
+  const ULCERA_NEG =
+    header(P, 'Nov 01 2026 9:00AM') +
+    'BACTERIOLOGIA\nULCERA\nPRODUCTO\n*\nULCERA DE TOBILLO IZQUIERDO\nRESULTADO\n*\nNO HAY CRECIMIENTO A LAS 48 HORAS\n';
+  const CENTRAL_NEG =
+    header(P, 'Oct 31 2026 9:00AM') +
+    'BACTERIOLOGIA\nHEMOCULTIVO\nPRODUCTO\n*\nCATETER NIAGARA\nRESULTADO\n*\nNO HAY CRECIMIENTO A LOS 5 DIAS\n';
+  const mrsaHemo = (when, site) =>
+    header(P, when) +
+    `BACTERIOLOGIA\nHEMOCULTIVO\nPRODUCTO\n*\n${site}\nMICROORGANISMO\n*\nStaphylococcus aureus\nCOMENTARIO:\n*\nRESISTENTE A METICILINA (MRSA)\nCUENTA\n*\n1 frasco\nANTIBIOGRAMA\n*\n` +
+    'OXACILINA\n>2\tR\nPENICILINA\n>8\tR\nERITROMICINA\n>4\tR\nVANCOMICINA\n1\tS\nLINEZOLID\n2\tS\nTRIMET/SULFA\n<=2/38\tS\nRIFAMPICINA\n<=1\tS\nGENTAMICINA\n<=1\tS\nCIPROFLOXACINA\n<=1\tS\nLEVOFLOXACINA\n<=1\tS\nDOXICICLINA\n<=1\tS\nCLINDAMICINA\n<=0.5\tS\n';
+  const hemoNegAt = (when, site) =>
+    header(P, when) + `BACTERIOLOGIA\nHEMOCULTIVO\nPRODUCTO\n*\n${site}\nRESULTADO\n*\nNO HAY CRECIMIENTO A LOS 5 DIAS\n`;
+  const CAT_HD_NEG =
+    header(P, 'Oct 28 2026 9:00AM') + 'BACTERIOLOGIA\nCATETER\nPRODUCTO\n*\nCAT. HD\nRESULTADO\n*\nNO HAY CRECIMIENTO\n';
+  await page.locator('#lab-inner-labs-btn').click();
+  await pasteAndSave(page, [
+    WOUND_A, WOUND_B, ULCERA_NEG, CENTRAL_NEG, CAT_HD_NEG,
+    mrsaHemo('Oct 23 2026 8:00AM', 'PERIFERICO IZQUIERDO'), mrsaHemo('Oct 22 2026 8:05AM', 'PERIFERICO DERECHO'),
+    hemoNegAt('Oct 26 2026 8:00AM', 'PERIFERICO DERECHO'), hemoNegAt('Nov 04 2026 8:00AM', 'PERIFERICO DERECHO'),
+    mrsaHemo('Oct 20 2026 8:00AM', 'CATETER HD'), hemoNegAt('Oct 24 2026 8:00AM', 'CATETER HD'),
+  ].join('\n\n'));
+  await openCultivos();
+  const woundCard = container.locator('.cult-site', { hasText: 'HERIDA TOBILLO IZQUIERDO' }).first();
+  const woundHead = await woundCard.locator('.cult-site-head').evaluate((h) => {
+    const t = h.querySelector('.cult-site-title');
+    const d = h.querySelector('.cult-site-last');
+    const hr = h.getBoundingClientRect();
+    return { title: t.innerText.replace(/\s+/g, ' '), detail: h.querySelector('.cult-site-detail')?.innerText || '',
+      dateOk: d.getBoundingClientRect().right <= hr.right + 1 && d.scrollWidth <= d.clientWidth + 1 && d.offsetHeight < 30, date: d.innerText };
+  });
+  check('long site: short title in the header, detail on its own small line, date never cut',
+    !/\(/.test(woundHead.title) && /Tejido cutaneo/i.test(woundHead.title) && /tobillo izquierdo/i.test(woundHead.detail) && woundHead.dateOk, woundHead);
+  check('single sample: no timeline strip repeating the date', (await woundCard.locator('.cult-site-dots').count()) === 0);
+  check('no antibiogram yet: one short «Antibiograma pendiente» line', (await woundCard.locator('.cult-atb-missing').count()) === 1);
+  const gap = await woundCard.evaluate((c) => {
+    const row = c.querySelector('tr');
+    const pb = parseFloat(row.ownerDocument.defaultView.getComputedStyle(row).paddingBottom) || 0;
+    const last = [...row.querySelectorAll('*')].filter((el) => !el.closest('.cultivos-copy-full-btn, .atb-ris-hover-panel') && el.offsetParent)
+      .reduce((m, el) => Math.max(m, el.getBoundingClientRect().bottom), 0);
+    return Math.round(row.getBoundingClientRect().bottom - last - pb);
+  });
+  check('no empty block under an organism without antibiogram', gap <= 4, gap);
+  const negBar = container.locator('.cultivos-neg-fold');
+  const negNames = await negBar.locator('.cultivos-neg-names').allInnerTexts();
+  check('«Negativos» bar: normal case, not raw capitals',
+    negNames.length >= 2 && negNames.every((t) => /[a-z]/.test(t)) && negNames.some((t) => /^Cat\. HD · 28\/10$/.test(t)) && negNames.some((t) => /^Ulcera de tobillo izquierdo · 01\/11$/.test(t)), negNames);
+  // ── Hierarchy: merged twins, compact negatives last, «Último» line, honest status dot ──
+  const periCard = container.locator('.cult-site', { has: page.locator('tr[data-fechas*="|23/10"]') }).first();
+  const peri = await periCard.evaluate((c) => {
+    const trs = [...c.querySelectorAll('tr')];
+    const t23 = trs.filter((t) => t.dataset.fecha.startsWith('23/10'));
+    const lastPos = Math.max(...trs.map((t, i) => (t.classList.contains('cultivos-row-neg') ? -1 : i)));
+    const firstNeg = trs.findIndex((t) => t.classList.contains('cultivos-row-neg'));
+    const neg = c.querySelector('tr.cultivos-row-neg');
+    return {
+      n23: t23.length, text23: t23[0]?.innerText.replace(/\s+/g, ' ') || '',
+      chips: t23[0]?.querySelectorAll('.atb-chip--r').length || 0,
+      negLast: firstNeg > lastPos, negFont: neg ? neg.ownerDocument.defaultView.getComputedStyle(neg).fontSize : '', negH: neg ? Math.round(neg.getBoundingClientRect().height) : 0,
+      ultimo: c.querySelector('.cult-site-ultimo')?.innerText || '', dotPos: !!c.querySelector('.cult-status-dot--pos'),
+      dotTitles: c.querySelectorAll('.cult-dot[title]').length, negText: neg?.innerText.replace(/\s+/g, ' ') || '',
+    };
+  });
+  check('twin isolates (same organism, same R/I/S) merge into one block with «2 muestras» and one antibiogram',
+    peri.n23 === 1 && /2 muestras/.test(peri.text23) && peri.chips === 1 && /Perifer[ií]co izquierdo \/ Perifer[ií]co derecho/i.test(peri.text23), peri);
+  check('negatives sit after the positives as one compact 13px line',
+    peri.negLast && peri.negFont === '13px' && peri.negH <= 26 && /^04\/11 Negativo/.test(peri.negText), peri);
+  check('header says what the latest result is, and the dot is not red when the latest is negative',
+    /^Último: negativo 04\/11$/.test(peri.ultimo) && !peri.dotPos, peri);
+  check('timeline dots carry no hover title (date and organism are already on the card)', peri.dotTitles === 0, peri.dotTitles);
+  // Último resultado negativo: el aislamiento viejo queda plegado y su fecha lo abre.
+  const periSeen = periCard.locator('tr[data-fechas*="|23/10"] .cultivo-row-seen-btn').first();
+  if (await periSeen.count()) { await periSeen.click(); await page.waitForTimeout(300); }
+  const periIso = periCard.locator('tr[data-fechas*="|23/10"]').first();
+  const foldedAtRest = !(await periIso.isVisible());
+  const dateBtn = periCard.locator('.cult-date-btn[data-cult-fecha="23/10/2026"]');
+  await dateBtn.click();
+  const openAfter = await periIso.isVisible();
+  await dateBtn.click();
+  const foldedAgain = !(await periIso.isVisible());
+  check('negative-latest site: positive isolate folded, its date button opens and closes it',
+    foldedAtRest && openAfter && foldedAgain, { foldedAtRest, openAfter, foldedAgain });
+  // Click on the organism name folds that isolate's report.
+  const orgToggle = container.locator('tr:not(.cult-row--folded) .cult-org-toggle').first();
+  const atbCell = orgToggle.locator('xpath=ancestor::tr[1]').locator('.cultivos-cell-atb');
+  const shownBefore = await atbCell.isVisible();
+  await orgToggle.click();
+  const hiddenAfter = !(await atbCell.locator('.cult-atb-ris-names').first().isVisible());
+  // Plegado: las pastillas quedan y los nombres salen al pasar el cursor.
+  const chipFolded = atbCell.locator('.atb-chip').first();
+  const chipsStay = await chipFolded.isVisible();
+  await chipFolded.hover();
+  const popBox = await page.locator('.cult-atb-pop').boundingBox();
+  // The names box lives in <body>, so the card cannot clip it.
+  const namesOnHover = !!popBox && popBox.height > 20 && (await page.locator('body > .cult-atb-pop').count()) === 1;
+  // Sticky: moving the cursor from the chip into the box keeps it open.
+  await page.mouse.move(popBox.x + popBox.width / 2, popBox.y + popBox.height / 2);
+  await page.waitForTimeout(500);
+  const popSticky = (await page.locator('body > .cult-atb-pop').count()) === 1;
+  const storedFold = await page.evaluate(() => /"[^"]+":\["[^"]+/.test(localStorage.getItem('rplus.cultCollapsed.v1') || ''));
+  await orgToggle.click();
+  const storedClear = await page.evaluate(() => !/\["[^"]+/.test(localStorage.getItem('rplus.cultCollapsed.v1') || ''));
+  const shownAgain = await atbCell.isVisible();
+  check('click on the organism name folds and unfolds its report, and remembers it', shownBefore && hiddenAfter && chipsStay && namesOnHover && popSticky && shownAgain && storedFold && storedClear, { shownBefore, hiddenAfter, chipsStay, namesOnHover, popSticky, shownAgain, storedFold, storedClear });
+  const centralCard = container.locator('.cult-site', { has: page.locator('tr[data-fechas*="|20/10"]') }).first();
+  check('central card: «Último: negativo 31/10» (S. aureus MRSA is the older result)',
+    /^Último: negativo 31\/10$/.test(await centralCard.locator('.cult-site-ultimo').innerText()));
+  // ── Resistencia por especie (EUCAST) y AmpC: Enterobacter cloacae complex ──
+  const ampcRow = container.locator('tr', { hasText: 'Enterobacter cloacae' }).first();
+  const ampcTxt = (await ampcRow.innerText()).replace(/\s+/g, ' ');
+  check('AmpC organism: tag, «Int 3» line, ceftriaxona marked AmpC, one-line notice, no acquired R line',
+    /Enterobacter cloacae complex AmpC/.test(ampcTxt) && /Int 3 Ampicilina >16 Cefazolina >16 Cefoxitina >16/.test(ampcTxt) &&
+    /Ceftriaxona \u22641 AmpC/.test(ampcTxt) && /AmpC: la ceftriaxona puede fallar aunque salga S\./.test(ampcTxt) && !/(^| )R \d/.test(ampcTxt), ampcTxt);
+  // ── Pista de mecanismo (EUCAST detección de mecanismos v2.0) y S inesperada (EUCAST fenotipos esperados v1.2) ──
+  const mechRow = container.locator('tr[data-fechas*="|27/06"]').filter({ hasText: 'Escherichia coli' }).first();
+  const mechTxt = (await mechRow.innerText()).replace(/\s+/g, ' ');
+  check('E. coli ceftazidima R: open «Cribado de BLEE positivo» panel with drug, confirmation step and EUCAST 2017 source; drug marked',
+    (await mechRow.locator('details.cult-mech[open]').count()) === 1 && /Cribado de BLEE positivo/.test(mechTxt) && /Ceftazidima R/.test(mechTxt) &&
+    /sinergia con ácido clavulánico/.test(mechTxt) && /v2\.0, julio 2017/.test(mechTxt) && /cribado BLEE/.test(mechTxt), mechTxt);
+  const noMechRow = container.locator('tr', { hasText: 'Enterobacter cloacae' }).first();
+  check('Enterobacter with ceftriaxona S: no BLEE-screen panel', (await noMechRow.locator('.cult-mech').count()) === 0);
+  const entRow = container.locator('tr[data-fechas*="|05/07"]').filter({ hasText: 'faecalis' }).first();
+  const entTxt = (await entRow.innerText()).replace(/\s+/g, ' ');
+  check('Enterococcus faecalis with ceftriaxona S + gentamicina S: both marked «inesperada», EUCAST note, aminoglycoside caveat, source',
+    /Ceftriaxona[^·]*inesperada/.test(entTxt) && /Gentamicina[^·]*inesperada/.test(entTxt) && /2 antibióticos con S inesperada\. EUCAST espera R/.test(entTxt) &&
+    /Solo se combina con ampicilina o vancomicina/.test(entTxt) && /Fuente: EUCAST Expected Resistant Phenotypes v1\.2/.test(entTxt) && (await entRow.locator('.cult-mech').count()) === 0, entTxt);
+  await mechRow.scrollIntoViewIfNeeded();
+  await r.shot(page, 'mech-light');
+  await entRow.scrollIntoViewIfNeeded();
+  await r.shot(page, 'ent-inesperada-light');
+  await ampcRow.scrollIntoViewIfNeeded();
+  await r.shot(page, 'ampc-light');
+  await woundCard.scrollIntoViewIfNeeded();
+  await periCard.scrollIntoViewIfNeeded();
+  await r.shot(page, 'hemo-light');
+  await woundCard.scrollIntoViewIfNeeded();
+  await r.shot(page, 'wound-light');
+  await page.locator('#theme-toggle, .theme-toggle').locator('visible=true').first().click();
+  await page.mouse.move(0, 600);
+  await page.waitForTimeout(400);
+  await periCard.scrollIntoViewIfNeeded();
+  await r.shot(page, 'hemo-dark');
+  await ampcRow.scrollIntoViewIfNeeded();
+  await r.shot(page, 'ampc-dark');
+  await mechRow.scrollIntoViewIfNeeded();
+  await r.shot(page, 'mech-dark');
+  await entRow.scrollIntoViewIfNeeded();
+  await r.shot(page, 'ent-inesperada-dark');
+  await r.shot(page, 'wound-dark');
+  await container.evaluate((el) => el.scrollIntoView());
+  await r.shot(page, 'wound-dark-top');
+  await page.locator('#theme-toggle, .theme-toggle').locator('visible=true').first().click();
 
   check('no page errors', pageErrors.length === 0, pageErrors.slice(0, 5));
   await app.close();

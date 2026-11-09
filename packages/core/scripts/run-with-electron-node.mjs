@@ -11,7 +11,7 @@
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -31,7 +31,9 @@ if (args.length === 0) {
 // called that success. Without it, three consecutive runs are identical.
 // If a suite hangs on an open handle, close the handle in that suite.
 
-const r = spawnSync(electronPath, args, {
+const jsxRegister = pathToFileURL(path.join(path.dirname(fileURLToPath(import.meta.url)), 'jsx-register.mjs')).href;
+
+const r = spawnSync(electronPath, ['--import', jsxRegister, ...args], {
   cwd: root,
   stdio: 'inherit',
   env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },

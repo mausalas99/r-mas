@@ -79,6 +79,8 @@ function buildOptions({ prod = false, write = true } = {}) {
     format: 'esm',
     platform: 'browser',
     target: ['es2020'],
+    jsx: 'automatic',
+    jsxImportSource: 'preact',
     sourcemap: true,
     metafile: true,
     logLevel: 'info',

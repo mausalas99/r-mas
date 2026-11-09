@@ -16,9 +16,10 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+// This file lives in packages/core/scripts: the checkout root is three levels up from the file.
+const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const userDataDir = path.join(os.tmpdir(), 'rplus-ui-test');
 const MOCK_PORT = String(process.env.R_PLUS_UI_TEST_MOCK_PORT || '8787');
 const MOCK_URL = `http://localhost:${MOCK_PORT}`;
@@ -65,7 +66,8 @@ async function waitForMockServer(url, timeoutMs) {
 
 // Guard so this file can be imported (e.g. from tests, for parseArgs) without
 // launching Electron and the mock server as a side effect.
-const isMain = import.meta.url === `file://${process.argv[1]}`;
+// Run through the root `scripts` symlink, argv[1] is the link and import.meta.url the real file.
+const isMain = import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href;
 if (isMain) {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help) {
@@ -91,7 +93,7 @@ if (isMain) {
   console.log(`Mock Nube:  ${MOCK_URL}`);
   console.log('');
 
-  const mockServerArgs = [path.join(repoRoot, 'scripts', 'ui-test-mock-nube-server.mjs'), `--port=${MOCK_PORT}`];
+  const mockServerArgs = [fileURLToPath(new URL('./ui-test-mock-nube-server.mjs', import.meta.url)), `--port=${MOCK_PORT}`];
   if (opts.scenarios) mockServerArgs.push(`--scenarios=${opts.scenarios}`);
   const mockServer = spawn(process.execPath, mockServerArgs, { cwd: repoRoot, stdio: 'inherit' });
 
