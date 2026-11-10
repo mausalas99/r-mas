@@ -15,6 +15,7 @@ import {
 import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import { resolveCloudActorId } from './mutate-bridge.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
+import { normalizeUsername } from '../../clinical-username.mjs';
 
 const SALA_ROOMS_KEY = 'rpc-cloud-sala-rooms';
 
@@ -195,12 +196,18 @@ export async function pushLocalClinicalOpsToSala(sala) {
 
 /**
  * Rows a peer's whole-doc push can drop from the room (encrypted clinicalOps is a
- * blind replace on the Worker). Membership is left out: its user_ids are remapped
- * per device, so a key compare would re-push forever.
+ * blind replace on the Worker). Membership rows are left out: their user_ids are
+ * remapped per device, so a key compare would re-push forever.
  */
 const CLINICAL_OPS_ROW_KEYS = [
   ['teams', ['team_id']],
   ['patient_team_assignment', ['patient_id', 'team_id', 'effective_at']],
+];
+
+/** Leave and rejoin records, with their time stamp. A dropped leave brings the member back for peers. */
+const CLINICAL_OPS_MEMBERSHIP_STAMPS = [
+  ['team_membership_removals', 'removed_at'],
+  ['team_membership_rejoins', 'joined_at'],
 ];
 
 // ponytail: one re-push per sala per minute caps a push storm if two exports never agree.
@@ -214,8 +221,40 @@ function clinicalOpsRowKeys(snapshot, table, fields) {
   return new Set(rows.map((row) => fields.map((f) => String(row?.[f] || '').trim()).join('\0')));
 }
 
-/** True when the local export holds a team or patient assignment the room copy lacks. */
+/**
+ * Leave/rejoin records: `team \0 @username` → newest stamp. Keyed by @username, not
+ * user_id: one person has a different user_id on each device.
+ * @param {unknown} snapshot @param {string} table @param {string} stampField
+ */
+function membershipStampsByHandle(snapshot, table, stampField) {
+  const users = Array.isArray(snapshot?.clinical_users) ? snapshot.clinical_users : [];
+  const handles = new Map(users.map((u) => [String(u?.user_id || '').trim(), normalizeUsername(u?.username)]));
+  const stamps = new Map();
+  for (const row of Array.isArray(snapshot?.[table]) ? snapshot[table] : []) {
+    const teamId = String(row?.team_id || '').trim();
+    const userId = String(row?.user_id || '').trim();
+    const stamp = String(row?.[stampField] || '');
+    if (!teamId || !userId || !stamp) continue;
+    const key = `${teamId}\0${handles.get(userId) || userId}`;
+    if (stamp > (stamps.get(key) || '')) stamps.set(key, stamp);
+  }
+  return stamps;
+}
+
+/** True when the local export holds a leave/rejoin the room copy lacks, or a newer one. */
+function membershipStampsRoomLacks(local, room) {
+  return CLINICAL_OPS_MEMBERSHIP_STAMPS.some(([table, stampField]) => {
+    const roomStamps = membershipStampsByHandle(room, table, stampField);
+    for (const [key, stamp] of membershipStampsByHandle(local, table, stampField)) {
+      if (stamp > (roomStamps.get(key) || '')) return true;
+    }
+    return false;
+  });
+}
+
+/** True when the local export holds a team, patient assignment, leave or rejoin the room copy lacks. */
 export function clinicalOpsHasRowsRoomLacks(local, room) {
+  if (membershipStampsRoomLacks(local, room)) return true;
   return CLINICAL_OPS_ROW_KEYS.some(([table, fields]) => {
     const roomKeys = clinicalOpsRowKeys(room, table, fields);
     for (const key of clinicalOpsRowKeys(local, table, fields)) {
