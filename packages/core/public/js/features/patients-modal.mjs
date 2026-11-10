@@ -218,29 +218,32 @@ function syncIcAdmitBlock() {
   if (beds) beds.style.display = 'grid';
 }
 
+// The Preact buttons load on first use: a static import would join the boot graph.
+var icView = null;
+var icServiceNames = [];
+var icServiceSelected = '';
+function paintIcServices() {
+  var host = document.getElementById('m-ic-svc');
+  if (!host) return;
+  if (icView) return icView.drawIcServiceButtons(host, icServiceNames, icServiceSelected, pickIcService);
+  import('./patients-modal-view.jsx').then(
+    function (m) { icView = m; paintIcServices(); },
+    function () { rt.showToast('No se pudo mostrar los servicios', 'error'); }
+  );
+}
+
 function pickIcService(name) {
   document.getElementById('m-servicio').value = IC_OWN_SERVICE;
   document.getElementById('m-area').value = name;
-  document.querySelectorAll('#m-ic-svc button').forEach(function (b) {
-    var on = b.textContent === name;
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
-    b.className = 'wb-btn ' + (on ? 'wb-btn-primary' : 'wb-btn-secondary');
-  });
+  icServiceSelected = name;
+  paintIcServices();
 }
 
 function fillIcAdmitFields(patient) {
   var info = getConsultInfo(patient);
-  var list = document.getElementById('m-ic-svc');
-  list.innerHTML = '';
-  REQUESTING_SERVICE_IDS.forEach(function (id) {
-    var svc = INTERCONSULT_SERVICES.find(function (s) { return s.id === id; });
-    if (!svc) return;
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = svc.name;
-    btn.addEventListener('click', function () { pickIcService(svc.name); });
-    list.appendChild(btn);
-  });
+  icServiceNames = REQUESTING_SERVICE_IDS.map(function (id) {
+    return INTERCONSULT_SERVICES.find(function (s) { return s.id === id; });
+  }).filter(Boolean).map(function (svc) { return svc.name; });
   pickIcService(info.requestingService || '');
   document.getElementById('m-ic-motivo').value = info.reason;
   document.getElementById('m-ic-fi').value = accesoFechaToDateInputValue(patient.fiuxFecha);

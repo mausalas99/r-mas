@@ -1,0 +1,11 @@
+{
+ "names": [
+  "Trauma y Ortopedia",
+  "Cirugía <General> & \"Y\"",
+  "Urología"
+ ],
+ "sel:none": "<button type=\"button\" aria-pressed=\"false\" class=\"wb-btn wb-btn-secondary\">Trauma y Ortopedia</button><button type=\"button\" aria-pressed=\"false\" class=\"wb-btn wb-btn-secondary\">Cirugía &lt;General> &amp; \"Y\"</button><button type=\"button\" aria-pressed=\"false\" class=\"wb-btn wb-btn-secondary\">Urología</button>",
+ "sel:first": "<button type=\"button\" aria-pressed=\"true\" class=\"wb-btn wb-btn-primary\">Trauma y Ortopedia</button><button type=\"button\" aria-pressed=\"false\" class=\"wb-btn wb-btn-secondary\">Cirugía &lt;General> &amp; \"Y\"</button><button type=\"button\" aria-pressed=\"false\" class=\"wb-btn wb-btn-secondary\">Urología</button>",
+ "sel:odd": "<button type=\"button\" aria-pressed=\"false\" class=\"wb-btn wb-btn-secondary\">Trauma y Ortopedia</button><button type=\"button\" aria-pressed=\"true\" class=\"wb-btn wb-btn-primary\">Cirugía &lt;General> &amp; \"Y\"</button><button type=\"button\" aria-pressed=\"false\" class=\"wb-btn wb-btn-secondary\">Urología</button>",
+ "sel:unknown": "<button type=\"button\" aria-pressed=\"false\" class=\"wb-btn wb-btn-secondary\">Trauma y Ortopedia</button><button type=\"button\" aria-pressed=\"false\" class=\"wb-btn wb-btn-secondary\">Cirugía &lt;General> &amp; \"Y\"</button><button type=\"button\" aria-pressed=\"false\" class=\"wb-btn wb-btn-secondary\">Urología</button>"
+}
