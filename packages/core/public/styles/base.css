@@ -23,8 +23,6 @@ html.high-contrast ::-moz-selection {
 html.ui-density-normal .patient-list-section-label {
   font-size: calc(10px * var(--density-font));
 }
-/* En Guardia se ocultan acciones secundarias; no usar esta clase en controles que deban verse siempre (p. ej. engrane de Laboratorio). */
-html.ui-density-normal .card-header-soft-btn-secondary { display: none !important; }
 html.ui-density-normal .overview-hint { display: none !important; }
 /* A foot that only holds hidden hints would leave an empty bordered strip */
 html.ui-density-normal .settings-card-stack__foot:not(:has(> :not(.overview-hint))) { display: none !important; }
@@ -66,48 +64,12 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
   gap: calc(7px * var(--density-space));
   padding-bottom: calc(14px * var(--density-space));
 }
-/* Compact <details> disclosure (LAN ⇄, settings-adjacent panels, etc.) */
-.rpc-disclosure {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  overflow: hidden;
-  padding: 0;
-  gap: 0;
-  box-shadow: none;
-}
-.rpc-disclosure > summary,
-.rpc-disclosure__summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  list-style: none;
-  cursor: pointer;
-  user-select: none;
-  padding: 7px 10px;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--text);
-}
-.rpc-disclosure > summary::-webkit-details-marker,
-.rpc-disclosure__summary::-webkit-details-marker {
-  display: none;
-}
-.rpc-disclosure > summary::marker,
-.rpc-disclosure__summary::marker {
-  content: '';
-  font-size: 0;
-}
 /* Collapse marker: hollow ring when closed, ring with a center dot when
    open. Replaces chevrons app-wide. Distinct from solid result dots
    (e.g. .cult-dot). */
 .rp-dot,
 .clinical-teams-collapse--section > .clinical-teams-collapse-summary::before,
 .clinical-teams-collapse--card-block > .clinical-teams-collapse-summary::before,
-.rpc-disclosure > summary::after,
-.rpc-disclosure__summary::after,
 .ea-estado-clinico > summary::after,
 .settings-accordion > summary::after,
 details.todo-group summary.todo-group-header::before,
@@ -133,8 +95,6 @@ details[open] > summary .rp-dot,
 .clinical-teams-collapse--card-block[open] > .clinical-teams-collapse-summary::before,
 [aria-expanded="true"] .rp-dot,
 .is-open .rp-dot,
-.rpc-disclosure[open] > summary::after,
-.rpc-disclosure[open] > .rpc-disclosure__summary::after,
 .ea-estado-clinico[open] > summary::after,
 .settings-accordion[open] > summary::after,
 details.todo-group[open] summary.todo-group-header::before,
@@ -143,37 +103,6 @@ details.todo-group[open] summary.todo-group-header::before,
   background: var(--text-muted);
   box-shadow: inset 0 0 0 1.5px var(--surface, #fff);
   transform: none;
-}
-.rpc-disclosure[open] > summary,
-.rpc-disclosure[open] > .rpc-disclosure__summary {
-  border-bottom: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
-}
-.rpc-disclosure__body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px 10px 10px;
-}
-.rpc-disclosure__summary--stacked {
-  position: relative;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding-right: 26px;
-}
-.rpc-disclosure__summary--stacked::after {
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  margin-top: -0.22em;
-}
-.lan-connect-card.rpc-disclosure {
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border-radius: var(--radius-control);
-  box-shadow: none;
 }
 
 .patient-expediente-classic {
@@ -710,10 +639,10 @@ body {
   overflow-x: clip;
   font-size: 16px; line-height: 1.5;
 }
-h1, h2, h3, .type-display, .type-title, .modal-title {
+h1, h2, h3, .modal-title {
   text-wrap: balance;
 }
-p, li, figcaption, .type-body, .type-caption, .empty-state p {
+p, li, figcaption, .empty-state p {
   text-wrap: pretty;
 }
 img,
@@ -756,7 +685,6 @@ html.dark .avatar img {
 .templates-modal { border-radius: var(--radius-container); }
 .onboarding-intro-modal,
 #update-modal .modal { border-radius: var(--radius-xl); }
-.type-mono { font-family: var(--font-mono); }
 #m-registro,
 #m-registro-list .m-registro-row-input,
 #lab-output-box .out-line,
@@ -806,12 +734,6 @@ html.dark .avatar img {
 }
 
 /* ── Type scale utilities (design system phase 1) ────────── */
-.type-display { font-family: var(--font-ui); font-weight: 600; font-size: calc(22px * var(--density-font, 1)); line-height: 1.25; text-wrap: balance; }
-.type-title { font-family: var(--font-ui); font-weight: 600; font-size: calc(17px * var(--density-font, 1)); line-height: 1.3; text-wrap: balance; }
-.type-section { font-family: var(--font-ui); font-weight: 700; font-size: calc(12.5px * var(--density-font, 1)); line-height: 1.35; letter-spacing: var(--tracking-section); text-transform: uppercase; }
-.type-body { font-family: var(--font-ui); font-weight: 400; font-size: calc(13.5px * var(--density-font, 1)); line-height: 1.5; text-wrap: pretty; }
-.type-caption { font-family: var(--font-ui); font-weight: 500; font-size: calc(11.5px * var(--density-font, 1)); line-height: 1.4; color: var(--text-muted); text-wrap: pretty; }
-.num-tabular { font-variant-numeric: tabular-nums; }
 
 /* Placeholder text must clear 4.5:1 like any other text (lintapple text-contrast). */
 input::placeholder,

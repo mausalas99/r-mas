@@ -1,4 +1,3 @@
-/** Renderer copy of lib/db/clinical-username.mjs — keep the two in step. */
 const USERNAME_RE = /^[a-z][a-z0-9_]{2,31}$/;
 
 export function normalizeUsername(raw) {

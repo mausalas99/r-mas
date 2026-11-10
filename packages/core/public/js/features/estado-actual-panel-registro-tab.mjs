@@ -112,6 +112,15 @@ export function handleRegistroTabKeydown(form, ev) {
   var onSpine = spine.indexOf(t) >= 0;
   var onSkip = t.matches && t.matches(REGISTRO_TAB_SKIP_SELECTOR);
   if (!onSpine && !onSkip) return;
+  if (moveRegistroTabFocus(form, t, ev.shiftKey ? -1 : 1)) return ev.preventDefault();
+  if (ev.shiftKey) return; // spine start: native Shift+Tab goes back to the step rail
+  // Spine end: go to the step's primary action instead of dead-ending.
+  var shell = form.closest && form.closest('.ea-registro-shell');
+  var action =
+    shell &&
+    (shell.querySelector('[data-ea-step-next]:not([hidden])') ||
+      shell.querySelector('.ea-registro-submit:not([hidden])'));
+  if (!action) return;
   ev.preventDefault();
-  moveRegistroTabFocus(form, t, ev.shiftKey ? -1 : 1);
+  action.focus();
 }

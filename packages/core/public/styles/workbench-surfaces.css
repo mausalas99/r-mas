@@ -103,9 +103,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 }
 
 #patient-expediente .card-header,
-.patient-expediente-classic .card-header,
-#patient-expediente .listado-section-header,
-.patient-expediente-classic .listado-section-header {
+.patient-expediente-classic .card-header {
   font: var(--type-section);
   letter-spacing: var(--tracking-section);
   text-transform: uppercase;
@@ -115,9 +113,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 }
 
 #patient-expediente .card-body,
-.patient-expediente-classic .card-body,
-#patient-expediente .listado-section-body,
-.patient-expediente-classic .listado-section-body {
+.patient-expediente-classic .card-body {
   font: var(--type-body);
   background: var(--color-elevated);
 }
@@ -189,12 +185,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   background: color-mix(in oklab, var(--surface) 72%, var(--bg));
 }
 
-.patient-expediente-classic .exp-segment-panel .hc-read-view {
-  gap: calc(10px * var(--density-space, 1));
-}
-
-.patient-expediente-classic .exp-segment-panel .card-body,
-.patient-expediente-classic .exp-segment-panel .hc-read-body {
+.patient-expediente-classic .exp-segment-panel .card-body {
   padding: calc(14px * var(--density-space, 1)) calc(18px * var(--density-space, 1));
 }
 
@@ -575,8 +566,6 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 }
 
 /* Historia / eventualidades / VPO mounts (fuera de segment-panel o modal) */
-#patient-expediente .hc-step-body,
-.patient-expediente-classic .hc-step-body,
 #patient-expediente .vpo-panel,
 .patient-expediente-classic .vpo-panel {
   border: var(--border-hairline);
@@ -773,33 +762,11 @@ html.ui-density-guardia .guardia-census-panel {
   background: var(--surface);
 }
 
-html.ui-density-guardia .guardia-census-panel-head h2,
 html.ui-density-guardia .guardia-panel h2 {
   font: var(--type-section);
   letter-spacing: var(--tracking-section);
   text-transform: uppercase;
   color: var(--text-muted);
-}
-
-html.ui-density-guardia .patient-chip-card {
-  border: var(--border-hairline);
-  box-shadow: var(--elev-flat);
-  transition:
-    background var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out);
-}
-
-html.ui-density-guardia .patient-chip-card:hover {
-  box-shadow: var(--elev-raised);
-  background: var(--state-hover-bg);
-}
-
-html.ui-density-guardia .guardia-metrics-toolbar {
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
 }
 
 html.ui-density-guardia .entrega-proc-chip,
@@ -822,8 +789,7 @@ html.high-contrast .guardia-panel {
    ═══════════════════════════════════════════════════════════ */
 
 #appcontent-med > .med-active-shell > #med-work-area .card,
-#appcontent-med .med-pharm-root .card,
-#appcontent-med #med-work-area .manejo-guia-panel {
+#appcontent-med .med-pharm-root .card {
   border: var(--border-hairline);
   border-radius: var(--radius-lg);
   box-shadow: var(--elev-raised);

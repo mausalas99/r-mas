@@ -542,22 +542,6 @@
   text-transform: uppercase;
 }
 
-.wb-status--vencido {
-  color: var(--color-danger-deep);
-}
-
-.wb-status--en-curso {
-  color: var(--color-warn);
-}
-
-.wb-status--abierto {
-  color: var(--color-ink-muted);
-}
-
-.wb-status--listo {
-  color: var(--color-success);
-}
-
 /* ── Filter chips ──────────────────────────────────────────────────── */
 
 .wb-chips {

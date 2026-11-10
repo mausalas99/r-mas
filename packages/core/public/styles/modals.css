@@ -207,10 +207,6 @@ html.dark .soap-field-readonly {
   background: var(--bg) !important; color: var(--text-muted) !important;
   border: 1px solid var(--border) !important;
 }
-html.dark .soap-btn-cancel {
-  background: var(--surface) !important; color: var(--text) !important;
-  border-color: var(--border) !important;
-}
 /* ── Onboarding / tour guiado ───────────────────────────
    Apple HIG · Onboarding: pocas palabras, decisión clara, omitir visible;
    el detalle va en el tour y en Centro de ayuda — no aquí.
@@ -434,7 +430,6 @@ html.dark .btn-intro-skip:hover {
 #tour-dock-body li { margin-bottom: 4px; }
 #tour-dock-body li:last-child { margin-bottom: 0; }
 #tour-dock-body strong { color: var(--text); font-weight: 600; }
-.tour-dock-hint { font-size: 12px !important; line-height: 1.45 !important; color: var(--text-muted) !important; margin-bottom: 8px !important; }
 /* Estado colapsado: solo encabezado y botón de expandir. */
 #tour-dock.tour-dock-collapsed { width: auto; }
 #tour-dock.tour-dock-collapsed #tour-dock-body,
@@ -669,14 +664,6 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
 .help-article-content strong { color: var(--text); }
 .help-empty {
   padding: 12px; font-size: 12px; color: var(--text-muted); font-style: italic;
-}
-.help-tour-section {
-  margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border);
-  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-}
-.help-tour-label {
-  font-size: 11px; font-weight: 700; color: var(--text-muted);
-  letter-spacing: 0.02em; margin-right: 4px;
 }
 .help-tour-btn {
   background: var(--lab-chip-bg); color: var(--lab-chip-txt);
@@ -1238,33 +1225,6 @@ body.rpc-db-unlock-active { overflow: hidden; }
   font-size: 12px; color: var(--error);
   background: rgba(220,38,38,0.08); padding: 8px 10px; border-radius: var(--radius-field);
 }
-.rpc-db-unlock-secret-wrap {
-  display: flex; align-items: stretch; gap: 6px; width: 100%;
-}
-.rpc-db-unlock-secret-wrap input[type="password"],
-.rpc-db-unlock-secret-wrap input[type="text"] {
-  flex: 1; min-width: 0;
-  border: 1px solid var(--border); border-radius: var(--radius-field); padding: 10px 12px;
-  font-size: 15px; font-family: inherit; color: var(--text);
-  background: var(--bg); box-sizing: border-box;
-}
-.rpc-db-unlock-secret-wrap input:focus {
-  outline: none; border-color: var(--action);
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.18);
-}
-.rpc-db-unlock-secret-toggle {
-  flex-shrink: 0; align-self: stretch;
-  border: 1px solid var(--border); border-radius: var(--radius-field);
-  padding: 0 12px; font-size: 12px; font-weight: 600;
-  font-family: inherit; color: var(--text-muted);
-  background: var(--bg); cursor: pointer;
-}
-.rpc-db-unlock-secret-toggle:hover {
-  color: var(--text); border-color: var(--action);
-}
-.rpc-db-unlock-secret-toggle[aria-pressed="true"] {
-  color: var(--action); border-color: var(--action);
-}
 .rpc-db-unlock-remember {
   display: flex; align-items: flex-start; gap: 8px;
   font-size: 13px; color: var(--text); cursor: pointer; margin-top: 4px;
@@ -1359,7 +1319,6 @@ html.dark #rpc-wipe-modal { background: var(--scrim-bg); }
 }
 /* ── Tendencias de Lab ─────────────────────────────────────── */
 .tend-empty { text-align:center; color:var(--text-muted, var(--muted)); font-size:14px; padding:40px 20px; }
-.tend-loading { opacity: 0.72; }
 .tend-group-backdrop {
   display: none;
   position: fixed;
@@ -1372,8 +1331,7 @@ html.dark #rpc-wipe-modal { background: var(--scrim-bg); }
   justify-content: center;
   animation: fade-in var(--dur-fast) var(--ease-out);
 }
-#tend-group-modal,
-.tend-group-modal-panel {
+#tend-group-modal {
   background: var(--surface);
   width: 100%;
   height: 100%;
@@ -1437,37 +1395,8 @@ html.dark .tend-group-tab.active { color: var(--text); }
 .tend-group-panel-card.sortable-chosen .tend-group-panel-toolbar {
   opacity: 1;
 }
-.tend-group-panel-drag-hint {
-  font-size: 14px;
-  letter-spacing: -2px;
-  color: var(--text-muted);
-  cursor: grab;
-  user-select: none;
-  touch-action: none;
-  line-height: 1;
-  padding: 4px 8px;
-  margin: -4px -4px -4px 0;
-  border-radius: var(--radius-sm);
-  transition: color var(--dur-fast) ease, background var(--dur-fast) ease;
-}
-.tend-group-panel-drag-hint:hover {
-  color: var(--text);
-  background: color-mix(in oklab, var(--action) 8%, transparent);
-}
-.tend-group-panel-drag-hint:active {
-  cursor: grabbing;
-}
-.tend-group-drag-hovercard.tend-group-panel-card {
-  box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.18));
-  opacity: 0.96;
-  cursor: grabbing;
-}
-html.dark .tend-group-drag-hovercard.tend-group-panel-card {
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-}
 .tend-group-panels-hidden-bar { margin-bottom: 12px; }
-.tend-group-family-title,
-.tend-group-panel-family-title {
+.tend-group-family-title {
   margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: var(--text);
 }
 .tend-group-family-title--editable {
@@ -1616,10 +1545,6 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
 }
 .tend-analyte-picker-back:hover { color: var(--text); }
 .tend-analyte-picker-empty { margin: 6px 4px; font-size: 12px; color: var(--text-muted); }
-.tend-group-extra-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; }
-.tend-group-extra-chip:hover {
-  border-color: rgba(239, 68, 68, 0.45); background: rgba(239, 68, 68, 0.08);
-}
 .tend-group-table tr.is-hidden { display: none !important; }
 .tend-group-row-toggle, .tend-group-col-toggle {
   display: inline-flex; align-items: center; gap: 6px; font-weight: inherit; cursor: pointer;
@@ -1645,7 +1570,6 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
   z-index: 1;
   pointer-events: auto;
 }
-.tend-group-unit { font-weight: 500; color: var(--text-muted); font-size: 11px; }
 .tend-hidden-modal-hint {
   font-size: 13px;
   color: var(--text-muted);
@@ -2401,16 +2325,6 @@ html.dark .tend-gaso-tip {
 
 /* «Nuevo» feature hints (feature-hints.mjs): a dot, then a bubble. No overlay. */
 .fh-layer { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-toast); }
-.fh-dot {
-  position: fixed; width: 12px; height: 12px; padding: 0; pointer-events: auto; cursor: pointer;
-  border: 2px solid var(--surface); border-radius: 999px; background: var(--action);
-  animation: fh-dot-pulse 2s ease-in-out infinite;
-}
-.fh-dot:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
-@keyframes fh-dot-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--action) 55%, transparent); }
-  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--action) 0%, transparent); }
-}
 .fh-bubble {
   position: fixed; width: min(300px, calc(100vw - 16px)); padding: 10px 12px; pointer-events: auto;
   color: var(--text); background: var(--surface); border: 1px solid var(--border);
@@ -2431,7 +2345,6 @@ html.dark .tend-gaso-tip {
 .fh-choice-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 .fh-where { background: color-mix(in srgb, var(--action) 16%, transparent); border-radius: 10px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--action) 16%, transparent); }
 .fh-target { outline: 2px solid var(--action) !important; outline-offset: 3px; }
-@media (prefers-reduced-motion: reduce) { .fh-dot { animation: none; } }
 .tend-group-hidden-label { font-weight: 600; color: var(--text); }
 .tend-group-restore-chip {
   display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 12px;

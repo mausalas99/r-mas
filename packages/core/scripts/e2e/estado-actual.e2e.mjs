@@ -633,7 +633,9 @@ async function keyboardAndHd(page) {
       return el.id || da || el.tagName;
     });
   // The form is a 4-step flow, so Tab walks one step at a time: collect each step's spine in order.
-  // The Tab spine ends at the step's last field (focus stays put there), so stop when focus stops moving.
+  // The Tab spine ends at the step's last field; the next Tab must land on «Siguiente».
+  const landings = [];
+  const onNext = () => page.evaluate(() => !!document.activeElement?.matches('[data-ea-step-next]'));
   const tok = () =>
     page.evaluate(() => {
       const el = document.activeElement;
@@ -652,10 +654,15 @@ async function keyboardAndHd(page) {
       await page.keyboard.press('Tab');
       const t = await tok();
       if (t === last) break;
+      if (await onNext()) {
+        landings.push(true);
+        break;
+      }
       last = t;
       seen.push(await desc());
     }
   }
+  check('Tab after the last field of each step lands on «Siguiente»', landings.length === 3, landings);
   const skip = ['data-ea-vital-add', 'data-ea-altered', 'data-ea-glu-altered', 'data-ea-glu-remove', 'ea-add-glu', 'ea-bomba-enabled', 'data-ea-io-turno-nc'];
   const ids = ['ea-recorded-at', 'data-ea-vital', 'ea-io-ing-t1', 'ea-io-ing-t2', 'ea-io-ing-t3', 'ea-io-egr-t1', 'ea-io-egr-t2', 'ea-io-egr-t3', 'ea-io-evac'];
   const idx = ids.map((i) => seen.indexOf(i));

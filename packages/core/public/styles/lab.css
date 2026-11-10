@@ -219,9 +219,6 @@ details.todo-group summary.todo-group-header::before {
 .todo-add-row > .todo-prio-chip {
   margin-top: 6px;
 }
-.todo-row > .todo-row-actions {
-  margin-top: 4px;
-}
 
 .todo-add-row {
   border-bottom: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
@@ -299,58 +296,6 @@ html.dark .todo-text-input:focus {
   box-sizing: border-box;
 }
 
-.todo-row input.todo-check[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  position: relative;
-  width: 20px;
-  height: 20px;
-  justify-self: center;
-  /* Do not use margin:0 — it wiped the first-line offset and floated the box high */
-  margin: 6px 0 0;
-  border: 1.5px solid color-mix(in oklab, var(--text-muted) 55%, var(--border, var(--divider)));
-  border-radius: var(--radius-badge);
-  background: var(--surface);
-  cursor: pointer;
-  transition:
-    background var(--dur-fast, 0.15s) var(--ease-out, ease),
-    border-color var(--dur-fast, 0.15s) var(--ease-out, ease);
-}
-.todo-row input.todo-check[type="checkbox"]:checked {
-  background: var(--action);
-  border-color: var(--action);
-  background-image: none;
-}
-.todo-row input.todo-check[type="checkbox"]::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 45%;
-  width: 5px;
-  height: 9px;
-  border: solid var(--color-on-accent);
-  border-width: 0 2px 2px 0;
-  transform: translate(-50%, -55%) rotate(45deg);
-  pointer-events: none;
-  /* The tick draws itself: the clip opens from the bottom-left (the short stroke) outward. */
-  clip-path: inset(100% 100% 0 0);
-  transition: clip-path 0.28s ease-out;
-}
-.todo-row input.todo-check[type="checkbox"]:checked::after {
-  clip-path: inset(-2px);
-}
-html.motion-sobrio .todo-row input.todo-check[type="checkbox"]::after {
-  transition: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .todo-row input.todo-check[type="checkbox"]::after {
-    transition: none;
-  }
-}
-.todo-row input.todo-check[type="checkbox"]:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--action) 45%, transparent);
-  outline-offset: 1px;
-}
 
 .todo-add-row input[type="text"] {
   min-width: 0;
@@ -396,35 +341,6 @@ html.motion-sobrio .todo-row input.todo-check[type="checkbox"]::after {
 
 .todo-remind-bell {
   font-size: 11px;
-}
-
-.todo-composer {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: stretch;
-  padding: 10px 12px 12px;
-}
-
-.todo-composer > .todo-add-row {
-  display: grid;
-  grid-template-columns: var(--todo-grid-prio) var(--todo-grid-check) minmax(0, 1fr) var(--todo-grid-actions);
-  align-items: start;
-  column-gap: 10px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-}
-
-.todo-composer > .todo-add-row > .todo-prio-chip {
-  margin-top: 6px;
-}
-.todo-composer > .todo-add-row > .todo-check-spacer {
-  margin-top: 9px;
-}
-.todo-composer > .todo-add-row > .todo-add-btn {
-  margin-top: 0;
 }
 
 .todo-toolbar {
@@ -478,11 +394,6 @@ html.motion-sobrio .todo-row input.todo-check[type="checkbox"]::after {
 
 .todo-row--handoff {
   background: color-mix(in oklab, var(--action) 6%, transparent);
-}
-
-.todo-row--overdue.completed {
-  background: transparent !important;
-  border-left-color: var(--border) !important;
 }
 
 .todo-due-section {
@@ -1205,12 +1116,6 @@ html.dark .card-header[class*="card-header--tone"] {
 html.dark .card-header[class*="card-header--tone"] .card-header-ghost-btn {
   color: var(--text);
 }
-.card-header-subhint {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-ink-muted);
-}
 .card-header-ghost-btn {
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.35);
@@ -1233,9 +1138,6 @@ html.high-contrast .card-header[class*="card-header--tone"] {
   background: var(--section-header-bg) !important;
   color: var(--text) !important;
   border-bottom: 2px solid var(--border);
-}
-html.high-contrast .card-header-subhint {
-  color: var(--text-muted);
 }
 html.high-contrast .card-header-ghost-btn {
   background: var(--surface) !important;
@@ -2794,7 +2696,6 @@ html.dark .rpc-switch-input:checked + .rpc-switch-track .rpc-switch-thumb {
 }
 .rpc-proc-agenda-block:hover { transform: scale(1.02); z-index: 5; }
 #appcontent-agenda .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(217, 119, 6, 0.65); box-shadow: 0 0 0 1px rgba(217,119,6,0.25) inset; }
-html.dark .rpc-proc-agenda-slot { background: rgba(255,255,255,0.02); }
 html.dark #appcontent-agenda .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36, 0.55); }
 .rpc-proc-agenda-block .rpc-proc-name { font-weight: 800; letter-spacing: -0.01em; }
 .rpc-proc-agenda-block .rpc-proc-sub { margin-top: 2px; font-size: 10px; color: var(--text-muted); font-weight: 600; }
@@ -3206,50 +3107,7 @@ html.dark #lab-output-box .out-indent {
 #lab-output-box .lab-line-remove-confirm .lab-line-remove-ok {
   background: var(--error); border-color: var(--error); color: #fff;
 }
-.indica-meta-bar {
-  display: grid;
-  grid-template-columns: minmax(7rem, 1fr) minmax(5.5rem, 0.7fr) minmax(12rem, 2fr);
-  gap: 10px 12px;
-  align-items: start;
-  margin: 0 0 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--divider);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-}
 
-.indica-meta-bar .indica-meta-field {
-  margin: 0;
-  min-width: 0;
-}
-
-.indica-meta-bar .indica-meta-field label {
-  font-size: 11px;
-  font-weight: 650;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-}
-
-.indica-meta-bar .indica-meta-field input,
-.indica-meta-bar .indica-meta-field textarea {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.indica-meta-bar .indica-meta-field textarea {
-  resize: none;
-  field-sizing: content;
-  min-height: 0;
-}
-
-@media (max-width: 720px) {
-  .indica-meta-bar {
-    grid-template-columns: 1fr 1fr;
-  }
-  .indica-meta-field--medicos {
-    grid-column: 1 / -1;
-  }
-}
 
 .indica-section { border: 1px solid var(--divider); border-radius: var(--radius-lg); overflow: hidden; }
 .indica-section-header { background: var(--section-header-bg); padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0.01em; border-bottom: 1px solid var(--divider); }

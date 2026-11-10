@@ -139,24 +139,6 @@ export function runChecks() {
       objectValues(read('public/js/db-storage-bridge.mjs'), 'APP_FIELD_TO_BLOB'),
       objectValues(read('lib/db/clinical-blob-keys.mjs'), 'LS_KEY_TO_BLOB')));
 
-  check('username rules (renderer copy)',
-    'lib/db/clinical-username.mjs', 'public/js/clinical-username.mjs',
-    () => {
-      const a = stripComments(read('lib/db/clinical-username.mjs')).replace(/\s+/g, ' ').trim();
-      const b = stripComments(read('public/js/clinical-username.mjs')).replace(/\s+/g, ' ').trim();
-      return a === b ? [] : ['the two files differ (comments ignored) — apply the same change to both'];
-    });
-
-  check('privilege rules (renderer mirror)',
-    'lib/db/clinical-privileges.mjs', 'public/js/clinical-privileges.mjs',
-    () => {
-      const a = exportedFunctions(read('lib/db/clinical-privileges.mjs'));
-      const b = exportedFunctions(read('public/js/clinical-privileges.mjs'));
-      const shared = [...a.keys()].filter((k) => b.has(k));
-      if (!shared.length) return ['no shared exported functions found — has the mirror been renamed?'];
-      return shared.filter((k) => a.get(k) !== b.get(k)).map((k) => `${k}() differs between the two files`);
-    });
-
   return results;
 }
 

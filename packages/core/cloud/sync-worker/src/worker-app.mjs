@@ -3,7 +3,6 @@ import { withEdgeCache } from './cache-api.mjs';
 import { runScheduledPurge } from './cron-purge.mjs';
 import { isD1OverloadError } from './d1-errors.js';
 import { syncErrorStatus } from './errors.js';
-import { handleMeta } from './meta.js';
 import { salaFromSlug } from './interno/sala-slug.js';
 import { API_PREFIX, handleApiRoute, normalizePath } from './routes.js';
 
@@ -22,11 +21,6 @@ export async function handleSyncWorkerRequest(request, env, ctx) {
       60
     );
     return applyCors(request, ping);
-  }
-
-  if (path === `${API_PREFIX}/meta` && request.method === 'GET') {
-    const meta = await withEdgeCache(request, async () => handleMeta(env), 300);
-    return applyCors(request, meta);
   }
 
   const apiResponse = await handleApiRoute(request, env, ctx);

@@ -8,8 +8,7 @@
 .indica-section,
 .otros-item,
 .exp-datos-tab-action,
-.card,
-.rpc-disclosure {
+.card {
   border-radius: var(--radius-container);
 }
 
@@ -37,8 +36,7 @@
 .med-receta-wrap input:not([type="checkbox"]):not([type="radio"]),
 .med-receta-wrap textarea,
 .med-receta-wrap select,
-#procedure-agenda-modal .profile-input,
-.exp-pendientes-mount .todo-composer input[type="text"] {
+#procedure-agenda-modal .profile-input {
   border-radius: var(--radius-field) !important;
 }
 

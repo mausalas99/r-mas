@@ -76,7 +76,6 @@
   font-size: 11px; font-weight: 700; line-height: 1; padding: 3px 8px;
   border-radius: var(--radius-pill); background: var(--lab-chip-bg); color: var(--text-muted);
 }
-.cultivos-neg-sites { font-weight: 400; font-size: 12px; }
 #cultivos-table-container .cultivo-refresh-idle { color: var(--text-muted); }
 .cultivos-toolbar {
   display: flex;
@@ -361,7 +360,6 @@ body.focus-mode #focus-mode-pill { display: block; }
   cursor: pointer; white-space: nowrap;
 }
 .indica-extra-tmpl button:disabled { opacity: 0.5; cursor: not-allowed; }
-.indica-extra-tmpl .iet-hint { font-size: 11px; color: var(--text-muted); }
 
 /* R+ Móvil: misma UI; sin Word / salida rápida */
 html.rpc-mobile-web .rpc-doc-export,

@@ -22,15 +22,20 @@ function makeDb() {
             async run() {
               if (q.includes('UPDATE users SET app_version')) {
                 updateCalls += 1;
-                const [version, now, tokenHash, nowCheck] = args;
+                const [version, now, tokenHash, nowCheck, versionCheck, staleBefore] = args;
                 const session = sessionsByHash.get(tokenHash);
-                if (!session || session.expiresAt <= nowCheck) return;
+                if (!session || session.expiresAt <= nowCheck) return { meta: { changes: 0 } };
                 const user = usersById.get(session.userId);
-                if (user) {
-                  user.app_version = version;
-                  user.app_version_at = now;
-                }
-                return;
+                if (!user) return { meta: { changes: 0 } };
+                // mirrors the SQL guard: version differs (NULL-safe) OR stamp missing/older than the cutoff
+                const due =
+                  user.app_version !== versionCheck ||
+                  user.app_version_at == null ||
+                  user.app_version_at < staleBefore;
+                if (!due) return { meta: { changes: 0 } };
+                user.app_version = version;
+                user.app_version_at = now;
+                return { meta: { changes: 1 } };
               }
               throw new Error(`unexpected query: ${q}`);
             },
@@ -57,6 +62,30 @@ describe('stampAppVersionFromRequest', () => {
 
     assert.equal(db.usersById.get('u1').app_version, '8.2.0');
     assert.ok(db.usersById.get('u1').app_version_at);
+  });
+
+  it('skips the write inside the hour, rewrites on a new version or after the hour', async () => {
+    const db = makeDb();
+    const token = 'c'.repeat(64);
+    db.sessionsByHash.set(await sha256Hex(token), { userId: 'u1', expiresAt: '2999-01-01T00:00:00.000Z' });
+    db.usersById.set('u1', { app_version: null, app_version_at: null });
+    const r = (v) => req({ Authorization: `Bearer ${token}`, 'X-App-Version': v });
+    const user = db.usersById.get('u1');
+
+    await stampAppVersionFromRequest(db, r('8.2.0'));
+    assert.equal(user.app_version, '8.2.0');
+    const firstAt = user.app_version_at;
+
+    await stampAppVersionFromRequest(db, r('8.2.0')); // same version, inside the hour
+    assert.equal(user.app_version_at, firstAt);
+
+    await stampAppVersionFromRequest(db, r('8.3.0')); // new version
+    assert.equal(user.app_version, '8.3.0');
+
+    user.app_version_at = new Date(Date.now() - 61 * 60 * 1000).toISOString(); // stamp over an hour old
+    const oldAt = user.app_version_at;
+    await stampAppVersionFromRequest(db, r('8.3.0'));
+    assert.notEqual(user.app_version_at, oldAt);
   });
 
   it('does nothing when X-App-Version is missing (old client)', async () => {

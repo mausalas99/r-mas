@@ -1213,19 +1213,6 @@ html.dark .med-pharm-adh-panel {
   box-shadow: var(--shadow-md);
 }
 
-.med-pharm-grid-scope .some-grid-unified .adh-ok {
-  color: var(--text-muted);
-}
-
-.med-pharm-grid-scope .some-grid-unified .adh-miss {
-  color: var(--warn);
-}
-
-.med-pharm-grid-scope .some-grid-unified .adh-miss strong {
-  color: var(--med-pharm-not-admin-border);
-  font-weight: 700;
-}
-
 .med-pharm-grid-scope .some-grid-unified tbody tr.has-misses .col-med {
   box-shadow: inset 3px 0 0 var(--med-pharm-not-admin-border);
 }

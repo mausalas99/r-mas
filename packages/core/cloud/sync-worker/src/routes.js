@@ -78,10 +78,6 @@ export async function handleApiRoute(request, env, ctx) {
       return await handleAdmin(request, env, adminSub);
     }
 
-    if (subpath.startsWith('/sync')) {
-      throw new SyncError('not_implemented', 'Endpoint pendiente de implementación.');
-    }
-
     throw new SyncError('not_found', 'Ruta no encontrada.');
   } catch (err) {
     if (err instanceof SyncError) {

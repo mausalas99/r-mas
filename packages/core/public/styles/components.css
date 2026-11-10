@@ -24,10 +24,6 @@
       box-shadow var(--dur-fast) var(--ease-out);
   }
 
-  .guardia-census-chip:active {
-    transform: scale(0.96);
-    transition: transform 100ms var(--ease-out);
-  }
 }
 
 html.motion-sobrio .patient-card:active {
@@ -35,8 +31,7 @@ html.motion-sobrio .patient-card:active {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .patient-card:active,
-  .guardia-census-chip:active {
+  .patient-card:active {
     transform: none;
   }
 }

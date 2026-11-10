@@ -198,10 +198,6 @@ body > .tend-drag-hovercard {
 .tend-pane-title { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--text); }
 .tend-pane-sub { margin-top: 2px; font-size: 13.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tend-pane-head-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.tend-pane-esc {
-  font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 12px; color: var(--text-muted);
-  border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px;
-}
 .tend-pane-close {
   width: 36px; height: 36px; padding: 0; border-radius: 999px; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center; cursor: pointer;

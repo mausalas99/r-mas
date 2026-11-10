@@ -51,6 +51,8 @@ export async function userFromAuthHeader(db, request) {
   return row || null;
 }
 
+const APP_VERSION_STAMP_TTL_MS = 60 * 60 * 1000;
+
 /**
  * Best-effort: stamp app_version from the X-App-Version header on every
  * authenticated request, not just login — sessions last 14 days, so
@@ -66,13 +68,18 @@ export async function stampAppVersionFromRequest(db, request) {
   if (!m) return;
   try {
     const tokenHash = await sha256Hex(m[1].trim());
-    const now = new Date().toISOString();
+    const nowMs = Date.now();
+    const now = new Date(nowMs).toISOString();
+    const staleBefore = new Date(nowMs - APP_VERSION_STAMP_TTL_MS).toISOString();
+    // Write only when the version changed (IS NOT is NULL-safe) or the stamp is
+    // over an hour old: keeps "last seen" within an hour, avoids a D1 write per request.
     await db
       .prepare(
         `UPDATE users SET app_version = ?, app_version_at = ?
-         WHERE id = (SELECT user_id FROM sessions WHERE token_hash = ? AND expires_at > ?)`
+         WHERE id = (SELECT user_id FROM sessions WHERE token_hash = ? AND expires_at > ?)
+           AND (app_version IS NOT ? OR app_version_at IS NULL OR app_version_at < ?)`
       )
-      .bind(version, now, tokenHash, now)
+      .bind(version, now, tokenHash, now, version, staleBefore)
       .run();
   } catch {
     // best-effort only — never block the request over a stamp failure

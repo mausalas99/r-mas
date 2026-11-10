@@ -255,14 +255,6 @@ html.ic-board-view-open #empty-state,
 html.ic-board-view-open #patient-view {
   display: none !important;
 }
-/* Panel flotante solo para el contenido (debajo de tabs / sub-tabs) */
-.shell-content-frame {
-  border-radius: var(--radius-lg);
-  background: var(--bg);
-  border: var(--shell-frame-border);
-  box-shadow: var(--shadow-sm);
-  min-height: 0;
-}
 #appcontent-lab > .lab-active-shell,
 #appcontent-lab > .main-work-scroll,
 #appcontent-med > .med-active-shell,

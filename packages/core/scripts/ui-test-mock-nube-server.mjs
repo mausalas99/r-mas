@@ -299,14 +299,6 @@ export function createRequestHandler(scenarios, state) {
       if (sub === '/ping' && req.method === 'GET') {
         return sendJson(res, 200, { ok: true, service: 'rplus-sync-mock' });
       }
-      if (sub === '/meta' && req.method === 'GET') {
-        return sendJson(res, 200, {
-          ok: true,
-          service: 'rplus-sync-mock',
-          salas: ['Sala', 'Torre HU', 'Eme', 'UX', 'Área A/Pensionistas'],
-          features: { revisionWs: true },
-        });
-      }
 
       if (sub === '/auth/register' && req.method === 'POST') {
         const body = await readJsonBody(req);

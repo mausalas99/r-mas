@@ -190,18 +190,9 @@
   opacity: 0.9;
 }
 
-.header-doc-queue-icon {
-  flex-shrink: 0;
-  opacity: 0.8;
-}
-
 .header-doc-queue-btn:hover {
   background: var(--state-hover-bg);
   color: var(--text);
-}
-
-.header-doc-queue-btn:hover .header-doc-queue-icon {
-  opacity: 1;
 }
 
 /* CP3 — Paste-anywhere confirm */

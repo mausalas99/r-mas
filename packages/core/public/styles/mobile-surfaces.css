@@ -398,13 +398,6 @@ html.rpc-mobile-web #appcontent-lab #lab-output-box .out-indent {
     margin-top: 0;
   }
 
-  html.rpc-mobile-web .exp-pendientes-mount .todo-composer {
-    order: 0;
-    margin-top: 0;
-    border-top: none;
-    border-bottom: 1px solid var(--border, var(--divider));
-  }
-
   html.rpc-mobile-web .exp-pendientes-mount .todo-toolbar {
     order: 0;
   }
@@ -414,8 +407,7 @@ html.rpc-mobile-web #appcontent-lab #lab-output-box .out-indent {
     order: 3;
   }
 
-  html.rpc-mobile-web .patient-expediente-classic .card-header,
-  html.rpc-mobile-web .patient-expediente-classic .listado-section-header {
+  html.rpc-mobile-web .patient-expediente-classic .card-header {
     font: var(--type-section);
     letter-spacing: var(--tracking-section);
     border-bottom: var(--border-hairline);

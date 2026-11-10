@@ -46,10 +46,9 @@ const MUTATION_COMMIT_ATTEMPTS = 5;
  * cross-sala admin action) work without first joining each sala.
  * @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request
  */
-export async function requireMember(db, request, roomId, t = null) {
+export async function requireMember(db, request, roomId) {
   const stmt = await memberStatement(db, request, roomId);
   const row = stmt ? await stmt.first() : null;
-  t?.lap('auth');
   return memberFromRow(row);
 }
 
@@ -574,7 +573,6 @@ export async function commitMutationBatch(env, db, opts) {
       );
     }
     const results = await db.batch(statements);
-    opts.t?.lap('commit');
     const inserted = Number(results?.[0]?.meta?.changes ?? 0);
     const bumped = Number(results?.[1]?.meta?.changes ?? 0);
     if (inserted !== 1 || bumped !== 1) return { ok: false, reason: 'stale' };
@@ -625,31 +623,11 @@ async function priorMutationResponse(env, prior, roomRevision, baseRevision) {
  * @param {string} roomId
  * @param {'mutations' | 'pull'} sub
  */
-export async function handleSync(request, env, roomId, sub, ctx) {
-  const t = stepTimer(env);
-  const res = await handleSyncRoute(request, env, roomId, sub, t, ctx);
-  if (t) res.headers.set('Server-Timing', t.header());
-  return res;
+export function handleSync(request, env, roomId, sub, ctx) {
+  return handleSyncRoute(request, env, roomId, sub, ctx);
 }
 
-// perf (temporary, scripts/perf/sync-timing.mjs): SYNC_TIMING=1 in .dev.vars
-// adds a Server-Timing header with per-step ms. Remove after the speed work.
-function stepTimer(env) {
-  if (String(env?.SYNC_TIMING || '') !== '1') return null;
-  const t0 = performance.now();
-  let last = t0;
-  const parts = [];
-  return {
-    lap(name) {
-      const now = performance.now();
-      parts.push(`${name};dur=${(now - last).toFixed(2)}`);
-      last = now;
-    },
-    header: () => [...parts, `total;dur=${(performance.now() - t0).toFixed(2)}`].join(', '),
-  };
-}
-
-async function handleSyncRoute(request, env, roomId, sub, t, ctx) {
+async function handleSyncRoute(request, env, roomId, sub, ctx) {
   const db = env.DB;
   if (!db) {
     throw new SyncError('error', 'Base de datos no configurada.');
@@ -659,23 +637,23 @@ async function handleSyncRoute(request, env, roomId, sub, t, ctx) {
     if (request.method !== 'POST') {
       throw new SyncError('not_found', 'Método no permitido.');
     }
-    return handleMutations(request, env, db, roomId, t, ctx);
+    return handleMutations(request, env, db, roomId, ctx);
   }
 
   if (sub === 'pull') {
     if (request.method !== 'GET') {
       throw new SyncError('not_found', 'Método no permitido.');
     }
-    return handlePull(request, env, db, roomId, t);
+    return handlePull(request, env, db, roomId);
   }
 
   throw new SyncError('not_found', 'Ruta de sync no encontrada.');
 }
 
 /** @param {Request} request @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
-async function handleMutations(request, env, db, roomId, t = null, ctx = undefined) {
+async function handleMutations(request, env, db, roomId, ctx = undefined) {
   checkMutationPushRateLimit(roomId);
-  const { user, room } = await requireMember(db, request, roomId, t);
+  const { user, room } = await requireMember(db, request, roomId);
   const bodyText = await request.text();
   const bodyBytes = new TextEncoder().encode(bodyText).length;
   /** @type {Record<string, unknown>} */
@@ -762,7 +740,6 @@ async function handleMutations(request, env, db, roomId, t = null, ctx = undefin
     lastNeedPull = baseRevision < expectedRevision;
     const { state, legacyShardBytes, labSetBytes, coreBytesAtLoad, labsSkipped, shardBaseline } =
       await loadRoomState(env, db, roomId, labLoadOpts);
-    t?.lap('load');
     // Lab shards were not read (or only some patients): their size is whatever
     // the last total held beyond the old core blob.
     const priorLabBytes = labsSkipped
@@ -776,7 +753,6 @@ async function handleMutations(request, env, db, roomId, t = null, ctx = undefin
     }
     lastApplied = [...appliedResult.applied, ...sidecarApplied];
     lastRejected = appliedResult.rejected;
-    t?.lap('apply');
     const noopAck = tryNoopMutationAck(
       lastApplied,
       lastRejected,
@@ -797,7 +773,6 @@ async function handleMutations(request, env, db, roomId, t = null, ctx = undefin
       labSetBytes,
       priorLabBytes,
       shardBaseline,
-      t,
     });
     if (committed.ok) {
       // appliedResult.applied only — not sidecarApplied (internoAccessUpsert rows
@@ -806,7 +781,6 @@ async function handleMutations(request, env, db, roomId, t = null, ctx = undefin
       // already durable and the ack does not depend on the broadcast.
       // settings/{id} stays out of the broadcast: peers pull, and pull filters it per caller.
       await notifyRoomRevision(env, roomId, committed.revision, stripUserSettingsOps(appliedResult.applied), ctx);
-      t?.lap('notify');
       return Response.json({
         revision: committed.revision,
         applied: lastApplied,
@@ -899,7 +873,7 @@ function filterPullOpsForMobileLabWindow(ops, now) {
 }
 
 /** @param {Request} request @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
-async function handlePull(request, env, db, roomId, t = null) {
+async function handlePull(request, env, db, roomId) {
   const url = new URL(request.url);
   const since = Number(url.searchParams.get('since') ?? 0);
   const mobileLabWindow = isMobileLabPullRequest(url);
@@ -934,7 +908,6 @@ async function handlePull(request, env, db, roomId, t = null) {
       )
       .bind(roomId, since, roomId, roomId, since, PULL_REVISION_GAP, roomId, since, PULL_OPS_MAX_BYTES),
   ]);
-  t?.lap('auth');
   const { user, room } = memberFromRow(authRes?.results?.[0] ?? null);
 
   const revision = Number(room.revision);

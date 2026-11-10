@@ -321,8 +321,7 @@ html.dark .patient-dash .svc.is-on {
 }
 
 .patient-dash .bento.rest > .card,
-.patient-dash .bento.meds-band > .card,
-#patient-ronda-dashboard-host .bento.meds-band > .card {
+.patient-dash .bento.meds-band > .card {
   display: flex;
   flex-direction: column;
   height: auto;
@@ -346,8 +345,7 @@ html.dark .patient-dash .svc.is-on {
 .patient-dash .card,
 .patient-dash button.card,
 .patient-expediente-classic .patient-dash .card,
-.patient-expediente-classic .patient-dash button.card,
-#patient-ronda-dashboard-host .card {
+.patient-expediente-classic .patient-dash button.card {
   background: var(--card-bg);
   border: 0;
   border-radius: var(--card-radius);
@@ -358,8 +356,7 @@ html.dark .patient-dash .svc.is-on {
 
 .patient-dash .card:hover,
 .patient-dash button.card:hover,
-.patient-expediente-classic .patient-dash .card:hover,
-#patient-ronda-dashboard-host .card:hover {
+.patient-expediente-classic .patient-dash .card:hover {
   box-shadow: var(--shadow-1);
 }
 
@@ -404,9 +401,7 @@ html.dark .patient-dash .svc.is-on {
 
 .patient-dash .vitals-card,
 .patient-dash button.vitals-card,
-.patient-dash .labs-card,
-#patient-ronda-dashboard-host .vitals-card,
-#patient-ronda-dashboard-host .labs-card {
+.patient-dash .labs-card {
   overflow: visible;
   height: auto;
   min-height: min-content;
@@ -560,12 +555,6 @@ html.dark .patient-dash .svc.is-on {
 .patient-dash .draw-head-label {
   font: var(--fw-strong) var(--fs-14)/1.3 var(--font-ui);
   color: var(--error);
-}
-
-.patient-dash .draw-head-caption {
-  font: var(--type-wb-mono);
-  color: var(--color-ink-muted);
-  white-space: nowrap;
 }
 
 .patient-dash .draw-grid {
@@ -832,8 +821,6 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap] em {
 #itab-content-paciente .exp-pendientes-mount[hidden] {
   display: none;
 }
-
-#patient-ronda-dashboard-host { min-width: 0; }
 
 /* ── Interconsulta consult info fields ─────────────────────────────
  * Sits inline inside .idrow .id-name-row, right after the patient name

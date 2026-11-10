@@ -1,7 +1,6 @@
 /* Modo Sala — vista de tarjetas. Todo cuelga de body[data-sala-view]; en vista barra no aplica nada. */
 
-body[data-sala-view] .patient-sidebar,
-body[data-sala-view] .sidebar-edge-reveal {
+body[data-sala-view] .patient-sidebar {
   display: none !important;
 }
 
@@ -149,11 +148,6 @@ body[data-sala-home] #sala-view-home {
 .sv-dx {
   margin: 0;
   padding-left: 18px;
-  font-size: 0.88rem;
-  line-height: 1.4;
-}
-
-.sv-motivo {
   font-size: 0.88rem;
   line-height: 1.4;
 }

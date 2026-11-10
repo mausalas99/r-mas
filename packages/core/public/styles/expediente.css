@@ -467,9 +467,6 @@ html.dark .med-insulin-pump-alg-pill {
   html.sidebar-auto-hide:not(.sidebar-reveal) aside.patient-sidebar {
     transform: none;
   }
-  .tend-range-vbar-norm,
-  .tend-range-vbar-marker { transition: none !important; transition-delay: 0ms !important; }
-  .tend-range-vbar-norm { transform: scaleY(1) !important; }
 }
 .med-output-tab {
   position: relative;
@@ -2056,12 +2053,6 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
   background: var(--danger);
   color: var(--color-on-accent);
 }
-#cultivos-table-container .cult-atb-more {
-  grid-column: 1 / -1;
-  padding-top: 2px;
-  color: var(--text-muted);
-  font-size: var(--fs-12);
-}
 #cultivos-table-container .cult-atb-mk {
   padding: 1px 7px;
   border-radius: 999px;
@@ -2133,12 +2124,6 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
   background: color-mix(in oklab, var(--warn) 12%, var(--surface));
   color: var(--warn);
   font-size: var(--fs-13);
-  line-height: 1.4;
-}
-.atb-ris-panel-note {
-  margin: 6px 0 0;
-  color: var(--text-muted);
-  font-size: var(--fs-12);
   line-height: 1.4;
 }
 #cultivos-table-container .cult-site .cultivos-copy-full-btn {

@@ -67,8 +67,8 @@ await r.finish('Administración: side menu and its five sections (board «Nube +
 
   const tabs = await A.page.locator(`${ADMIN} [role="tab"][data-admin-tab]`).evaluateAll((els) =>
     els.filter((e) => e.getBoundingClientRect().width > 0).map((e) => e.getAttribute('data-admin-tab')));
-  check('menu: Resumen, Salas, Pacientes, Usuarios, Registro, then Zona de peligro',
-    tabs.join(',') === 'resumen,salas,red,equipos,mutaciones,peligro', tabs);
+  check('menu: Resumen, Salas, Pacientes, Usuarios, Solicitudes, Registro, then Zona de peligro',
+    tabs.join(',') === 'resumen,salas,red,equipos,solicitudes,mutaciones,peligro', tabs);
   check('the admin key box is gone once you are admin',
     !(await A.page.locator(`${ADMIN} [data-admin-bootstrap]`).isVisible().catch(() => false)));
 
@@ -164,7 +164,7 @@ await r.finish('Administración: side menu and its five sections (board «Nube +
   const loaded = await until(async () => (await reg.locator('.cloud-sync-admin-event').count()) > 0, 10000);
   const regText = await reg.locator('.cloud-sync-admin-events').innerText().catch(() => '');
   check('Registro loads on its own (no «Cargar»)', loaded && !(await reg.locator('[data-admin-action="load-mutations"]').count()));
-  check('Registro names the person, not a user ID', regText.includes(R4.name) && !/[0-9a-f]{8}-[0-9a-f]{4}-/.test(regText), regText.slice(0, 200));
+  check('Registro names the person, not a user ID', regText.includes(R4.name) && !/[0-9a-f]{8}-[0-9a-f]{4}-/.test(regText), { uuid: regText.match(/.{0,80}[0-9a-f]{8}-[0-9a-f]{4}-.{0,30}/s)?.[0], hasName: regText.includes(R4.name) });
   await reg.locator('.cloud-sync-admin-event summary').first().click();
   await r.shot(A.page, 'registro-detalle');
 

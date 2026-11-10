@@ -43,16 +43,6 @@
 
 .skel-line { height: 14px; }
 .skel-card { min-height: 120px; border-radius: var(--radius-lg); }
-.skel-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 0;
-  border-radius: var(--radius-md);
-  background: none;
-}
-
-.skel-row .skel-line { flex: 1; }
 
 .skel-panel {
   display: flex;
@@ -99,8 +89,7 @@
 }
 
 html.high-contrast .skel-line,
-html.high-contrast .skel-card,
-html.high-contrast .skel-row .skel-line {
+html.high-contrast .skel-card {
   background-color: color-mix(in oklab, var(--text) 12%, var(--surface));
   border: 1px solid var(--border);
 }

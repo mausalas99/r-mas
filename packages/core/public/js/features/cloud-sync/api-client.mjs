@@ -85,9 +85,9 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 
-    // The Worker edge-caches /ping and /meta: a hit carries the Date of when it was stored,
+    // The Worker edge-caches /ping: a hit carries the Date of when it was stored,
     // which would read as a clock skew of minutes and make every push look stale to the Worker.
-    if (path !== '/ping' && path !== '/meta') noteServerDate(res.headers.get('Date'));
+    if (path !== '/ping') noteServerDate(res.headers.get('Date'));
     const data = await res.json().catch(() => ({}));
     if (token) noteNubeAuthResponse(res.status, data, token);
     if (!res.ok) throw httpErrorFromResponse(res, data);
@@ -96,7 +96,6 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey, getRoomD
 
   return {
     ping: () => req('/ping'),
-    meta: () => req('/meta'),
     register: (body) => req('/auth/register', { method: 'POST', body: { ...body, appVersion: getCachedAppVersion() } }),
     login: (body) => req('/auth/login', { method: 'POST', body: { ...body, appVersion: getCachedAppVersion() } }),
     logout: () => req('/auth/logout', { method: 'POST', body: {} }),
