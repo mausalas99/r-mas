@@ -1,6 +1,5 @@
 /** Bulk lab-repo update for mi equipo: sequential IPC + sidebar job queue. */
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
-import { esc, escAttr } from '../dom-escape.mjs';
 import { patientsVisibleInSidebar } from './patients-scope.mjs';
 import { registerLabPanelRuntime, rt } from './lab-panel-runtime-state.mjs';
 import {
@@ -23,7 +22,7 @@ import {
   abortPendingLabRepoBatchJobs,
   jobStatusFromFetchKind,
 } from './lab-repo-batch-model.mjs';
-import { buildLabChemistrySkeletonHtml } from '../ui-skeleton.mjs';
+import { drawLabRepoBatchList, drawLabRepoBatchProgress } from './lab-repo-batch-import-view.jsx';
 import {
   resolveActivePatientBatchRow,
   resolveBatchOpenMode,
@@ -94,50 +93,7 @@ function syncConfirmButtonLabel() {
 function renderBatchList() {
   var list = document.getElementById('lab-repo-batch-list');
   if (!list) return;
-  if (!batchRows.length) {
-    list.innerHTML =
-      '<p class="lab-repo-batch-empty">No hay pacientes en tu equipo (o aún no hay asignaciones).</p>';
-    return;
-  }
-  list.innerHTML = batchRows
-    .map(function (r) {
-      var disabled = !r.hasRegistro || batchBusy;
-      var metaHtml;
-      if (r.hasRegistro) {
-        metaHtml =
-          '<span class="lab-repo-batch-row-reg">Reg. ' +
-          esc(r.registro) +
-          '</span>' +
-          (r.hint
-            ? '<span class="lab-repo-batch-row-loc">' + esc(r.hint) + '</span>'
-            : '');
-      } else {
-        metaHtml = '<span class="lab-repo-batch-row-warn">Sin registro — se omite</span>';
-      }
-      return (
-        '<label class="lab-repo-batch-row' +
-        (r.hasRegistro ? '' : ' lab-repo-batch-row--disabled') +
-        '">' +
-        '<input type="checkbox" class="lab-repo-batch-check" data-patient-id="' +
-        esc(r.id) +
-        '"' +
-        (r.selected ? ' checked' : '') +
-        (disabled ? ' disabled' : '') +
-        ' />' +
-        '<span class="lab-repo-batch-row-text">' +
-        '<span class="lab-repo-batch-row-name" title="' +
-        escAttr(r.nombre) +
-        '">' +
-        esc(r.nombre) +
-        '</span>' +
-        '<span class="lab-repo-batch-row-meta">' +
-        metaHtml +
-        '</span>' +
-        '</span>' +
-        '</label>'
-      );
-    })
-    .join('');
+  drawLabRepoBatchList(list, batchRows, batchBusy);
 }
 
 function syncBatchCount() {
@@ -163,7 +119,7 @@ function setBatchProgress(_text, visible) {
   var el = document.getElementById('lab-repo-batch-progress');
   if (!el) return;
   el.hidden = !visible;
-  el.innerHTML = visible ? buildLabChemistrySkeletonHtml() : '';
+  drawLabRepoBatchProgress(el, visible);
 }
 
 function renderSidebarQueue() {
