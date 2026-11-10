@@ -1,0 +1,51 @@
+{
+  "rising out of range, 3 readings": {
+    "badge": "<span class=\"tend-status tend-status--high\">▲ Alto</span>",
+    "hero": "<span class=\"tend-detail-big tend-abnormal\">130</span><span class=\"tend-detail-unit\">mg/dL</span><span class=\"tend-detail-change tend-insight-delta--bad\">▲ +24% desde el 02/05</span><span class=\"tend-detail-note\">se aleja del rango</span>",
+    "ref": "Rango de referencia <b>70 – 110</b>",
+    "readings": "<div class=\"tend-rd-row tend-rd-head\"><span>Fecha</span><span>Valor</span><span>Cambio</span></div><div class=\"tend-rd-row\"><span>03/05</span><span class=\"tend-rd-val\">130</span><span class=\"tend-rd-chg tend-rd-chg--bad\">+25</span></div><div class=\"tend-rd-row\"><span>02/05</span><span class=\"tend-rd-val\">105</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">+15</span></div><div class=\"tend-rd-row\"><span>01/05</span><span class=\"tend-rd-val\">90</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">—</span></div>",
+    "compare": ""
+  },
+  "falling back into range, 6 readings (Ver todos)": {
+    "badge": "<span class=\"tend-status tend-status--ok\">En rango</span>",
+    "hero": "<span class=\"tend-detail-big\">13.1</span><span class=\"tend-detail-unit\">g/dL</span><span class=\"tend-detail-change tend-insight-delta--neutral\">▲ +5% desde el 05/05</span>",
+    "ref": "Rango de referencia <b>12 – 16</b>",
+    "readings": "<div class=\"tend-rd-row tend-rd-head\"><span>Fecha</span><span>Valor</span><span>Cambio</span></div><div class=\"tend-rd-row\"><span>06/05</span><span class=\"tend-rd-val\">13.1</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">+0.6</span></div><div class=\"tend-rd-row\"><span>05/05</span><span class=\"tend-rd-val\">12.5</span><span class=\"tend-rd-chg tend-rd-chg--good\">+1.5</span></div><div class=\"tend-rd-row\"><span>04/05</span><span class=\"tend-rd-val\">11</span><span class=\"tend-rd-chg tend-rd-chg--good\">+1</span></div><div class=\"tend-rd-row\"><span>03/05</span><span class=\"tend-rd-val\">10</span><span class=\"tend-rd-chg tend-rd-chg--good\">+0.5</span></div><div class=\"tend-rd-row tend-rd-extra\"><span>02/05</span><span class=\"tend-rd-val\">9.5</span><span class=\"tend-rd-chg tend-rd-chg--good\">+0.5</span></div><div class=\"tend-rd-row tend-rd-extra\"><span>01/05</span><span class=\"tend-rd-val\">9</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">—</span></div><button type=\"button\" class=\"tend-rd-more\" data-tend-action=\"readings-all\" aria-expanded=\"false\">Ver todos (6)</button>",
+    "compare": "<span class=\"tend-detail-compare-label\">Comparar con</span><select class=\"tend-detail-compare-select\" id=\"tend-detail-compare-select\" aria-label=\"Comparar con otro analito\"><option value=\"\">Sin comparar</option><option value=\"Hto\">Hto</option><option value=\"Leu\" selected>Leu</option></select>"
+  },
+  "below range, getting worse": {
+    "badge": "<span class=\"tend-status tend-status--low\">▼ Bajo</span>",
+    "hero": "<span class=\"tend-detail-big tend-abnormal\">90</span><span class=\"tend-detail-unit\">x10³/µL</span><span class=\"tend-detail-change tend-insight-delta--bad\">▼ −25% desde el 03/05</span><span class=\"tend-detail-note\">se aleja del rango</span>",
+    "ref": "Rango de referencia <b>150 – 400</b>",
+    "readings": "<div class=\"tend-rd-row tend-rd-head\"><span>Fecha</span><span>Valor</span><span>Cambio</span></div><div class=\"tend-rd-row\"><span>04/05</span><span class=\"tend-rd-val\">90</span><span class=\"tend-rd-chg tend-rd-chg--bad\">−30</span></div><div class=\"tend-rd-row\"><span>03/05</span><span class=\"tend-rd-val\">120</span><span class=\"tend-rd-chg tend-rd-chg--bad\">−20</span></div><div class=\"tend-rd-row\"><span>02/05</span><span class=\"tend-rd-val\">140</span><span class=\"tend-rd-chg tend-rd-chg--bad\">−20</span></div><div class=\"tend-rd-row\"><span>01/05</span><span class=\"tend-rd-val\">160</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">—</span></div>",
+    "compare": "<span class=\"tend-detail-compare-label\">Comparar con</span><select class=\"tend-detail-compare-select\" id=\"tend-detail-compare-select\" aria-label=\"Comparar con otro analito\"><option value=\"\">Sin comparar</option><option value=\"Hb\">Hb</option></select>"
+  },
+  "no reference range": {
+    "badge": "",
+    "hero": "<span class=\"tend-detail-big\">7</span><span class=\"tend-detail-change tend-insight-delta--neutral\">▲ +75% desde el 02/05</span>",
+    "ref": "Sin rango de referencia",
+    "readings": "<div class=\"tend-rd-row tend-rd-head\"><span>Fecha</span><span>Valor</span><span>Cambio</span></div><div class=\"tend-rd-row\"><span>03/05</span><span class=\"tend-rd-val\">7</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">+3</span></div><div class=\"tend-rd-row\"><span>02/05</span><span class=\"tend-rd-val\">4</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">0</span></div><div class=\"tend-rd-row\"><span>01/05</span><span class=\"tend-rd-val\">4</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">—</span></div>",
+    "compare": ""
+  },
+  "flat latest, null reading in the middle": {
+    "badge": "<span class=\"tend-status tend-status--ok\">En rango</span>",
+    "hero": "<span class=\"tend-detail-big\">138</span><span class=\"tend-detail-unit\">mEq/L</span>",
+    "ref": "Rango de referencia <b>135 – 145</b>",
+    "readings": "<div class=\"tend-rd-row tend-rd-head\"><span>Fecha</span><span>Valor</span><span>Cambio</span></div><div class=\"tend-rd-row\"><span>05/05</span><span class=\"tend-rd-val\">138</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">0</span></div><div class=\"tend-rd-row\"><span>04/05</span><span class=\"tend-rd-val\">138</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">−2</span></div><div class=\"tend-rd-row\"><span>03/05</span><span class=\"tend-rd-val\">140</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">—</span></div><div class=\"tend-rd-row\"><span>02/05</span><span class=\"tend-rd-val\">—</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">—</span></div><div class=\"tend-rd-row tend-rd-extra\"><span>01/05</span><span class=\"tend-rd-val\">140</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">—</span></div><button type=\"button\" class=\"tend-rd-more\" data-tend-action=\"readings-all\" aria-expanded=\"false\">Ver todos (5)</button>",
+    "compare": "<span class=\"tend-detail-compare-label\">Comparar con</span><select class=\"tend-detail-compare-select\" id=\"tend-detail-compare-select\" aria-label=\"Comparar con otro analito\"><option value=\"\">Sin comparar</option><option value=\"K\">K</option></select>"
+  },
+  "escaping in unit, labels and siblings": {
+    "badge": "<span class=\"tend-status tend-status--low\">▼ Bajo</span>",
+    "hero": "<span class=\"tend-detail-big tend-abnormal\">0.5</span><span class=\"tend-detail-unit\">&lt;b&gt;&quot;mg&quot;&lt;/b&gt; &amp; co</span><span class=\"tend-detail-change tend-insight-delta--neutral\">▼ −80% desde el b&amp;2</span>",
+    "ref": "Rango de referencia <b>1 – 2</b>",
+    "readings": "<div class=\"tend-rd-row tend-rd-head\"><span>Fecha</span><span>Valor</span><span>Cambio</span></div><div class=\"tend-rd-row\"><span>c&quot;3&quot;</span><span class=\"tend-rd-val\">0.5</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">−2</span></div><div class=\"tend-rd-row\"><span>b&amp;2</span><span class=\"tend-rd-val\">2.5</span><span class=\"tend-rd-chg tend-rd-chg--bad\">+1</span></div><div class=\"tend-rd-row\"><span>a&lt;1&gt;</span><span class=\"tend-rd-val\">1.5</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">—</span></div>",
+    "compare": "<span class=\"tend-detail-compare-label\">Comparar con</span><select class=\"tend-detail-compare-select\" id=\"tend-detail-compare-select\" aria-label=\"Comparar con otro analito\"><option value=\"\">Sin comparar</option><option value=\"A &quot;q&quot;\" selected>A \"q\"</option><option value=\"B\">B</option></select>"
+  },
+  "null latest": {
+    "badge": "",
+    "hero": "<span class=\"tend-detail-big\">—</span><span class=\"tend-detail-unit\">u</span>",
+    "ref": "Rango de referencia <b>1 – 2</b>",
+    "readings": "<div class=\"tend-rd-row tend-rd-head\"><span>Fecha</span><span>Valor</span><span>Cambio</span></div><div class=\"tend-rd-row\"><span>02/05</span><span class=\"tend-rd-val\">—</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">—</span></div><div class=\"tend-rd-row\"><span>01/05</span><span class=\"tend-rd-val\">1</span><span class=\"tend-rd-chg tend-rd-chg--neutral\">—</span></div>",
+    "compare": ""
+  }
+}
