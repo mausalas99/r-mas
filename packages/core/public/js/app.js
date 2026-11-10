@@ -14,6 +14,7 @@ void Promise.all([
   import('./features/settings-security-view.jsx').then((m) => m.mountSettingsSecurity()),
   import('./features/settings-app-view.jsx').then((m) => m.mountSettingsApp()),
   import('./features/settings-appearance-view.jsx').then((m) => m.mountSettingsAppearance()),
+  import('./features/settings-backups-view.jsx').then((m) => m.mountSettingsBackups()),
 ]);
 
 initInlineActionDispatch();
