@@ -28,6 +28,7 @@ import {
 import { openConfirm } from "./workbench/confirm.mjs";
 import { stampDocUpdatedAt, mergeAnteriores, liveAnteriores, editAnterior, deleteAnterior, anteriorKey } from "../patient-merge.mjs";
 import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
+import { drawNoteForm, drawIndicaForm } from "./notes-indicaciones-view.jsx";
 import { parseIcSugerencias, applyIcSugerenciasToIndica, indicaDocHasContent } from "../ic-sugerencias-parse.mjs";
 
 /** A saved edit: new edit clock (last write wins), then a debounced Nube push. */
@@ -105,55 +106,7 @@ function renderNoteForm() {
   }
   var dxs = note.diagnosticos || [''];
   var txs = note.tratamiento || [''];
-  // One screen, no scroll: every .docx field in six equal boxes.
-  document.getElementById('note-form').innerHTML = (
-    '<div class="fit-screen">' +
-    '<div class="fit-head">' +
-    '<span class="fit-title">Nota de evolución</span>' +
-    '<label class="fit-inline">Fecha<input type="text" value="' + esc(note.fecha) + '" data-oninput="updateNote" data-oninput-args=\'["fecha"]\' data-oninput-pass="value" placeholder="DD/MM/AAAA"></label>' +
-    '<label class="fit-inline fit-inline--short">Hora<input type="text" value="' + esc(note.hora) + '" data-oninput="updateNote" data-oninput-args=\'["hora"]\' data-oninput-pass="value" placeholder="HH:MM"></label>' +
-    '<span class="fit-spacer"></span>' +
-    pastDocsButtonHtml('nota', note) +
-    '<button type="button" class="wb-btn wb-btn-ghost" data-onclick="estadoActualEnviarANota" title="Llena Evolución y Signos vitales con el Estado actual">Traer de estado actual</button>' +
-    '<button type="button" class="wb-btn wb-btn-ghost rpc-doc-export" data-onclick="quickExportCurrentPatient" id="btn-quick-export-note">Salida rápida</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary rpc-doc-export" data-onclick="previewNota" id="btn-gen">Generar nota</button>' +
-    '</div>' +
-    '<div class="fit-grid nota-fit-grid">' +
-
-    '<section class="fit-block" style="grid-area:s"><h4>Interrogatorio, exploración y estado mental</h4>' +
-    '<textarea placeholder="Refiere / niega…" data-oninput="updateNote" data-oninput-args=\'["interrogatorio"]\' data-oninput-pass="value">' + esc(note.interrogatorio) + '</textarea></section>' +
-
-    '<section class="fit-block" style="grid-area:o"><h4>Evolución · N / V / HD / HI / NM</h4>' +
-    '<textarea placeholder="Estructura N / V / HD / HI / NM. Edita los formatos en Mi Perfil." data-oninput="updateNote" data-oninput-args=\'["evolucion"]\' data-oninput-pass="value">' + esc(note.evolucion) + '</textarea></section>' +
-
-    '<section class="fit-block" style="grid-area:lab"><h4>Estudios auxiliares</h4>' +
-    '<textarea placeholder="Fecha, luego un estudio por renglón" data-oninput="updateNote" data-oninput-args=\'["estudios"]\' data-oninput-pass="value">' + esc(note.estudios) + '</textarea></section>' +
-
-    '<section class="fit-block" style="grid-area:dx"><h4>Diagnósticos<button type="button" class="wb-btn wb-btn-ghost wb-btn-sm" data-onclick="syncNoteDxFromCenso" title="Traer los diagnósticos del censo a la nota">Desde censo</button></h4>' +
-    '<div class="fit-list list-rows" id="dx-list">' +
-    dxs.map(function (dx, i) { return '<div class="list-row"><input type="text" value="' + esc(dx) + '" placeholder="Diagnóstico ' + (i + 1) + '" data-oninput="updateDx" data-oninput-args="[' + i + ']" data-oninput-pass="value" style="text-transform:uppercase;"><button class="btn-remove" data-onclick="removeDx" data-onclick-args="[' + i + ']"' + (dxs.length <= 1 ? ' style="visibility:hidden"' : '') + ' aria-label="Eliminar">×</button></div>'; }).join('') +
-    '<button class="btn-add-row" data-onclick="addDx">+ Agregar diagnóstico</button></div></section>' +
-
-    '<section class="fit-block" style="grid-area:tx"><h4>Tratamiento e indicaciones</h4>' +
-    '<div class="fit-list list-rows" id="tx-list">' +
-    txs.map(function (tx, i) { return '<div class="list-row"><span class="list-num">' + (i + 1) + '.</span><input type="text" value="' + esc(tx) + '" placeholder="Indicación, dosis, vía y periodicidad" data-oninput="updateTx" data-oninput-args="[' + i + ']" data-oninput-pass="value"><button class="btn-remove" data-onclick="removeTx" data-onclick-args="[' + i + ']"' + (txs.length <= 1 ? ' style="visibility:hidden"' : '') + ' aria-label="Eliminar">×</button></div>'; }).join('') +
-    '<button class="btn-add-row" data-onclick="addTx">+ Agregar indicación</button></div></section>' +
-
-    '<div class="fit-stack" style="grid-area:side">' +
-    '<section class="fit-block"><h4>Signos vitales</h4><div class="fit-vitals">' +
-    [['ta', 'T.A.', 'mmHg'], ['fr', 'F.R.', 'rpm'], ['fc', 'F.C.', 'lpm'], ['temp', 'Temp', '°C'], ['peso', 'Peso', 'kg']].map(function (v) {
-      return '<label>' + v[1] + '<input type="text" value="' + esc(note[v[0]]) + '" placeholder="' + v[2] + '" data-oninput="updateNote" data-oninput-args=\'' + escAttr(JSON.stringify([v[0]])) + '\' data-oninput-pass="value"></label>';
-    }).join('') +
-    '</div></section>' +
-
-    '<section class="fit-block"><h4>Firma</h4><div class="fit-pair">' +
-    '<label>Médico tratante<input type="text" value="' + esc(note.medico) + '" placeholder="Nombre completo" data-oninput="updateNote" data-oninput-args=\'["medico"]\' data-oninput-pass="value"></label>' +
-    '<label>Profesor responsable<input type="text" value="' + esc(note.profesor) + '" placeholder="Nombre completo" data-oninput="updateNote" data-oninput-args=\'["profesor"]\' data-oninput-pass="value"></label>' +
-    '</div></section>' +
-    '</div>' +
-
-    '</div></div>'
-  );
+  drawNoteForm(document.getElementById('note-form'), { note: note, dxs: dxs, txs: txs, pastCount: liveAnteriores(note).length });
   rt.syncOfflineButtonStates();
 }
 
@@ -278,36 +231,7 @@ function renderIndicaForm() {
   if (!getPatients().some(function (p) { return p.id === aid(); })) return;
   var ind = ensureIndicaDoc();
   if (applyMedicosFromGradoIfEmpty(ind, rt.getSettings() || {})) persistClinicalState();
-  var SECTIONS = [
-    {key:'dieta',label:'Dieta',placeholder:'Escriba la dieta (una indicación por línea si aplica)…'},
-    {key:'cuidados',label:'Cuidados',placeholder:'Signos vitales, balance, dispositivos, etc.…'},
-    {key:'estudios',label:'Estudios',placeholder:'BH, QS, EGO, imágenes…'},
-    {key:'medicamentos',label:'Medicamentos',placeholder:'Fármaco, dosis, vía y horario…'},
-    {key:'interconsultas',label:'Interconsultas',placeholder:'Servicio y motivo de interconsulta…'},
-  ];
-  var AREAS = { dieta: 'die', cuidados: 'cui', estudios: 'est', medicamentos: 'med', interconsultas: 'int' };
-  // One screen, no scroll: header carries fecha/hora/médicos and the actions.
-  document.getElementById('indica-form').innerHTML = (
-    '<div class="fit-screen">' +
-    '<div class="fit-head">' +
-    '<span class="fit-title">Indicaciones</span>' +
-    '<label class="fit-inline">Fecha<input type="text" value="' + esc(ind.fecha) + '" placeholder="DD/MM/AAAA" data-oninput="updateIndica" data-oninput-args=\'["fecha"]\' data-oninput-pass="value"></label>' +
-    '<label class="fit-inline fit-inline--short">Hora<input type="text" value="' + esc(ind.hora) + '" placeholder="HH:MM" data-oninput="updateIndica" data-oninput-args=\'["hora"]\' data-oninput-pass="value"></label>' +
-    '<label class="fit-inline fit-inline--grow">Médicos<textarea rows="3" placeholder="Grado y nombre" data-oninput="updateIndica" data-oninput-args=\'["medicos"]\' data-oninput-pass="value">' + esc(ind.medicos) + '</textarea></label>' +
-    buildExtraTemplatesSelectorHtml() +
-    pastDocsButtonHtml('indica', ind) +
-    '<button type="button" class="wb-btn wb-btn-secondary rpc-doc-export" data-onclick="quickExportCurrentPatient" id="btn-quick-export-indica">Salida rápida</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary rpc-doc-export" data-onclick="previewIndicaciones" id="btn-gen-ind">Generar Indicaciones</button>' +
-    '</div>' +
-    '<div class="fit-grid indica-fit-grid">' +
-    SECTIONS.map(function(s){ return '<section class="fit-block" style="grid-area:' + AREAS[s.key] + '"><h4>' + s.label + '</h4><textarea placeholder="' + s.placeholder + '" data-oninput="updateIndica" data-oninput-args=\'' + escAttr(JSON.stringify([s.key])) + '\' data-oninput-pass="value">' + esc(ind[s.key]) + '</textarea></section>'; }).join('') +
-    '<section class="fit-block" style="grid-area:otr"><h4>Otros<button type="button" class="wb-btn wb-btn-ghost wb-btn-sm" data-onclick="addOtro">+ Agregar sección</button></h4><div class="fit-list" id="otros-list">' +
-    ((ind.otros || []).length
-      ? ind.otros.map(function(o,i){ return '<div class="otros-item"><button class="btn-remove-otro" data-onclick="removeOtro" data-onclick-args="['+i+']" aria-label="Quitar sección">×</button><input type="text" placeholder="TÍTULO DE LA SECCIÓN" value="'+esc(o.titulo)+'" data-oninput="updateOtro" data-oninput-args=\''+escAttr(JSON.stringify([i,'titulo']))+'\' data-oninput-pass="value"><textarea rows="2" placeholder="Indicaciones..." data-oninput="updateOtro" data-oninput-args=\''+escAttr(JSON.stringify([i,'contenido']))+'\' data-oninput-pass="value">'+esc(o.contenido)+'</textarea></div>'; }).join('')
-      : '<p class="fit-empty">Sin secciones extra.</p>') +
-    '</div></section>' +
-    '</div></div>'
-  );
+  drawIndicaForm(document.getElementById('indica-form'), { ind: ind, templates: extraTemplates(), pastCount: liveAnteriores(ind).length });
   rt.syncOfflineButtonStates();
 }
 
@@ -333,18 +257,9 @@ function removeOtro(i) {
 }
 
 // ── Plantillas guardadas ──────────────────────────────────────────────
-function buildExtraTemplatesSelectorHtml() {
-  var arr = ((rt.getSettings() || {}) && Array.isArray((rt.getSettings() || {}).extraTemplates)) ? (rt.getSettings() || {}).extraTemplates : [];
-  var predBtn =
-    '<button type="button" class="wb-btn wb-btn-ghost" data-onclick="openIndicaFormatsFromProfile" title="Formatos en blanco. Plantillas guardadas: Ajustes → Plantillas.">Predeterminados…</button>';
-  if (!arr.length) return predBtn;
-  var opts = '<option value="">— Aplicar plantilla guardada —</option>' +
-    arr.map(function(t){ return '<option value="' + esc(t.id) + '">' + esc(t.label || '(sin nombre)') + '</option>'; }).join('');
-  return '<div class="indica-extra-tmpl">' +
-    predBtn +
-    '<select id="indica-extra-tmpl-select" aria-label="Seleccionar plantilla guardada">' + opts + '</select>' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-onclick="applyExtraTemplateFromIndica">Aplicar</button>' +
-    '</div>';
+function extraTemplates() {
+  var arr = (rt.getSettings() || {}).extraTemplates;
+  return Array.isArray(arr) ? arr : [];
 }
 
 function indicaHasExistingContent(target) {
@@ -553,12 +468,6 @@ function archiveCopy(doc) {
   snap.guardada = new Date().toISOString();
   doc.anteriores = mergeAnteriores([snap], doc.anteriores);
   touchDoc(doc); // edit clock + Nube push: without it a pull of the same updatedAt wipes the copy
-}
-
-function pastDocsButtonHtml(kind, doc) {
-  var n = liveAnteriores(doc).length;
-  return '<button type="button" class="wb-btn wb-btn-ghost" data-onclick="openPastDocs" data-onclick-args=\'' + escAttr(JSON.stringify([kind])) + '\'' +
-    (n ? '' : ' disabled title="Se guarda una copia cada vez que imprimes o generas el documento"') + '>Anteriores (' + n + ')</button>';
 }
 
 function pastFieldText(kind, key, snap) {
