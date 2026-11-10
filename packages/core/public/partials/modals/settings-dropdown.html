@@ -274,289 +274,32 @@
 
       <details class="settings-accordion" id="settings-accordion-laboratorio" data-settings-icon="laboratorio">
         <summary>Laboratorio</summary>
-        <div class="settings-acc-body">
-          <div class="settings-card-stack">
-            <div class="settings-card">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Dirección del portal de laboratorio</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Se guarda solo en esta computadora. Necesaria para «Actualizar labs», la actualización masiva de equipo y el alta por registro.</p>
-              </div>
-              <div class="settings-card__action">
-                <input id="settings-lab-portal-url" class="profile-input settings-acc-select" type="url" autocomplete="off" placeholder="https://…/index.aspx" aria-label="Dirección del portal de laboratorio" data-onblur="onLabPortalUrlBlur">
-              </div>
-            </div>
-          </div>
-        </div>
+        <div class="settings-acc-body" id="settings-lab-body"></div>
       </details>
 
       <details class="settings-accordion" id="settings-accordion-documents" data-settings-icon="documentos">
         <summary>Documentos</summary>
-        <div class="settings-acc-body">
-          <div class="settings-card-stack">
-            <div class="settings-card">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Carpeta de salida</p>
-                <p class="settings-card__desc settings-acc-path" id="settings-output-dir" title="">Descargas (predeterminado)</p>
-              </div>
-              <div class="settings-card__action"><button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" data-onclick="chooseOutputDir">Cambiar…</button></div>
-            </div>
-            <div class="settings-card">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Salida rápida</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Formato al exportar la nota o indicaciones al instante.</p>
-              </div>
-              <div class="settings-card__action">
-                <select id="settings-quick-output-format" class="settings-acc-select settings-acc-select--compact" data-onchange="saveQuickOutputFormat" data-onchange-pass="value" aria-label="Salida rápida"><option value="docx">DOCX</option><option value="html">HTML</option><option value="txt">Texto</option></select>
-              </div>
-            </div>
-            <div class="settings-card settings-card--toggle">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Ocultar «Copiar prompt IA»</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Quita el botón del listado de problemas.</p>
-              </div>
-              <label class="settings-card__action settings-card__toggle-label" for="settings-hide-listado-ai-prompt">
-                <input type="checkbox" class="settings-card__toggle" id="settings-hide-listado-ai-prompt" aria-label="Ocultar «Copiar prompt IA»" data-onchange="setHideListadoProblemasAiPrompt" data-onchange-pass="checked">
-              </label>
-            </div>
-            <div class="settings-card settings-card--toggle">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Calculadora VPO</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Calcula las escalas de riesgo preoperatorio con los datos del paciente.</p>
-              </div>
-              <label class="settings-card__action settings-card__toggle-label" for="settings-vpo-calculator">
-                <input type="checkbox" class="settings-card__toggle" id="settings-vpo-calculator" aria-label="Calculadora VPO" data-onchange="setVpoCalculator" data-onchange-pass="checked">
-              </label>
-            </div>
-          </div>
-          <div data-profile-mode="sala">
-            <p class="settings-section-label">Censo PDF</p>
-            <div class="settings-card-stack">
-              <div class="settings-card">
-                <div class="settings-card__copy"><label class="settings-card__title" for="profile-censo-sala">Sala en el título</label></div>
-                <div class="settings-card__action">
-                  <select class="profile-input profile-select" id="profile-censo-sala">
-                    <option value="">—</option><option value="1">Sala 1</option><option value="2">Sala 2</option><option value="E">Sala E</option><option value="torre">Torre HU</option>
-                  </select>
-                </div>
-              </div>
-              <div class="settings-card">
-                <div class="settings-card__copy">
-                  <label class="settings-card__title" for="profile-censo-fimi-label">Etiqueta de ingreso</label>
-                  <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Va bajo el título del PDF. FIUX es fijo.</p>
-                </div>
-                <div class="settings-card__action"><input class="profile-input" id="profile-censo-fimi-label" type="text" placeholder="FIMI" maxlength="24"></div>
-              </div>
-            <div class="settings-card" id="btn-export-censo-settings-row" style="display:none;">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Exportar censo</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight"><span id="btn-export-censo-settings-hint">Todos los pacientes activos. Incluye pancenso.</span></p>
-              </div>
-              <div class="settings-card__action">
-                <button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" id="btn-export-censo-settings" data-onclick="closeSettingsDropdown" data-onclick-2="exportCensoPdfFromHelp">Exportar PDF…</button>
-              </div>
-            </div>
-            </div>
-          </div>
-        </div>
+        <div class="settings-acc-body" id="settings-documents-body"></div>
       </details>
 
       <details class="settings-accordion" id="settings-accordion-templates" data-settings-icon="plantillas">
         <summary>Plantillas</summary>
-        <div class="settings-acc-body">
-          <div class="settings-card-stack">
-            <div class="settings-card">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Plantillas de indicaciones</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Combinaciones de dieta, cuidados y medicamentos aplicables desde Indicaciones.</p>
-              </div>
-              <div class="settings-card__action">
-                <button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" data-onclick="openExtraTemplatesManager">Administrar…</button>
-              </div>
-            </div>
-            <div class="settings-card">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Formatos de nota</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Plantilla en blanco de la nota. Solo llena secciones vacías.</p>
-              </div>
-              <div class="settings-card__action">
-                <button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" data-onclick="openNoteFormatsFromProfile">Editar…</button>
-              </div>
-            </div>
-            <div class="settings-card">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Formatos de indicaciones</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Plantilla en blanco de las indicaciones.</p>
-              </div>
-              <div class="settings-card__action">
-                <button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" data-onclick="openIndicaFormatsFromProfile">Editar…</button>
-              </div>
-            </div>
-            <div class="settings-card">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Restablecer formatos</p>
-              </div>
-              <div class="settings-card__action">
-                <button type="button" class="wb-btn wb-btn-ghost wb-btn-sm" data-onclick="resetProfileTemplates">Restablecer en blanco</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div class="settings-acc-body" id="settings-templates-body"></div>
       </details>
 
       <details class="settings-accordion settings-accordion--full" id="settings-accordion-security" data-settings-group="Equipo y app" data-settings-icon="seguridad">
         <summary>Seguridad</summary>
-        <div class="settings-acc-body">
-          <div class="settings-status-card" data-settings-security-status>
-            <span class="settings-status-icon" data-state="ok" aria-hidden="true"></span>
-            <div class="settings-status-text">
-              <p class="settings-status-title" data-settings-security-title>Bloqueo de este equipo</p>
-              <p class="settings-status-sub" data-settings-security-sub></p>
-            </div>
-            <button type="button" class="wb-btn wb-btn-primary wb-btn-sm" data-onclick="lockScreenNow">Bloquear ahora</button>
-          </div>
-          <p class="settings-section-label">Bloqueo</p>
-          <div class="settings-card-stack">
-            <div class="settings-card">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Bloquear tras</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Pide tu PIN tras ese tiempo sin uso.</p>
-              </div>
-              <div class="settings-card__action">
-                <select id="settings-idle-lock" class="settings-acc-select settings-acc-select--compact" data-onchange="onIdleLockSelectChange" data-onchange-pass="value" aria-label="Bloqueo por inactividad"><option value="0">Nunca</option><option value="5">5 minutos</option><option value="10">10 minutos</option><option value="30">30 minutos</option></select>
-              </div>
-            </div>
-            <div class="settings-card">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">PIN de bloqueo</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Se guarda solo aquí, nunca sale del equipo.</p>
-              </div>
-              <div class="settings-card__action">
-                <button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" data-onclick="changeIdleLockPin">Cambiar PIN…</button>
-              </div>
-            </div>
-          </div>
-          <p class="settings-section-label">Datos en este equipo</p>
-          <div class="settings-card-stack">
-            <div class="settings-card" data-settings-db-only hidden>
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Revisar la bitácora</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Confirma que nadie la alteró.</p>
-              </div>
-              <div class="settings-card__action">
-                <button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" data-onclick="verifyForensicAuditChain">Verificar</button>
-              </div>
-            </div>
-            <div class="settings-card">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Carpeta de datos</p>
-                <p class="settings-card__desc settings-acc-path settings-acc-path--sm" id="settings-user-data-path" title="">—</p>
-              </div>
-              <div class="settings-card__action">
-                <button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" id="settings-open-userdata-btn" data-onclick="openUserDataFolderFromSettings">Abrir</button>
-              </div>
-            </div>
-          </div>
-          <p id="settings-userdata-web-hint" class="settings-acc-hint settings-acc-hint--tight settings-acc-inline-help">Solo disponible en la aplicación de escritorio.</p>
-        </div>
+        <div class="settings-acc-body" id="settings-security-body"></div>
       </details>
 
       <details class="settings-accordion settings-accordion--full" id="settings-accordion-updates" data-settings-icon="aplicacion">
         <summary>Aplicación</summary>
-        <div class="settings-acc-body">
-          <div class="settings-status-card" data-settings-app-status>
-            <span class="settings-status-icon" data-state="ok" aria-hidden="true"></span>
-            <div class="settings-status-text">
-              <p class="settings-status-title">R+ <span class="settings-acc-version" id="settings-app-version">—</span></p>
-              <p class="settings-status-sub" data-settings-app-sub></p>
-            </div>
-            <button type="button" class="wb-btn wb-btn-primary wb-btn-sm" id="settings-check-updates-btn" data-onclick="checkForAppUpdates" data-i18n="settings.checkUpdates">Buscar actualizaciones…</button>
-          </div>
-          <p class="settings-section-label">Actualizaciones</p>
-          <div class="settings-card-stack">
-            <div class="settings-card">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Canal de actualizaciones</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight"><strong>Pre-releases</strong> incluye borradores de GitHub; <strong>Estable</strong> solo versiones oficiales.</p>
-              </div>
-              <div class="settings-card__action">
-                <select id="rpc-update-channel" aria-label="Canal de actualizaciones" class="settings-acc-select settings-acc-select--compact" data-onchange="setUpdateChannel" data-onchange-pass="value">
-                  <option value="estable">Estable</option>
-                  <option value="beta">Pre-releases</option>
-                </select>
-              </div>
-            </div>
-            <div class="settings-card settings-card--toggle">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Enviar telemetría anónima de actualización</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Solo versión, resultado y plataforma. <strong>No</strong> incluye datos clínicos. Activado por defecto.</p>
-              </div>
-              <label class="settings-card__action settings-card__toggle-label" for="rpc-update-telemetry-toggle">
-                <input type="checkbox" class="settings-card__toggle" id="rpc-update-telemetry-toggle" aria-label="Enviar telemetría anónima de actualización" data-onchange="setUpdateTelemetryEnabled" data-onchange-pass="checked">
-              </label>
-            </div>
-          </div>
-          <p class="settings-section-label">Si algo falla</p>
-          <div class="settings-card-stack">
-            <div class="settings-card">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Reinstalar esta versión</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Vuelve a bajar el instalador. Tus datos se quedan.</p>
-              </div>
-              <div class="settings-card__action">
-                <button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" id="settings-repair-update-btn" data-onclick="checkForRepairUpdate">Reinstalar…</button>
-              </div>
-            </div>
-          </div>
-          <div id="settings-downgrade-section" class="settings-downgrade-section" hidden>
-            <p class="settings-section-label">Restaurar versión estable</p>
-            <p id="settings-downgrade-hint" class="settings-acc-hint settings-acc-hint--tight settings-acc-lead">Si la versión actual falla, restaura una estable anterior. Tus datos locales no se borran.</p>
-            <div class="settings-card-stack">
-              <div class="settings-card">
-                <div class="settings-card__copy">
-                  <p class="settings-card__title">Versión estable</p>
-                </div>
-                <div class="settings-card__action">
-                  <select id="rpc-stable-downgrade-select" aria-label="Versión estable" class="settings-acc-select settings-acc-select--compact"></select>
-                </div>
-              </div>
-              <div class="settings-card">
-                <div class="settings-card__copy">
-                  <p class="settings-card__title">Restaurar versión seleccionada</p>
-                </div>
-                <div class="settings-card__action">
-                  <button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" id="settings-downgrade-stable-btn">Restaurar versión seleccionada…</button>
-                </div>
-              </div>
-              <div class="settings-card">
-                <div class="settings-card__copy">
-                  <p class="settings-card__title">Abrir instalador en GitHub</p>
-                </div>
-                <div class="settings-card__action">
-                  <button type="button" class="wb-btn wb-btn-secondary wb-btn-sm" id="settings-downgrade-github-btn">Abrir instalador en GitHub…</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p id="settings-updates-hint" class="settings-acc-hint settings-acc-hint--tight settings-acc-inline-help">También en el menú de la aplicación (Mac: R+, Windows: Aplicación).</p>
-        </div>
+        <div class="settings-acc-body" id="settings-app-body"></div>
       </details>
+
       <details class="settings-accordion" id="settings-accordion-danger" data-settings-pin="bottom" data-settings-icon="peligro">
         <summary>Zona de peligro</summary>
-        <div class="settings-acc-body">
-          <p class="settings-acc-hint settings-acc-hint--danger settings-acc-lead">Estas acciones no se pueden deshacer. Haz un respaldo antes.</p>
-          <div class="settings-card-stack">
-            <div class="settings-card settings-card--danger">
-              <div class="settings-card__copy">
-                <p class="settings-card__title">Borrar datos de R+ en este equipo</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Pacientes, notas, labs y ajustes de esta computadora. Nube no cambia.</p>
-              </div>
-              <div class="settings-card__action">
-                <button type="button" class="wb-btn wb-btn-danger-outline wb-btn-sm" data-onclick="openWipeDataModal">Borrar…</button>
-              </div>
-            </div>
-          </div>
-          <button type="button" class="wb-btn wb-btn-secondary wb-btn-sm settings-danger-backup" data-settings-goto="settings-accordion-backup-sync">Ir a Respaldos primero</button>
-        </div>
+        <div class="settings-acc-body" id="settings-danger-body"></div>
       </details>
       </div>
 

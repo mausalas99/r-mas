@@ -1,34 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import esbuild from 'esbuild';
+import { loadJsx } from './preact-view-test-helpers.mjs';
 import { emptyVpoState } from '../vpo-data.mjs';
 import { autofillCalc } from '../vpo-calc.mjs';
 
-const dir = path.dirname(fileURLToPath(import.meta.url));
-
-/** Node cannot import .jsx: bundle the component with the same esbuild options as the renderer, render it to a string. */
-async function loadRender() {
-  const built = await esbuild.build({
-    stdin: {
-      contents: `import { renderToString } from 'preact-render-to-string';
-        import { CalcForm } from './vpo-calc-form.jsx';
-        export { vpoScaleTab } from './vpo-ui-state.mjs';
-        export const render = (state) => renderToString(<CalcForm state={state} />);`,
-      resolveDir: dir,
-      loader: 'jsx',
-    },
-    bundle: true,
-    write: false,
-    format: 'esm',
-    platform: 'node',
-    jsx: 'automatic',
-    jsxImportSource: 'preact',
-  });
-  const url = 'data:text/javascript;base64,' + Buffer.from(built.outputFiles[0].text).toString('base64');
-  return import(url);
-}
+const loadRender = () => loadJsx(import.meta.url, `import { CalcForm } from './vpo-calc-form.jsx';
+  export { vpoScaleTab } from './vpo-ui-state.mjs';
+  export const render = (state) => renderToString(<CalcForm state={state} />);`);
 
 test('form renders every input and shows autofilled flags as checked', async () => {
   const { render } = await loadRender();

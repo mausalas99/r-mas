@@ -1,26 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import esbuild from 'esbuild';
+import { renderComponent } from './preact-view-test-helpers.mjs';
 
-const dir = path.dirname(fileURLToPath(import.meta.url));
-
-/** Node cannot import .jsx: bundle the component like the renderer does, render it to a string. */
-async function render() {
-  const built = await esbuild.build({
-    stdin: {
-      contents: `import { renderToString } from 'preact-render-to-string';
-        import { ProfileModal } from './profile-modal-view.jsx';
-        export const html = () => renderToString(<ProfileModal />);`,
-      resolveDir: dir,
-      loader: 'jsx',
-    },
-    bundle: true, write: false, format: 'esm', platform: 'node', jsx: 'automatic', jsxImportSource: 'preact',
-  });
-  const mod = await import('data:text/javascript;base64,' + Buffer.from(built.outputFiles[0].text).toString('base64'));
-  return mod.html();
-}
+const render = () => renderComponent(import.meta.url, 'ProfileModal', './profile-modal-view.jsx');
 
 test('Mi perfil keeps every id and hook other modules read', async () => {
   const html = await render();

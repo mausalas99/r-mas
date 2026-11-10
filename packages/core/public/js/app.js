@@ -4,7 +4,16 @@ import { sweepDeadLocalStorageKeys } from './legacy-ls-sweep.mjs';
 
 sweepDeadLocalStorageKeys();
 
-mountProfileModal();
+// Preact screens load after boot, so they stay out of the eager bundle.
+void Promise.all([
+  import('./features/profile-modal-view.jsx').then((m) => m.mountProfileModal()),
+  import('./features/settings-templates-view.jsx').then((m) => m.mountSettingsTemplates()),
+  import('./features/settings-danger-view.jsx').then((m) => m.mountSettingsDanger()),
+  import('./features/settings-lab-view.jsx').then((m) => m.mountSettingsLab()),
+  import('./features/settings-documents-view.jsx').then((m) => m.mountSettingsDocuments()),
+  import('./features/settings-security-view.jsx').then((m) => m.mountSettingsSecurity()),
+  import('./features/settings-app-view.jsx').then((m) => m.mountSettingsApp()),
+]);
 
 initInlineActionDispatch();
 
@@ -126,7 +135,6 @@ import { wireClinicalTeamsControls } from './features/clinical-teams.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { syncGuardiaModeButtonVisibility } from './features/guardia-mode-button.mjs';
 import { resolveClinicalClientId } from './clinical-settings.mjs';
-import { mountProfileModal } from './features/profile-modal-view.jsx';
 
 function lazyWindowHandler(exportName, loader) {
   return function lazyHandlerProxy() {

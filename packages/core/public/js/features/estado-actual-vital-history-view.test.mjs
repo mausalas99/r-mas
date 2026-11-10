@@ -1,10 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import esbuild from 'esbuild';
+import { loadJsx } from './preact-view-test-helpers.mjs';
 
-const dir = path.dirname(fileURLToPath(import.meta.url));
 const ENTRIES = [{"value":"120/80","unit":"mmHg","stamp":"09/11 08:00","altered":false},{"value":"150/95","unit":"mmHg","stamp":"08/11 20:00","altered":true},{"value":"<b>x</b> & \"q\"","unit":"","stamp":"","altered":false}];
 const TURNOS = {"ingTurnos":[100,200,"NC"],"egrTurnos":[50,300,null],"eventos":[{"turno":"t1","kind":"hemodialisis","ml":2000},{"turno":"t1","kind":"otro","detail":"Rx <torax>"}]};
 // Output of the old string builders (renderVitalHistoryListHtml / renderTurnosBalanceHtml) for the same input.
@@ -15,19 +12,9 @@ const OLD = {
   "turnosFull": "<table class=\"ea-turnos-table\"><thead><tr><th>Turno</th><th>Ingresos</th><th>Egresos</th><th>Balance</th><th>Eventos</th></tr></thead><tbody><tr><th scope=\"row\">T1</th><td>100</td><td>50</td><td class=\"ea-turnos-bal ea-balance-live--pos\">+50</td><td class=\"ea-turnos-events\">HEMODIÁLISIS, UF 2000 ML<br>OTRO RX &lt;TORAX&gt;</td></tr><tr><th scope=\"row\">T2</th><td>200</td><td>300</td><td class=\"ea-turnos-bal ea-balance-live--neg\">-100</td><td class=\"ea-turnos-events\"></td></tr><tr><th scope=\"row\">T3</th><td>NC</td><td>—</td><td class=\"ea-turnos-bal\">NC</td><td class=\"ea-turnos-events\"></td></tr></tbody></table><p class=\"ea-muted ea-turnos-foot\">Valores en mL del último registro.</p><button type=\"button\" class=\"ea-btn ea-turnos-add\" data-onclick=\"closeEaVitalHistoryModal\" data-onclick-2=\"openEstadoActualRegistroModal\">Capturar turnos o evento</button>"
 };
 
-/** Node cannot import .jsx: bundle the views like the renderer does, render them to strings. */
 async function render(expr) {
-  const built = await esbuild.build({
-    stdin: {
-      contents: `import { renderToString } from 'preact-render-to-string';
-        import { VitalHistoryList, TurnosBalance } from './estado-actual-vital-history-view.jsx';
-        export const html = (entries, turnos) => renderToString(${expr});`,
-      resolveDir: dir,
-      loader: 'jsx',
-    },
-    bundle: true, write: false, format: 'esm', platform: 'node', jsx: 'automatic', jsxImportSource: 'preact',
-  });
-  const mod = await import('data:text/javascript;base64,' + Buffer.from(built.outputFiles[0].text).toString('base64'));
+  const mod = await loadJsx(import.meta.url, `import { VitalHistoryList, TurnosBalance } from './estado-actual-vital-history-view.jsx';
+    export const html = (entries, turnos) => renderToString(${expr});`);
   return mod.html;
 }
 

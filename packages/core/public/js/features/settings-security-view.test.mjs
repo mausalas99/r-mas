@@ -1,0 +1,19 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { renderComponent, settingsDropdownHtml } from './preact-view-test-helpers.mjs';
+
+const render = () => renderComponent(import.meta.url, 'SettingsSecurity', './settings-security-view.jsx');
+
+// Exact markup the static partial had before the port (whitespace between tags removed).
+const OLD = "<div class=\"settings-status-card\" data-settings-security-status><span class=\"settings-status-icon\" data-state=\"ok\" aria-hidden=\"true\"></span><div class=\"settings-status-text\"><p class=\"settings-status-title\" data-settings-security-title>Bloqueo de este equipo</p><p class=\"settings-status-sub\" data-settings-security-sub></p></div><button type=\"button\" class=\"wb-btn wb-btn-primary wb-btn-sm\" data-onclick=\"lockScreenNow\">Bloquear ahora</button></div><p class=\"settings-section-label\">Bloqueo</p><div class=\"settings-card-stack\"><div class=\"settings-card\"><div class=\"settings-card__copy\"><p class=\"settings-card__title\">Bloquear tras</p><p class=\"settings-card__desc settings-acc-hint settings-acc-hint--tight\">Pide tu PIN tras ese tiempo sin uso.</p></div><div class=\"settings-card__action\"><select id=\"settings-idle-lock\" class=\"settings-acc-select settings-acc-select--compact\" data-onchange=\"onIdleLockSelectChange\" data-onchange-pass=\"value\" aria-label=\"Bloqueo por inactividad\"><option value=\"0\">Nunca</option><option value=\"5\">5 minutos</option><option value=\"10\">10 minutos</option><option value=\"30\">30 minutos</option></select></div></div><div class=\"settings-card\"><div class=\"settings-card__copy\"><p class=\"settings-card__title\">PIN de bloqueo</p><p class=\"settings-card__desc settings-acc-hint settings-acc-hint--tight\">Se guarda solo aquí, nunca sale del equipo.</p></div><div class=\"settings-card__action\"><button type=\"button\" class=\"wb-btn wb-btn-secondary wb-btn-sm\" data-onclick=\"changeIdleLockPin\">Cambiar PIN…</button></div></div></div><p class=\"settings-section-label\">Datos en este equipo</p><div class=\"settings-card-stack\"><div class=\"settings-card\" data-settings-db-only hidden><div class=\"settings-card__copy\"><p class=\"settings-card__title\">Revisar la bitácora</p><p class=\"settings-card__desc settings-acc-hint settings-acc-hint--tight\">Confirma que nadie la alteró.</p></div><div class=\"settings-card__action\"><button type=\"button\" class=\"wb-btn wb-btn-secondary wb-btn-sm\" data-onclick=\"verifyForensicAuditChain\">Verificar</button></div></div><div class=\"settings-card\"><div class=\"settings-card__copy\"><p class=\"settings-card__title\">Carpeta de datos</p><p class=\"settings-card__desc settings-acc-path settings-acc-path--sm\" id=\"settings-user-data-path\" title=\"\">—</p></div><div class=\"settings-card__action\"><button type=\"button\" class=\"wb-btn wb-btn-secondary wb-btn-sm\" id=\"settings-open-userdata-btn\" data-onclick=\"openUserDataFolderFromSettings\">Abrir</button></div></div></div><p id=\"settings-userdata-web-hint\" class=\"settings-acc-hint settings-acc-hint--tight settings-acc-inline-help\">Solo disponible en la aplicación de escritorio.</p>";
+
+test('Seguridad HTML equals the old static markup', async () => {
+  // Preact writes void tags as <input/> and empty attributes as bare names; HTML parses both the same.
+  const html = (await render()).replace(/"\/>/g, '">').replace(/ (data-[\w-]+)=""/g, ' $1').replace(' title>', ' title="">').replace('<option value>', '<option value="">');
+  assert.equal(html, OLD);
+});
+
+test('Seguridad section frame keeps id, icon and summary', () => {
+  const html = settingsDropdownHtml();
+  assert.match(html, /<details class="settings-accordion settings-accordion--full" id="settings-accordion-security" data-settings-group="Equipo y app" data-settings-icon="seguridad">\s*<summary>Seguridad<\/summary>\s*<div class="settings-acc-body" id="settings-security-body"><\/div>/);
+});
