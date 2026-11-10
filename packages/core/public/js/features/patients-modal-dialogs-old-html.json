@@ -1,0 +1,30 @@
+{
+ "people": {
+  "full": {
+   "nombre": "Paciente <Prueba> & \"Uno\"",
+   "cuarto": "12",
+   "cama": "B",
+   "registro": "9900<1>"
+  },
+  "bare": {
+   "nombre": "Sin Datos"
+  },
+  "reg": {
+   "nombre": "Solo Registro",
+   "cuarto": "3",
+   "registro": "123456"
+  }
+ },
+ "fecha": "2026-11-01 <8:00>",
+ "adviceIn": {
+  "title": "Falta <el> número",
+  "body": "Texto \"con\" comillas & <tags>",
+  "confirmLabel": "Guardar sin expediente",
+  "cancelLabel": "Volver y completar"
+ },
+ "dup:full:fecha": "<div class=\"lab-conflict-modal\"><h3>Paciente similar encontrado</h3><p><strong>Paciente &lt;Prueba&gt; &amp; &quot;Uno&quot;</strong><br>Cto. 12 Cama B<br>Registro: 9900&lt;1&gt;<br>Ingreso: 2026-11-01 &lt;8:00&gt;</p><div style=\"display:flex;gap:10px;margin-top:16px;justify-content:flex-end;\"><button id=\"dup-confirm-cancel-btn\" style=\"background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:#1f2937;\">Cancelar</button><button id=\"dup-confirm-btn\" style=\"background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;\">Agregar de todas formas</button></div></div>",
+ "dup:full:nofecha": "<div class=\"lab-conflict-modal\"><h3>Paciente similar encontrado</h3><p><strong>Paciente &lt;Prueba&gt; &amp; &quot;Uno&quot;</strong><br>Cto. 12 Cama B<br>Registro: 9900&lt;1&gt;</p><div style=\"display:flex;gap:10px;margin-top:16px;justify-content:flex-end;\"><button id=\"dup-confirm-cancel-btn\" style=\"background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:#1f2937;\">Cancelar</button><button id=\"dup-confirm-btn\" style=\"background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;\">Agregar de todas formas</button></div></div>",
+ "dup:bare:nofecha": "<div class=\"lab-conflict-modal\"><h3>Paciente similar encontrado</h3><p><strong>Sin Datos</strong><br>Cto. — Cama —</p><div style=\"display:flex;gap:10px;margin-top:16px;justify-content:flex-end;\"><button id=\"dup-confirm-cancel-btn\" style=\"background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:#1f2937;\">Cancelar</button><button id=\"dup-confirm-btn\" style=\"background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;\">Agregar de todas formas</button></div></div>",
+ "dup:reg:fecha": "<div class=\"lab-conflict-modal\"><h3>Paciente similar encontrado</h3><p><strong>Solo Registro</strong><br>Cto. 3 Cama —<br>Registro: 123456<br>Ingreso: 2026-11-01 &lt;8:00&gt;</p><div style=\"display:flex;gap:10px;margin-top:16px;justify-content:flex-end;\"><button id=\"dup-confirm-cancel-btn\" style=\"background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:#1f2937;\">Cancelar</button><button id=\"dup-confirm-btn\" style=\"background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;\">Agregar de todas formas</button></div></div>",
+ "advice:html": "<div class=\"lab-conflict-modal\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"exp-advice-title\"><h3 id=\"exp-advice-title\">Falta &lt;el&gt; número</h3><p>Texto &quot;con&quot; comillas &amp; &lt;tags&gt;</p><div class=\"lab-conflict-actions\" style=\"flex-direction:row;justify-content:flex-end;gap:8px;\"><button type=\"button\" class=\"wb-btn wb-btn-secondary wb-btn-lg\" id=\"exp-advice-cancel\">Volver y completar</button><button type=\"button\" class=\"wb-btn wb-btn-primary wb-btn-block\" id=\"exp-advice-confirm\">Guardar sin expediente</button></div></div>"
+}
