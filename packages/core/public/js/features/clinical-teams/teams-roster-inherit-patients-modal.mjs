@@ -2,8 +2,8 @@
  * Multi-step modal: destino → elegir equipo que hereda → pacientes → confirmar.
  */
 import { clinicalSessionContext, fetchClinicalScopeContextFromDb } from '../../clinical-access-runtime.mjs';
-import { escapeHtml, escapeAttr } from '../../dom-escape.mjs';
 import { toast } from './shared.mjs';
+import { drawInheritStep } from './teams-roster-inherit-patients-view.jsx';
 import { assignBringablePatientsToTeam } from './teams-roster-bring-patients.mjs';
 import {
   groupBringablePatientsForInherit,
@@ -25,163 +25,6 @@ function sessionState() {
 function setSessionState(next) {
   const bd = backdropEl();
   if (bd) bd._rpcInheritState = next;
-}
-
-/** @param {number} step 0..3 */
-export function buildInheritStepDotsHtml(step) {
-  const labels = ['Destino', 'Origen', 'Pacientes', 'Confirmar'];
-  return (
-    '<ol class="inherit-steps" aria-label="Pasos de herencia">' +
-    labels
-      .map((label, i) => {
-        const cls =
-          i === step ? 'inherit-step inherit-step--current' : i < step ? 'inherit-step inherit-step--done' : 'inherit-step';
-        return (
-          `<li class="${cls}"><span class="inherit-step-num">${i + 1}</span>` +
-          `<span class="inherit-step-label">${escapeHtml(label)}</span></li>`
-        );
-      })
-      .join('') +
-    '</ol>'
-  );
-}
-
-/**
- * @param {{ targetName: string, sala?: string, cycle?: string }} model
- */
-export function buildInheritStepDestinoHtml(model) {
-  const name = String(model.targetName || 'tu equipo').trim();
-  const meta = [model.sala, model.cycle ? `ciclo ${model.cycle}` : '']
-    .filter(Boolean)
-    .join(' · ');
-  return (
-    buildInheritStepDotsHtml(0) +
-    `<p class="inherit-patients-lead">Paso 1 — Tu equipo <strong>nuevo</strong> (destino de los pacientes).</p>` +
-    `<div class="inherit-dest-card">` +
-    `<p class="inherit-dest-eyebrow">Te uniste a</p>` +
-    `<p class="inherit-dest-name">${escapeHtml(name)}</p>` +
-    (meta ? `<p class="inherit-dest-meta">${escapeHtml(meta)}</p>` : '') +
-    `</div>`
-  );
-}
-
-/**
- * @param {{ targetName: string, sources: object[], unassignedCount: number, selectedSourceId: string }} model
- */
-export function buildInheritStepOrigenHtml(model) {
-  const sources = Array.isArray(model.sources) ? model.sources : [];
-  const selected = String(model.selectedSourceId ?? '');
-
-  const sourceRows = sources
-    .map((s) => {
-      const id = String(s.teamId || '');
-      const checked = id === selected ? ' checked' : '';
-      const badge = s.preferred
-        ? '<span class="inherit-patients-badge">Sugerido · misma sala y ciclo</span>'
-        : '';
-      const count =
-        s.patientCount > 0 ? `${s.patientCount} en este Mac` : 'sin expedientes locales aún';
-      const meta = [s.sala, s.cycle ? `ciclo ${s.cycle}` : '', count].filter(Boolean).join(' · ');
-      return (
-        `<li><label class="inherit-source-pick">` +
-        `<input type="radio" name="inherit-source" data-inherit-source="${escapeAttr(id)}"${checked} />` +
-        `<span><strong>${escapeHtml(s.name)}</strong>` +
-        badge +
-        `<span class="inherit-patients-reg">${escapeHtml(meta)}</span></span>` +
-        `</label></li>`
-      );
-    })
-    .join('');
-
-  const noneRow =
-    `<li><label class="inherit-source-pick">` +
-    `<input type="radio" name="inherit-source" data-inherit-source=""${selected === '' ? ' checked' : ''} />` +
-    `<span><strong>Solo sin equipo / otros</strong>` +
-    `<span class="inherit-patients-reg">${model.unassignedCount || 0} paciente(s) locales sin equipo activo</span></span>` +
-    `</label></li>`;
-
-  const emptyHint =
-    sources.length === 0
-      ? `<p class="profile-hint">No hay equipos archivados en esta sala. Usa la opción de abajo.</p>`
-      : '';
-
-  return (
-    buildInheritStepDotsHtml(1) +
-    `<p class="inherit-patients-lead">Paso 2 — ¿Qué equipo del mes anterior te <strong>hereda</strong> pacientes hacia <strong>${escapeHtml(model.targetName)}</strong>?</p>` +
-    emptyHint +
-    `<ul class="inherit-source-list">${sourceRows}${noneRow}</ul>`
-  );
-}
-
-/**
- * @param {{ targetName: string, sourceName: string, patients: object[], includeUnassigned: boolean, unassignedCount: number }} model
- */
-export function buildInheritStepPacientesHtml(model) {
-  const patients = Array.isArray(model.patients) ? model.patients : [];
-  const rows =
-    patients.length === 0
-      ? `<p class="inherit-patients-lead">No hay pacientes locales de ese origen en este Mac. Puedes continuar o elegir otro equipo.</p>`
-      : `<ul class="inherit-patients-list">` +
-        patients
-          .map((p) => {
-            const id = String(p.id || '');
-            return (
-              `<li><label class="inherit-patients-check">` +
-              `<input type="checkbox" data-inherit-patient="${escapeAttr(id)}" checked />` +
-              `<span><strong>${escapeHtml(String(p.nombre || 'Sin nombre'))}</strong>` +
-              `<span class="inherit-patients-reg">${escapeHtml(String(p.registro || 's/reg'))}</span></span>` +
-              `</label></li>`
-            );
-          })
-          .join('') +
-        `</ul>`;
-
-  const unassignedToggle =
-    model.unassignedCount > 0 && model.sourceName
-      ? `<label class="inherit-patients-check inherit-unassigned-toggle">` +
-        `<input type="checkbox" data-inherit-include-unassigned${model.includeUnassigned ? ' checked' : ''} />` +
-        `<span>Incluir también ${model.unassignedCount} sin equipo asignado</span></label>`
-      : '';
-
-  return (
-    buildInheritStepDotsHtml(2) +
-    `<p class="inherit-patients-lead">Paso 3 — Pacientes de <strong>${escapeHtml(model.sourceName || 'sin equipo')}</strong> → <strong>${escapeHtml(model.targetName)}</strong>.</p>` +
-    `<div class="inherit-patients-toolbar">` +
-    `<button type="button" class="wb-btn wb-btn-secondary" data-inherit-select="all">Seleccionar todos</button>` +
-    `<button type="button" class="wb-btn wb-btn-secondary" data-inherit-select="none">Ninguno</button>` +
-    `</div>` +
-    unassignedToggle +
-    rows +
-    `<p class="inherit-patients-count" data-inherit-count aria-live="polite"></p>`
-  );
-}
-
-/**
- * @param {{ targetName: string, sourceName: string, selectedCount: number }} model
- */
-export function buildInheritStepConfirmHtml(model) {
-  const n = Number(model.selectedCount || 0);
-  return (
-    buildInheritStepDotsHtml(3) +
-    `<p class="inherit-patients-lead">Paso 4 — Confirma el movimiento.</p>` +
-    `<div class="inherit-confirm-card">` +
-    `<p><span class="inherit-confirm-label">Desde</span> <strong>${escapeHtml(model.sourceName || 'Sin equipo')}</strong></p>` +
-    `<p class="inherit-confirm-arrow" aria-hidden="true">↓</p>` +
-    `<p><span class="inherit-confirm-label">Hacia</span> <strong>${escapeHtml(model.targetName)}</strong></p>` +
-    `<p class="inherit-confirm-count">${n === 1 ? '1 paciente' : `${n} pacientes`}</p>` +
-    `</div>`
-  );
-}
-
-/** @deprecated kept for tests that assert checkbox markup */
-export function buildInheritPatientsModalBodyHtml(model) {
-  return buildInheritStepPacientesHtml({
-    targetName: model.targetName,
-    sourceName: model.groups?.[0]?.sourceLabel || 'origen',
-    patients: model.groups?.flatMap((g) => g.patients || []) || [],
-    includeUnassigned: false,
-    unassignedCount: 0,
-  });
 }
 
 function selectedPatientIds() {
@@ -267,37 +110,34 @@ function renderCurrentStep() {
             : 'Heredar pacientes · confirmar';
   }
 
+  let props;
   if (state.step === 0) {
-    body.innerHTML = buildInheritStepDestinoHtml({
-      targetName: state.targetName,
-      sala: state.targetSala,
-      cycle: state.targetCycle,
-    });
+    props = { targetName: state.targetName, sala: state.targetSala, cycle: state.targetCycle };
   } else if (state.step === 1) {
-    body.innerHTML = buildInheritStepOrigenHtml({
+    props = {
       targetName: state.targetName,
       sources: state.sourceOptions,
       unassignedCount: state.unassignedCount,
       selectedSourceId: state.sourceTeamId,
-    });
+    };
   } else if (state.step === 2) {
-    const patients = patientsForInheritSource(state.grouped, state.sourceTeamId, {
-      includeUnassigned: !!state.includeUnassigned,
-    });
-    body.innerHTML = buildInheritStepPacientesHtml({
+    props = {
       targetName: state.targetName,
       sourceName: sourceNameForState(state),
-      patients,
+      patients: patientsForInheritSource(state.grouped, state.sourceTeamId, {
+        includeUnassigned: !!state.includeUnassigned,
+      }),
       includeUnassigned: !!state.includeUnassigned,
       unassignedCount: state.unassignedCount,
-    });
+    };
   } else {
-    body.innerHTML = buildInheritStepConfirmHtml({
+    props = {
       targetName: state.targetName,
       sourceName: sourceNameForState(state),
       selectedCount: (state.selectedIds || []).length,
-    });
+    };
   }
+  drawInheritStep(body, state.step, props);
   syncFooterForStep();
 }
 
