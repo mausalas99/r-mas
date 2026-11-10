@@ -3,7 +3,7 @@ import { sortLabHistoryChronological } from '../../tend-core.mjs';
 import { normalizeLabLine } from '../../lab-history-auto-store-core.mjs';
 import { getLabHistoryRevision, bumpLabHistoryRevision, TREND_REFRESH_DEBOUNCE_MS } from '../../lab-history-cache.mjs';
 import { pendingCultivosForPatient, markCultivosSeen, markCultivoSeen, findPendingForRow } from '../cultivo-pending.mjs';
-import { rt, aid, esc } from './expediente-runtime.mjs';
+import { rt, aid } from './expediente-runtime.mjs';
 import {
   parseCultureBlockFromLineArray,
   isCultureTableHeaderLine,
@@ -21,6 +21,7 @@ import {
 } from '../cultivo-queue-refresh.mjs';
 import { deleteLabHistorySet } from '../lab-panel-history.mjs';
 import { isAmpcOrganism } from '../../cultivo-intrinsic-resistance.mjs';
+import { drawCultivosTable } from './expediente-cultivos-table-view.jsx';
 import { cultivoSeriesKey, hemoSitioGrupo, HEMO_SITIO_LABELS } from '../../cultivo-block-core.mjs';
 
 function cultivoRowMs(r) {
@@ -113,36 +114,11 @@ function cultSetCollapsed_(key, on) {
   }
 }
 
-function cultivoOrganismoCellHtml(r, pend, group) {
+/** Organismo cell as plain data: name button/span, tags, AmpC hint, sample count, "Nuevo" tag, sub line. */
+function cultivoOrganismoModel(r, pend, group) {
   var parts = String(r.organismo || '').split(/\s*·\s*/);
   var iso = cultivoRowIsIsolate(r);
   var ckey = iso ? cultCollapsedKey_(r, group) : '';
-  var collapsed = iso && cultIsCollapsed_(ckey);
-  // Aislamiento: el nombre es un botón que pliega o abre su reporte.
-  var html =
-    '<' + (iso ? 'button type="button" aria-expanded="' + (collapsed ? 'false' : 'true') + '" data-cult-ckey="' + esc(ckey) + '"' : 'span') +
-    ' class="cult-org-name' +
-    (iso ? ' cult-org-name--isolate cult-org-toggle' : '') +
-    '">' +
-    esc(parts[0]) +
-    '</' + (iso ? 'button' : 'span') + '>';
-  parts.slice(1).forEach(function (tag) {
-    if (!tag) return;
-    html +=
-      ' <span class="cult-org-tag' +
-      (CULTIVO_TAG_ALERT_RE.test(tag) ? ' cult-org-tag--alert' : '') +
-      '">' +
-      esc(tag) +
-      '</span>';
-  });
-  if (cultivoRowIsIsolate(r) && isAmpcOrganism(parts[0]) && !/AmpC/i.test(r.organismo)) {
-    html += ' <span class="cult-org-tag">AmpC</span>';
-  }
-  if (group.length > 1) html += ' <span class="cult-org-n">· ' + group.length + ' muestras</span>';
-  if (pend) {
-    html +=
-      ' <span class="cult-org-tag cult-org-tag--new">' + (pend.atbOnly ? 'ATB nuevo' : 'Nuevo') + '</span>';
-  }
   // Cuenta sin número ("X") no aporta nada. En hemocultivos agrupados, el
   // sitio real (brazo/mano) va aquí porque el encabezado solo dice el grupo.
   var sub = [];
@@ -153,8 +129,20 @@ function cultivoOrganismoCellHtml(r, pend, group) {
   });
   if (sitios.length) sub.push(sitios.join(' / '));
   if (r.cuenta && !r.negativo && /\d/.test(r.cuenta)) sub.push(r.cuenta);
-  if (sub.length) html += '<div class="cultivos-cuenta">' + esc(sub.join(' · ')) + '</div>';
-  return html;
+  return {
+    name: parts[0],
+    iso: iso,
+    // Aislamiento: el nombre es un botón que pliega o abre su reporte.
+    ckey: ckey,
+    collapsed: iso && cultIsCollapsed_(ckey),
+    tags: parts.slice(1).filter(Boolean).map(function (tag) {
+      return { text: tag, alert: CULTIVO_TAG_ALERT_RE.test(tag) };
+    }),
+    ampc: iso && isAmpcOrganism(parts[0]) && !/AmpC/i.test(r.organismo),
+    nMuestras: group.length > 1 ? group.length : 0,
+    pendTag: pend ? (pend.atbOnly ? 'ATB nuevo' : 'Nuevo') : '',
+    sub: sub.join(' · '),
+  };
 }
 
 function cultivoAntibiogramCellHtml(r) {
@@ -291,11 +279,9 @@ function filterCultivoRowsSignificantFlip(rows) {
 var _cultivosTableCacheKey = '';
 var _cultivoRefreshBusy = false;
 var _cultivoToolbarWired = false;
-/** Cultivos sin revisar del paciente abierto; se fija en cada render. */
-var _pendingNow = [];
 
-/** Título, resumen y botón Actualizar (texto). */
-function buildCultivosToolbarHtml(patientId, rows) {
+/** Título, resumen y botón Actualizar (texto), como datos. */
+function buildCultivosToolbarModel(patientId, rows, pending, busy) {
   var isoOrgs = Object.create(null);
   var nOrg = 0;
   rows.forEach(function (r) {
@@ -320,33 +306,18 @@ function buildCultivosToolbarHtml(patientId, rows) {
     (nSites === 1 ? ' sitio' : ' sitios') +
     ' · último ' +
     rowFechaDisplay(last);
-  var pending = pendingAtbCultivoItemsForPatient(patientId).length;
+  var nPend = pendingAtbCultivoItemsForPatient(patientId).length;
   var title =
-    pending > 0
+    nPend > 0
       ? 'Buscar antibiograma en el repositorio para ' +
-        pending +
+        nPend +
         ' cultivo' +
-        (pending === 1 ? '' : 's') +
+        (nPend === 1 ? '' : 's') +
         ' con ATB pendiente'
       : 'Consultar repositorio (no hay cultivos con ATB pendiente)';
   var btnClass = 'tend-toolbar-btn cultivo-refresh-repo-btn';
-  if (pending === 0) btnClass += ' cultivo-refresh-idle';
-  return (
-    '<div class="cultivos-toolbar"><h2 class="cultivos-title">Cultivos</h2><span class="cultivos-summary">' +
-    esc(summary) +
-    '</span>' +
-    (_pendingNow.length
-      ? '<button type="button" class="cultivo-seen-btn" title="Marcar todos los cultivos nuevos como vistos">Marcar todo como visto</button>'
-      : '') +
-    '<button type="button" class="' +
-    btnClass +
-    '"' +
-    (_cultivoRefreshBusy ? ' disabled aria-busy="true"' : '') +
-    ' title="' +
-    esc(title) +
-    '">Actualizar</button>' +
-    '</div>'
-  );
+  if (nPend === 0) btnClass += ' cultivo-refresh-idle';
+  return { summary: summary, seenAll: pending.length > 0, btnClass: btnClass, busy: !!busy, title: title };
 }
 
 function wireCultivosToolbarOnce() {
@@ -462,14 +433,6 @@ function rowFechaDisplay(r) {
   return r.studyDate || '—';
 }
 
-function cultivoRowRemoveBtnHtml(r) {
-  if (r.labSetId == null || r.labSetId === '') return '';
-  return (
-    '<button type="button" class="cultivos-row-remove-btn" data-cult-set-id="' +
-    esc(String(r.labSetId)) +
-    '" title="Eliminar este cultivo del historial" aria-label="Eliminar este cultivo del historial">×</button>'
-  );
-}
 
 /** "HEMOCULTIVO (PERIFERICO DERECHO)" ya va bajo "Hemocultivo" → "PERIFERICO DERECHO". */
 function cultivoRawSiteLabel(r) {
@@ -534,8 +497,8 @@ function splitSiteName(label) {
   return { main: m[1] || m[2], detail: inner ? inner[1] : m[2] };
 }
 
-/** Un punto por fecha de muestra (positivo si algún aislamiento lo es), antiguo → reciente, unidos por líneas, con fechas. */
-function cultivoSiteDotsHtml(rows, newFechas, fold) {
+/** Un punto por fecha de muestra (positivo si algún aislamiento lo es), antiguo → reciente, con fechas. */
+function cultivoSiteDotsModel(rows, newFechas, fold) {
   var byFecha = Object.create(null);
   var fechas = [];
   rows.forEach(function (r) {
@@ -543,45 +506,35 @@ function cultivoSiteDotsHtml(rows, newFechas, fold) {
     if (!byFecha[f]) fechas.push((byFecha[f] = { fecha: f, orgs: [] }));
     if (cultivoRowIsIsolate(r)) byFecha[f].orgs.push(r.organismo);
   });
-  newFechas = newFechas || {};
   // Una sola muestra: la fecha ya va en el encabezado.
-  if (fechas.length < 2) return '';
+  if (fechas.length < 2) return null;
   var list = fechas.slice(0, CULTIVO_SITE_MAX_DOTS).reverse();
-  var dots = list
-    .map(function (d) {
-      return (
-        '<span class="cult-dot cult-dot--' +
-        (d.orgs.length ? 'pos' : 'neg') +
-        (newFechas[d.fecha] ? ' cult-dot--new' : '') +
-        '"></span>'
-      );
-    })
-    .join('<span class="cult-dot-line"></span>');
-  var text = list
-    .map(function (d) {
-      var short = esc(d.fecha.replace(/\/\d{4}$/, ''));
-      if (!d.orgs.length) return short + ' neg';
-      // Sitio que hoy es negativo: la fecha positiva abre su aislamiento.
-      return fold
-        ? '<button type="button" class="cult-date-btn" aria-expanded="false" data-cult-fecha="' + esc(d.fecha) + '">' + short + '</button>'
-        : short;
-    })
-    .join(' · ');
-  return dots + '<span class="cult-dots-text">' + text + '</span>';
+  return {
+    dots: list.map(function (d) {
+      return { pos: d.orgs.length > 0, isNew: !!newFechas[d.fecha] };
+    }),
+    // Sitio que hoy es negativo: la fecha positiva abre su aislamiento (fecha = botón).
+    texts: list.map(function (d) {
+      return {
+        short: d.fecha.replace(/\/\d{4}$/, ''),
+        neg: !d.orgs.length,
+        fecha: d.orgs.length && fold ? d.fecha : '',
+      };
+    }),
+  };
 }
 
-function cultivoSiteHtml(site) {
+function cultivoSiteModel(site, pending, pid) {
   var last = site.rows[0];
   var newFechas = Object.create(null);
   var siteNew = null;
   site.rows.forEach(function (r) {
-    var p = cultivoRowIsIsolate(r) ? findPendingForRow(_pendingNow, r, rowFechaDisplay(r)) : null;
+    var p = cultivoRowIsIsolate(r) ? findPendingForRow(pending, r, rowFechaDisplay(r)) : null;
     if (!p) return;
     newFechas[rowFechaDisplay(r)] = true;
     if (!siteNew || !p.atbOnly) siteNew = p;
   });
   // Aislamientos iguales (mismo organismo y mismo R/I/S) en un solo bloque; negativos al final, en una línea.
-  var pid = aid();
   var bySig = Object.create(null);
   var iso = [];
   var compact = [];
@@ -602,90 +555,67 @@ function cultivoSiteHtml(site) {
   });
   // Último resultado negativo: se ve «negativo» y los aislamientos viejos se abren con su fecha.
   var fold = !cultivoRowIsIsolate(last) && iso.length > 0;
-  var rowsHtml = iso
-    .concat(compact)
-    .map(function (group) {
-      var r = group[0];
-      var fecha = rowFechaDisplay(r);
-      var pends = group
-        .map(function (g) {
-          return cultivoRowIsIsolate(g) ? findPendingForRow(_pendingNow, g, rowFechaDisplay(g)) : null;
-        })
-        .filter(Boolean);
-      var pend =
-        pends.filter(function (p) {
-          return !p.atbOnly;
-        })[0] ||
-        pends[0] ||
-        null;
-      return (
-        '<tr class="' +
+  var rows = iso.concat(compact).map(function (group) {
+    var r = group[0];
+    var pends = group
+      .map(function (g) {
+        return cultivoRowIsIsolate(g) ? findPendingForRow(pending, g, rowFechaDisplay(g)) : null;
+      })
+      .filter(Boolean);
+    var pend =
+      pends.filter(function (p) {
+        return !p.atbOnly;
+      })[0] ||
+      pends[0] ||
+      null;
+    var removeId = group.length === 1 && r.labSetId != null && r.labSetId !== '' ? String(r.labSetId) : '';
+    return {
+      trClass:
         (r.negativo ? 'cultivos-row-neg' : cultivoRowIsIsolate(r) ? '' : 'cult-row-muted') +
         (pend ? ' cult-row--new' : '') +
         (fold && cultivoRowIsIsolate(r) && !pend ? ' cult-row--folded' : '') +
-        (cultivoRowIsIsolate(r) && cultIsCollapsed_(cultCollapsedKey_(r, group)) ? ' cult-row--collapsed' : '') +
-        '" data-fecha="' +
-        esc(fecha) +
-        '" data-fechas="|' +
-        esc(group.map(rowFechaDisplay).join('|')) +
-        '|"><td class="cultivos-cell-fecha">' +
-        esc(
-          group
-            .map(function (g) {
-              return shortDate_(rowFechaDisplay(g));
-            })
-            .join(' · ')
-        ) +
-        '</td><td class="cultivos-cell-org">' +
-        cultivoOrganismoCellHtml(r, pend, group) +
-        '</td><td class="cultivos-cell-atb">' +
-        cultivoAntibiogramCellHtml(r) +
-        '</td><td class="cultivos-cell-remove">' +
-        (pend
-          ? '<button type="button" class="cultivo-row-seen-btn" data-cult-keys="' +
-            esc(JSON.stringify(pends.map(function (p) { return p.key; }))) +
-            '">Visto</button>'
-          : '') +
-        (group.length === 1 ? cultivoRowRemoveBtnHtml(r) : '') +
-        '</td></tr>'
-      );
-    })
-    .join('');
-  var dotsHtml = cultivoSiteDotsHtml(site.rows, newFechas, fold);
+        (cultivoRowIsIsolate(r) && cultIsCollapsed_(cultCollapsedKey_(r, group)) ? ' cult-row--collapsed' : ''),
+      fecha: rowFechaDisplay(r),
+      fechas: '|' + group.map(rowFechaDisplay).join('|') + '|',
+      fechaCell: group
+        .map(function (g) {
+          return shortDate_(rowFechaDisplay(g));
+        })
+        .join(' · '),
+      org: cultivoOrganismoModel(r, pend, group),
+      atbHtml: cultivoAntibiogramCellHtml(r),
+      seenKeys: pend ? JSON.stringify(pends.map(function (p) { return p.key; })) : '',
+      removeId: removeId,
+    };
+  });
   var siteParts = splitSiteName(cultivoSiteLabel(last));
   var siteName = siteParts.main;
   var tipo = String(last.tipoLabel || 'Otros cultivos');
-  return (
-    '<details class="cult-site' +
-    (iso.length <= 1 ? ' cult-site--solo' : '') +
-    (site.positive ? ' cult-site--pos" open>' : '">') +
-    '<summary class="cult-site-head"><span class="rp-dot" aria-hidden="true"></span>' +
-    '<span class="cult-status-dot' +
-    (cultivoRowIsIsolate(last) ? ' cult-status-dot--pos' : '') +
-    '" aria-hidden="true"></span>' +
-    '<span class="cult-site-headtext"><span class="cult-site-title">' +
-    esc(siteName) +
-    (tipo.toUpperCase() === siteName.toUpperCase()
-      ? ''
-      : ' · <span class="cult-site-tipo">' + esc(tipo) + '</span>') +
-    (siteParts.detail ? '<span class="cult-site-detail">' + esc(siteParts.detail) + '</span>' : '') +
-    '</span><span class="cult-site-ultimo">' +
-    esc(cultivoLastLine(last)) +
-    '</span></span>' +
-    (siteNew
-      ? '<span class="cult-org-tag cult-org-tag--new">' + (siteNew.atbOnly ? 'ATB nuevo' : 'Nuevo') + '</span>'
-      : '') +
-    '<span class="cult-site-last">' +
-    esc(shortDate_(rowFechaDisplay(last))) +
-    '</span></summary>' +
-    (dotsHtml ? '<div class="cult-site-dots" aria-label="Historia de muestras">' + dotsHtml + '</div>' : '') +
-    '<table class="cultivos-table"><tbody>' +
-    rowsHtml +
-    '</tbody></table></details>'
-  );
+  return {
+    solo: iso.length <= 1,
+    positive: site.positive,
+    statusPos: cultivoRowIsIsolate(last),
+    title: siteName,
+    tipo: tipo.toUpperCase() === siteName.toUpperCase() ? '' : tipo,
+    detail: siteParts.detail,
+    ultimo: cultivoLastLine(last),
+    newTag: siteNew ? (siteNew.atbOnly ? 'ATB nuevo' : 'Nuevo') : '',
+    last: shortDate_(rowFechaDisplay(last)),
+    dots: cultivoSiteDotsModel(site.rows, newFechas, fold),
+    rows: rows,
+  };
 }
 
-function buildCultivoSitesHtml(rows) {
+/** Filas del modelo en el orden en que la vista las dibuja (tarjetas positivas, luego negativos). */
+function cultivoRowsInDrawOrder(model) {
+  var sites = model.pos.concat(model.neg ? model.neg.sites : []);
+  return sites.reduce(function (acc, s) {
+    return acc.concat(s.rows);
+  }, []);
+}
+
+/** Todo lo que dibuja la tabla Cultivos (toolbar + tarjetas por sitio + franja de negativos), sin HTML. */
+function buildCultivosModel(pid, rows, pending, busy) {
   var sites = groupCultivoRowsBySite(rows);
   var pos = sites.filter(function (s) {
     return s.positive;
@@ -693,29 +623,27 @@ function buildCultivoSitesHtml(rows) {
   var neg = sites.filter(function (s) {
     return !s.positive;
   });
-  var negHtml = neg.length
-    ? '<details class="cultivos-neg-fold"' +
-      (pos.length ? '' : ' open') +
-      '><summary class="cultivos-neg-head"><b>Negativos</b><span class="cultivos-neg-count">' +
-      neg.length +
-      (neg.length === 1 ? ' sitio' : ' sitios') +
-      '</span><span class="cultivos-neg-list"><span class="cultivos-neg-names">' +
-      neg
-        .map(function (s) {
-          var l = s.rows[0];
-          var sp = splitSiteName(cultivoSiteLabel(l));
-          var nm = sp.detail && !/\)/.test(sp.detail) ? sp.detail : sp.main;
-          return esc(sentenceCase_(nm) + ' · ' + rowFechaDisplay(l).replace(/\/\d{4}$/, ''));
-        })
-        .join('</span><span class="cultivos-neg-names">') +
-      '</span></span></summary>' +
-      '<div class="cult-sites-grid">' +
-      neg.map(cultivoSiteHtml).join('') +
-      '</div>' +
-      '</details>'
-    : '';
-  // Tarjetas y franja de negativos en el mismo flujo de columnas: se reparten por altura.
-  return '<div class="cult-sites-grid">' + pos.map(cultivoSiteHtml).join('') + negHtml + '</div>';
+  return {
+    toolbar: buildCultivosToolbarModel(pid, rows, pending, busy),
+    pos: pos.map(function (s) {
+      return cultivoSiteModel(s, pending, pid);
+    }),
+    neg: neg.length
+      ? {
+          open: !pos.length,
+          count: neg.length + (neg.length === 1 ? ' sitio' : ' sitios'),
+          names: neg.map(function (s) {
+            var l = s.rows[0];
+            var sp = splitSiteName(cultivoSiteLabel(l));
+            var nm = sp.detail && !/\)/.test(sp.detail) ? sp.detail : sp.main;
+            return sentenceCase_(nm) + ' · ' + rowFechaDisplay(l).replace(/\/\d{4}$/, '');
+          }),
+          sites: neg.map(function (s) {
+            return cultivoSiteModel(s, pending, pid);
+          }),
+        }
+      : null,
+  };
 }
 
 function renderCultivosTable() {
@@ -735,17 +663,24 @@ function renderCultivosTable() {
   }
   removeAtbRisPanelsFromBody();
   if (!aid()) {
-    container.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
+    drawCultivosTable(container, { message: 'Selecciona un paciente.' });
     return;
   }
   var flatRows = extractCultivoTableRowsFromHistory(pid);
   if (!flatRows.length) {
-    container.innerHTML =
-      '<p class="tend-empty">No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinción Gram y cultivos de catéter enviados desde Laboratorio.</p>';
+    drawCultivosTable(container, {
+      message:
+        'No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinción Gram y cultivos de catéter enviados desde Laboratorio.',
+    });
     return;
   }
-  _pendingNow = pendingCultivosForPatient(pid);
-  container.innerHTML = buildCultivosToolbarHtml(pid, flatRows) + buildCultivoSitesHtml(flatRows);
+  var model = buildCultivosModel(pid, flatRows, pendingCultivosForPatient(pid), _cultivoRefreshBusy);
+  drawCultivosTable(container, { model: model });
+  // El antibiograma sigue siendo HTML de expediente-cultivos-atb-ui.mjs: la vista deja las celdas vacías.
+  var cells = container.querySelectorAll('td.cultivos-cell-atb');
+  cultivoRowsInDrawOrder(model).forEach(function (r, i) {
+    if (cells[i]) cells[i].innerHTML = r.atbHtml;
+  });
   wireAtbRisHoverPanels(container);
 }
 
@@ -766,4 +701,6 @@ export {
   renderCultivosTable,
   extractCultivoTableRowsFromHistory,
   filterCultivoRowsSignificantFlip,
+  buildCultivosModel,
+  cultivoRowsInDrawOrder,
 };
