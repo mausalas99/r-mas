@@ -20,7 +20,8 @@ import {
   setEventualidadesLabsText,
   mergeEventualidadesLabsText,
 } from './eventualidades-store.mjs';
-import { buildEventualidadesPanelHtml, removeEventualidadCardEl } from './eventualidades-panel-html.mjs';
+import { removeEventualidadCardEl } from './eventualidades-panel-html.mjs';
+import { drawEventualidadesPanel, drawEventualidadesNoPatient } from './eventualidades-panel-view.jsx';
 
 let _editingEntryId = null;
 /** @type {Map<string, boolean>} */
@@ -527,27 +528,20 @@ export function renderEventualidadesPanel(mountEl) {
   if (!mountEl) return;
   const patient = activePatient();
   if (!patient) {
-    mountEl.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
+    drawEventualidadesNoPatient(mountEl);
     return;
   }
   const store = ensureEventualidades(patient);
   const editingEntry = _editingEntryId ? findEventualidadEntry(store, _editingEntryId) : null;
   if (_editingEntryId && !editingEntry) _editingEntryId = null;
   const byDay = groupEntriesByDay(store.entries);
-  const hasEntries = byDay.length > 0;
 
-  mountEl.innerHTML = buildEventualidadesPanelHtml(
+  drawEventualidadesPanel(mountEl, {
     byDay,
-    hasEntries,
     editingEntry,
-    store,
-    'note',
-    {
-      editingEntryId: _editingEntryId,
-      composeMode: 'note',
-      dayOpenPrefs: _dayOpenPrefs,
-    }
-  );
+    editingId: _editingEntryId,
+    dayOpenPrefs: _dayOpenPrefs,
+  });
   refreshRpcDateFields(mountEl);
   wireEventualidadesUppercase(mountEl.querySelector('#eventualidades-input'));
   wireEventualidadesDayToggles(mountEl);
