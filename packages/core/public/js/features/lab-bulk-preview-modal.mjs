@@ -1,9 +1,8 @@
-import {
-  bulkPreviewStatusLabel,
-  extractLabPatientFromBulkBlock,
-  unknownLabRowsWarning,
-} from '../lab-bulk-paste.mjs';
+import { extractLabPatientFromBulkBlock } from '../lab-bulk-paste.mjs';
 import { closePatientDatosModal } from '../patient-datos-modal.mjs';
+import { shouldOfferBulkPreviewAddPatient, isRepeatOfEarlierMissingPatient } from './lab-bulk-preview-rules.mjs';
+
+export { shouldOfferBulkPreviewAddPatient, isRepeatOfEarlierMissingPatient };
 
 /** @type {{
  *   showToast(msg: string, type?: string): void,
@@ -11,7 +10,6 @@ import { closePatientDatosModal } from '../patient-datos-modal.mjs';
  *   openAddModalFromLabPatient?(patient: object, opts?: { onSaved?: (p: object) => void }): void,
  * }} */
 
-import { esc } from '../dom-escape.mjs';
 let rt = {
   showToast() {},
 };
@@ -19,25 +17,19 @@ let rt = {
 var pendingConfirm = null;
 var modalSession = null;
 
-function statusClass(status) {
-  if (status === 'ok') return 'lab-bulk-preview-status--ok';
-  if (status === 'no-patient' || status === 'parse-errors') return 'lab-bulk-preview-status--err';
-  if (status === 'mixed-expediente') return 'lab-bulk-preview-status--warn';
-  return 'lab-bulk-preview-status--muted';
-}
-
-export function shouldOfferBulkPreviewAddPatient(block) {
-  return !!(block && block.okReportCount > 0 && block.status === 'no-patient');
-}
-
-/** Same unregistered chart number as an earlier block: one add covers both. */
-export function isRepeatOfEarlierMissingPatient(blocks, idx) {
-  var key = blocks[idx] && blocks[idx].primaryExpediente;
-  if (!key || !shouldOfferBulkPreviewAddPatient(blocks[idx])) return false;
-  for (var i = 0; i < idx; i++) {
-    if (blocks[i].primaryExpediente === key && shouldOfferBulkPreviewAddPatient(blocks[i])) return true;
-  }
-  return false;
+// The Preact list loads on first use: a static import would join the boot graph.
+var listView = null;
+function paintList(body, blocks) {
+  if (listView) return listView.drawLabBulkPreviewList(body, blocks);
+  import('./lab-bulk-preview-view.jsx').then(
+    function (m) {
+      listView = m;
+      if (modalSession && modalSession.blocks === blocks) m.drawLabBulkPreviewList(body, blocks);
+    },
+    function () {
+      rt.showToast('No se pudo mostrar la vista previa', 'error');
+    }
+  );
 }
 
 function renderPreviewSummary(blocks) {
@@ -83,123 +75,6 @@ function renderPreviewSummary(blocks) {
   return parts.join(' · ');
 }
 
-function countBadReports(block) {
-  return (block.reports || []).filter(function (r) {
-    return !r.ok;
-  }).length;
-}
-
-/** Expedientes detectados en el bloque, para inspección directa cuando hay mezcla. */
-export function renderBlockExpedientes(block) {
-  var list = Array.isArray(block.expedientes) ? block.expedientes : [];
-  if (list.length < 2) return '';
-  return (
-    'Exp. ' +
-    list
-      .map(function (e) {
-        return esc(e);
-      })
-      .join(' y Exp. ')
-  );
-}
-
-/** Texto crudo pegado/descargado para ese bloque — permite revisar si es mezcla real o un reporte SOME mal renderizado. */
-export function renderBlockRawText(block) {
-  var raw = String(block.rawText || '').trim();
-  if (!raw) return '';
-  return (
-    '<details class="lab-bulk-preview-rawtext">' +
-    '<summary>Ver texto (' +
-    raw.length +
-    ' caracteres)</summary>' +
-    '<pre>' +
-    esc(raw) +
-    '</pre>' +
-    '</details>'
-  );
-}
-
-/** Reportes del mismo bloque excluidos por pertenecer a otro expediente (posible otro paciente u otro ingreso). */
-function renderConflictReports(block) {
-  var conflicts = Array.isArray(block.conflictReports) ? block.conflictReports : [];
-  if (!conflicts.length) return '';
-  return (
-    '<details class="lab-bulk-preview-issues lab-bulk-preview-conflicts">' +
-    '<summary>' +
-    conflicts.length +
-    ' reporte' +
-    (conflicts.length === 1 ? '' : 's') +
-    ' excluido' +
-    (conflicts.length === 1 ? '' : 's') +
-    ' (otro expediente, no se guardó)</summary>' +
-    '<ul>' +
-    conflicts
-      .map(function (r) {
-        var label = r.expediente ? 'Exp. ' + r.expediente : 'Reporte';
-        return (
-          '<li><span class="lab-bulk-preview-issue-label">' +
-          esc(label) +
-          '</span> no coincide con ' +
-          esc(block.patientName || 'el paciente') +
-          ' (' +
-          esc(block.primaryExpediente || '') +
-          ') — posible otro ingreso u otro paciente</li>'
-        );
-      })
-      .join('') +
-    '</ul></details>'
-  );
-}
-
-function renderReportIssues(block) {
-  var bad = (block.reports || []).filter(function (r) {
-    return !r.ok;
-  });
-  if (!bad.length) return '';
-  var maxShow = 3;
-  var shown = bad.slice(0, maxShow);
-  var more = bad.length - shown.length;
-  return (
-    '<details class="lab-bulk-preview-issues">' +
-    '<summary>' +
-    bad.length +
-    ' reporte' +
-    (bad.length === 1 ? '' : 's') +
-    ' omitido' +
-    (bad.length === 1 ? '' : 's') +
-    ' (ruido del portal)</summary>' +
-    '<ul>' +
-    shown
-      .map(function (r, idx) {
-        var msg = r.error || 'No se pudo parsear';
-        var label = r.expediente ? 'Exp. ' + r.expediente : 'Reporte ' + (idx + 1);
-        return '<li><span class="lab-bulk-preview-issue-label">' + esc(label) + '</span> ' + esc(msg) + '</li>';
-      })
-      .join('') +
-    (more > 0 ? '<li>+' + more + ' más</li>' : '') +
-    '</ul></details>'
-  );
-}
-
-function renderRowActions(block, idx, blocks) {
-  if (isRepeatOfEarlierMissingPatient(blocks, idx)) {
-    return '<span class="lab-bulk-preview-status lab-bulk-preview-status--muted">Repetido: se agrega con el de arriba</span>';
-  }
-  var html =
-    '<span class="lab-bulk-preview-status ' +
-    statusClass(block.status) +
-    '">' +
-    esc(bulkPreviewStatusLabel(block.status)) +
-    '</span>';
-  if (shouldOfferBulkPreviewAddPatient(block)) {
-    html +=
-      '<button type="button" class="wb-btn wb-btn-secondary lab-bulk-preview-add-btn" data-bulk-block-idx="' +
-      idx +
-      '" title="Registrar paciente con datos del reporte">Agregar al censo</button>';
-  }
-  return html;
-}
-
 export function resolveBulkPreviewConfirmState(blocks) {
   var list = Array.isArray(blocks) ? blocks : [];
   var processable = list.some(function (b) {
@@ -215,67 +90,13 @@ export function resolveBulkPreviewConfirmState(blocks) {
   };
 }
 
-function renderBlockMeta(block) {
-  var parts = [];
-  var ok = block.okReportCount || 0;
-  var total = block.reportCount || 0;
-  var sets = block.setsAfterMerge || 0;
-  var omitted = countBadReports(block);
-  if (ok) parts.push(ok + '/' + total + ' reportes');
-  else if (total) parts.push(total + ' reportes');
-  if (sets) parts.push(sets + ' conjunto' + (sets === 1 ? '' : 's'));
-  if (block.daysLabel && block.daysLabel !== '—') parts.push(block.daysLabel);
-  if (omitted) parts.push(omitted + ' omitido' + (omitted === 1 ? '' : 's'));
-  return parts.join(' · ');
-}
-
-function renderPreviewList(blocks) {
-  return (
-    '<ul class="lab-bulk-preview-list">' +
-    blocks
-      .map(function (block, idx) {
-        var issues = renderReportIssues(block);
-        var status = block.status || 'unknown';
-        var mixedExpedientes = status === 'mixed-expediente' ? renderBlockExpedientes(block) : '';
-        var expedienteLabel = mixedExpedientes || (block.primaryExpediente ? 'Exp. ' + esc(block.primaryExpediente) : 'Sin expediente');
-        return (
-          '<li class="lab-bulk-preview-row lab-bulk-preview-row--' +
-          esc(status) +
-          '">' +
-          '<div class="lab-bulk-preview-row-main">' +
-          '<div class="lab-bulk-preview-row-text">' +
-          '<div class="lab-bulk-preview-row-name">' +
-          esc(block.patientName || '—') +
-          '</div>' +
-          '<div class="lab-bulk-preview-row-meta">' +
-          expedienteLabel +
-          (renderBlockMeta(block) ? ' · ' + esc(renderBlockMeta(block)) : '') +
-          '</div>' +
-          '</div>' +
-          '<div class="lab-bulk-preview-row-aside">' +
-          renderRowActions(block, idx, blocks) +
-          '</div>' +
-          '</div>' +
-          (issues || '') +
-          (unknownLabRowsWarning([block])
-            ? '<div class="lab-bulk-preview-unknown-rows">' + esc(unknownLabRowsWarning([block])) + '</div>'
-            : '') +
-          renderConflictReports(block) +
-          renderBlockRawText(block) +
-          '</li>'
-        );
-      })
-      .join('') +
-    '</ul>'
-  );
-}
 
 function paintModalContent(blocks) {
   var summary = document.getElementById('lab-bulk-preview-summary');
   var body = document.getElementById('lab-bulk-preview-body');
   var btn = document.getElementById('lab-bulk-preview-confirm');
   if (summary) summary.textContent = renderPreviewSummary(blocks);
-  if (body) body.innerHTML = renderPreviewList(blocks);
+  if (body) paintList(body, blocks);
 
   var confirmState = resolveBulkPreviewConfirmState(blocks);
   if (btn) {
@@ -441,7 +262,7 @@ export function closeLabBulkPreviewModal() {
   backdrop.setAttribute('aria-hidden', 'true');
   document.documentElement.classList.remove('lab-bulk-preview-modal-open');
   if (body) {
-    body.innerHTML = '';
+    if (listView) listView.clearLabBulkPreviewList(body);
     body.onclick = null;
   }
 }
