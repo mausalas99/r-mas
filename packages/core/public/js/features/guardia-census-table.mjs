@@ -2,7 +2,6 @@
  * Modo Guardia — census table (Cama/Paciente/Alterados/Pendiente/Estado), built on the
  * shared workbench table grammar (teal-workbench redesign, screen 6a/6b).
  */
-import { escHtml, escAttr } from '../dom-escape.mjs';
 import { liveHistorial } from './estado-actual-data-model.mjs';
 import { isVitalKeyAltered } from './estado-actual-ranges.mjs';
 import { isTodoOverdue } from '../todos-due.mjs';
@@ -14,10 +13,9 @@ import { sortLabHistoryChronological, parseFechaLabToMs } from '../tend-core.mjs
 import { sortPatientsByPriorityThenBed } from '../../../lib/patient-priority-sort.mjs';
 import { buildGuardiaTeamCensusGroups } from './unified-patient-grid-team-groups.mjs';
 import { filterR4FollowUpPinPatients, R4_FOLLOWUP_PIN_LABEL } from './unified-patient-grid-board.mjs';
-import { buildTableCardHeaderHtml, buildSummaryLineHtml } from './workbench/wb-table.mjs';
-import { buildFilterChipsHtml } from './workbench/filter-chips.mjs';
+import { drawGuardiaCensusTable } from './guardia-census-table-view.jsx';
 import { appendExitingRows } from '../ui-motion.mjs';
-import { buildEntregaMarkerSymbolsHtml } from '../../../lib/entrega/entrega-chip-markers.mjs';
+import { resolveEntregaChipMarkers } from '../../../lib/entrega/entrega-chip-markers.mjs';
 
 const VITAL_LABELS = { ta: 'T/A', tas: 'T/A', fc: 'FC', fr: 'FR', temp: 'Temp', sat: 'SatO₂' };
 const GUARDIA_CENSUS_FILTER_DEFAULT = 'todos';
@@ -69,24 +67,16 @@ export function normalizeGuardiaMarksPatch(patch) {
   return next;
 }
 
-function guardiaMarkChipHtml(prefix, option, risk) {
-  const title = `${prefix}: ${option.label}`;
-  const cls = risk ? 'gct-chip gct-chip--risk' : 'gct-chip';
-  return (
-    `<span class="${cls}" title="${escAttr(title)}" aria-label="${escAttr(title)}">${option.icon}</span>`
-  );
-}
-
-/** @param {object} p */
-export function buildGuardiaMarksBadgesHtml(p) {
+/** Esfuerzo / pronóstico chips for a census card, in draw order. */
+function guardiaMarkBadges(p) {
   const esfuerzo = GUARDIA_ESFUERZO_OPTIONS.find((o) => o.id === normalizeGuardiaEsfuerzo(p?.guardiaEsfuerzo));
   const pronostico = GUARDIA_PRONOSTICO_OPTIONS.find(
     (o) => o.id === normalizeGuardiaPronostico(p?.guardiaPronostico)
   );
-  return (
-    (esfuerzo ? guardiaMarkChipHtml('Esfuerzo', esfuerzo, esfuerzo.id === 'no') : '') +
-    (pronostico ? guardiaMarkChipHtml('Pronóstico', pronostico, pronostico.id === 'bad') : '')
-  );
+  const out = [];
+  if (esfuerzo) out.push({ icon: esfuerzo.icon, title: `Esfuerzo: ${esfuerzo.label}`, risk: esfuerzo.id === 'no' });
+  if (pronostico) out.push({ icon: pronostico.icon, title: `Pronóstico: ${pronostico.label}`, risk: pronostico.id === 'bad' });
+  return out;
 }
 
 function vitalLabel(key) {
@@ -226,55 +216,33 @@ function patientShortName(name) {
 }
 
 /**
- * @param {object} p
- * @returns {string}
- */
-/**
- * Right-hand marks on a census card, plus the card classes they imply.
- * Handoff markers (CR/NF/SH) and the critical accent come from
+ * One census card as plain data. Handoff markers (CR/NF/SH) and the critical accent come from
  * enrichPatientForGuardiaCard; same classes as the unified grid chip (pase-board.css).
  * @param {object} p
- * @param {string[]} classes  mutated: gets the stale-labs / critical modifiers
  */
-function guardiaCardMarksHtml(p, classes) {
-  const staleLabs = !isPatientAdmissionIncomplete(p) && isProbableDischargeCandidate(p);
-  if (staleLabs) classes.push('gct-card--stale-labs');
-  if (p.isCritical) classes.push('gct-card--critical');
-  const staleLabsChip = staleLabs
-    ? '<span class="gct-chip gct-chip--stale-labs" title="Sin laboratorios en 7 días: posible alta" aria-label="Sin laboratorios en 7 días: posible alta">⏳</span>'
-    : '';
-  const entregaSymbols = buildEntregaMarkerSymbolsHtml(Array.isArray(p.entregaMarkers) ? p.entregaMarkers : []);
-  const criticalHint = p.isCritical
-    ? '<span class="patient-chip-critical-hint" title="Paciente crítico">Crítico</span>'
-    : '';
-  return entregaSymbols + criticalHint + staleLabsChip + buildGuardiaMarksBadgesHtml(p);
-}
-
-export function buildGuardiaCensusCardHtml(p) {
+function guardiaCensusCardModel(p) {
   const pendientes = patientPendientes(p.id);
   const status = guardiaPatientStatus(pendientes);
   const task = pendientes.overdue[0] || pendientes.open[0];
-  const morePend = task ? pendientes.open.length - 1 : 0;
   const classes = ['gct-card'];
   if (status === 'vencido') classes.push('gct-card--alert');
-  const marks = guardiaCardMarksHtml(p, classes);
+  const staleLabs = !isPatientAdmissionIncomplete(p) && isProbableDischargeCandidate(p);
+  if (staleLabs) classes.push('gct-card--stale-labs');
+  if (p.isCritical) classes.push('gct-card--critical');
   const name = String(p.name || p.nombre || '—');
-  return (
-    `<div class="${classes.join(' ')}" data-wb-row-id="${escAttr(p.id)}" role="button" tabindex="0">` +
-    '<div class="gct-card__row">' +
-    `<span class="gct-cell-bed">${escHtml(bedLabel(p))}</span>` +
-    `<span class="gct-cell-name" title="${escAttr(name)}" aria-label="${escAttr(name)}">${escHtml(patientShortName(name))}</span>` +
-    `<span class="gct-card__marks">${marks}</span>` +
-    '</div>' +
-    '<div class="gct-task-row">' +
-    `<span class="gct-task"${task ? ` title="${escAttr(String(task.text || ''))}"` : ''}>` +
-    `${task ? escHtml(String(task.text || '')) : ''}</span>` +
-    (morePend > 0
-      ? `<span class="gct-task-more" title="${morePend} pendientes más">+${morePend}</span>`
-      : '') +
-    '</div>' +
-    '</div>'
-  );
+  return {
+    id: String(p.id),
+    classes,
+    bed: bedLabel(p),
+    name,
+    shortName: patientShortName(name),
+    entregaMarkers: resolveEntregaChipMarkers(Array.isArray(p.entregaMarkers) ? p.entregaMarkers : []),
+    critical: !!p.isCritical,
+    staleLabs,
+    badges: guardiaMarkBadges(p),
+    task: task ? String(task.text || '') : null,
+    morePend: task ? pendientes.open.length - 1 : 0,
+  };
 }
 
 const GCT_CARD_H_DEFAULT = 78;
@@ -334,54 +302,35 @@ function wireGuardiaCardsResize(mountEl) {
   ro.observe(mountEl);
 }
 
-/** Group keys the user collapsed. Survives re-renders (mountGuardiaCensusTable replaces innerHTML each refresh). */
+/** Group keys the user collapsed. Survives re-renders (mountGuardiaCensusTable redraws each refresh). */
 export const collapsedGroupIds = new Set();
 
-function groupBlockHtml(key, label, count, cardsHtml) {
-  const open = collapsedGroupIds.has(key) ? '' : ' open';
-  return (
-    `<details class="gct-team-group" data-group-key="${escAttr(key)}"${open}>` +
-    `<summary class="gct-divider">${escHtml(label)} · ${count}</summary>` +
-    `<div class="gct-grid">${cardsHtml}</div>` +
-    '</details>'
-  );
+function groupModel(key, label, patients, guardiasMap) {
+  return {
+    key,
+    label,
+    count: patients.length,
+    open: !collapsedGroupIds.has(key),
+    cards: sortPatientsByPriorityThenBed(patients, guardiasMap).map(guardiaCensusCardModel),
+  };
 }
 
-function batchRowsHtml(patients, guardiasMap) {
-  return sortPatientsByPriorityThenBed(patients, guardiasMap)
-    .map(buildGuardiaCensusCardHtml)
-    .join('');
-}
-
-function teamGroupsHtml(patients, guardiasMap, groupCtx) {
+function teamGroupModels(patients, guardiasMap, groupCtx) {
   return buildGuardiaTeamCensusGroups(patients, groupCtx)
     .filter((group) => group.patients.length)
-    .map((group) =>
-      groupBlockHtml(
-        group.teamId || group.label,
-        group.label,
-        group.patients.length,
-        batchRowsHtml(group.patients, guardiasMap)
-      )
-    )
-    .join('');
+    .map((group) => groupModel(group.teamId || group.label, group.label, group.patients, guardiasMap));
 }
 
-function guardiaCensusBodyHtml(patients, guardiasMap, userRank, groupCtx) {
-  if (userRank !== 'R4') return teamGroupsHtml(patients || [], guardiasMap, groupCtx);
-  let body = '';
+function guardiaCensusBodyGroups(patients, guardiasMap, userRank, groupCtx) {
+  if (userRank !== 'R4') return teamGroupModels(patients || [], guardiasMap, groupCtx);
+  const groups = [];
   const followUpPatients = filterR4FollowUpPinPatients(patients);
   const followUpIds = new Set(followUpPatients.map((p) => p.id));
   if (followUpPatients.length) {
-    body += groupBlockHtml(
-      R4_FOLLOWUP_PIN_LABEL,
-      R4_FOLLOWUP_PIN_LABEL,
-      followUpPatients.length,
-      batchRowsHtml(followUpPatients, guardiasMap)
-    );
+    groups.push(groupModel(R4_FOLLOWUP_PIN_LABEL, R4_FOLLOWUP_PIN_LABEL, followUpPatients, guardiasMap));
   }
   const rest = (patients || []).filter((p) => p?.id && !followUpIds.has(p.id));
-  return body + teamGroupsHtml(rest, guardiasMap, groupCtx);
+  return groups.concat(teamGroupModels(rest, guardiasMap, groupCtx));
 }
 
 function guardiaCensusSummaryLine(patients) {
@@ -412,14 +361,14 @@ function applyGuardiaCensusFilter(patients, activeId) {
 }
 
 /**
+ * Everything the census table draws, as plain data.
  * @param {object[]} patients
  * @param {Map<string, object>} guardiasMap
  * @param {string} [userRank]
  * @param {{ teams?: object[], assignments?: object[], now?: string|Date|number }} [groupCtx]
  * @param {string} [activeFilter] one of 'pendiente' | 'todos' | 'ingresos'
- * @returns {string}
  */
-export function buildGuardiaCensusTableHtml(
+export function buildGuardiaCensusModel(
   patients,
   guardiasMap,
   userRank = 'R1',
@@ -427,23 +376,14 @@ export function buildGuardiaCensusTableHtml(
   activeFilter = GUARDIA_CENSUS_FILTER_DEFAULT
 ) {
   const all = patients || [];
-  const title = `Censo · ${all.length} paciente${all.length === 1 ? '' : 's'}`;
-  const chipsHtml = buildFilterChipsHtml(guardiaCensusFilterChips(all), activeFilter);
-  // Cambiar sala/equipo lives here (not a separate head bar) to keep the census
-  // grid's vertical room — the click is handled by a delegated document listener
-  // in guardia-board-chrome.mjs, so the button works from anywhere in the DOM.
-  const cambiarBtn = '<button type="button" class="wb-btn wb-btn-secondary" id="guardia-btn-cambiar-sala">Cambiar</button>';
-  const header = buildTableCardHeaderHtml({ title, actionsHtml: cambiarBtn + chipsHtml });
   const filtered = applyGuardiaCensusFilter(all, activeFilter);
-  const bodyHtml = guardiaCensusBodyHtml(filtered, guardiasMap, userRank, groupCtx);
-  const summary = guardiaCensusSummaryLine(filtered);
-  return (
-    '<div class="wb-table-card guardia-census-table">' +
-    header +
-    `<div class="wb-table-body">${bodyHtml}</div>` +
-    (summary ? buildSummaryLineHtml(summary) : '') +
-    '</div>'
-  );
+  return {
+    title: `Censo · ${all.length} paciente${all.length === 1 ? '' : 's'}`,
+    chips: guardiaCensusFilterChips(all),
+    activeFilter,
+    groups: guardiaCensusBodyGroups(filtered, guardiasMap, userRank, groupCtx),
+    summary: guardiaCensusSummaryLine(filtered),
+  };
 }
 
 /**
@@ -477,26 +417,6 @@ export function mountGuardiaCensusTable(container, patients, guardiasMap, userRa
 
   const activeFilter = container._gctActiveFilter || GUARDIA_CENSUS_FILTER_DEFAULT;
 
-  function wireRows() {
-    if (typeof onRowClick !== 'function') return;
-    container.querySelectorAll('[data-wb-row-id]').forEach((row) => {
-      const open = () => onRowClick(row.getAttribute('data-wb-row-id'));
-      row.addEventListener('click', open);
-      row.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Enter' || ev.key === ' ') {
-          ev.preventDefault();
-          open();
-        }
-      });
-    });
-  }
-
-  function wireChips() {
-    container.querySelectorAll('[data-wb-chip-id]').forEach((btn) => {
-      btn.addEventListener('click', () => renderAt(btn.getAttribute('data-wb-chip-id')));
-    });
-  }
-
   function renderAt(filterId) {
     container._gctActiveFilter = filterId;
     // Reassess from the full 2-line card height on every render — a previous
@@ -507,7 +427,11 @@ export function mountGuardiaCensusTable(container, patients, guardiasMap, userRa
     container.querySelectorAll('[data-wb-row-id]').forEach((row) => {
       prevRows[row.getAttribute('data-wb-row-id')] = row;
     });
-    container.innerHTML = buildGuardiaCensusTableHtml(patients, guardiasMap, userRank, groupCtx, filterId);
+    drawGuardiaCensusTable(container, {
+      model: buildGuardiaCensusModel(patients, guardiasMap, userRank, groupCtx, filterId),
+      onChip: renderAt,
+      onRowClick,
+    });
     var newIds = new Set();
     container.querySelectorAll('[data-wb-row-id]').forEach((row) => {
       var id = row.getAttribute('data-wb-row-id');
@@ -515,8 +439,6 @@ export function mountGuardiaCensusTable(container, patients, guardiasMap, userRa
       if (!prevRows[id]) row.classList.add('row-enter');
     });
     appendExitingRows(container, prevRows, newIds);
-    wireRows();
-    wireChips();
     wireGuardiaCardsResize(container);
     fitGuardiaCards(container);
   }
