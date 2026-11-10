@@ -261,23 +261,6 @@ function snippetAround(text, q, maxLen) {
   return out;
 }
 
-function escapeRegExp(s) {
-  return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function highlightSnippet(snippet, q) {
-  var safe = esc(snippet);
-  if (!q) return safe;
-  var qEsc = escapeRegExp(q);
-  try {
-    return safe.replace(new RegExp(qEsc, "ig"), function (m) {
-      return "<mark>" + m + "</mark>";
-    });
-  } catch {
-    return safe;
-  }
-}
-
 function collectNoteHaystack(note) {
   if (!note) return "";
   var parts = [note.interrogatorio, note.evolucion, note.estudios, note.medico, note.profesor];
@@ -340,62 +323,27 @@ function collectPatientSearchHits(p, q, metaStr, out, max) {
   return false;
 }
 
-function renderUnifiedSearchHtml(out, q) {
-  return out
-    .map(function (r, idx) {
-      return (
-        '<div class="unified-search-result" data-onclick="selectUnifiedSearchResult" data-onclick-args="[' +
-        idx +
-        ']">' +
-        '<div class="usr-title"><span>' +
-        esc(r.title) +
-        '</span><span class="usr-tag">' +
-        esc(r.tag) +
-        '</span></div>' +
-        '<div class="usr-meta">' +
-        esc(r.meta) +
-        '</div>' +
-        (r.snippet ? '<div class="usr-snippet">' + highlightSnippet(r.snippet, q) + '</div>' : '') +
-        '</div>'
-      );
-    })
-    .join('');
-}
-
 export function updateUnifiedSearchResults() {
   var box = document.getElementById("unified-search-results");
   var inp = document.getElementById("unified-search-input");
   if (!box || !inp) return;
   var q = String(inp.value || "").trim().toLowerCase();
-  if (!q) {
-    box.innerHTML =
-      '<div class="unified-search-empty empty-state empty-state--compact" role="status">' +
-      '<span class="empty-state-title">Buscar en el censo</span>' +
-      '<span class="empty-state-lead">Escribe nombre, registro, cuarto o texto de notas.</span>' +
-      '</div>';
-    _unifiedSearchCurrent = [];
-    return;
-  }
   var out = [];
-  var MAX = 40;
-  var searchPatients = getPatientsForDisplay(() => getPatients());
-  for (var i = 0; i < searchPatients.length && out.length < MAX; i += 1) {
-    var p = searchPatients[i];
-    if (p.isDemo && !isPitchPatientIsolationActive()) continue;
-    var metaStr =
-      'Cto. ' + (p.cuarto || '-') + ' · Cama ' + (p.cama || '-') + (p.registro ? ' · ' + p.registro : '');
-    if (collectPatientSearchHits(p, q, metaStr, out, MAX)) break;
+  if (q) {
+    var MAX = 40;
+    var searchPatients = getPatientsForDisplay(() => getPatients());
+    for (var i = 0; i < searchPatients.length && out.length < MAX; i += 1) {
+      var p = searchPatients[i];
+      if (p.isDemo && !isPitchPatientIsolationActive()) continue;
+      var metaStr =
+        'Cto. ' + (p.cuarto || '-') + ' · Cama ' + (p.cama || '-') + (p.registro ? ' · ' + p.registro : '');
+      if (collectPatientSearchHits(p, q, metaStr, out, MAX)) break;
+    }
   }
   _unifiedSearchCurrent = out;
-  if (!out.length) {
-    box.innerHTML =
-      '<div class="unified-search-empty empty-state empty-state--compact" role="status">' +
-      '<span class="empty-state-title">Sin coincidencias</span>' +
-      '<span class="empty-state-lead">Prueba otro término o abre una pestaña desde el encabezado.</span>' +
-      '</div>';
-    return;
-  }
-  box.innerHTML = renderUnifiedSearchHtml(out, q);
+  void import("./productivity-view.jsx").then(function (v) {
+    v.drawUnifiedSearchResults(box, { results: out, q: q });
+  });
 }
 
 export function selectUnifiedSearchResult(idx) {
@@ -438,35 +386,9 @@ function renderExtraTemplatesList() {
   var list = document.getElementById("extra-templates-list");
   if (!list) return;
   var arr = ensureExtraTemplatesArray();
-  if (!arr.length) {
-    list.innerHTML =
-      '<div class="unified-search-empty empty-state empty-state--compact" role="status">' +
-      '<span class="empty-state-title">Sin plantillas guardadas</span>' +
-      '<span class="empty-state-lead">Las plantillas que guardes aparecerán aquí.</span>' +
-      '</div>';
-    return;
-  }
-  list.innerHTML = arr
-    .map(function (tmpl) {
-      var idArgs = escAttr(JSON.stringify([String(tmpl.id || "")]));
-      return (
-        '<div class="extra-tmpl-row">' +
-        '<span class="etr-label" title="' +
-        esc(tmpl.label || "") +
-        '">' +
-        esc(tmpl.label || "(sin nombre)") +
-        "</span>" +
-        '<div class="etr-actions">' +
-        '<button type="button" data-onclick="editExtraTemplate" data-onclick-args=\'' +
-        idArgs +
-        "'>Editar</button>" +
-        '<button type="button" class="etr-del" data-onclick="deleteExtraTemplate" data-onclick-args=\'' +
-        idArgs +
-        "'>Eliminar</button>" +
-        "</div></div>"
-      );
-    })
-    .join("");
+  void import("./productivity-view.jsx").then(function (v) {
+    v.drawExtraTemplatesList(list, { templates: arr });
+  });
 }
 
 export function startNewExtraTemplate() {
