@@ -6,33 +6,31 @@
  * visible at once. Rows and the tray are drop targets (`data-drop-team-id`).
  * "Mi equipo": one team's patients as full Sala cards, grouped by bucket.
  *
- * Plain HTML-string rendering, like patients-card-html.mjs.
+ * Pure helpers and drag/drop wiring live here; the markup is Preact, in
+ * interconsulta-team-board-view.jsx (which also exports the mount function).
  */
 import { getInterconsultaTeamRoles } from '../../../lib/clinical-scope/interconsulta-team-roles.mjs';
 import { classifyInterconsultaBoardBucket } from '../../../lib/clinical-scope/interconsulta-board-buckets.mjs';
-import { requestingServiceHue } from './patients-card-html.mjs';
-import { getConsultInfo, triageRank, icTriageTagHtml, icTimerHtml } from './patient-dashboard/consult-band.mjs';
-import { cardTagsHtml, cornerBtnHtml } from './sala-view-variants.mjs';
-import { escHtml } from '../dom-escape.mjs';
+import { triageRank } from './patient-dashboard/consult-band.mjs';
 
-const BUCKET_LABELS = {
+export const BUCKET_LABELS = {
   preop: 'Preop / Nuevas hoy',
   pendientes: 'Pendientes',
   under: 'Under',
 };
 
-function teamLabel(team, fallback) {
+export function teamLabel(team, fallback) {
   return String(team?.name || team?.service || fallback || 'Equipo').trim() || 'Equipo';
 }
 
 /** Received (Recibida stamped, not yet Respondida) first, then triage order
  * (VPO, Críticos, IC, Seguimiento, no group). Stable sort. */
 const isReceivedOpen = (p) => (p?.consultInfo?.receivedAt && !p.consultInfo.answeredAt ? 0 : 1);
-function byTriage(patients) {
+export function byTriage(patients) {
   return (patients || []).slice().sort((a, b) => isReceivedOpen(a) - isReceivedOpen(b) || triageRank(a) - triageRank(b));
 }
 
-function groupByBucket(patients, isGuardiaTeam, now) {
+export function groupByBucket(patients, isGuardiaTeam, now) {
   /** @type {Record<string, object[]>} */
   const groups = { preop: [], pendientes: [], under: [], archivado: [] };
   for (const p of byTriage(patients)) {
@@ -45,7 +43,7 @@ function groupByBucket(patients, isGuardiaTeam, now) {
 const LOWER_WORDS = new Set(['de', 'del', 'la', 'las', 'los', 'y', 'e']);
 
 /** "JOSE JUAN LEAL GALLEGOS" → "Jose Juan Leal Gallegos". Charts store names in capitals. */
-function titleCaseName(name) {
+export function titleCaseName(name) {
   return String(name || '')
     .toLowerCase()
     .replace(/(^|[\s'-])(\S)/g, (m, sep, ch, off) => {
@@ -55,58 +53,17 @@ function titleCaseName(name) {
 }
 
 /** "Cto. 432 · Cama 3" → "432 · 3". */
-function shortBed(p) {
+export function shortBed(p) {
   return [p.cuarto, p.cama].map((x) => String(x || '').trim()).filter(Boolean).join(' · ') || 'Sin cama';
 }
 
-/** Requesting service chip with its colored dot, shared by cards and rows. */
-function svcHtml(p) {
-  const svcName = String(getConsultInfo(p).requestingService || '').trim();
-  const hue = requestingServiceHue(p);
-  return svcName
-    ? '<span class="ic-svc"><i class="ic-svc__dot" style="--h:' + (hue == null ? 220 : hue) + '"></i>' + escHtml(svcName) + '</span>'
-    : '<span class="sv-none">Sin servicio</span>';
-}
-
-/** One-row patient line. Cells, in grid order: [grip], triage, critical-lab dot, bed, name,
- * requesting service, motivo, timer, then archive ("Mi equipo") or the "Asignar ▾" button
- * (`opts.assign`, Por asignar rows). `opts.grip` adds the drag handle first. */
-export function icRowHtml(p, opts = {}) {
-  const assign = !!opts.assign;
-  const grip = !!opts.grip;
-  const id = escHtml(String(p.id));
-  const reason = String(getConsultInfo(p).reason || '').trim();
-  const triage = getConsultInfo(p).triage;
-  const triageCell =
-    triage === 'seguimiento' ? '<span class="ic-line__muted">Seguimiento</span>' : icTriageTagHtml(p);
-  // A red dot stands in for the "Lab crítico" tag, as in icCardHtml.
-  const critDot = cardTagsHtml(p).includes('Lab crítico')
-    ? '<span class="ic-crit-dot" title="Lab crítico" role="img" aria-label="Lab crítico"></span>'
-    : '';
-  return (
-    '<div class="ic-line sv-card-wrap' + (grip ? ' ic-line--grip' : '') + (assign ? ' ic-line--assign' : '') + '" draggable="true" data-ic-line data-patient-id="' + id + '" data-ic-open="' + id + '">' +
-    (grip ? '<span class="ic-line__grip"' + (assign ? ' aria-hidden="true"' : ' data-ic-assign-open="' + id + '" role="button" title="Mover o quitar equipo" aria-label="Mover o quitar equipo"') + '>⋮⋮</span>' : '') +
-    '<span class="ic-line__triage">' + triageCell + '</span>' +
-    '<span class="ic-line__crit">' + critDot + '</span>' +
-    '<span class="ic-line__bed">' + escHtml(shortBed(p)) + '</span>' +
-    '<span class="ic-line__name" title="' + escHtml([p.registro].filter(Boolean).join(' · ')) + '">' + escHtml(titleCaseName(p.nombre) || 'Sin nombre') + '</span>' +
-    '<span class="ic-line__svc">' + svcHtml(p) + '</span>' +
-    '<span class="ic-line__motivo">' + (reason ? escHtml(reason) : '<span class="sv-none">Sin motivo</span>') + '</span>' +
-    '<span class="ic-line__timer">' + (assign ? '' : icTimerHtml(p)) + '</span>' +
-    (assign
-      ? '<button type="button" class="ic-line__assign" data-ic-assign-open="' + id + '" aria-haspopup="menu">Asignar ▾</button>'
-      : '<span class="ic-line__archive">' + cornerBtnHtml(p) + '</span>') +
-    '</div>'
-  );
-}
-
 /** Two fixed activo slots; any further real teams become extra rows. */
-function laneSlots(roles) {
+export function laneSlots(roles) {
   const activo = roles.activo || [];
   return { activo: [activo[0] || null, activo[1] || null], overflow: activo.slice(2) };
 }
 
-function groupPatientsByTeamId(patients) {
+export function groupPatientsByTeamId(patients) {
   const byTeam = new Map();
   for (const p of patients || []) {
     const teamId = String(p?.censusTeamId || '');
@@ -120,86 +77,12 @@ function groupPatientsByTeamId(patients) {
 // Computed BEFORE hidePostguardia filtering — postguardia's patients must
 // stay "known" even when its row is hidden, or they'd wrongly leak into the
 // "Por asignar" tray.
-function computeKnownTeamIds(roles, slots) {
+export function computeKnownTeamIds(roles, slots) {
   return new Set(
     [roles.guardia, roles.postguardia, ...slots.activo, ...slots.overflow]
       .filter(Boolean)
       .map((t) => String(t.team_id || ''))
   );
-}
-
-/** One Asignar section: heading with count, then a flat triage-sorted row list (no buckets). */
-function sectionHtml({ role, team, title, patients, emptyText, note }) {
-  const list = byTriage(patients);
-  const dropAttr = team ? ' data-drop-team-id="' + escHtml(String(team.team_id || '')) + '"' : '';
-  const rows = list.map((p) => icRowHtml(p, { grip: true })).join('');
-  let body;
-  if (!team) body = '<div class="ic-lines"><p class="ic-line__muted ic-lines__empty">' + escHtml(emptyText) + '</p></div>';
-  else if (!list.length) body = '<div class="ic-lines"' + dropAttr + '><p class="ic-line__muted ic-lines__empty">Suelta un paciente aquí</p></div>';
-  else body = '<div class="ic-lines"' + dropAttr + '>' + rows + '</div>';
-  return (
-    '<section class="ic-board-section ic-board-section--' + role + '" data-role="' + role + '"' + dropAttr + '>' +
-    '<h2 class="ic-board-section__title">' + escHtml(title) + ' <span>' + list.length + '</span>' +
-    (note ? '<em>' + escHtml(note) + '</em>' : '') +
-    '</h2>' + body + '</section>'
-  );
-}
-
-/** "Por asignar" section: only shown while some patient has no known team. */
-function sinEquipoHtml(unassigned) {
-  if (!unassigned.length) return '';
-  return (
-    '<section class="ic-board-section ic-board-section--sin" data-role="sin-equipo" data-drop-team-id="">' +
-    '<h2 class="ic-board-section__title">Por asignar <span>' + unassigned.length + '</span>' +
-    '<em>Elige un equipo con el menú o con las teclas 1 a 4</em></h2>' +
-    '<div class="ic-lines ic-lines--sin">' + unassigned.map((p) => icRowHtml(p, { assign: true, grip: true })).join('') + '</div>' +
-    '</section>'
-  );
-}
-
-/**
- * "Asignar" mode as an HTML string.
- * @param {object[]} patients — patients already scoped to interconsulta, each with `censusTeamId`
- * @param {object[]} teams — all clinical teams (filtered internally to Interconsultas)
- * @param {Date|string} [now]
- * @param {{ filterGuardiaOnly?: boolean, hidePostguardia?: boolean }} [opts]
- * @returns {string}
- */
-export function renderInterconsultaTeamBoardHtml(patients, teams, now = new Date(), opts = {}) {
-  const { filterGuardiaOnly = false, hidePostguardia = false } = opts || {};
-  const roles = getInterconsultaTeamRoles(teams, now);
-  const byTeam = groupPatientsByTeamId(patients);
-  const patientsFor = (team) => (team ? byTeam.get(String(team.team_id || '')) || [] : []);
-  const slots = laneSlots(roles);
-
-  if (filterGuardiaOnly) {
-    const preop = groupByBucket(patientsFor(roles.guardia), true, now).preop;
-    return '<div class="ic-team-board ic-team-board--filtered">' + sectionHtml({
-      role: 'guardia', team: roles.guardia, title: teamLabel(roles.guardia, 'Guardia'), patients: preop, emptyText: 'Sin equipo de guardia hoy.',
-    }) + '</div>';
-  }
-
-  // Computed BEFORE hidePostguardia: postguardia's patients stay "known" even when its section is hidden.
-  const known = computeKnownTeamIds(roles, slots);
-  const unassigned = (patients || []).filter((p) => !known.has(String(p?.censusTeamId || '')));
-  // Weekends: only the on-call team is present.
-  const weekend = [0, 6].includes(new Date(now).getDay());
-  const sections = [
-    sectionHtml({ role: 'guardia', team: roles.guardia, title: teamLabel(roles.guardia, 'Guardia'), patients: patientsFor(roles.guardia), emptyText: 'Sin equipo de guardia hoy.' }),
-  ];
-  if (!weekend) {
-    slots.activo.forEach((team, i) =>
-      sections.push(sectionHtml({ role: 'activo', team, title: teamLabel(team, 'Activo ' + (i + 1)), patients: patientsFor(team), emptyText: 'Sin equipo asignado.' }))
-    );
-    slots.overflow.forEach((team) => sections.push(sectionHtml({ role: 'activo', team, title: teamLabel(team), patients: patientsFor(team), emptyText: '' })));
-    if (!hidePostguardia) {
-      sections.push(sectionHtml({
-        role: 'postguardia', team: roles.postguardia, title: teamLabel(roles.postguardia, 'Post-guardia'), patients: patientsFor(roles.postguardia),
-        emptyText: 'Sin equipo.', note: 'No presencial hoy. Sus pacientes pasan al resto del equipo.',
-      }));
-    }
-  }
-  return '<div class="ic-team-board">' + sinEquipoHtml(byTriage(unassigned)) + sections.join('') + '</div>';
 }
 
 /** Teams that can be "mine", in board order: [{ id, label }]. Empty when no real team exists. */
@@ -232,82 +115,12 @@ export function guardiaTeamLabel(teams, now = new Date()) {
   return guardia ? teamLabel(guardia) : '';
 }
 
-/** "Mi equipo" strip: patients with no known team, each with a "Tomar" button (needs a team). */
-function tomarStripHtml(unassigned, teamId) {
-  if (!teamId || !unassigned.length) return '';
-  const rows = byTriage(unassigned)
-    .map((p) => {
-      const id = escHtml(String(p.id));
-      return (
-        '<div class="ic-take__row">' +
-        '<span class="ic-line__bed">' + escHtml(shortBed(p)) + '</span>' +
-        '<span class="ic-line__name">' + escHtml(titleCaseName(p.nombre) || 'Sin nombre') + '</span>' +
-        '<span class="ic-line__svc">' + svcHtml(p) + '</span>' +
-        '<span class="ic-take__triage">' + icTriageTagHtml(p) + icTimerHtml(p) + '</span>' +
-        '<button type="button" class="ic-take__btn" data-ic-take="' + id + '" data-ic-take-team="' + escHtml(String(teamId)) + '">Tomar</button>' +
-        '</div>'
-      );
-    })
-    .join('');
-  return (
-    '<section class="ic-take"><h3 class="ic-take__title">Sin equipo <span>' + unassigned.length + ' pacientes esperan</span></h3>' +
-    '<div class="ic-lines ic-lines--sin">' + rows + '</div></section>'
-  );
-}
-
-export function renderInterconsultaTeamViewHtml(patients, teams, now = new Date(), teamId = '') {
-  const roles = getInterconsultaTeamRoles(teams, now);
-  const isGuardiaTeam = !!roles.guardia && String(roles.guardia.team_id || '') === String(teamId);
-  const known = computeKnownTeamIds(roles, laneSlots(roles));
-  const unassigned = (patients || []).filter((p) => !known.has(String(p?.censusTeamId || '')));
-  const mine = (patients || []).filter((p) => String(p?.censusTeamId || '') === String(teamId));
-  const groups = groupByBucket(mine, isGuardiaTeam, now);
-  const body = ['preop', 'pendientes', 'under']
-    .filter((key) => groups[key].length)
-    .map(
-      (key) =>
-        '<section class="ic-team-view__bucket"><h3 class="ic-team-view__label">' + BUCKET_LABELS[key] + ' · ' + groups[key].length + '</h3>' +
-        '<div class="ic-lines" data-drop-team-id="' + escHtml(String(teamId)) + '">' + groups[key].map((p) => icRowHtml(p)).join('') + '</div></section>'
-    )
-    .join('');
-  return '<div class="ic-team-view">' + tomarStripHtml(unassigned, teamId) + (body || '<p class="sv-none">Sin pacientes en este equipo.</p>') + '</div>';
-}
-
-/**
- * Mounts the board into `container` and wires drag/drop team reassignment.
- *
- * @param {HTMLElement} container
- * @param {object[]} patients
- * @param {object[]} teams
- * @param {{
- *   now?: Date|string,
- *   mode?: 'asignar'|'equipo',
- *   teamId?: string,
- *   filterGuardiaOnly?: boolean,
- *   hidePostguardia?: boolean,
- *   assignTeam?: (patientId: string, teamId: string) => Promise<any>,
- *   onAssignTeam?: (result: any) => void,
- * }} opts
- */
-export function mountInterconsultaTeamBoard(container, patients, teams, opts = {}) {
-  if (!container) return;
-  const now = opts.now || new Date();
-  container.innerHTML =
-    opts.mode === 'equipo'
-      ? renderInterconsultaTeamViewHtml(patients, teams, now, opts.teamId)
-      : renderInterconsultaTeamBoardHtml(patients, teams, now, {
-          filterGuardiaOnly: opts.filterGuardiaOnly,
-          hidePostguardia: opts.hidePostguardia,
-        });
-  wireTeamBoardDragAndDrop(container, opts);
-}
-
 /** Drag an `.ic-line` from any row or the tray, drop it on any element with
  * `data-drop-team-id` ("" = Por asignar) to reassign that patient's team via
  * `opts.assignTeam`. Native HTML5 DnD — no library needed for a same-page move.
  * The listeners go on the container, which the header re-render keeps, so they
  * are attached once. */
-function wireTeamBoardDragAndDrop(container, opts) {
+export function wireTeamBoardDragAndDrop(container, opts) {
   container._icDndOpts = opts;
   if (container.dataset.icDndWired) return;
   container.dataset.icDndWired = '1';
