@@ -25,8 +25,7 @@ import { needsClinicalOnboarding } from '../clinical-onboarding.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 
-import { escapeHtml } from '../../dom-escape.mjs';
-import { buildModuleRow, LEARN_HUB_CHEVRON } from './learn-hub-module-row.mjs';
+import { drawLearnHubBody } from '../learn-hub-view.jsx';
 
 let learnHubDismissWired = false;
 let learnHubLastFocus = null;
@@ -113,34 +112,8 @@ function fundamentosModuleState(chapterId, branch, progress, tourProgress) {
   };
 }
 
-function trackHeader(title, done, total) {
-  return (
-    '<summary class="learn-hub-track-title">' +
-    `<span class="learn-hub-track-name">${title}</span>` +
-    `<span class="learn-hub-track-count">${done} de ${total}</span>` +
-    `<progress class="learn-hub-bar learn-hub-bar--track" max="${total}" value="${done}" aria-hidden="true"></progress>` +
-    '<span class="learn-hub-track-toggle" aria-hidden="true">' + LEARN_HUB_CHEVRON + '</span>' +
-    '</summary>'
-  );
-}
-
-function renderLearnHubOverview(done, total, parts) {
-  const label = done === 0
-    ? 'Elige un módulo para empezar.'
-    : done >= total ? '¡Completaste todos los módulos!' : 'Sigue a tu ritmo.';
-  parts.push(
-    '<div class="learn-hub-overview">' +
-    '<div class="learn-hub-overview-top">' +
-    `<span class="learn-hub-overview-count"><strong>${done}</strong> de ${total} módulos</span>` +
-    `<span class="learn-hub-overview-label">${label}</span>` +
-    '</div>' +
-    `<progress class="learn-hub-bar" max="${total}" value="${done}" aria-label="Progreso: ${done} de ${total} módulos"></progress>` +
-    '</div>'
-  );
-}
-
-function renderLearnHubContinueSection(tourProgress, parts) {
-  if (!tourProgress) return;
+function resumeModel(tourProgress) {
+  if (!tourProgress) return null;
   let title = 'Tutorial';
   let meta = '';
   try {
@@ -148,117 +121,63 @@ function renderLearnHubContinueSection(tourProgress, parts) {
     if (prog.chapterTitle) title = prog.chapterTitle;
     if (prog.chapterSteps) meta = `Paso ${prog.stepInChapter} de ${prog.chapterSteps}`;
   } catch { /* keep generic label */ }
-  parts.push(
-    '<button type="button" class="learn-hub-resume" id="learn-hub-btn-continue">' +
-    '<span class="learn-hub-resume-text">' +
-    '<span class="learn-hub-resume-kicker">Seguir donde quedaste</span>' +
-    `<span class="learn-hub-resume-title">${escapeHtml(title)}</span>` +
-    (meta ? `<span class="learn-hub-resume-meta">${meta}</span>` : '') +
-    '</span>' +
-    '<span class="learn-hub-resume-go">Continuar' + LEARN_HUB_CHEVRON + '</span>' +
-    '</button>'
-  );
+  return { title, meta };
 }
 
-function renderLearnHubQuickRouteCard(parts) {
-  parts.push(
-    '<div class="learn-hub-module-card learn-hub-module-card--cta">' +
-    '<button type="button" class="learn-hub-module-hit"' +
-    ` data-learn-chapter="${escapeHtml(QUICK_ROUTE_HUB_MODULE.chapterId)}"` +
-    ' data-learn-branch="quick-route"' +
-    ' title="Ruta rápida — mapa, alta, labs y turno">' +
-    '<span class="learn-hub-module-mark" aria-hidden="true">' +
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>' +
-    '</span>' +
-    '<span class="learn-hub-module-main">' +
-    '<span class="learn-hub-module-kicker">Recomendado para empezar</span>' +
-    `<span class="learn-hub-module-title">${escapeHtml(QUICK_ROUTE_HUB_MODULE.label)}</span>` +
-    `<span class="learn-hub-module-meta">${QUICK_ROUTE_HUB_MODULE.stepCount} pasos · ~5 min</span>` +
-    '</span>' +
-    LEARN_HUB_CHEVRON +
-    '</button></div>'
-  );
+function fundamentosGroup(heading, modules, branch, fundamentosProgress, tourProgress) {
+  return {
+    heading,
+    rows: modules.map((mod, idx) => ({
+      ...fundamentosModuleState(mod.chapterId, branch, fundamentosProgress, tourProgress),
+      chapterId: mod.chapterId,
+      label: mod.label,
+      branch,
+      moduleIndex: idx + 1,
+    })),
+  };
 }
 
-function renderLearnHubNovedadesTrack(parts, focusTrack, progress, tourProgress) {
-  const total = GUARDIA_V7_HUB_MODULES.length;
-  const done = GUARDIA_V7_HUB_MODULES.filter((m) =>
-    progress.completedChapters.includes(m.chapterId)
-  ).length;
-  parts.push(
-    `<details class="learn-hub-track"${focusTrack !== 'fundamentos' ? ' open' : ''}>` +
-    trackHeader('Guardia y R+ Cloud', done, total) +
-    '<div class="learn-hub-track-body">' +
-    '<p class="learn-hub-section-lead">Módulos cortos. Haz cualquiera, en cualquier orden.</p>' +
-    '<div class="learn-hub-module-list">'
-  );
-  renderLearnHubQuickRouteCard(parts);
-  GUARDIA_V7_HUB_MODULES.forEach((mod, idx) => {
-    const st = guardiaModuleState(mod.chapterId, progress, tourProgress);
-    parts.push(
-      buildModuleRow({
-        ...st,
+/** What the hub shows, from the saved progress. The drawing is in ../learn-hub-view.jsx. */
+export function buildLearnHubModel(focusTrack = learnHubFocusTrack) {
+  const progress = loadGuardiaV7Progress();
+  const fundamentosProgress = loadFundamentosProgress();
+  const tourProgress = loadTourProgress();
+  const novedadesDone = GUARDIA_V7_HUB_MODULES.filter((m) => progress.completedChapters.includes(m.chapterId)).length;
+  const fundamentosDone = fundamentosProgress.completedChapters.filter((id) => isFundamentosChapterId(id)).length;
+  return {
+    overview: { done: novedadesDone + fundamentosDone, total: GUARDIA_V7_HUB_MODULES.length + fundamentosModuleCount() },
+    resume: resumeModel(tourProgress),
+    quick: QUICK_ROUTE_HUB_MODULE,
+    novedades: {
+      open: focusTrack !== 'fundamentos',
+      done: novedadesDone,
+      total: GUARDIA_V7_HUB_MODULES.length,
+      rows: GUARDIA_V7_HUB_MODULES.map((mod, idx) => ({
+        ...guardiaModuleState(mod.chapterId, progress, tourProgress),
         chapterId: mod.chapterId,
         label: mod.label,
         branch: 'guardia-v7',
         moduleIndex: idx + 1,
         allowReset: true,
-      })
-    );
-  });
-  parts.push('</div></div></details>');
-}
-
-function renderFundamentosGroup(parts, heading, modules, branch, fundamentosProgress, tourProgress) {
-  parts.push(`<p class="learn-hub-group-label">${heading}</p><div class="learn-hub-module-list">`);
-  modules.forEach((mod, idx) => {
-    const st = fundamentosModuleState(mod.chapterId, branch, fundamentosProgress, tourProgress);
-    parts.push(
-      buildModuleRow({ ...st, chapterId: mod.chapterId, label: mod.label, branch, moduleIndex: idx + 1 })
-    );
-  });
-  parts.push('</div>');
-}
-
-function renderLearnHubFundamentosTrack(parts, focusTrack, fundamentosProgress, tourProgress) {
-  const total = fundamentosModuleCount();
-  const done = fundamentosProgress.completedChapters.filter((id) => isFundamentosChapterId(id)).length;
-  parts.push(
-    `<details class="learn-hub-track"${focusTrack === 'fundamentos' ? ' open' : ''}>` +
-    trackHeader('Fundamentos', done, total) +
-    '<div class="learn-hub-track-body">' +
-    '<p class="learn-hub-section-lead">La base de R+: Paciente, Laboratorio y Manejo. Elige Sala o Interconsulta según tu rol.</p>'
-  );
-  renderFundamentosGroup(parts, 'Sala', SALA_HUB_MODULES.filter((m) => m.chapterId), 'sala', fundamentosProgress, tourProgress);
-  renderFundamentosGroup(parts, 'Interconsulta', IC_HUB_MODULES, 'interconsulta', fundamentosProgress, tourProgress);
-  parts.push('</div></details>');
+      })),
+    },
+    fundamentos: {
+      open: focusTrack === 'fundamentos',
+      done: fundamentosDone,
+      total: fundamentosModuleCount(),
+      groups: [
+        fundamentosGroup('Sala', SALA_HUB_MODULES.filter((m) => m.chapterId), 'sala', fundamentosProgress, tourProgress),
+        fundamentosGroup('Interconsulta', IC_HUB_MODULES, 'interconsulta', fundamentosProgress, tourProgress),
+      ],
+    },
+  };
 }
 
 export function renderLearnHubBody(focusTrack = learnHubFocusTrack) {
   const host = document.getElementById('learn-hub-body');
   if (!host) return;
   learnHubFocusTrack = focusTrack;
-
-  const progress = loadGuardiaV7Progress();
-  const fundamentosProgress = loadFundamentosProgress();
-  const tourProgress = loadTourProgress();
-  const parts = [];
-
-  const done =
-    GUARDIA_V7_HUB_MODULES.filter((m) => progress.completedChapters.includes(m.chapterId)).length +
-    fundamentosProgress.completedChapters.filter((id) => isFundamentosChapterId(id)).length;
-  renderLearnHubOverview(done, GUARDIA_V7_HUB_MODULES.length + fundamentosModuleCount(), parts);
-  renderLearnHubContinueSection(tourProgress, parts);
-  renderLearnHubNovedadesTrack(parts, focusTrack, progress, tourProgress);
-  renderLearnHubFundamentosTrack(parts, focusTrack, fundamentosProgress, tourProgress);
-
-  parts.push(
-    '<button type="button" class="learn-hub-help-link" id="learn-hub-btn-help">' +
-    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>' +
-    '<span>Buscar en el centro de ayuda</span></button>'
-  );
-
-  host.innerHTML = parts.join('');
+  drawLearnHubBody(host, buildLearnHubModel(focusTrack));
   wireLearnHubBodyOnce(host);
 }
 

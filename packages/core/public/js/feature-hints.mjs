@@ -389,17 +389,27 @@ function setTarget(el) {
   if (el) el.classList.add('fh-target');
 }
 
+// The Preact view loads on first use: feature-hints.mjs is also imported by Node scripts (activeHints), which cannot read .jsx.
+let viewMod = null;
+function withView(fn) {
+  if (viewMod) { fn(viewMod); return; }
+  void import('./features/feature-hints-view.jsx').then(function (mod) { viewMod = mod; fn(mod); });
+}
+
 function renderStep() {
   const step = flow.hint.steps[flow.i];
   const last = flow.i === flow.hint.steps.length - 1;
   bubble.dataset.hint = flow.hint.id;
-  bubble.innerHTML =
-    '<div class="fh-bubble-head"><span class="fh-bubble-badge">' + badgeOf(flow.hint) + ' · ' + (flow.i + 1) + '/' + flow.hint.steps.length +
-    '</span><button type="button" class="fh-close" aria-label="Cerrar">×</button></div>' +
-    '<p class="fh-bubble-text">' + step.text + '</p>' +
-    (step.action ? '' : '<div class="fh-bubble-foot"><button type="button" class="wb-btn wb-btn-primary fh-next">' + (last ? 'Entendido' : 'Siguiente') + '</button></div>');
-  bubble.hidden = false;
-  placeBubble();
+  const myFlow = flow;
+  const at = flow.i;
+  withView(function (view) {
+    if (flow !== myFlow || flow.i !== at) return; // moved on while the view loaded
+    view.drawHintBubble(bubble, {
+      badge: badgeOf(flow.hint), n: at + 1, total: flow.hint.steps.length, text: step.text, last: last, action: step.action,
+    });
+    bubble.hidden = false;
+    placeBubble();
+  });
 }
 
 /** Wait for the step target (a modal may still be opening). Missing → skip the step. */
@@ -497,14 +507,12 @@ function showWhereInSettings() {
 }
 
 function choiceStep2() {
-  choice.querySelector('.fh-choice').innerHTML =
-    '<h2 id="fh-choice-title">Pistas desactivadas</h2>' +
-    '<p>Puedes activarlas otra vez cuando quieras en:</p>' +
-    '<p class="fh-choice-path"><strong>Ajustes → Apariencia → Pistas en pantalla</strong></p>' +
-    '<div class="fh-choice-actions">' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-fh-choice="where">Mostrarme dónde</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary" data-fh-choice="ok">Entendido</button></div>';
-  choice.querySelector('[data-fh-choice="ok"]').focus();
+  const el = choice;
+  withView(function (view) {
+    if (choice !== el) return;
+    view.drawHintsChoice(el, 2);
+    el.querySelector('[data-fh-choice="ok"]').focus();
+  });
 }
 
 /** One-time modal: no × , no Escape, no backdrop click. Closes only when the user picks. */
@@ -512,14 +520,6 @@ function openChoice() {
   if (choice) return;
   choice = document.createElement('div');
   choice.className = 'fh-choice-backdrop';
-  choice.innerHTML =
-    '<div class="fh-choice" role="dialog" aria-modal="true" aria-labelledby="fh-choice-title">' +
-    '<h2 id="fh-choice-title">Nuevo: pistas en pantalla</h2>' +
-    '<p>R+ puede mostrar pistas junto a los botones, para enseñarte a usar cada área y contarte las novedades.</p>' +
-    '<p>Cada pista se cierra con la <strong>×</strong>. Elige si quieres verlas.</p>' +
-    '<div class="fh-choice-actions">' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-fh-choice="off">Desactivar pistas</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary" data-fh-choice="on">Activar pistas</button></div></div>';
   choice.addEventListener('click', function (e) {
     const b = e.target.closest('[data-fh-choice]');
     if (!b) return;
@@ -537,7 +537,12 @@ function openChoice() {
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
   document.body.appendChild(choice);
-  choice.querySelector('[data-fh-choice="on"]').focus();
+  const el = choice;
+  withView(function (view) {
+    if (choice !== el) return;
+    view.drawHintsChoice(el, 1);
+    el.querySelector('[data-fh-choice="on"]').focus();
+  });
 }
 
 function syncHintsSwitch() {
