@@ -7,7 +7,7 @@ import { loadChartJs } from '../vendor-loader.mjs';
 import { mountRpcDateInput } from '../rpc-date-picker.mjs';
 import { filterHistoryByDateRange } from '../tend-group-modal-open.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
-import { aid, esc, tendStore } from './tendencias-state.mjs';
+import { aid, tendStore } from './tendencias-state.mjs';
 import {
   tendCardLabelParts,
   tendRefForSeries,
@@ -27,17 +27,16 @@ import { deletePatientEventualidad } from './eventualidades-render.mjs';
 import {
   alignSeriesToLabels,
   formatTendTooltipDelta,
-  buildTendStatusHtml,
-  tendRangeText,
+  tendDetailHeaderModel,
   tendReadingsRows,
   tendReadingsText,
-  tendHeroChange,
 } from './tendencias-insight.mjs';
 import { openConfirm } from './workbench/confirm.mjs';
 import { showTendPane, hideTendPane, registerTendPane, markTendSelectedRow, openTendPivotWith } from '../tend-pane.mjs';
 import { copyTableText } from '../tend-export.mjs';
 import { getTendSectionLabel } from './tendencias-constants.mjs';
 import { tendHideSeriesFromCard } from './tendencias-series.mjs';
+import { drawTendDetailHeader, drawTendDetailCompare } from './tendencias-ui-detail-view.jsx';
 
 /**
  * Chart.js plugin: horizontal normality (reference) band for Tendencias.
@@ -519,26 +518,7 @@ function ensureTendDetailCompareSlot(
   slot.hidden = false;
   var current = tendStore.detailCompareFieldKey;
   if (current && siblings.indexOf(current) < 0) current = null;
-  var opts =
-    '<option value="">Sin comparar</option>' +
-    siblings
-      .map(function (k) {
-        return (
-          '<option value="' +
-          k.replace(/"/g, '&quot;') +
-          '"' +
-          (k === current ? ' selected' : '') +
-          '>' +
-          k +
-          '</option>'
-        );
-      })
-      .join('');
-  slot.innerHTML =
-    '<span class="tend-detail-compare-label">Comparar con</span>' +
-    '<select class="tend-detail-compare-select" id="tend-detail-compare-select" aria-label="Comparar con otro analito">' +
-    opts +
-    '</select>';
+  drawTendDetailCompare(slot, siblings, current);
   var sel = document.getElementById('tend-detail-compare-select');
   if (!sel) return;
   sel.onchange = function () {
@@ -620,31 +600,15 @@ function fillTendDetailHeader(sectionKey, fieldKey, title, unit, latest, ref, la
   byId('tend-detail-title').textContent = title;
   var sec = getTendSectionLabel(sectionKey);
   byId('tend-detail-sub').textContent = [sec, unit].filter(Boolean).join(' · ');
-  byId('tend-detail-badge').innerHTML = latest != null && ref ? buildTendStatusHtml(esc, latest, ref) : '';
-  var n = values.length;
-  var change = tendHeroChange(latest, n > 1 ? values[n - 2] : null, ref);
-  var out = latest != null && ref && (Number(latest) < Number(ref[0]) || Number(latest) > Number(ref[1]));
-  byId('tend-detail-hero').innerHTML =
-    '<span class="tend-detail-big' + (out ? ' tend-abnormal' : '') + '">' + esc(latest == null ? '—' : latest) + '</span>' +
-    (unit ? '<span class="tend-detail-unit">' + esc(unit) + '</span>' : '') +
-    (change
-      ? '<span class="tend-detail-change tend-insight-delta--' + change.tone + '">' + change.arrow + ' ' + esc(change.text) +
-        ' desde el ' + esc(labels[n - 2]) + '</span>' +
-        (change.note ? '<span class="tend-detail-note">' + change.note + '</span>' : '')
-      : '');
-  byId('tend-detail-ref').innerHTML = ref
-    ? 'Rango de referencia <b>' + esc(tendRangeText(ref)) + '</b>'
-    : 'Sin rango de referencia';
-  byId('tend-detail-readings').innerHTML =
-    '<div class="tend-rd-row tend-rd-head"><span>Fecha</span><span>Valor</span><span>Cambio</span></div>' +
-    readings.map(function (r, i) {
-      return '<div class="tend-rd-row' + (i >= 4 ? ' tend-rd-extra' : '') + '"><span>' + esc(r.label) + '</span><span class="tend-rd-val">' +
-        esc(r.value == null ? '—' : r.value) + '</span><span class="tend-rd-chg tend-rd-chg--' + r.tone + '">' +
-        esc(r.change || '—') + '</span></div>';
-    }).join('') +
-    (readings.length > 4
-      ? '<button type="button" class="tend-rd-more" data-tend-action="readings-all" aria-expanded="false">Ver todos (' + readings.length + ')</button>'
-      : '');
+  drawTendDetailHeader(
+    {
+      badge: byId('tend-detail-badge'),
+      hero: byId('tend-detail-hero'),
+      ref: byId('tend-detail-ref'),
+      readings: byId('tend-detail-readings'),
+    },
+    tendDetailHeaderModel(latest, ref, unit, labels, values, readings)
+  );
   byId('tend-detail-readings').classList.remove('is-all');
 }
 

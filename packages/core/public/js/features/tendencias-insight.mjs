@@ -205,3 +205,21 @@ export function tendHeroChange(latest, previous, ref) {
           : '',
   };
 }
+
+/** What the Tendencias detail pane's header shows (badge, hero, range line, readings list), as plain data. */
+export function tendDetailHeaderModel(latest, ref, unit, labels, values, readings) {
+  var n = values.length;
+  var change = tendHeroChange(latest, n > 1 ? values[n - 2] : null, ref);
+  return {
+    badge: latest != null && ref ? tendStatusInfo(latest, ref) : null,
+    hero: {
+      big: latest == null ? '—' : latest,
+      out: !!(latest != null && ref && (Number(latest) < Number(ref[0]) || Number(latest) > Number(ref[1]))),
+      unit: unit,
+      change: change,
+      since: change ? labels[n - 2] : '',
+    },
+    range: ref ? tendRangeText(ref) : '',
+    readings: readings,
+  };
+}
