@@ -77,15 +77,15 @@ Links next: Datos modal, Laboratorio (labs, cultivos), Estado actual, Pendientes
 
 ### 1.2 Pendientes (todo)
 Purpose: patient to-do list. Pane `#itab-content-todo` > `#todo-form` (`app-body.html:545`). Back link in Resumen mode: `Volver al resumen` (`btn-volver-al-resumen`).
-Controls (`public/js/features/todos-list-render.mjs`):
-- Filter chips `Todos` and `Entrega` with counts (`todos-list-render.mjs:333-339`). `Entrega` = open items from the previous shift.
-- Button `+ Pendiente` opens the add modal (`todos-list-render.mjs:367-373`).
+Controls (`public/js/features/todos-list-view.jsx`, state in `todos-list-model.mjs`, callbacks in `todos-list-render.mjs`):
+- Filter chips `Todos` and `Entrega` with counts. `Entrega` = open items from the previous shift.
+- Button `+ Pendiente` opens the add modal.
 - Add modal `Nuevo pendiente`: `Qué hay que hacer` (placeholder `Describe el pendiente`), `Prioridad`, `Vence`, buttons `Cancelar`, `Agregar pendiente` (`todos-add-modal.mjs:40-61`). Due-date editor has `Fecha límite`, quick dates, `Restablecer`, `Editar`, `+ Relativo`, `+ Hora fija`, `Quitar fecha` (`app-body` modal `partials/modals/root.html:164-199`; `todos-due-composer.mjs:12, 96`).
-- Table columns `Prior.`, `Pendiente`, `Quién`, `Vence` (`todos-list-render.mjs:39`). Groups: `Vencidos`, `Próximos`, `Sin fecha`, `Cerrados · últimas 24 h` (`todos-list-render.mjs:42-46`).
-- Row actions: priority chip (click cycles; `todos-priority-ui.mjs:30-31`), `En curso` toggle (`todos-list-render.mjs:188-196`), mark done (`Marcar como resuelto`, toast `Pendiente marcado como listo` with `Deshacer`, `:210-221`), `Recibido` for handoff items (`:231-232`), delete with confirm `¿Eliminar este pendiente?` (`:240-247`). Row text is editable (placeholder `Descripción del pendiente`, `:260`).
+- Table columns `Prior.`, `Pendiente`, `Quién`, `Vence`. Groups: `Vencidos`, `Próximos`, `Sin fecha`, `Cerrados · últimas 24 h`.
+- Row actions: priority chip (click cycles; `todos-priority-ui.mjs:30-31`), `En curso` toggle, mark done (`Marcar como resuelto`, toast `Pendiente marcado como listo` with `Deshacer`), `Recibido` for handoff items, delete with confirm `¿Eliminar este pendiente?`. Row text is editable (placeholder `Descripción del pendiente`).
 - Tab badge shows open count (`updateExpPendientesTabBadge`).
 ✔ live: empty text, filter chips `Todos`/`Entrega` with counts, `+ Pendiente`, modal `Nuevo pendiente` (`Qué hay que hacer`, `Prioridad` Media, `Vence` quick dates `Hoy 18:00`, `Mañana 08:00`, `En 3 h`, `En 24 h`, `Cancelar`, `Agregar pendiente`). Table columns `Prior.`, `Pendiente`, `Quién` (`@uitest`), `Vence`; row buttons `Clic: cambiar prioridad`, `Marcar como en curso`, `Marcar como resuelto`, `Eliminar`. ✘ fixed: group `HOY · N` exists (not listed above); closed rows move to `CERRADOS · ÚLTIMAS 24 H` and show no buttons. Resolve toast and `Deshacer`: not reached (toast gone before capture). `Volver al resumen`: not shown in Sala.
-Empty: `Sin pendientes` / `Los pendientes que agregues aparecen aquí.`; with `Entrega` filter: `Sin pendientes del turno anterior` (`todos-list-render.mjs:466-472`). No patient: `Elige un paciente para ver pendientes` (`:615`).
+Empty: `Sin pendientes` / `Los pendientes que agregues aparecen aquí.`; with `Entrega` filter: `Sin pendientes del turno anterior`. No patient: `Elige un paciente para ver pendientes`.
 Also fed by the receta import (`pendientes` from SOME, `medications-receta-processing.mjs:352`).
 
 ### 1.3 Clínico > Estado actual
