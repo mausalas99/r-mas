@@ -51,9 +51,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.5.4](https://github.com/mausalas99/r-mas/releases/tag/v8.5.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.5.5](https://github.com/mausalas99/r-mas/releases/tag/v8.5.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.5.5 (estable — release 8.5.5)
+
+- **Censo:** labs de 3 días en el PDF y en la tabla de Guardia.
+- **Labs:** NEGATIVO, POSITIVO y TRAZAS se muestran bien.
+- **Estado actual:** confirmar o descartar un medicamento propuesto, uno a la vez; rediseño visual.
+- **Tablero paciente:** zonas marcadas muestran solo su primera línea.
+
+Notas: `docs/RELEASE_NOTES_8.5.5.txt`.
 
 ## R+ 8.5.4 (estable — release 8.5.4)
 

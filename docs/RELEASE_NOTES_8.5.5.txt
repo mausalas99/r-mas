@@ -1,0 +1,26 @@
+R+ 8.5.5 (estable — release 8.5.5)
+======================================
+
+Fecha: 2026-11-11
+
+## Resumen
+
+Añade los labs de 3 días al censo PDF y a la tabla de Guardia. Muestra NEGATIVO, POSITIVO y TRAZAS en vez de «---». En Estado actual confirmas o descartas un medicamento propuesto a la vez. Hay más cambios de diseño en Estado actual.
+
+## Nuevo / mejorado
+
+- **Nuevo (Censo):** labs de 3 días en el PDF del censo y en la tabla de Guardia.
+- **Corrección (Labs):** los valores NEGATIVO, POSITIVO y TRAZAS se leen y muestran bien.
+- **Nuevo (Estado actual):** confirmar o descartar un medicamento propuesto, uno a la vez.
+- **Cambio (Estado actual):** rediseño visual de paneles y registro por pasos.
+- **Cambio (Tablero paciente):** las zonas marcadas muestran solo su primera línea.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.5.5-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.5.5-Mac-Intel.dmg`
+- Windows: `Instalar-R+-8.5.5-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
