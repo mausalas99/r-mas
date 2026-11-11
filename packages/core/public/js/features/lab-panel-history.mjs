@@ -1,4 +1,3 @@
-import { esc } from '../dom-escape.mjs';
 // Lab panel — historial, dedupe, consolidación
 import { procesarLabs, reprocessLabResultLines_, collectPriorRefsFromHistory, collectPriorBhValuesFromHistory, mergeGasRefs_, refreshCitoquimicoInterpretacionInResLabs_, resLabsHasCitoquimFluid_ } from '../labs.js';
 import { dedupeConsolidatedLabRows } from '../lab-bulk-paste.mjs';
@@ -14,7 +13,8 @@ import { rt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { groupLabHistoryByDay, findLabHistoryDayIndexForSet, stepLabHistoryDayIndex, latestSetIdInLabHistoryDay, labHistoryDayArrowDelta, canHandleLabHistoryDayArrow, findLabDaysWithStudy } from '../lab-history-day-nav.mjs';
 import { setLabSearchQuery } from './lab-results-card.mjs';
-import { buildDayOutputPayload, buildLabHistoryDayOptionsHtml, daySelectValue, findDayForHistoryRef, resolveSelectedDayKey, filterOutDaySets } from '../lab-history-day-view.mjs';
+import { buildDayOutputPayload, daySelectValue, findDayForHistoryRef, resolveSelectedDayKey, filterOutDaySets } from '../lab-history-day-view.mjs';
+import { drawLabHistoryDayOptions, drawLabMobileEmptyHint } from './lab-panel-history-view.jsx';
 import { openConfirm } from './workbench/confirm.mjs';
 
 function buildSameDaySerumContext(patientId, targetSet) {
@@ -146,11 +146,7 @@ function setLabOutputHistoryHint(hintEl, message, opts) {
   hintEl.style.display = 'block';
   if (mobile) {
     hintEl.className = 'lab-history-hint lab-mobile-reference-empty';
-    hintEl.innerHTML =
-      '<span class="lab-mobile-reference-empty-title">Estudios recientes</span>' +
-      '<span class="lab-mobile-reference-empty-lead">' +
-      esc(message) +
-      '</span>';
+    drawLabMobileEmptyHint(hintEl, message);
     return;
   }
   hintEl.className = 'lab-history-hint';
@@ -236,7 +232,7 @@ function populateLabHistoryDateSelect_(selectEl, hist, pid, cacheKey, opts) {
   var selectedValue = daySelectValue(selectedDayKey);
   _labHistorySelectedSetId[pid] = selectedValue;
   if (_labHistoryDateSelectCacheKey !== cacheKey) {
-    selectEl.innerHTML = buildLabHistoryDayOptionsHtml(days, selectedDayKey);
+    drawLabHistoryDayOptions(selectEl, days, selectedDayKey);
     _labHistoryDateSelectCacheKey = cacheKey;
   } else if (selectEl.value !== selectedValue) {
     selectEl.value = selectedValue;
