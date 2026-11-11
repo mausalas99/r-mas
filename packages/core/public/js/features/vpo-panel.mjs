@@ -13,6 +13,7 @@ import {
   applyAsaSuggestion,
 } from '../vpo-data.mjs';
 import { focusMissingInput, mountCalcForm, unmountCalcForm } from './vpo-calc-form.jsx';
+import { drawVpoPanel, drawVpoNoPatient, drawVpoDxList } from './vpo-panel-view.jsx';
 import { toast } from '../ui-kit/toast.mjs';
 import { vpoOpenDialog } from './vpo-ui-state.mjs';
 import { autofillCalc, buildScaleLines } from '../vpo-calc.mjs';
@@ -26,12 +27,10 @@ import {
   buildFarmacosCopyText,
   renderEkgWithFc,
   VPO_SUGGESTED_SCALES,
-  VPO_OFFICIAL_CALCULATOR_DISCLAIMER,
 } from '../vpo-text.mjs';
 import { copyToClipboardSafe } from './soap-estado.mjs';
 import {
   hydrateVpoPatientDefaults,
-  buildVpoPanelInnerHtml,
   handleVpoDxDelegationAction,
   handleVpoDxRemoveRow,
 } from './vpo-panel-helpers.mjs';
@@ -70,98 +69,14 @@ function copyText(label, text) {
   });
 }
 
-/* UI copy only. Copy-output labels stay in vpo-text.mjs. */
-var VPO_SCALE_UI_LABEL = { rcri: 'RCRI (Lee)', ahaCv: 'Riesgo CV AHA/ACC', ahaSurg: 'Riesgo quirúrgico AHA/ACC', guptaResp: 'Gupta resp.', guptaPneu: 'Gupta neumonía' };
-
 /** Names of scales that lacked data on the last «Calcular todo»; shown once on the next render. */
 var _missingNote = '';
-
-/** Results shown in three cards by system; keys not listed here land in the last card. */
-var VPO_GROUPS = [
-  ['Función', ['mets', 'abvd', 'cfs', 'asa', 'nrs', 'awol']],
-  ['Cardiaco', ['ahaSurg', 'ahaCv', 'ahaMod', 'rcri', 'gupta', 'aub', 'chads', 'escSurg', 'hasbled']],
-  ['Pulmonar y trombosis', null],
-];
-
-/** Results: one row per scale, grouped in cards. A scale without data shows what it lacks and a «Completar» button. */
-function renderScaleRows(state) {
-  var sr = state.scaleResults;
-  var calc = isVpoCalculatorEnabled();
-  var lines = calc ? buildScaleLines(state) : {};
-  var shown = VPO_SUGGESTED_SCALES.filter(function (s) {
-    return !s.optional || String(sr[s.key] || '').trim();
-  });
-  var named = [].concat.apply([], VPO_GROUPS.map(function (g) { return g[1] || []; }));
-  function row(s) {
-    var miss = !String(sr[s.key] || '').trim() && lines[s.key] && lines[s.key].missing;
-    return (
-      '<div class="vpo-row" title="' + esc(s.hint) + '"><span class="vpo-row-name">' + esc(VPO_SCALE_UI_LABEL[s.key] || s.label) + '</span>' +
-      (miss
-        ? '<span class="vpo-row-miss">Falta: ' + esc(miss.join(', ')) + '</span><button type="button" class="wb-btn" data-vpo-complete="' + esc(miss.join('|')) + '">Completar</button>'
-        : '<input type="text" class="vpo-row-val" data-vpo-scale="' + esc(s.key) + '" value="' + esc(sr[s.key]) + '" placeholder="' + (calc ? 'Calcular todo' : '') + '" autocomplete="off" aria-label="' + esc(s.label) + '">') +
-      '</div>'
-    );
-  }
-  return (
-    '<div class="vpo-rows">' +
-    VPO_GROUPS.map(function (g) {
-      var list = shown.filter(function (s) {
-        return g[1] ? g[1].indexOf(s.key) >= 0 : named.indexOf(s.key) < 0;
-      });
-      return list.length ? '<div class="vpo-card"><h4 class="vpo-card-title">' + esc(g[0]) + '</h4>' + list.map(row).join('') + '</div>' : '';
-    }).join('') +
-    '</div>'
-  );
-}
 
 function showVpoDialog(mount, key) {
   var dlg = mount.querySelector('dialog[data-vpo-dialog="' + key + '"]');
   if (!dlg || dlg.open) return;
   dlg.showModal();
   vpoOpenDialog.set(key);
-}
-
-function renderRiskScalesOnlyBody(state) {
-  ensureScaleResults(state);
-  var note = _missingNote;
-  _missingNote = '';
-  return (
-    '<div class="vpo-risk-grid">' +
-    (isVpoCalculatorEnabled() ? '<div class="vpo-risk-in"></div>' : '') +
-    '<div class="vpo-risk-out">' +
-    (note ? '<p class="vpo-disclaimer">' + esc(note) + '</p>' : '') +
-    renderScaleRows(state) +
-    '<details class="vpo-more"><summary class="ea-io-link">Introducción del texto</summary>' +
-    '<textarea id="vpo-intro" class="ea-input" data-vpo-field="valoracionIntro" rows="2" aria-label="Introducción">' +
-    esc(state.valoracionIntro) +
-    '</textarea></details>' +
-    '<p class="vpo-disclaimer">' +
-    esc(VPO_OFFICIAL_CALCULATOR_DISCLAIMER) +
-    '</p>' +
-    '</div></div>'
-  );
-}
-
-/**
- * @param {string} title
- * @param {string} body
- * @param {string} [headActions] extra links/buttons right-aligned next to the title
- */
-
-import { esc } from '../dom-escape.mjs';
-function vpoSection(title, body, headActions) {
-  return (
-    '<section class="vpo-section">' +
-    '<div class="vpo-section-head">' +
-    '<h3 class="vpo-section-title">' +
-    esc(title) +
-    '</h3>' +
-    (headActions ? '<div class="vpo-section-actions">' + headActions + '</div>' : '') +
-    '</div>' +
-    '<div class="vpo-section-body">' +
-    body +
-    '</div></section>'
-  );
 }
 
 function wireVpoCopyActions(mount, state) {
@@ -347,27 +262,6 @@ function wireForm(mount, state, patientId) {
   wireVpoCopyActions(mount, state);
 }
 
-function renderFarmacosList(farmacos) {
-  if (!farmacos || !farmacos.length) {
-    return '<p class="vpo-empty-hint">Aún no hay fármacos. «Tomar de SOME» trae los de hoy.</p>';
-  }
-  return farmacos
-    .map(function (f, idx) {
-      return (
-        '<div class="vpo-farm-row">' +
-        '<div class="vpo-farm-name">' +
-        esc(f.nombreDisplay) +
-        '</div>' +
-        '<textarea class="vpo-farm-nota ea-input" data-vpo-farm-idx="' +
-        idx +
-        '" rows="1">' +
-        esc(f.notaEditable || '') +
-        '</textarea></div>'
-      );
-    })
-    .join('');
-}
-
 function syncDxTextOnly(state) {
   if (!state) return;
   var nonEmpty = (state.diagnosticosList || []).filter(function (d) {
@@ -384,55 +278,9 @@ function commitDxList(mount, state) {
   refreshDxListDom(mount, state);
 }
 
-function dxRowsForRender(state) {
-  var list = (state.diagnosticosList || []).slice();
-  return list.length ? list : [''];
-}
-
-function renderDxListHtml(state) {
-  var rows = dxRowsForRender(state);
-  return rows
-    .map(function (dx, i) {
-      var canRemove = rows.length > 1;
-      return (
-        '<div class="vpo-dx-row list-row">' +
-        '<input type="text" class="ea-input" data-vpo-dx-idx="' +
-        i +
-        '" value="' +
-        esc(dx) +
-        '" placeholder="Diagnóstico ' +
-        (i + 1) +
-        '">' +
-        '<button type="button" class="ea-io-remove" data-vpo-dx-remove="' +
-        i +
-        '"' +
-        (canRemove ? '' : ' style="visibility:hidden"') +
-        ' aria-label="Eliminar">×</button></div>'
-      );
-    })
-    .join('');
-}
-
 function refreshDxListDom(mount, state) {
   var listEl = mount.querySelector('.vpo-dx-list');
-  if (!listEl) return;
-  listEl.innerHTML = renderDxListHtml(state);
-}
-
-function renderDiagnosticosSection(state) {
-  return (
-    '<div class="vpo-dx-list">' +
-    renderDxListHtml(state) +
-    '</div>' +
-    '<div class="vpo-dx-actions">' +
-    '<button type="button" class="ea-io-link" data-vpo-action="dx-add-row">+ Agregar</button>' +
-    '<details class="vpo-dx-paste">' +
-    '<summary class="ea-io-link">Pegar lista</summary>' +
-    '<textarea class="ea-input vpo-dx-paste-input" data-vpo-dx-paste placeholder="DX1 + DX2 + DX3…"></textarea>' +
-    '<button type="button" class="ea-io-link" data-vpo-action="dx-split-plus">Separar por +</button>' +
-    '</details>' +
-    '</div>'
-  );
+  if (listEl) drawVpoDxList(listEl, state);
 }
 
 function liveVpoState(mount) {
@@ -514,7 +362,7 @@ export function renderVpoPanel(mount, patientId) {
   if (!mount) return;
   unmountCalcForm(mount);
   if (!patientId) {
-    mount.innerHTML = '<p class="overview-hint vpo-panel">Selecciona un paciente para valoración preoperatoria.</p>';
+    drawVpoNoPatient(mount);
     return;
   }
   var state = ensureVpoState(getVpoByPatient(), patientId);
@@ -525,15 +373,12 @@ export function renderVpoPanel(mount, patientId) {
   if (isVpoCalculatorEnabled() && autofillCalc(state, { labHistory: getLabHistory()[patientId], patient: getPatients().find(function (p) { return p.id === patientId; }) }).length) scheduleSave();
   mount._vpoPatientId = patientId;
 
-  mount.innerHTML = buildVpoPanelInnerHtml(
-    state,
-    esc,
-    vpoSection,
-    renderRiskScalesOnlyBody,
-    renderDiagnosticosSection,
-    renderFarmacosList
-  );
-  if (isVpoCalculatorEnabled()) mountCalcForm(mount, state);
+  ensureScaleResults(state);
+  var calc = isVpoCalculatorEnabled();
+  var note = _missingNote;
+  _missingNote = '';
+  drawVpoPanel(mount, { state: state, calc: calc, lines: calc ? buildScaleLines(state) : {}, note: note });
+  if (calc) mountCalcForm(mount, state);
 
   mount.querySelectorAll('.vpo-farm-nota').forEach(function (ta) {
     ta.addEventListener('input', function () {
