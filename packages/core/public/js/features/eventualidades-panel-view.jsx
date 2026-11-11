@@ -55,9 +55,9 @@ function DaySection({ group, editingId, now, dayOpenPrefs }) {
   );
 }
 
-function NoteCompose({ editingEntry }) {
+function NoteCompose({ editingEntry, now }) {
   const isEdit = !!editingEntry;
-  const at = toEventualidadDateValue(isEdit ? editingEntry.at : new Date());
+  const at = toEventualidadDateValue(isEdit ? editingEntry.at : now);
   return (
     <footer class="ev-compose" data-ev-mode="note">
       <div class={'ev-compose__card' + (isEdit ? ' ev-compose__card--edit' : '')}>
@@ -99,7 +99,7 @@ export function EventualidadesPanel({ byDay, editingEntry, editingId, dayOpenPre
           <p class="ev-empty">{EMPTY}</p>
         )}
       </div>
-      <NoteCompose editingEntry={editingEntry} />
+      <NoteCompose editingEntry={editingEntry} now={now} />
     </div>
   );
 }

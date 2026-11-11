@@ -6,7 +6,11 @@
  */
 import { render } from 'preact';
 
-/** `text` is trusted hint copy from FEATURE_HINTS and may hold <strong>/<kbd>; it is not user input. */
+/** Hint copy from FEATURE_HINTS: plain text with `<strong>` runs only. Drawn as nodes, no HTML string. */
+function Rich({ text }) {
+  return text.split(/<strong>(.*?)<\/strong>/g).map((part, i) => (i % 2 ? <strong>{part}</strong> : part));
+}
+
 export function HintBubble({ badge, n, total, text, last, action }) {
   return (
     <>
@@ -14,7 +18,7 @@ export function HintBubble({ badge, n, total, text, last, action }) {
         <span class="fh-bubble-badge">{`${badge} · ${n}/${total}`}</span>
         <button type="button" class="fh-close" aria-label="Cerrar">×</button>
       </div>
-      <p class="fh-bubble-text" dangerouslySetInnerHTML={{ __html: text }}></p>
+      <p class="fh-bubble-text"><Rich text={text} /></p>
       {action ? null : (
         <div class="fh-bubble-foot">
           <button type="button" class="wb-btn wb-btn-primary fh-next">{last ? 'Entendido' : 'Siguiente'}</button>

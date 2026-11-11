@@ -7,11 +7,11 @@
      "text": "Toca <strong>Pacientes</strong> para ver tu lista."
     },
     {
-     "text": "Con <kbd>Ctrl</kbd> + K abres la búsqueda & más.",
+     "text": "Con <strong>Ctrl</strong> + K abres la búsqueda y más.",
      "action": true
     },
     {
-     "text": "Listo, a <em>trabajar</em>."
+     "text": "Listo, a <strong>trabajar</strong>."
     }
    ]
   },
@@ -27,8 +27,8 @@
  "bubbles": {
   "guia": [
    "<div class=\"fh-bubble-head\"><span class=\"fh-bubble-badge\">Guía · 1/3</span><button type=\"button\" class=\"fh-close\" aria-label=\"Cerrar\">×</button></div><p class=\"fh-bubble-text\">Toca <strong>Pacientes</strong> para ver tu lista.</p><div class=\"fh-bubble-foot\"><button type=\"button\" class=\"wb-btn wb-btn-primary fh-next\">Siguiente</button></div>",
-   "<div class=\"fh-bubble-head\"><span class=\"fh-bubble-badge\">Guía · 2/3</span><button type=\"button\" class=\"fh-close\" aria-label=\"Cerrar\">×</button></div><p class=\"fh-bubble-text\">Con <kbd>Ctrl</kbd> + K abres la búsqueda & más.</p>",
-   "<div class=\"fh-bubble-head\"><span class=\"fh-bubble-badge\">Guía · 3/3</span><button type=\"button\" class=\"fh-close\" aria-label=\"Cerrar\">×</button></div><p class=\"fh-bubble-text\">Listo, a <em>trabajar</em>.</p><div class=\"fh-bubble-foot\"><button type=\"button\" class=\"wb-btn wb-btn-primary fh-next\">Entendido</button></div>"
+   "<div class=\"fh-bubble-head\"><span class=\"fh-bubble-badge\">Guía · 2/3</span><button type=\"button\" class=\"fh-close\" aria-label=\"Cerrar\">×</button></div><p class=\"fh-bubble-text\">Con <strong>Ctrl</strong> + K abres la búsqueda y más.</p>",
+   "<div class=\"fh-bubble-head\"><span class=\"fh-bubble-badge\">Guía · 3/3</span><button type=\"button\" class=\"fh-close\" aria-label=\"Cerrar\">×</button></div><p class=\"fh-bubble-text\">Listo, a <strong>trabajar</strong>.</p><div class=\"fh-bubble-foot\"><button type=\"button\" class=\"wb-btn wb-btn-primary fh-next\">Entendido</button></div>"
   ],
   "nuevo": [
    "<div class=\"fh-bubble-head\"><span class=\"fh-bubble-badge\">Nuevo · 1/1</span><button type=\"button\" class=\"fh-close\" aria-label=\"Cerrar\">×</button></div><p class=\"fh-bubble-text\">Novedad sin acción.</p><div class=\"fh-bubble-foot\"><button type=\"button\" class=\"wb-btn wb-btn-primary fh-next\">Entendido</button></div>"
