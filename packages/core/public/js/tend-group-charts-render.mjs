@@ -30,6 +30,7 @@ import {
   isPanelEventsHidden,
   togglePanelEventsHidden,
 } from './tend-prefs.mjs';
+import { drawPanelsHiddenBar, drawScaleRow, drawLegendItem, legendItemModel } from './features/tend-group-charts-view.jsx';
 import { copyChartPng } from './tend-export.mjs';
 import {
   GENERIC_FAMILY_ORDER,
@@ -64,26 +65,14 @@ function renderPanelsHiddenBar(panelEl, deps, state, sectionKey, hiddenFams, ren
     bar.className = 'tend-group-table-hidden-bar tend-group-panels-hidden-bar';
     panelEl.insertBefore(bar, panelEl.firstChild);
   }
-  var esc = deps.esc;
-  if (!hiddenFams.length) {
-    bar.style.display = 'none';
-    bar.innerHTML = '';
-    return;
-  }
-  var chips = hiddenFams.map(function (fam) {
-    return (
-      '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-panel="' +
-      esc(fam) +
-      '">' +
-      esc(resolvePanelTitle(state.patientId, sectionKey, fam)) +
-      ' <span aria-hidden="true">×</span></button>'
-    );
-  });
-  bar.style.display = '';
-  bar.innerHTML =
-    '<span class="tend-group-hidden-label">Paneles ocultos:</span>' +
-    chips.join('') +
-    '<button type="button" class="tend-toolbar-btn tend-group-show-all-btn tend-group-panels-show-all">Mostrar todo</button>';
+  bar.style.display = hiddenFams.length ? '' : 'none';
+  drawPanelsHiddenBar(
+    bar,
+    hiddenFams.map(function (fam) {
+      return { fam: fam, title: resolvePanelTitle(state.patientId, sectionKey, fam) };
+    })
+  );
+  if (!hiddenFams.length) return;
   bar.querySelector('.tend-group-panels-show-all').onclick = function () {
     writeGroupPanelHidden(state.patientId, sectionKey, []);
     renderCharts(sectionKey);
@@ -422,41 +411,6 @@ function lastIndex(arr) {
   return -1;
 }
 
-/** Mini sparkline (56x20) of a series, drawn in its own color. */
-function legendSpark(data, color) {
-  var pts = data
-    .map(function (v, i) {
-      return v == null ? null : [i, v];
-    })
-    .filter(Boolean);
-  if (pts.length < 2) return '<svg class="tend-legend-spark" width="56" height="20" aria-hidden="true"></svg>';
-  var vs = pts.map(function (p) {
-    return p[1];
-  });
-  var mn = Math.min.apply(null, vs);
-  var span = Math.max.apply(null, vs) - mn || 1;
-  var n = Math.max(data.length - 1, 1);
-  var poly = pts
-    .map(function (p) {
-      return (2 + (p[0] * 52) / n).toFixed(1) + ',' + (17 - ((p[1] - mn) / span) * 14).toFixed(1);
-    })
-    .join(' ');
-  return (
-    '<svg class="tend-legend-spark" width="56" height="20" viewBox="0 0 56 20" aria-hidden="true">' +
-    '<polyline points="' + poly + '" fill="none" stroke="' + color + '" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>'
-  );
-}
-
-/** Last change vs first value, e.g. "+12%". Empty when it cannot be computed. */
-function legendChange(raw) {
-  var vals = raw.filter(function (v) {
-    return v != null;
-  });
-  if (vals.length < 2 || !vals[0]) return '<span class="tend-legend-pc"></span>';
-  var pc = Math.round((vals[vals.length - 1] / vals[0] - 1) * 100);
-  return '<span class="tend-legend-pc">' + (pc > 0 ? '+' : '') + pc + '%</span>';
-}
-
 /** Value text for a readout chip (no series name). */
 function chipValue(ctx, ds, idx) {
   var spec = ctx.state.specsByField[ds.fieldKey];
@@ -533,23 +487,7 @@ function buildPanelDatasets(ctx, items, axisMeta) {
     datasets.push(ds);
     var legItem = document.createElement('label');
     legItem.className = 'tend-group-legend-item';
-    legItem.innerHTML =
-      '<input type="checkbox" class="tend-group-legend-check" data-field="' +
-      fk +
-      '"' +
-      (isLegendFieldVisible(ctx.state, fk) ? ' checked' : '') +
-      '> ' +
-      '<input type="color" class="tend-group-legend-color" data-field="' +
-      fk +
-      '" value="' +
-      color +
-      '"> ' +
-      '<span class="tend-legend-name">' +
-      label +
-      '</span>' +
-      legendSpark(ds.data, color) +
-      legendChange(raw) +
-      '<span class="tend-group-legend-drag-hint" aria-hidden="true" title="Arrastrar para reordenar">⋮⋮</span>';
+    drawLegendItem(legItem, legendItemModel(fk, isLegendFieldVisible(ctx.state, fk), color, label, ds.data, raw));
     legend.appendChild(legItem);
   });
   return { datasets: datasets, legend: legend };
@@ -791,13 +729,7 @@ function renderScaleRow(panelEl, state, sectionKey, renderCharts) {
   var row = document.createElement('div');
   row.className = 'tend-group-scale-row';
   var rel = state.scaleMode === 'relative';
-  row.innerHTML =
-    '<span class="tend-group-scale-label">Escala</span>' +
-    '<div class="tend-seg tend-group-scale-seg" role="group" aria-label="Escala">' +
-    '<button type="button" class="tend-seg-btn' + (rel ? '' : ' is-active') + '" data-scale="values" aria-pressed="' + (rel ? 'false' : 'true') + '">Valores</button>' +
-    '<button type="button" class="tend-seg-btn' + (rel ? ' is-active' : '') + '" data-scale="relative" aria-pressed="' + (rel ? 'true' : 'false') + '">Relativa al rango</button>' +
-    '</div>' +
-    (rel ? '<span class="tend-group-scale-hint">0 % = límite bajo · 100 % = límite alto · umbrales ocultos</span>' : '');
+  drawScaleRow(row, rel);
   row.querySelectorAll('[data-scale]').forEach(function (btn) {
     btn.onclick = function () {
       var next = btn.getAttribute('data-scale');
