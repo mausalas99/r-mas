@@ -10,10 +10,8 @@ import {
   armTourActionPoll,
   guidedTourStepIndex,
 } from './tour-engine.mjs';
-import {
-  getGuardiaV7StepHtml,
-  escapeTourHtml,
-} from './tour-flow-guardia-copy.mjs';
+import { getGuardiaV7StepHtml } from './tour-flow-guardia-copy.mjs';
+import { drawQuickRouteBody, drawTourBadge } from './tour-flow-views.jsx';
 import { renderFundamentosStep } from './tour-flow-fundamentos-steps.mjs';
 import { tourState } from './tour-state.mjs';
 
@@ -33,23 +31,10 @@ function resetTourNextButton(nextBtn) {
 
 function renderQuickRouteStepCopy(bodyEl, nextBtn) {
   var id = tourState.tourStepId;
-  if (id === 'map_tabs') {
-    bodyEl.innerHTML =
-      '<p style="margin:0;line-height:1.5;">Ruta rápida: arriba están <strong>Paciente</strong>, <strong>Laboratorio</strong>, <strong>Manejo</strong> y <strong>Agenda</strong>, en una sola píldora; pasa el cursor para verlas todas. Luego das de alta y procesas labs.</p>';
-    nextBtn.textContent = 'Siguiente';
-    return true;
-  }
-  if (id === 'map_add_patient') {
-    bodyEl.innerHTML =
-      '<p style="margin:0;line-height:1.5;"><strong>+ Agregar</strong> da de alta. Completa cuarto, cama y servicio para que la tarjeta no quede incompleta. En el siguiente paso procesas labs demo.</p>';
-    nextBtn.textContent = 'Siguiente';
-    return true;
-  }
-  if (id === 'lab_parse') {
-    bodyEl.innerHTML =
-      '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong> y agrega ambos pacientes demo al censo.</p>' +
-      '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Sin <strong>Siguiente</strong> hasta que ambos tengan laboratorio en historial.</p>';
-    nextBtn.style.display = 'none';
+  if (id === 'map_tabs' || id === 'map_add_patient' || id === 'lab_parse') {
+    drawQuickRouteBody(bodyEl, id);
+    if (id === 'lab_parse') nextBtn.style.display = 'none';
+    else nextBtn.textContent = 'Siguiente';
     return true;
   }
   if (id.indexOf('gv7_') === 0) {
@@ -63,30 +48,7 @@ function renderQuickRouteStepCopy(bodyEl, nextBtn) {
 function renderTourDockBadge(tourBranch, prog, idx, total) {
   var badge = document.getElementById('tour-step-badge');
   if (!badge) return;
-  if (tourBranch === 'quick-route') {
-    badge.innerHTML =
-      '<span class="tour-dock-badge-line tour-dock-badge-kicker">Ruta rápida</span>' +
-      '<span class="tour-dock-badge-line tour-dock-badge-step">Paso ' +
-      prog.stepInChapter + ' de ' + prog.chapterSteps + '</span>';
-    return;
-  }
-  if (tourBranch === 'guardia-v7') {
-    badge.innerHTML =
-      '<span class="tour-dock-badge-line tour-dock-badge-kicker">Guardia</span>' +
-      '<span class="tour-dock-badge-line tour-dock-badge-module">Módulo ' +
-      prog.chapterIndex + '/5 · ' + escapeTourHtml(prog.chapterTitle) + '</span>' +
-      '<span class="tour-dock-badge-line tour-dock-badge-step">Paso ' +
-      prog.stepInChapter + ' de ' + prog.chapterSteps + '</span>';
-    return;
-  }
-  var branchLabel = tourBranch === 'interconsulta' ? 'Interconsulta' : 'Sala';
-  var sub =
-    'Cap. ' + prog.chapterIndex + '/' + prog.chapterCount + ' · ' + prog.chapterTitle +
-    ' · paso ' + prog.stepInChapter + '/' + prog.chapterSteps;
-  badge.innerHTML =
-    '<span class="tour-dock-badge-line tour-dock-badge-module">Paso ' + idx + ' de ' + total +
-    ' · ' + escapeTourHtml(branchLabel) + '</span>' +
-    '<span class="tour-dock-badge-line tour-dock-badge-step">' + escapeTourHtml(sub) + '</span>';
+  drawTourBadge(badge, { branch: tourBranch, prog, idx, total });
 }
 
 function finalizeTourStepRender(prevBtn) {
@@ -104,8 +66,7 @@ function applyTourStepUserActionGate(nextBtn) {
 }
 
 function renderQuickRouteWrap(bodyEl, nextBtn, prevBtn) {
-  bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">Listo. Explora más en <strong>Ayuda (?) → Aprender R+</strong>: módulos de guardia o el tutorial completo en <strong>Fundamentos</strong>.</p>';
+  drawQuickRouteBody(bodyEl, 'quick_wrap');
   nextBtn.textContent = 'Finalizar';
   nextBtn.style.display = '';
   nextBtn.setAttribute('onclick', 'guidedTourFinish()');
