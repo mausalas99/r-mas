@@ -28,7 +28,7 @@ function toMillis(value) {
  * @param {Date} nowDate
  */
 
-import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
+import { drawIncomingStrip } from './clinical-rotation-view.jsx';
 import { openConfirm } from './workbench/confirm.mjs';
 import { notify } from '../toast-notify.mjs';
 export function isIncomingPreviewWindow(cycle, nowDate) {
@@ -97,30 +97,24 @@ export function renderIncomingStrip(assignments, opts = {}) {
   const rows = Array.isArray(assignments) ? assignments : [];
   if (!rows.length) {
     host.hidden = true;
-    host.innerHTML = '';
+    drawIncomingStrip(host, []);
     return;
   }
 
   const now = new Date();
-  const chips = rows
-    .map((row) => {
-      const id = String(row.patient_id || row.id || '');
-      const { bed, dx } = assignmentChipLabel(row);
-      const locked = isChartLockedForPatient(row, now);
-      return `<button type="button" class="guardia-incoming-chip" data-patient-id="${escapeAttr(id)}" data-effective-at="${escapeAttr(String(row.effective_at || ''))}" aria-label="Paciente entrante ${escapeAttr(bed)}, ${escapeAttr(dx)}${locked ? ', bloqueado hasta vigencia' : ''}">
-        <span class="guardia-incoming-chip-bed">${escapeHtml(bed)}</span>
-        <span class="guardia-incoming-chip-dx">${escapeHtml(dx)}</span>
-      </button>`;
-    })
-    .join('');
+  const chips = rows.map((row) => {
+    const { bed, dx } = assignmentChipLabel(row);
+    return {
+      id: String(row.patient_id || row.id || ''),
+      effectiveAt: String(row.effective_at || ''),
+      bed,
+      dx,
+      locked: isChartLockedForPatient(row, now),
+    };
+  });
 
   host.hidden = false;
-  host.innerHTML = `
-    <details class="guardia-incoming-details" open>
-      <summary class="guardia-incoming-summary">Incoming <span class="guardia-incoming-count">${rows.length}</span></summary>
-      <p class="guardia-incoming-hint">Vista previa de entregas — el expediente se abre al llegar la fecha de vigencia.</p>
-      <div class="guardia-incoming-chips" role="list">${chips}</div>
-    </details>`;
+  drawIncomingStrip(host, chips);
 
   const onLockedClick = opts.onLockedClick;
   host.querySelectorAll('.guardia-incoming-chip').forEach((btn, idx) => {
@@ -318,7 +312,7 @@ export async function syncGuardiaIncomingStrip(settings) {
   const cycle = await fetchActiveRotationCycleFromDb();
   if (!cycle || !isIncomingPreviewWindow(cycle, new Date())) {
     host.hidden = true;
-    host.innerHTML = '';
+    drawIncomingStrip(host, []);
     return;
   }
 
