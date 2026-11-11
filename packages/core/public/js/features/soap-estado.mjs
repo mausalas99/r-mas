@@ -136,22 +136,24 @@ export function openSOAPModal() {
     var backdrop = document.createElement("div");
     backdrop.className = "lab-conflict-backdrop";
     backdrop.id = "soap-confirm-backdrop";
-    backdrop.innerHTML =
-      '<div class="lab-conflict-modal">' +
-      "<h3>¿Reemplazar evolución?</h3>" +
-      "<p>La evolución ya tiene contenido. ¿Reemplazarlo con la plantilla?</p>" +
-      '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">' +
-      '<button id="soap-confirm-cancel-btn" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button>' +
-      '<button id="soap-confirm-replace-btn" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Reemplazar</button>' +
-      "</div></div>";
     document.body.appendChild(backdrop);
-    document.getElementById("soap-confirm-cancel-btn").onclick = function () {
-      document.getElementById("soap-confirm-backdrop").remove();
-    };
-    document.getElementById("soap-confirm-replace-btn").onclick = function () {
-      document.getElementById("soap-confirm-backdrop").remove();
-      document.getElementById("soap-modal-backdrop").classList.add("open");
-    };
+    // The Preact dialog loads on first use: a static import would join the boot graph.
+    import("./soap-estado-view.jsx").then(
+      function (view) {
+        view.drawSoapReplaceConfirm(backdrop, {
+          onCancel: function () {
+            backdrop.remove();
+          },
+          onReplace: function () {
+            backdrop.remove();
+            document.getElementById("soap-modal-backdrop").classList.add("open");
+          },
+        });
+      },
+      function () {
+        backdrop.remove();
+      }
+    );
   } else {
     document.getElementById("soap-modal-backdrop").classList.add("open");
   }
