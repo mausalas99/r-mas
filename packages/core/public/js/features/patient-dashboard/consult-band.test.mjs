@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { setConsultInfo, triageRank, formatElapsed, icTimerHtml, icTimerStatsHtml } from './consult-band.mjs';
+import { setConsultInfo, triageRank, formatElapsed, icTimerHtml, icTimerStats } from './consult-band.mjs';
 import { classifyInterconsultaBoardBucket } from '../../../../lib/clinical-scope/interconsulta-board-buckets.mjs';
 
 test('setConsultInfo keeps triage and unknown keys from the phone', () => {
@@ -42,7 +42,7 @@ test('card shows the right control per state', () => {
 });
 
 test('stats: 7-day average, split VPO / IC, skips old and open', () => {
-  const html = icTimerStatsHtml(
+  const pills = icTimerStats(
     [
       mk('1', 'vpo', '2026-10-11T10:00:00Z', '2026-10-11T10:20:00Z'),
       mk('2', 'ic', '2026-10-11T10:00:00Z', '2026-10-11T11:00:00Z'),
@@ -51,14 +51,12 @@ test('stats: 7-day average, split VPO / IC, skips old and open', () => {
     ],
     NOW
   );
-  assert.match(html, /Promedio 7 días<\/i> 40 min/);
-  assert.match(html, /VPO<\/i> 20 min/);
-  assert.match(html, /IC<\/i> 1 h 0 min/);
+  assert.deepEqual(pills, [['Promedio 7 días', '40 min'], ['VPO', '20 min'], ['IC', '1 h 0 min']]);
 });
 
 test('known follow-ups get no timer and stay out of the average', () => {
   const f = mk('f', 'seguimiento', '2026-10-11T10:00:00Z', '2026-10-11T12:00:00Z');
   assert.equal(icTimerHtml(f, NOW), '');
-  assert.equal(icTimerStatsHtml([f], NOW), '');
+  assert.deepEqual(icTimerStats([f], NOW), []);
   assert.match(icTimerHtml(mk('a', 'ic', '', ''), NOW), /data-ic-timer="followup"/);
 });
