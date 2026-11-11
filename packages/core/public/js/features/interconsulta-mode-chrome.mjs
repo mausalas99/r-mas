@@ -25,7 +25,7 @@ import { isModeSala } from '../mode-features.mjs';
 import { isGuardiaMode } from './chrome.mjs';
 import { settingsRef } from './profile-runtime.mjs';
 import { getPatients, persistClinicalState } from '../app-state.mjs';
-import { getConsultInfo, setConsultInfo, renderConsultBandHtml, isoFromTimeInput, icTimerStatsHtml, formatElapsed } from './patient-dashboard/consult-band.mjs';
+import { getConsultInfo, setConsultInfo, renderConsultBandHtml, isoFromTimeInput, icTimerStats, formatElapsed } from './patient-dashboard/consult-band.mjs';
 import { IC_OWN_SERVICE } from './patient-dashboard/interconsult-catalog.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import { getClinicalScopeContextForEvaluate } from '../clinical-access-runtime.mjs';
@@ -33,12 +33,12 @@ import { resolvePatientCensusTeamId } from './patients-clinical-filter.mjs';
 import { patientsVisibleInSidebar } from './patients-scope.mjs';
 import { interconsultaTeamOptions, stepFocusId, guardiaTeamLabel, assignKeyToTeamId } from './interconsulta-team-board.mjs';
 import { mountInterconsultaTeamBoard } from './interconsulta-team-board-view.jsx';
+import { mountIcBar, mountIcBoardFrame, mountIcArchived } from './interconsulta-mode-chrome-view.jsx';
 import { openServicePickerModal } from './patient-dashboard/ic-modal.mjs';
 import { openAddModal, openCompleteAdmissionModal } from './patients-modal.mjs';
 import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
 import { openConfirm } from './workbench/confirm.mjs';
 import { canDeletePatientChart } from '../patient-delete-auth.mjs';
-import { bedLine } from './sala-view-variants.mjs';
 import { patientCardIdFromEvent, shouldHandleTouchPointerUp } from './patients-list-click.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
 import { isInterconsultaDemoActive } from './interconsulta-demo-state.mjs';
@@ -124,41 +124,13 @@ function syncBackButtonVisibility(container) {
   if (btn) btn.hidden = !isIcPatientViewOpen();
 }
 
-export function buildInterconsultaBarHtml() {
-  return (
-    '<div class="wb-ic-bar">' +
-    '<div class="wb-ic-bar-name">' +
-    '<button type="button" class="wb-btn wb-btn-secondary wb-ic-back-btn" data-wb-ic-back hidden title="Volver al tablero de equipos">← Tablero</button>' +
-    '<span class="wb-mode-frame-name">Interconsulta</span></div>' +
-    '<div class="wb-ic-bar-mid"></div>' +
-    '<div class="wb-ic-bar-actions">' +
-    '<button type="button" class="wb-btn wb-btn-secondary wb-btn-toggle" data-wb-ic-guardia-filter aria-pressed="false" title="Mostrar solo Preop / Nuevas hoy del equipo de guardia">' +
-    'Solo guardia de hoy' +
-    '</button>' +
-    '<button type="button" class="wb-btn wb-btn-secondary wb-btn-toggle" data-wb-ic-hide-postguardia aria-pressed="false" title="Oculta la calle de post-guardia del tablero (no cambia los datos)">' +
-    'Ocultar post-guardia' +
-    '</button>' +
-    '<details class="wb-menu" data-wb-ic-menu>' +
-    '<summary class="wb-btn wb-btn-secondary" aria-haspopup="menu" title="Más acciones">⋯</summary>' +
-    '<div class="wb-menu-panel" role="menu">' +
-    '<button type="button" class="wb-menu-item" role="menuitem" data-wb-ic-generar-nota>' +
-    escHtml('Generar nota (.docx)') +
-    '</button>' +
-    '</div></details>' +
-    '<button type="button" class="wb-btn wb-btn-secondary wb-btn-shortcut" data-wb-shortcut>⌘/</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary" data-wb-ic-primary>Actualizar labs</button>' +
-    '</div>' +
-    '</div>'
-  );
-}
-
 /**
  * @param {HTMLElement|null|undefined} container
  * @param {{ onPrimary?: () => void, onGenerarNota?: () => void, onShortcut?: () => void, onBack?: () => void }} opts
  */
 export function mountInterconsultaBar(container, opts) {
   if (!container) return undefined;
-  container.innerHTML = buildInterconsultaBarHtml();
+  mountIcBar(container);
   var o = opts || {};
 
   var guardiaFilterBtn = container.querySelector('[data-wb-ic-guardia-filter]');
@@ -457,45 +429,6 @@ function refreshPatients() {
   if (typeof rt.renderPatientList === 'function') rt.renderPatientList();
   renderInterconsultaBoardView();
   if (typeof rt.showToast === 'function') rt.showToast('Pacientes actualizados', 'success');
-}
-
-function icArchivedToggleHtml(collapsed, count) {
-  return (
-    '<button type="button" class="ic-arch__toggle" data-ic-archived-toggle aria-expanded="' +
-    (!collapsed ? 'true' : 'false') +
-    '"><span class="ic-arch__title">Archivados</span><span class="ic-arch__count">' +
-    count +
-    '</span></button>'
-  );
-}
-
-/** One archived patient: name opens the chart, ↩ restores, × deletes (after a confirm). */
-function icArchivedChipHtml(p) {
-  var id = escHtml(String(p.id));
-  var name = escHtml(p.nombre || 'Sin nombre');
-  var canDelete = canDeletePatientChart(clinicalSessionContext.user, p.id, getClinicalScopeContextForEvaluate());
-  return (
-    '<div class="ic-arch__chip">' +
-    '<button type="button" class="ic-arch__name" data-ic-open="' + id + '">' + name +
-    '<span class="ic-arch__bed">' + escHtml(bedLine(p)) + '</span></button>' +
-    '<button type="button" class="ic-arch__restore" aria-label="Restaurar ' + name +
-    '" data-onclick="togglePatientArchived" data-onclick-args=\'' + escHtml(JSON.stringify([p.id])) +
-    '\' data-onclick-pass="event">Restaurar</button>' +
-    (canDelete
-      ? '<button type="button" class="ic-arch__del" aria-label="Eliminar ' + name + '" data-ic-arch-del="' + id + '">×</button>'
-      : '') +
-    '</div>'
-  );
-}
-
-function renderIcArchivedSectionHtml(archivedPatients) {
-  if (!archivedPatients.length) return '';
-  var parts = ['<section class="ic-arch">', icArchivedToggleHtml(_icArchivedCollapsed, archivedPatients.length)];
-  if (!_icArchivedCollapsed) {
-    parts.push('<div class="ic-arch__chips">' + archivedPatients.map(icArchivedChipHtml).join('') + '</div>');
-  }
-  parts.push('</section>');
-  return parts.join('');
 }
 
 function confirmDeleteArchived(id) {
@@ -839,57 +772,6 @@ function icBoardData() {
   return { teams: teams, now: now, active: active, archived: archived };
 }
 
-var IC_KEYS_HTML =
-  '<div class="ic-keys" role="note" aria-label="Atajos de teclado">' +
-  '<span><kbd>J</kbd><kbd>K</kbd> Mover</span>' +
-  '<span><kbd>R</kbd> Respondida</span>' +
-  '<span><kbd>A</kbd> Archivar</span>' +
-  '<span><kbd>↵</kbd> Abrir paciente</span>' +
-  '<span><kbd>⌘/</kbd> Todos los atajos</span>' +
-  '</div>';
-
-var IC_KEYS_ASIGNAR_HTML =
-  '<div class="ic-keys" role="note" aria-label="Atajos de teclado">' +
-  '<span><kbd>J</kbd><kbd>K</kbd> Mover</span>' +
-  '<span><kbd>1</kbd>–<kbd>4</kbd> Asignar al equipo</span>' +
-  '<span><kbd>0</kbd> Sin equipo</span>' +
-  '<span><kbd>R</kbd> Respondida</span>' +
-  '<span><kbd>A</kbd> Archivar</span>' +
-  '<span><kbd>↵</kbd> Abrir paciente</span>' +
-  '<span><kbd>⌘/</kbd> Todos los atajos</span>' +
-  '</div>';
-
-function icHeaderHtml(mode, options, teamId, count, statsHtml, guardiaName) {
-  function seg(key, label) {
-    return (
-      '<button type="button" class="ic-mode-btn' + (mode === key ? ' is-on' : '') + '" data-ic-mode="' + key +
-      '" aria-pressed="' + (mode === key ? 'true' : 'false') + '">' + label + '</button>'
-    );
-  }
-  return (
-    '<div class="ic-board-header">' +
-    '<strong class="ic-board-title">Interconsultas</strong>' +
-    '<span class="ic-board-count">' + count + ' pacientes</span>' + (statsHtml || '') +
-    '<div class="ic-mode-seg" role="group" aria-label="Modo del tablero">' + seg('asignar', 'Asignar') + seg('equipo', 'Mi equipo') + '</div>' +
-    (mode === 'equipo' && options.length
-      ? '<select class="ic-team-select" data-ic-my-team aria-label="Mi equipo">' +
-        options
-          .map(function (o) {
-            return '<option value="' + escHtml(o.id) + '"' + (o.id === teamId ? ' selected' : '') + '>' + escHtml(o.label) + '</option>';
-          })
-          .join('') +
-        '</select>'
-      : '') +
-    (mode === 'equipo' && guardiaName
-      ? '<span class="ic-board-duty">Guardia hoy: <b>' + escHtml(guardiaName) + '</b></span>'
-      : '') +
-    '<span class="ic-board-header__sp"></span>' +
-    '<button type="button" class="wb-btn wb-btn-secondary" data-ic-board-add>+ Agregar</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary" data-ic-board-refresh>Actualizar labs</button>' +
-    '</div>'
-  );
-}
-
 /** Paints header + board (Asignar or Mi equipo) + Archivados into the main-window mount. No-op outside IC mode. */
 export function renderInterconsultaBoardView() {
   var mount = icBoardMount();
@@ -909,10 +791,10 @@ export function renderInterconsultaBoardView() {
   var kept = [];
   for (var el = mount; el; el = el.parentElement) if (el.scrollTop) kept.push([el, el.scrollTop]);
   mount.querySelectorAll('*').forEach(function (d) { if (d.scrollTop && d.className) kept.push([String(d.className), d.scrollTop]); });
-  mount.innerHTML =
-    icHeaderHtml(mode, options, teamId, count, icTimerStatsHtml(data.active.concat(data.archived)), guardiaTeamLabel(data.teams, data.now)) +
-    '<div id="ic-team-board-mount"></div><div id="ic-archived-mount"></div>' +
-    (mode === 'equipo' ? IC_KEYS_HTML : IC_KEYS_ASIGNAR_HTML);
+  mountIcBoardFrame(mount, {
+    mode: mode, options: options, teamId: teamId, count: count,
+    pills: icTimerStats(data.active.concat(data.archived)), guardiaName: guardiaTeamLabel(data.teams, data.now),
+  });
   ensureIcKeyboardWired();
   mount.querySelector('[data-ic-board-refresh]').addEventListener('click', refreshPatients);
   mount.querySelector('[data-ic-board-add]').addEventListener('click', openAddModal);
@@ -927,7 +809,9 @@ export function renderInterconsultaBoardView() {
       renderInterconsultaBoardView();
     },
   });
-  mount.querySelector('#ic-archived-mount').innerHTML = renderIcArchivedSectionHtml(data.archived);
+  mountIcArchived(mount.querySelector('#ic-archived-mount'), data.archived, _icArchivedCollapsed, function (p) {
+    return canDeletePatientChart(clinicalSessionContext.user, p.id, getClinicalScopeContextForEvaluate());
+  });
   icApplyFocus();
   kept.forEach(function (k) {
     var t = typeof k[0] === 'string' ? mount.getElementsByClassName(k[0])[0] : k[0];

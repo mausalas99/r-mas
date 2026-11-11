@@ -204,8 +204,8 @@ export function icTimerHtml(patient, nowMs = Date.now()) {
   return '<div class="ic-timer"><span class="ic-timer__t is-done">' + formatElapsed(answered - received) + '</span><span class="ic-timer__s">Respondida</span></div>';
 }
 
-/** Header pills: average minutes answered in the last 7 days, overall + VPO + IC. */
-export function icTimerStatsHtml(patients, nowMs = Date.now()) {
+/** Header pills as [label, text]: average time answered in the last 7 days, overall + VPO + IC. Empty when none. */
+export function icTimerStats(patients, nowMs = Date.now()) {
   const sums = { all: [0, 0], vpo: [0, 0], ic: [0, 0] };
   for (const p of patients || []) {
     const { received, answered } = icTimes(p);
@@ -216,8 +216,8 @@ export function icTimerStatsHtml(patients, nowMs = Date.now()) {
       sums[k][1] += 1;
     }
   }
-  if (!sums.all[1]) return '';
-  const pill = (label, [total, n]) =>
-    n ? '<span class="ic-stat"><i>' + label + '</i> ' + formatElapsed(total / n) + '</span>' : '';
-  return '<span class="ic-stats">' + pill('Promedio 7 días', sums.all) + pill('VPO', sums.vpo) + pill('IC', sums.ic) + '</span>';
+  if (!sums.all[1]) return [];
+  return [['Promedio 7 días', sums.all], ['VPO', sums.vpo], ['IC', sums.ic]]
+    .filter(([, [, n]]) => n)
+    .map(([label, [total, n]]) => [label, formatElapsed(total / n)]);
 }
