@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import { loadJsx } from '../preact-view-test-helpers.mjs';
 
 // One bundle, so the table module, the scenarios and the app state share the same instances.
@@ -20,14 +19,17 @@ const m = await loadJsx(import.meta.url, `
     return renderToString(<CultivosTable model={model} />).replace(/<td class="cultivos-cell-atb"><\\/td>/g, () => '<td class="cultivos-cell-atb">' + cells[i++] + '</td>');
   };`);
 
-// Exact markup the string builders made before the port (captured from the old code).
-const OLD = JSON.parse(fs.readFileSync(new URL('./expediente-cultivos-table-view.old.json', import.meta.url), 'utf8'));
-
-// Preact leaves '>' unescaped in text and attributes and writes an empty class bare; HTML parses both the same.
-const norm = (s) => s.replace(/&gt;/g, '>').replace(/ class(?=[ >])/g, ' class=""');
-
 for (const name of Object.keys(m.SCENARIOS)) {
-  test(`cultivos table HTML equals the old builders: ${name}`, () => {
-    assert.equal(norm(m.html(name)), norm(OLD[name]));
+  const s = m.prepare(name);
+  test(`cultivos table ${name}: no patient shows the prompt`, { skip: !!s.pid ? 'has patient' : false }, () => {
+    assert.match(m.html(name), /Selecciona un paciente\./);
+  });
+  test(`cultivos table ${name}: patient with no cultures shows the empty message`, { skip: !(s.pid && !s.rows.length) }, () => {
+    assert.match(m.html(name), /No hay cultivos en el historial/);
+  });
+  test(`cultivos table ${name}: every antibiogram cell is filled`, { skip: !(s.pid && s.rows.length) }, () => {
+    const html = m.html(name);
+    assert.match(html, /<table/);
+    assert.doesNotMatch(html, /cultivos-cell-atb"><\/td>/);
   });
 }

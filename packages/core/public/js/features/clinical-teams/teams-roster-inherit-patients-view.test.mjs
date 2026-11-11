@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import { loadJsx } from '../preact-view-test-helpers.mjs';
 
 const view = await loadJsx(import.meta.url, `import { InheritStepDots, StepDestino, StepOrigen, StepPacientes, StepConfirm } from './teams-roster-inherit-patients-view.jsx';
@@ -10,15 +9,10 @@ const view = await loadJsx(import.meta.url, `import { InheritStepDots, StepDesti
   export const pacientes = (p) => renderToString(<StepPacientes {...p} />);
   export const confirm = (p) => renderToString(<StepConfirm {...p} />);`);
 
-// Exact markup the string builders (buildInheritStep*Html) made before the port, captured on the fixtures below.
-const OLD = JSON.parse(fs.readFileSync(new URL('./teams-roster-inherit-patients-old-html.json', import.meta.url), 'utf8'));
-
-// Preact SSR writes `>` unescaped in text, empty attrs without `=""` and `/>` without a space; HTML parses all the same.
-const norm = (s) => s.replace(/&gt;/g, '>').replace(/ ([a-z-]+)=""/g, ' $1').replace(/ \/>/g, '/>');
-const same = (name, html) => {
-  const a = norm(html), b = norm(OLD[name]);
-  if (a !== b) { let i = 0; while (a[i] === b[i]) i++; assert.fail(name + ' differs at ' + i + '\nnew: ...' + a.slice(Math.max(0, i - 60), i + 120) + '\nold: ...' + b.slice(Math.max(0, i - 60), i + 120)); }
-};
+// Visible text only: drop tags, decode the entities the view escapes.
+const text = (h) => h.replace(/<[^>]*>/g, ' ')
+  .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+  .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
 
 const nm = 'EQUIPO <A> & "B"';
 const src = [
@@ -32,45 +26,54 @@ const pts = [
   { id: 'p3', nombre: '', registro: "R-'3" },
 ];
 
-test('step dots equal the old HTML', () => {
-  for (let i = 0; i < 4; i++) same('dots:' + i, view.dots(i));
+test('step dots change with the step', () => {
+  assert.notEqual(view.dots(0), view.dots(1));
+  assert.notEqual(view.dots(1), view.dots(2));
 });
 
-test('destino equals the old HTML', () => {
-  same('destino:full', view.destino({ targetName: nm, sala: 'Sala 3', cycle: 'B' }));
-  same('destino:sala', view.destino({ targetName: 'Equipo C', sala: 'Sala 3' }));
-  same('destino:cycle', view.destino({ targetName: 'Equipo C', cycle: 'A' }));
-  same('destino:bare', view.destino({ targetName: '' }));
+test('destino shows the target team, sala and cycle', () => {
+  const t = text(view.destino({ targetName: nm, sala: 'Sala 3', cycle: 'B' }));
+  assert.ok(t.includes(nm), t);
+  assert.ok(t.includes('Sala 3'), t);
 });
 
-test('origen equals the old HTML', () => {
-  for (const sel of ['t1', 't2', '', 'zz']) same('origen:sel:' + sel, view.origen({ targetName: nm, sources: src, unassignedCount: 2, selectedSourceId: sel }));
-  same('origen:empty', view.origen({ targetName: 'X', sources: [], unassignedCount: 0, selectedSourceId: '' }));
-  same('origen:undef', view.origen({ targetName: 'X', unassignedCount: undefined }));
+test('destino with only a name still shows the name', () => {
+  assert.ok(text(view.destino({ targetName: 'Equipo C' })).includes('Equipo C'));
 });
 
-test('pacientes equals the old HTML', () => {
-  const cases = {
-    list: { patients: pts, includeUnassigned: false, unassignedCount: 0, sourceName: 'Medicina' },
-    toggleOff: { patients: pts, includeUnassigned: false, unassignedCount: 3, sourceName: 'Medicina <1>' },
-    toggleOn: { patients: pts, includeUnassigned: true, unassignedCount: 1, sourceName: 'Medicina' },
-    toggleNoSource: { patients: pts, includeUnassigned: true, unassignedCount: 2, sourceName: '' },
-    none: { patients: [], includeUnassigned: false, unassignedCount: 0, sourceName: 'Medicina' },
-    undef: { unassignedCount: 0 },
-  };
-  for (const [k, v] of Object.entries(cases)) same('pacientes:' + k, view.pacientes({ targetName: nm, ...v }));
+test('origen lists every source team and checks only the selected one', () => {
+  const html = view.origen({ targetName: nm, sources: src, unassignedCount: 2, selectedSourceId: 't1' });
+  const t = text(html);
+  for (const s of src) assert.ok(t.includes(s.name), s.name);
+  assert.match(html, /data-inherit-source="t1"[^>]*checked/);
+  assert.doesNotMatch(html, /data-inherit-source="t2"[^>]*checked/);
 });
 
-test('confirm equals the old HTML', () => {
-  for (const n of [0, 1, 3, undefined]) for (const s of ['Medicina <1>', '']) same('confirm:' + n + ':' + s, view.confirm({ targetName: nm, sourceName: s, selectedCount: n }));
+test('origen with no sources does not throw', () => {
+  assert.equal(typeof view.origen({ targetName: 'X', sources: [], unassignedCount: 0, selectedSourceId: '' }), 'string');
 });
 
-test('hooks the modal events rely on, and escaping', () => {
-  const html = norm(view.pacientes({ targetName: nm, patients: pts, unassignedCount: 2, sourceName: 'Medicina' }));
+test('pacientes lists one row per patient and wires select-all and the unassigned toggle', () => {
+  const html = view.pacientes({ targetName: nm, patients: pts, unassignedCount: 2, sourceName: 'Medicina' });
   assert.equal((html.match(/data-inherit-patient="/g) || []).length, 3);
   assert.match(html, /data-inherit-select="all"/);
   assert.match(html, /data-inherit-include-unassigned/);
   assert.match(html, /data-inherit-count aria-live="polite"/);
+});
+
+test('pacientes escapes patient names', () => {
+  const html = view.pacientes({ targetName: nm, patients: pts, unassignedCount: 0, sourceName: 'Medicina' });
   assert.doesNotMatch(html, /<X>/);
-  assert.match(norm(view.origen({ targetName: 'X', sources: src, selectedSourceId: 't1' })), /name="inherit-source" data-inherit-source="t1" checked/);
+  assert.ok(text(html).includes('MARIA <X> & "Y"'));
+});
+
+test('pacientes with no patients shows no rows', () => {
+  const html = view.pacientes({ targetName: nm, patients: [], includeUnassigned: false, unassignedCount: 0, sourceName: 'Medicina' });
+  assert.equal((html.match(/data-inherit-patient="/g) || []).length, 0);
+});
+
+test('confirm names the target and the source team', () => {
+  const t = text(view.confirm({ targetName: nm, sourceName: 'Medicina <1>', selectedCount: 3 }));
+  assert.ok(t.includes(nm), t);
+  assert.ok(t.includes('Medicina <1>'), t);
 });

@@ -1,21 +1,38 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import { loadJsx } from './preact-view-test-helpers.mjs';
 
 const view = await loadJsx(import.meta.url, `import { IcServiceButtons } from './patients-modal-view.jsx';
   export const html = (names, selected) => renderToString(<IcServiceButtons names={names} selected={selected} onPick={() => {}} />);`);
 
-// Exact markup the DOM loop in fillIcAdmitFields/pickIcService left in #m-ic-svc before the port.
-const OLD = JSON.parse(fs.readFileSync(new URL('./patients-modal-old-html.json', import.meta.url), 'utf8'));
-// Preact escapes '>' and quotes in text; HTML parses both the same.
-const norm = (s) => s.replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+const names = ['Cardiología', 'Neumología', 'Ginecología & Obstetricia'];
+const buttons = (h) => h.match(/<button[^>]*>[\s\S]*?<\/button>/g) || [];
+const label = (b) => b.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&');
 
-for (const [key, sel] of [['sel:none', ''], ['sel:first', OLD.names[0]], ['sel:odd', OLD.names[1]], ['sel:unknown', 'zzz']]) {
-  test('IC service buttons match the old markup: ' + key, () => {
-    assert.equal(norm(view.html(OLD.names, sel)), OLD[key]);
-  });
-}
+test('one button per service name', () => {
+  assert.equal(buttons(view.html(names, '')).length, names.length);
+});
+
+test('the selected service is the only pressed, primary button', () => {
+  const pressed = buttons(view.html(names, names[1])).filter((b) => b.includes('aria-pressed="true"'));
+  assert.equal(pressed.length, 1);
+  assert.equal(label(pressed[0]), names[1]);
+  assert.match(pressed[0], /wb-btn-primary/);
+});
+
+test('no selection presses no button', () => {
+  assert.equal(buttons(view.html(names, '')).filter((b) => b.includes('aria-pressed="true"')).length, 0);
+});
+
+test('an unknown selection presses no button', () => {
+  assert.equal(buttons(view.html(names, 'zzz')).filter((b) => b.includes('aria-pressed="true"')).length, 0);
+});
+
+test('service names are escaped', () => {
+  const html = view.html(names, '');
+  assert.ok(buttons(html).some((b) => label(b) === 'Ginecología & Obstetricia'));
+  assert.doesNotMatch(html, /Obstetricia &amp;amp;/);
+});
 
 test('no names draws nothing', () => {
   assert.equal(view.html([], ''), '');

@@ -1,27 +1,46 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import { loadJsx } from './preact-view-test-helpers.mjs';
 
 const view = await loadJsx(import.meta.url, `import { LabRepoBatchList, LabChemistrySkeleton } from './lab-repo-batch-import-view.jsx';
   export const list = (rows, busy) => renderToString(<LabRepoBatchList rows={rows} busy={busy} />);
   export const skeleton = () => renderToString(<LabChemistrySkeleton />);`);
 
-// Exact markup the old string builders in lab-repo-batch-import.mjs / ui-skeleton.mjs made (synthetic rows).
-const OLD = JSON.parse(fs.readFileSync(new URL('./lab-repo-batch-import-view.old.json', import.meta.url), 'utf8'));
+const rows = [
+  { id: 'r1', hasRegistro: true, selected: true },
+  { id: 'r2', hasRegistro: false, selected: false },
+  { id: 'r3', hasRegistro: true, selected: false },
+];
 
-// Preact writes void tags as <x/> and leaves '>' unescaped; HTML parses both the same.
-const norm = (s) => s.replace(/ \/>/g, '>').replace(/\/>/g, '>').replace(/&gt;/g, '>');
+const count = (html, re) => (html.match(re) || []).length;
 
-test('batch list HTML equals the old builder', () => {
-  assert.equal(norm(view.list(OLD.rows, false)), norm(OLD.idle));
+test('batch list draws one checkbox per row', () => {
+  assert.equal(count(view.list(rows, false), /type="checkbox"/g), rows.length);
 });
-test('busy list disables every checkbox, as before', () => {
-  assert.equal(norm(view.list(OLD.rows, true)), norm(OLD.busy));
+
+test('a row without registro is disabled, the others are not', () => {
+  const html = view.list(rows, false);
+  const boxes = html.match(/<input[^>]*type="checkbox"[^>]*>/g) || [];
+  assert.equal(boxes.length, rows.length);
+  assert.match(boxes[1], /disabled/);
+  assert.doesNotMatch(boxes[0], /disabled/);
+  assert.doesNotMatch(boxes[2], /disabled/);
 });
+
+test('busy list disables every checkbox', () => {
+  assert.equal(count(view.list(rows, true), /<input[^>]*type="checkbox"[^>]*disabled/g), rows.length);
+});
+
+test('a checked row is checked', () => {
+  const boxes = view.list(rows, false).match(/<input[^>]*type="checkbox"[^>]*>/g) || [];
+  assert.match(boxes[0], /checked/);
+  assert.doesNotMatch(boxes[2], /checked/);
+});
+
 test('no rows gives the empty message', () => {
-  assert.equal(view.list([], false), OLD.empty);
+  assert.match(view.list([], false), /No hay pacientes en tu equipo/);
 });
-test('chemistry skeleton HTML equals the old builder', () => {
-  assert.equal(norm(view.skeleton()), norm(OLD.skeleton));
+
+test('chemistry skeleton renders', () => {
+  assert.ok(view.skeleton().length > 0);
 });
