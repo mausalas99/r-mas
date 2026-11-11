@@ -16,7 +16,7 @@ import {
 } from './tendencias-catalog.mjs';
 import {
   buildEventMarkerMapForSets,
-  buildTendDetailEventsLegendHtml,
+  tendEventsLegendModel,
   createTendEventMarkerPlugin,
   dayValueFromTrendChartIndex,
   eventTooltipLinesForChartIndex,
@@ -36,7 +36,7 @@ import { showTendPane, hideTendPane, registerTendPane, markTendSelectedRow, open
 import { copyTableText } from '../tend-export.mjs';
 import { getTendSectionLabel } from './tendencias-constants.mjs';
 import { tendHideSeriesFromCard } from './tendencias-series.mjs';
-import { drawTendDetailHeader, drawTendDetailCompare } from './tendencias-ui-detail-view.jsx';
+import { drawTendDetailHeader, drawTendDetailCompare, drawTendDetailEvents } from './tendencias-ui-detail-view.jsx';
 
 /**
  * Chart.js plugin: horizontal normality (reference) band for Tendencias.
@@ -301,9 +301,9 @@ export function refreshOpenTendDetail() {
 function syncTendDetailEventsLegend(markerMap, labels) {
   var slot = document.getElementById('tend-detail-events-slot');
   if (!slot) return;
-  var html = buildTendDetailEventsLegendHtml(markerMap, labels);
-  slot.innerHTML = html;
-  slot.setAttribute('aria-hidden', html ? 'false' : 'true');
+  var items = tendEventsLegendModel(markerMap, labels);
+  drawTendDetailEvents(slot, items);
+  slot.setAttribute('aria-hidden', items.length ? 'false' : 'true');
 }
 
 /**

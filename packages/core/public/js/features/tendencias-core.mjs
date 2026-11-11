@@ -16,12 +16,11 @@ export {
   tendSeriesIsUserHidden,
   tendAbnormalOnlyRead,
   tendHiddenChipDescriptors,
-  buildTendInlineControlsHtml,
+  tendToolbarModel,
   historyHasGasoForExtended,
   orderTrendSeriesBySaved,
   buildMergedTrendSeriesCatalog,
   getTendSectionLabel,
-  tendEyeHideSvg,
   tendHideSeriesFromCard,
   tendUnhideSeries,
   tendResetAllHiddenSeries,
@@ -47,7 +46,6 @@ export {
   openTendDetail,
 } from './tendencias-ui-detail.mjs';
 export {
-  tendSectionChartSvg,
   destroyTendCardSortables,
   ensureTendHiddenModalDelegation,
   ensureTendenciasClickDelegation,

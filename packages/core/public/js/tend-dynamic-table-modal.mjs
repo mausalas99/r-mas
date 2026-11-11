@@ -11,6 +11,7 @@ import { readGroupExtraFields, writeGroupExtraFields, seriesColorKey, toggleSpec
 import { renderGroupTable, tableLegendLabelForSpec } from './tend-group-table-render.mjs';
 import { renderGroupCharts, destroyGroupCharts } from './tend-group-charts-render.mjs';
 import { renderAnalytePickerBar } from './tend-group-analyte-picker.mjs';
+import { drawPivotHint } from './tend-group-analyte-picker-view.jsx';
 import { mountRpcDateInput } from './rpc-date-picker.mjs';
 import { closeOverlayAnimated, cancelOverlayClose } from './ui-motion.mjs';
 import { showTendPane, hideTendPane } from './tend-pane.mjs';
@@ -68,7 +69,7 @@ export function createTendDynamicTableModal(deps) {
     });
     var body = wrap.querySelector('#tend-dynamic-charts-body');
     if (!state.tableExtraSpecs.length) {
-      body.innerHTML = '<p class="tend-pivot-hint">Aún no hay analitos. Marca uno en la lista de la izquierda.</p>';
+      drawPivotHint(body, 'Aún no hay analitos. Marca uno en la lista de la izquierda.');
       return;
     }
     var bySection = Object.create(null);

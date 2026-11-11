@@ -12,11 +12,12 @@ import { syncAbgLabPrefRowVisibility, isAbgAnalysisHidden } from './tendencias-l
 import { tendAbnormalOnlyRead, tendHiddenSeriesRead, tendSectionIsExpanded, tendRefForSeries } from './tendencias-series.mjs';
 import * as tc from './tendencias-core.mjs';
 import {
-  buildTendStatusHtml,
-  buildTendChangeHtml,
+  tendStatusInfo,
+  tendChangeModel,
   tendRangeText,
   previousValueFromSetsDesc,
 } from './tendencias-insight.mjs';
+import { drawTendGrid, drawTendNote } from './tendencias-render-view.jsx';
 
 function buildTendRenderKey(patientId, revision, prefsHash, sectionsExpanded) {
   return [patientId, revision, prefsHash, sectionsExpanded].join('::');
@@ -36,7 +37,7 @@ function resetTendRenderEmpty(container, message) {
   tc.tendStore._tendRenderState.key = null;
   tc.tendStore._tendRenderState.seriesKeys = [];
   tc.closeTendHiddenModal();
-  container.innerHTML = '<p class="tend-empty">' + message + '</p>';
+  drawTendNote(container, null, { text: message });
 }
 
 function collectSeriesAvailability(mergedCatalog, seriesIndex, abnormalOnly) {
@@ -58,7 +59,7 @@ function collectSeriesAvailability(mergedCatalog, seriesIndex, abnormalOnly) {
   return { seriesAvail: seriesAvail, seriesAvailFull: full };
 }
 
-function renderTendenciasEmptyState(container, toolbarHtml, mergedCatalog, seriesIndex, abnormalOnly, seriesAvailFull) {
+function renderTendenciasEmptyState(container, toolbar, mergedCatalog, seriesIndex, abnormalOnly, seriesAvailFull) {
   var anyData = mergedCatalog.some(function (sp) {
     var idxAny = seriesIndex[tc.tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey)];
     return idxAny && idxAny.setsDesc.length >= 2;
@@ -70,18 +71,8 @@ function renderTendenciasEmptyState(container, toolbarHtml, mergedCatalog, serie
       var idxVis = seriesIndex[tc.tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey)];
       return idxVis && idxVis.setsDesc.length >= 2;
     });
-  if (abnormalOnly && seriesAvailFull.length) {
-    container.innerHTML =
-      toolbarHtml +
-      '<p class="tend-empty">Ningún analito está fuera de rango de referencia (o no tiene referencia en el reporte). Pulsa <strong>Todos</strong> para volver a la vista completa.</p>';
-  } else if (hiddenAll) {
-    container.innerHTML =
-      toolbarHtml +
-      '<p class="tend-empty">Los analitos con datos están <strong>ocultos</strong>. Pulsa <strong>Ocultos</strong> y restaura con el ojo o <strong>Mostrar todos</strong>.</p>';
-  } else {
-    container.innerHTML =
-      toolbarHtml + '<p class="tend-empty">No hay parámetros con suficientes datos para graficar.</p>';
-  }
+  var kind = abnormalOnly && seriesAvailFull.length ? 'abnormal' : hiddenAll ? 'hidden' : 'nodata';
+  drawTendNote(container, toolbar, { kind: kind });
   tc.syncTendHiddenModalIfOpen();
 }
 
@@ -136,64 +127,27 @@ function tryPatchTendenciasDom(container, seriesAvail, seriesIndex, historyDesc,
   return true;
 }
 
-function buildTendenciaRowHtml(sectionKey, spec, seriesIndex, expanded) {
+function tendRowModel(sectionKey, spec, seriesIndex, expanded) {
   var specFk = spec.fieldKey;
   var idxRow = seriesIndex[tc.tendCatalogSeriesKey(sectionKey, specFk)];
   var latest = idxRow ? idxRow.latest : null;
   var isAb = idxRow ? idxRow.isAbnormal : false;
   var ref = idxRow ? idxRow.ref : null;
-  var domId = tc.trendSparkDomId(sectionKey, specFk);
   var labelParts = tc.tendCardLabelParts(sectionKey, specFk);
-  var unitHtml = labelParts.unit
-    ? '<span class="tend-unit">' + tc.esc(labelParts.unit) + '</span>'
-    : '';
-  var seriesKey = tc.tendCatalogSeriesKey(sectionKey, specFk);
   var prev = idxRow
     ? previousValueFromSetsDesc(idxRow.setsDescFull || idxRow.setsDesc, sectionKey, specFk, getSetTrendValueForSeries)
     : null;
-  return (
-    '<div class="tend-row" data-series-key="' +
-    tc.esc(seriesKey) +
-    '" data-abnormal="' +
-    (isAb ? '1' : '0') +
-    '">' +
-    // Visible only while the pivot pane is open (CSS); state comes from the pivot module.
-    '<input type="checkbox" class="tend-tick tend-row-tick" aria-label="Agregar ' +
-    tc.esc(labelParts.title) +
-    ' a la tabla">' +
-    '<span class="tend-row-name"><span class="tend-param-name">' +
-    tc.esc(labelParts.title) +
-    // One real button opens the row; its ::after covers the row (.card-open-btn).
-    '<button type="button" class="tend-row-open card-open-btn" aria-label="Ver tendencia de ' +
-    tc.esc(labelParts.title) +
-    '"></button></span>' +
-    unitHtml +
-    '</span>' +
-    '<span class="tend-param-value' +
-    (isAb ? ' tend-abnormal' : '') +
-    '">' +
-    (latest != null ? latest : '—') +
-    '</span>' +
-    '<span class="tend-row-status">' +
-    buildTendStatusHtml(tc.esc, latest, ref) +
-    '</span>' +
-    '<span class="tend-row-range">' +
-    tc.esc(tendRangeText(ref)) +
-    '</span>' +
-    '<span class="tend-row-change">' +
-    buildTendChangeHtml(tc.esc, latest, prev, isAb, ref) +
-    '</span>' +
-    '<span class="tend-spark-wrap"><span class="tend-spark-canvas-cell">' +
-    (expanded
-      ? '<canvas id="' + domId + '"></canvas>'
-      : '<span class="tend-spark-placeholder" aria-hidden="true"></span>') +
-    '</span></span>' +
-    '<button type="button" class="tend-row-hide-btn" title="Ocultar analito" aria-label="Ocultar ' +
-    tc.esc(labelParts.title) +
-    '">' +
-    tc.tendEyeHideSvg() +
-    '</button></div>'
-  );
+  return {
+    key: tc.tendCatalogSeriesKey(sectionKey, specFk),
+    abnormal: !!isAb,
+    title: labelParts.title,
+    unit: labelParts.unit,
+    latest: latest,
+    status: tendStatusInfo(latest, ref),
+    range: tendRangeText(ref),
+    change: tendChangeModel(latest, prev, ref),
+    sparkId: expanded ? tc.trendSparkDomId(sectionKey, specFk) : null,
+  };
 }
 
 function countAbnormalInList(list, seriesIndex, sectionKey) {
@@ -203,48 +157,16 @@ function countAbnormalInList(list, seriesIndex, sectionKey) {
   }).length;
 }
 
-function buildTendenciaSectionHtml(sectionKey, list, seriesIndex) {
-  var expanded = tc.tendSectionIsExpanded(sectionKey);
-  var secLabel = getTendSectionLabel(sectionKey);
-  var rowParts = list.map(function (spec) {
-    return buildTendenciaRowHtml(sectionKey, spec, seriesIndex, expanded);
-  });
-  var oor = countAbnormalInList(list, seriesIndex, sectionKey);
-  return (
-    '<section class="tend-section" data-section="' +
-    tc.esc(sectionKey) +
-    '"><div class="tend-section-head">' +
-    '<button type="button" class="tend-section-toggle" aria-expanded="' +
-    (expanded ? 'true' : 'false') +
-    '" aria-label="' +
-    (expanded ? 'Contraer ' : 'Expandir ') +
-    tc.esc(secLabel) +
-    '"><span class="tend-section-chevron" aria-hidden="true">' +
-    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' +
-    '</span><span class="tend-section-title">' +
-    tc.esc(secLabel) +
-    '</span></button>' +
-    (oor
-      ? '<span class="tend-oor-pill">' + oor + ' fuera de rango</span>'
-      : '<span class="tend-section-count">' + list.length + (list.length === 1 ? ' analito' : ' analitos') + '</span>') +
-    '<span class="tend-head-spacer"></span>' +
-    (list.length > 0
-      ? '<button type="button" class="tend-section-chart-btn" title="Abrir gráfica y tabla del estudio" aria-label="Gráfica de ' +
-        tc.esc(secLabel) +
-        '">' +
-        tc.tendSectionChartSvg() +
-        '<span class="tend-section-chart-label">Gráfica</span></button>'
-      : '') +
-    '</div><div class="tend-section-body' +
-    (expanded ? '' : ' tend-section-body--collapsed') +
-    '">' +
-    TEND_COLS_HTML +
-    '<div class="tend-rows tend-sort-zone" data-section-key="' +
-    tc.esc(sectionKey) +
-    '">' +
-    rowParts.join('') +
-    '</div></div></section>'
-  );
+function tendSectionModel(sectionKey, list, seriesIndex, expanded) {
+  return {
+    key: sectionKey,
+    label: getTendSectionLabel(sectionKey),
+    expanded: expanded,
+    oor: countAbnormalInList(list, seriesIndex, sectionKey),
+    rows: list.map(function (spec) {
+      return tendRowModel(sectionKey, spec, seriesIndex, expanded);
+    }),
+  };
 }
 
 var TEND_MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -256,34 +178,17 @@ function fmtTendDay(set, withYear) {
   return d.getDate() + ' ' + TEND_MES[d.getMonth()] + (withYear ? ' ' + d.getFullYear() : '');
 }
 
-function buildTendSummaryHtml(historyDesc, oorN, totalN) {
-  var latestDay = fmtTendDay(historyDesc[0], true);
-  var prevDay = fmtTendDay(historyDesc[1], false);
-  return (
-    '<p class="tend-summary">' +
-    (latestDay ? tc.esc(latestDay) + ' · ' : '') +
-    (oorN ? '<b class="tend-summary-oor">' + oorN + ' fuera de rango</b>' : '0 fuera de rango') +
-    ' de ' +
-    totalN +
-    ' · el cambio compara con ' +
-    (prevDay ? 'el ' + tc.esc(prevDay) : 'la toma anterior') +
-    '</p>'
-  );
+function tendSummaryModel(historyDesc, oorN, totalN) {
+  return { latestDay: fmtTendDay(historyDesc[0], true), prevDay: fmtTendDay(historyDesc[1], false), oor: oorN, total: totalN };
 }
 
-var TEND_COLS_HTML =
-  '<div class="tend-cols" aria-hidden="true"><span>Analito</span><span>Último</span><span>Estado</span><span>Rango</span><span>Cambio</span><span>Últimos 5 días</span><span></span></div>';
-
-function paintTendenciasGrid(container, toolbarHtml, sectionsOrdered, bySection, seriesIndex, seriesAvail, historyDesc, summaryHtml) {
-  var htmlParts = [toolbarHtml, summaryHtml];
-  for (var si = 0; si < sectionsOrdered.length; si++) {
-    var sectionKey = sectionsOrdered[si];
+function paintTendenciasGrid(container, toolbar, sectionsOrdered, bySection, seriesIndex, seriesAvail, historyDesc, summary) {
+  var sections = sectionsOrdered.map(function (sectionKey) {
     var list = tc.orderTrendSeriesBySaved(bySection[sectionKey], readTendCardOrder(tc.aid(), sectionKey));
-    htmlParts.push(buildTendenciaSectionHtml(sectionKey, list, seriesIndex));
-  }
-  htmlParts.push('<p class="tend-empty tend-search-empty" hidden>Ningún analito coincide con la búsqueda.</p>');
+    return tendSectionModel(sectionKey, list, seriesIndex, tc.tendSectionIsExpanded(sectionKey));
+  });
   var prevScroll = container.scrollTop;
-  container.innerHTML = htmlParts.join('');
+  drawTendGrid(container, { toolbar: toolbar, summary: summary, sections: sections });
   if (prevScroll) container.scrollTop = prevScroll;
   tc.buildSparkJobsFromIndex(seriesAvail, seriesIndex, historyDesc, tc.sparkChartAnim(600));
 }
@@ -328,15 +233,16 @@ function renderTendenciasBody(container) {
     return ia && ia.isAbnormal;
   }).length;
   var toolbarOpts = {
-    showGasoExtended: !isAbgAnalysisHidden() && tc.historyHasGasoForExtended(historyDesc),
-    totalCount: avail.seriesAvailFull.length,
-    abnormalCount: oorTotal,
+    gaso: !isAbgAnalysisHidden() && tc.historyHasGasoForExtended(historyDesc),
+    total: avail.seriesAvailFull.length,
+    oor: oorTotal,
+    on: abnormalOnly,
   };
-  var toolbarHtml = tc.buildTendInlineControlsHtml(hiddenChipN, toolbarOpts);
+  var toolbar = tc.tendToolbarModel(hiddenChipN, toolbarOpts);
   if (!avail.seriesAvail.length) {
     renderTendenciasEmptyState(
       container,
-      toolbarHtml,
+      toolbar,
       mergedCatalog,
       seriesIndex,
       abnormalOnly,
@@ -367,13 +273,13 @@ function renderTendenciasBody(container) {
   tc.tendStore._tendRenderState.seriesKeys = nextSeriesKeys;
   paintTendenciasGrid(
     container,
-    toolbarHtml,
+    toolbar,
     sectionsOrdered,
     bySection,
     seriesIndex,
     avail.seriesAvail,
     historyDesc,
-    buildTendSummaryHtml(historyDesc, oorTotal, avail.seriesAvailFull.length)
+    tendSummaryModel(historyDesc, oorTotal, avail.seriesAvailFull.length)
   );
 }
 
@@ -393,8 +299,7 @@ function renderTendencias(opts) {
       renderTendenciasBody(container);
     } catch (err) {
       console.error('[R+ Tendencias] Error al renderizar:', err);
-      container.innerHTML =
-        '<p class="tend-empty">No se pudieron cargar las tendencias. Revisa la consola (F12) o recarga la app.</p>';
+      drawTendNote(container, null, { text: 'No se pudieron cargar las tendencias. Revisa la consola (F12) o recarga la app.' });
     }
     syncTendPaneAfterRender();
     if (onReady) onReady();
@@ -416,4 +321,4 @@ function renderTendencias(opts) {
   } else setTimeout(paint, 0);
 }
 
-export { renderTendencias };
+export { renderTendencias, tendRowModel, tendSectionModel, tendSummaryModel };

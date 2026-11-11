@@ -1,4 +1,3 @@
-import { esc } from '../dom-escape.mjs';
 import { getPatients } from '../app-state.mjs';
 import { buildTrendAxisMeta, parseFechaLabToMs } from '../tend-core.mjs';
 import {
@@ -123,61 +122,6 @@ export function eventMarkerTagText(bucket) {
   return shown.join(' · ') + extra;
 }
 
-/**
- * @param {object|null|undefined} entry
- * @param {{ manage?: boolean }} [opts]
- * @returns {string}
- */
-export function buildEventMarkerTagHtml(entry, opts) {
-  const kind = resolveEventualidadKind(entry);
-  const label = abbreviatedEventualidadLabel(entry);
-  const full = String((entry && entry.text) || '').trim();
-  const id = esc((entry && entry.id) || '');
-  const title = full ? ' title="' + esc(full) + '"' : '';
-  const kindClass = 'tend-event-tag tend-event-tag--' + esc(kind);
-  if (!(opts && opts.manage)) {
-    return '<span class="' + kindClass + '"' + title + '>' + esc(label) + '</span>';
-  }
-  return (
-    '<span class="' +
-    kindClass +
-    ' tend-event-tag--manage"' +
-    title +
-    '>' +
-    '<button type="button" class="tend-event-tag__edit" data-tend-ev-edit="' +
-    id +
-    '" aria-label="Editar ' +
-    esc(label) +
-    '">' +
-    esc(label) +
-    '</button>' +
-    '<button type="button" class="tend-event-tag__del" data-tend-ev-delete="' +
-    id +
-    '" aria-label="Eliminar ' +
-    esc(label) +
-    '">×</button></span>'
-  );
-}
-
-/**
- * @param {{ kind?: string, entries?: object[] }|null|undefined} bucket
- * @param {{ manage?: boolean, max?: number }} [opts]
- * @returns {string}
- */
-export function buildEventMarkerTagsHtml(bucket, opts) {
-  const entries = (bucket && bucket.entries) || [];
-  if (!entries.length) return '';
-  const manage = !!(opts && opts.manage);
-  const max = manage ? entries.length : opts && opts.max != null ? opts.max : EVENT_MARKER_TAG_MAX_ENTRIES;
-  const shown = entries.slice(0, max);
-  const extra = entries.length - shown.length;
-  const chips = shown.map(function (entry) {
-    return buildEventMarkerTagHtml(entry, { manage: manage });
-  });
-  if (extra > 0) chips.push('<span class="tend-event-tag tend-event-tag--more">+' + extra + '</span>');
-  return '<div class="tend-event-col-tags">' + chips.join('') + '</div>';
-}
-
 /** @param {string} rgba @param {number} alpha */
 function withAlpha(rgba, alpha) {
   const m = /^rgba\(([^)]+)\)$/.exec(rgba || '');
@@ -287,24 +231,24 @@ export function eventLegendDateLabel(label) {
     .trim();
 }
 
-export function buildTendDetailEventsLegendHtml(markerMap, labels) {
-  if (!markerMap || !markerMap.indices.length) return '';
-  const parts = markerMap.indices.map(function (idx) {
+/** Legend rows under the detail chart: one per marked day, every entry as an editable tag. */
+export function tendEventsLegendModel(markerMap, labels) {
+  if (!markerMap || !markerMap.indices.length) return [];
+  return markerMap.indices.map(function (idx) {
     const bucket = markerMap.byIndex.get(idx);
-    const label = eventLegendDateLabel(labels && labels[idx] != null ? labels[idx] : '');
-    const kind = bucket && bucket.kind ? bucket.kind : 'otro';
-    return (
-      '<div class="tend-event-legend-item" role="listitem" data-kind="' +
-      esc(kind) +
-      '">' +
-      '<span class="tend-event-legend-date">' +
-      esc(label) +
-      '</span>' +
-      buildEventMarkerTagsHtml(bucket, { manage: true }) +
-      '</div>'
-    );
+    return {
+      kind: bucket && bucket.kind ? bucket.kind : 'otro',
+      date: eventLegendDateLabel(labels && labels[idx] != null ? labels[idx] : ''),
+      tags: ((bucket && bucket.entries) || []).map(function (entry) {
+        return {
+          kind: resolveEventualidadKind(entry),
+          label: abbreviatedEventualidadLabel(entry),
+          title: String((entry && entry.text) || '').trim(),
+          id: String((entry && entry.id) || ''),
+        };
+      }),
+    };
   });
-  return '<div class="tend-event-legend" role="list">' + parts.join('') + '</div>';
 }
 
 /** @param {number|null|undefined} index @param {object[]} setsAsc */

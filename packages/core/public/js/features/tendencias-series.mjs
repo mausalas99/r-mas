@@ -7,13 +7,13 @@ import { loadChartJs } from '../vendor-loader.mjs';
 import { openLabDisplayPrefsModal, closeLabDisplayPrefsModal, onLabDisplayPrefsChanged } from './tendencias-lab-prefs.mjs';
 import { TEND_SERIES_CATALOG } from './tendencias-constants.mjs';
 import { tendenciasBridge } from './tendencias-bridge.mjs';
-import { tendStore, trendSparkDomId, esc } from './tendencias-state.mjs';
+import { drawTendHiddenChips } from './tendencias-render-view.jsx';
+import { tendStore, trendSparkDomId } from './tendencias-state.mjs';
 import { destroySparkChartEntry, sparkChartAnim, mountOneTrendSparkChart } from './tendencias-spark.mjs';
 import {
   toTrendAscendingSets,
   tendCatalogSeriesKey,
   tendFindSeriesSpec,
-  tendEyeVisibilitySvg,
   tendRefForSeries,
 } from './tendencias-catalog.mjs';
 
@@ -31,8 +31,6 @@ export {
   buildMergedTrendSeriesCatalog,
   getTendCatalogSpecsForSection,
   getTendSectionLabel,
-  tendEyeVisibilitySvg,
-  tendEyeHideSvg,
 } from './tendencias-catalog.mjs';
 
 var TEND_SECTION_EXPANDED_LS = 'rpc-tend-sections-expanded';
@@ -285,40 +283,19 @@ function tendHiddenChipDescriptors() {
   return list;
 }
 
-function buildTendHiddenChipsHtml() {
-  var desc = tendHiddenChipDescriptors();
-  var svg = tendEyeVisibilitySvg();
-  var chips = [];
-  for (var i = 0; i < desc.length; i++) {
-    var sk = desc[i].sectionKey;
-    var fk = desc[i].fieldKey;
-    var label = esc(tendFindSeriesSpec(sk, fk).cardTitle || fk);
-    chips.push(
-      '<button type="button" class="tend-hidden-chip" data-series-key="' +
-      esc(tendCatalogSeriesKey(sk, fk)) +
-      '" title="Volver a mostrar ' +
-      label +
-      '" aria-label="Mostrar de nuevo ' +
-      label +
-      '">' +
-      '<span class="tend-hidden-chip-label">' +
-      label +
-      '</span>' +
-      '<span class="tend-hidden-chip-eye" aria-hidden="true">' +
-      svg +
-      '</span></button>'
-    );
-  }
-  return chips.join('');
+function tendHiddenChipsModel() {
+  return tendHiddenChipDescriptors().map(function (d) {
+    return {
+      key: tendCatalogSeriesKey(d.sectionKey, d.fieldKey),
+      label: tendFindSeriesSpec(d.sectionKey, d.fieldKey).cardTitle || d.fieldKey,
+    };
+  });
 }
 
 function refreshTendHiddenModalContent() {
   var el = document.getElementById('tend-hidden-modal-chips');
   if (!el) return;
-  var html = buildTendHiddenChipsHtml();
-  el.innerHTML =
-    html ||
-    '<p style="margin:0;font-size:13px;color:var(--text-muted);">No hay analitos ocultos.</p>';
+  drawTendHiddenChips(el, tendHiddenChipsModel());
 }
 
 function openTendHiddenModal() {
@@ -336,58 +313,10 @@ export function closeTendHiddenModal() {
   bd.setAttribute('aria-hidden', 'true');
 }
 
-function buildTendInlineControlsHtml(hiddenCount, opts) {
+/** Toolbar numbers: `on` = only-abnormal filter pressed, counts for both filter buttons. */
+function tendToolbarModel(hiddenCount, opts) {
   opts = opts || {};
-  var on = tendAbnormalOnlyRead();
-  var total = opts.totalCount != null ? opts.totalCount : 0;
-  var oor = opts.abnormalCount != null ? opts.abnormalCount : 0;
-  var searchSvg =
-    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
-  var eyeOffSvg =
-    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 6.1A10 10 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3 3.6M6.5 7.5C3.9 9.3 2.5 12 2.5 12S6 18 12 18c1.4 0 2.7-.3 3.9-.8"/></svg>';
-  function seg(kind, label, count, pressed) {
-    return (
-      '<button type="button" class="tend-seg-btn' +
-      (pressed ? ' is-active' : '') +
-      '" data-tend-filter="' +
-      kind +
-      '" aria-pressed="' +
-      (pressed ? 'true' : 'false') +
-      '">' +
-      label +
-      ' <span class="tend-seg-count">' +
-      count +
-      '</span></button>'
-    );
-  }
-  var ocultosBtn =
-    hiddenCount > 0
-      ? '<button type="button" class="tend-pill tend-ocultos-trigger" title="Ocultos" aria-label="Ocultos ' + hiddenCount + '">' +
-        eyeOffSvg +
-        '<span class="tend-ocultos-label">Ocultos</span> <span class="tend-seg-count">' +
-        hiddenCount +
-        '</span></button>'
-      : '';
-  var gasoBtn = opts.showGasoExtended
-    ? '<button type="button" class="tend-pill tend-gaso-ext-trigger" data-tend-action="gaso-extended">Gasometría extendida</button>'
-    : '';
-  var dynamicTableBtn =
-    '<button type="button" class="tend-pill tend-pill--accent tend-dynamic-table-trigger" title="Combina analitos de distintos estudios en una sola tabla">Tablas dinámicas</button>';
-  return (
-    '<div class="tend-inline-controls tend-toolbar">' +
-    '<label class="tend-search">' +
-    searchSvg +
-    '<input type="search" class="tend-search-input" placeholder="Buscar analito" aria-label="Buscar analito" autocomplete="off"></label>' +
-    '<div class="tend-seg" role="group" aria-label="Filtro de analitos">' +
-    seg('all', 'Todos', total, !on) +
-    seg('abn', 'Fuera de rango', oor, on) +
-    '</div>' +
-    '<span class="tend-head-spacer"></span>' +
-    ocultosBtn +
-    gasoBtn +
-    dynamicTableBtn +
-    '</div>'
-  );
+  return { hidden: hiddenCount, total: opts.total || 0, oor: opts.oor || 0, gaso: !!opts.gaso, on: !!opts.on };
 }
 
 function historyHasGasoForExtended(historyDesc) {
@@ -431,10 +360,10 @@ export {
   tendAbnormalOnlyWrite,
   tendSeriesLatestAbnormal,
   tendHiddenChipDescriptors,
-  buildTendHiddenChipsHtml,
+  tendHiddenChipsModel,
   refreshTendHiddenModalContent,
   openTendHiddenModal,
-  buildTendInlineControlsHtml,
+  tendToolbarModel,
   historyHasGasoForExtended,
   toggleTendAbnormalOnlyFilter,
   tendHideSeriesFromCard,

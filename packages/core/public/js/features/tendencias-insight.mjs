@@ -76,31 +76,31 @@ export function classifyTendDeltaTone(latest, previous, ref) {
  * @param {boolean} [isAbnormal]
  * @param {[number, number]|null|undefined} [ref]
  */
+export function tendChangeModel(latest, previous, ref) {
+  var info = formatTendDelta(latest, previous);
+  if (!info || info.delta === 0) return null;
+  if (info.pct == null || !Number.isFinite(info.pct)) return null;
+  var pctRounded = Math.round(info.pct);
+  if (pctRounded === 0) return null;
+  return {
+    direction: info.direction,
+    tone: classifyTendDeltaTone(latest, previous, ref),
+    jump: isTendJump(latest, previous),
+    text: (pctRounded > 0 ? '+' : '−') + String(Math.abs(pctRounded)) + '%',
+  };
+}
+
 export function buildTendInsightHtml(esc, latest, previous, isAbnormal, ref) {
   void isAbnormal; // range signal lives on .tend-param-value.tend-abnormal and the status cell
-  var info = formatTendDelta(latest, previous);
-  if (!info || info.delta === 0) return '';
-  if (info.pct == null || !Number.isFinite(info.pct)) return '';
-  var pctRounded = Math.round(info.pct);
-  if (pctRounded === 0) return '';
-  var jump = isTendJump(latest, previous);
-  var tone = classifyTendDeltaTone(latest, previous, ref);
-  var deltaText =
-    (pctRounded > 0 ? '+' : '−') + String(Math.abs(pctRounded)) + '%';
+  var m = tendChangeModel(latest, previous, ref);
+  if (!m) return '';
   var cls =
     'tend-insight-delta tend-insight-delta--' +
-    info.direction +
+    m.direction +
     ' tend-insight-delta--' +
-    tone +
-    (jump ? ' tend-insight-delta--jump' : '');
-  return (
-    '<div class="tend-insight">' +
-    '<span class="' +
-    cls +
-    '">' +
-    esc(deltaText) +
-    '</span></div>'
-  );
+    m.tone +
+    (m.jump ? ' tend-insight-delta--jump' : '');
+  return '<div class="tend-insight"><span class="' + cls + '">' + esc(m.text) + '</span></div>';
 }
 
 

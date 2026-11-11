@@ -176,15 +176,6 @@ function copyTendGroupTableText() {
   tendGroupModal.copyTableText();
 }
 
-function tendSectionChartSvg() {
-  return (
-    '<svg class="tend-section-chart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M3 17l6-6 4 4 8-10"/>' +
-    '<path d="M3 12l5-4 4 3 9-7"/>' +
-    '</svg>'
-  );
-}
-
 function destroyTendCardSortables() {
   tendStore._tendCardSortables.forEach(function (s) {
     try {
@@ -579,7 +570,6 @@ export {
   isTendDynamicTableModalOpen,
   copyTendDynamicTablePng,
   copyTendDynamicTableText,
-  tendSectionChartSvg,
   destroyTendCardSortables,
   syncTendCardOrderFromDom,
   ensureTendHiddenModalDelegation,

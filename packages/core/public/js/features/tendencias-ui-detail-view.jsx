@@ -63,6 +63,30 @@ export function ComparePicker({ siblings, current }) {
   );
 }
 
+/** Event tags under the chart, one row per marked day; each tag has its edit and delete buttons. */
+export function EventsLegend({ items }) {
+  if (!items.length) return null;
+  return (
+    <div class="tend-event-legend" role="list">
+      {items.map((it) => (
+        <div class="tend-event-legend-item" role="listitem" data-kind={it.kind}>
+          <span class="tend-event-legend-date">{it.date}</span>
+          {it.tags.length > 0 && (
+            <div class="tend-event-col-tags">
+              {it.tags.map((t) => (
+                <span class={'tend-event-tag tend-event-tag--' + t.kind + ' tend-event-tag--manage'} title={t.title || undefined}>
+                  <button type="button" class="tend-event-tag__edit" data-tend-ev-edit={t.id} aria-label={'Editar ' + t.label}>{t.label}</button>
+                  <button type="button" class="tend-event-tag__del" data-tend-ev-delete={t.id} aria-label={'Eliminar ' + t.label}>×</button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export { Badge, Hero, Range, Readings };
 
 function draw(host, vnode) {
@@ -76,6 +100,10 @@ export function drawTendDetailHeader(hosts, m) {
   draw(hosts.hero, <Hero h={m.hero} />);
   draw(hosts.ref, <Range text={m.range} />);
   draw(hosts.readings, <Readings rows={m.readings} />);
+}
+
+export function drawTendDetailEvents(slot, items) {
+  draw(slot, <EventsLegend items={items} />);
 }
 
 export function drawTendDetailCompare(slot, siblings, current) {
