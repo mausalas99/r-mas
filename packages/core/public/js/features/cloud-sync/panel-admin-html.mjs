@@ -1,6 +1,6 @@
 import { esc } from '../../dom-escape.mjs';
 import { formatBytes } from '../../update-helpers.mjs';
-import { adminTableHtml, fmtRole } from './panel-admin-helpers.mjs';
+import { fmtRole } from './panel-admin-helpers.mjs';
 import { formatCloudRoomLabel } from './room-label.mjs';
 import { resolvePatientCensusTeamId } from '../patients-clinical-filter.mjs';
 import { getCachedLabVerify } from './lab-verify-cache.mjs';
@@ -154,30 +154,14 @@ function monthLabel(key) {
   return name ? name.charAt(0).toUpperCase() + name.slice(1) + ' ' + m[1] : String(key || '');
 }
 
-/** @param {string} label @param {string} value @param {string} meta @param {string} [id] */
-function statCardHtml(label, value, meta, id = '') {
-  return (
-    '<div class="cloud-sync-admin-card"' +
-    (id ? ' data-admin-stat="' + esc(id) + '"' : '') +
-    '><span class="cloud-sync-admin-card-label">' +
-    esc(label) +
-    '</span><span class="cloud-sync-admin-card-value">' +
-    esc(value) +
-    '</span><span class="cloud-sync-admin-card-meta">' +
-    esc(meta) +
-    '</span></div>'
-  );
-}
-
 const ONE_MB = 1024 * 1024;
 
 /**
- * Resumen (board «Admin · Resumen»): four cards, what needs attention, and
- * space per sala. The attention list and the patient card fill in once the
- * salas and the network census load (see renderAdminResumenExtras).
- * @param {object} data
+ * Resumen model (board «Admin · Resumen»): four cards. The attention list and the patient card
+ * fill in once the salas and the network census load (see renderAdminResumenExtras).
+ * @param {object} data @param {Date} [now]
  */
-export function resumenHtml(data) {
+export function resumenModel(data, now = new Date()) {
   const c = data.counts || {};
   const m = data.meters || {};
   const storage = Number(c.storageBytes ?? m.storageBytes ?? 0);
@@ -186,154 +170,78 @@ export function resumenHtml(data) {
   const storageMeta = [soft ? 'aviso ' + formatBytes(soft) : '', hard ? 'tope ' + formatBytes(hard) : '']
     .filter(Boolean)
     .join(' · ');
-  const now = new Date();
   const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  return (
-    adminHeadHtml(
-      'Resumen',
-      esc(monthLabel(thisMonth)) + ' · actualizado ahora',
-      '<button type="button" class="cloud-sync-btn" data-admin-action="refresh-resumen">Actualizar</button>'
-    ) +
-    '<div class="cloud-sync-admin-cards">' +
-    statCardHtml('Salas activas', String(c.rooms ?? 0), 'Hasta ' + (m.maxMembersPerRoom ?? '—') + ' miembros por sala', 'rooms') +
-    statCardHtml('Usuarios', String(c.users ?? 0), String(c.members ?? 0) + (Number(c.members) === 1 ? ' lugar' : ' lugares') + ' en salas', 'users') +
-    statCardHtml('Pacientes', '…', 'En todas las salas', 'patients') +
-    statCardHtml('Espacio usado', formatBytes(storage), storageMeta || 'En Nube', 'storage') +
-    '</div>' +
-    '<div class="cloud-sync-admin-resumen-extras" data-admin-resumen-extras></div>'
-  );
+  return {
+    sub: monthLabel(thisMonth) + ' · actualizado ahora',
+    cards: [
+      { label: 'Salas activas', value: String(c.rooms ?? 0), meta: 'Hasta ' + (m.maxMembersPerRoom ?? '—') + ' miembros por sala', id: 'rooms' },
+      { label: 'Usuarios', value: String(c.users ?? 0), meta: String(c.members ?? 0) + (Number(c.members) === 1 ? ' lugar' : ' lugares') + ' en salas', id: 'users' },
+      { label: 'Pacientes', value: '…', meta: 'En todas las salas', id: 'patients' },
+      { label: 'Espacio usado', value: formatBytes(storage), meta: storageMeta || 'En Nube', id: 'storage' },
+    ],
+  };
 }
 
 /**
- * «Necesita atención» + «Espacio por sala», from what the other sections
+ * «Necesita atención» + «Espacio por sala» model, from what the other sections
  * already loaded (no extra requests). Any part with no data is left out.
  * @param {{ rooms?: Array<{ sala?: string, turnKey?: string, storageBytes?: number }>, patients?: Array<{ sala: string, nombre: string, staleLabs?: boolean, archived?: boolean }> | null }} d
  */
-export function resumenExtrasHtml(d) {
+export function resumenExtrasModel(d) {
   const rooms = Array.isArray(d.rooms) ? d.rooms : [];
   const patients = Array.isArray(d.patients) ? d.patients : null;
-  const items = [];
+  const attention = [];
   if (patients) {
     const unnamed = new Map();
     patients.filter((p) => p.nombre === '(sin nombre)').forEach((p) => unnamed.set(p.sala, (unnamed.get(p.sala) || 0) + 1));
     for (const [sala, n] of unnamed) {
-      items.push([n + (n === 1 ? ' paciente sin nombre en ' : ' pacientes sin nombre en ') + sala, 'Revisar', 'red']);
+      attention.push({ text: n + (n === 1 ? ' paciente sin nombre en ' : ' pacientes sin nombre en ') + sala, cta: 'Revisar', tab: 'red' });
     }
     const stale = patients.filter((p) => p.staleLabs && !p.archived).length;
-    if (stale) items.push([stale + (stale === 1 ? ' paciente activo' : ' pacientes activos') + ' sin labs recientes', 'Ver', 'red']);
+    if (stale) attention.push({ text: stale + (stale === 1 ? ' paciente activo' : ' pacientes activos') + ' sin labs recientes', cta: 'Ver', tab: 'red' });
   }
   rooms
     .filter((r) => Number(r.storageBytes) > ONE_MB)
-    .forEach((r) => items.push([(r.sala || 'Una sala') + ' usa ' + formatBytes(Number(r.storageBytes)), 'Salas', 'salas']));
-  const attention = items.length
-    ? '<section class="cloud-sync-admin-block"><h5 class="cloud-sync-options-label">Necesita atención</h5>' +
-      '<div class="cloud-sync-inset-group">' +
-      items
-        .map(
-          ([text, cta, tab]) =>
-            '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-admin-attention">' +
-            '<span>' + esc(text) + '</span>' +
-            '<button type="button" class="cloud-sync-btn" data-admin-tab="' + esc(tab) + '">' + esc(cta) + '</button></div>'
-        )
-        .join('') +
-      '</div></section>'
-    : '';
+    .forEach((r) => attention.push({ text: (r.sala || 'Una sala') + ' usa ' + formatBytes(Number(r.storageBytes)), cta: 'Salas', tab: 'salas' }));
   const sorted = rooms.slice().sort((a, b) => Number(b.storageBytes || 0) - Number(a.storageBytes || 0));
   const max = Math.max(1, ...sorted.map((r) => Number(r.storageBytes) || 0));
-  const space = sorted.length
-    ? '<section class="cloud-sync-admin-block"><h5 class="cloud-sync-options-label">Espacio por sala</h5>' +
-      '<div class="cloud-sync-inset-group cloud-sync-admin-space">' +
-      sorted
-        .map((r) => {
-          const bytes = Number(r.storageBytes) || 0;
-          const pct = Math.max(2, Math.round((bytes / max) * 100));
-          return (
-            '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-admin-space-row">' +
-            '<span class="cloud-sync-admin-space-name">' + esc(r.sala || '—') + '</span>' +
-            '<span class="cloud-sync-admin-space-track" aria-hidden="true"><span style="width:' + pct + '%"></span></span>' +
-            '<span class="cloud-sync-admin-space-value">' + esc(formatBytes(bytes)) + '</span></div>'
-          );
-        })
-        .join('') +
-      '</div></section>'
-    : '';
-  return attention + space;
-}
-
-/** @param {Record<string, unknown>} row @param {string} currentRoomId */
-function salaCardHtml(row, currentRoomId) {
-  const id = esc(String(row.id));
-  const code = String(row.code || '');
-  const mine = currentRoomId && String(row.id) === currentRoomId;
-  return (
-    '<article class="cloud-sync-admin-sala' +
-    (mine ? ' is-mine' : '') +
-    '" data-admin-sala-card data-sala="' +
-    esc(String(row.sala || '')) +
-    '" data-turn="' +
-    esc(String(row.turnKey || '')) +
-    '">' +
-    '<div class="cloud-sync-admin-sala-top"><h5 class="cloud-sync-admin-sala-name">' +
-    esc(String(row.sala || '—')) +
-    '</h5>' +
-    (mine ? '<span class="cloud-sync-admin-pill">Tu sala</span>' : '') +
-    '<span class="cloud-sync-admin-sala-bytes">' +
-    esc(formatBytes(Number(row.storageBytes) || 0)) +
-    '</span></div>' +
-    '<code class="cloud-sync-admin-sala-code">' +
-    esc(code || '—') +
-    '</code>' +
-    '<p class="cloud-sync-admin-sala-meta">' +
-    esc(String(row.memberCount ?? 0) + (Number(row.memberCount) === 1 ? ' miembro' : ' miembros') + ' · Rev. ' + String(row.revision ?? 0)) +
-    '</p>' +
-    '<div class="cloud-sync-admin-sala-actions">' +
-    '<button type="button" class="cloud-sync-btn" data-admin-action="room-detail" data-room-id="' + id + '">Ver detalle</button>' +
-    '<details class="cloud-sync-admin-more wb-menu">' +
-    '<summary class="cloud-sync-admin-more-btn" aria-label="Más acciones de ' + esc(String(row.sala || 'la sala')) + '">···</summary>' +
-    '<div class="wb-menu-panel">' +
-    '<button type="button" class="wb-menu-item" data-admin-action="rotate-code" data-room-id="' + id + '">Cambiar código</button>' +
-    '<button type="button" class="wb-menu-item" data-admin-action="copy-room-invite" data-room-code="' + esc(code) + '">Copiar invitación</button>' +
-    '<button type="button" class="wb-menu-item wb-menu-item--danger" data-admin-action="purge-room" data-room-id="' + id +
-    '" data-room-code="' + esc(code) + '">Purgar sala…</button>' +
-    '</div></details></div></article>'
-  );
+  return {
+    attention,
+    space: sorted.map((r) => {
+      const bytes = Number(r.storageBytes) || 0;
+      return { name: r.sala || '—', pct: Math.max(2, Math.round((bytes / max) * 100)), value: formatBytes(bytes) };
+    }),
+  };
 }
 
 /**
- * Salas (board «Admin · Salas en tarjetas»): one card per sala, a month
- * picker and a search box (client-side, see applyAdminSalasFilters). Purge
- * sits in the ··· menu, never as a red button on every card.
+ * Salas model (board «Admin · Salas en tarjetas»): one card per sala, a month picker and a search
+ * box (client-side, see applyAdminSalasFilters). Purge sits in the ··· menu, never as a red button on every card.
  * @param {Array<Record<string, unknown>>} rooms
  * @param {string} [currentRoomId] this device's room → «Tu sala»
+ * @param {boolean} [detailHost] a room's detail is open → leave a host for it under the cards
  */
-export function salasTableHtml(rooms, currentRoomId = '') {
+export function salasModel(rooms, currentRoomId = '', detailHost = false) {
   const list = Array.isArray(rooms) ? rooms : [];
   const months = [...new Set(list.map((r) => String(r.turnKey || '')).filter(Boolean))].sort().reverse();
   const latest = months[0] || '';
   const byBytes = list.slice().sort((a, b) => Number(b.storageBytes || 0) - Number(a.storageBytes || 0));
-  const monthOptions = months
-    .map((k) => '<option value="' + esc(k) + '"' + (k === latest ? ' selected' : '') + '>' + esc(monthLabel(k)) + '</option>')
-    .join('');
-  return (
-    adminHeadHtml(
-      'Salas',
-      'Cada sala de guardia tiene su propio espacio por mes.',
-      '<button type="button" class="cloud-sync-btn" data-admin-action="refresh-salas">Actualizar</button>'
-    ) +
-    '<div class="cloud-sync-admin-filters">' +
-    (months.length > 1
-      ? '<label class="cloud-sync-admin-filter"><span>Mes</span><select class="profile-input" data-admin-salas-month>' +
-        monthOptions +
-        '<option value="">Todos</option></select></label>'
-      : '') +
-    '<input type="search" class="profile-input cloud-sync-admin-search" data-admin-salas-search placeholder="Buscar sala" aria-label="Buscar sala" />' +
-    '</div>' +
-    (list.length
-      ? '<div class="cloud-sync-admin-sala-grid" data-admin-sala-grid>' +
-        byBytes.map((row) => salaCardHtml(row, String(currentRoomId || ''))).join('') +
-        '</div>'
-      : '<p class="cloud-sync-hint">Sin salas todavía.</p>')
-  );
+  const mineId = String(currentRoomId || '');
+  return {
+    months: months.map((k) => ({ key: k, label: monthLabel(k), selected: k === latest })),
+    detailHost,
+    cards: byBytes.map((row) => ({
+      id: String(row.id),
+      mine: !!mineId && String(row.id) === mineId,
+      sala: String(row.sala || ''),
+      turn: String(row.turnKey || ''),
+      name: String(row.sala || '—'),
+      bytes: formatBytes(Number(row.storageBytes) || 0),
+      code: String(row.code || ''),
+      meta: String(row.memberCount ?? 0) + (Number(row.memberCount) === 1 ? ' miembro' : ' miembros') + ' · Rev. ' + String(row.revision ?? 0),
+      moreLabel: 'Más acciones de ' + String(row.sala || 'la sala'),
+    })),
+  };
 }
 
 /**
@@ -534,10 +442,10 @@ export function networkCensusRows(census, users) {
   return buildNetworkCensusRows(census, new Date(), users).rows;
 }
 
-/** @param {string} iso */
-function timeAgoLong(iso) {
+/** @param {string} iso @param {number} [nowMs] */
+function timeAgoLong(iso, nowMs = Date.now()) {
   if (!iso) return '';
-  const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  const diffMin = Math.floor((nowMs - new Date(iso).getTime()) / 60000);
   if (diffMin < 1) return 'ahora';
   if (diffMin < 60) return diffMin + ' min';
   const diffH = Math.floor(diffMin / 60);
@@ -546,213 +454,64 @@ function timeAgoLong(iso) {
   return diffD + ' d' + (diffD === 1 ? 'ía' : 'ías');
 }
 
-/** Estado cell: colored dot + age of last team activity (<24 h ok, <7 d quiet, 7 d+/none inactive). */
-function estadoCellHtml(row) {
-  if (row.archived) return '<span class="cloud-sync-admin-dot is-off"></span>Archivado';
-  if (!row.lastUpdatedAt) return '<span class="cloud-sync-admin-dot is-bad"></span>Inactivo · nunca';
-  const tone = row.inactive ? 'bad' : Date.now() - new Date(row.lastUpdatedAt).getTime() < 86400000 ? 'ok' : 'warn';
-  const label = tone === 'ok' ? 'Activo' : tone === 'warn' ? 'Sin cambios' : 'Inactivo';
-  return '<span class="cloud-sync-admin-dot is-' + tone + '"></span>' + label + ' · ' + timeAgoLong(row.lastUpdatedAt);
-}
-
-/** «Labs · hace 3 días» over who did it — team clinical work only (see lastTeamActivity). */
-function activityCellHtml(row) {
-  if (!row.lastUpdatedAt) return '<span class="cloud-sync-hint">Nadie del equipo</span>';
-  const who = row.lastActor ? esc(row.lastActor) : 'desconocido';
-  return esc(row.lastKind) + ' · hace ' + timeAgoLong(row.lastUpdatedAt) + '<br><span class="cloud-sync-hint">' + who + '</span>';
-}
-
-/** "Últ. labs" cell — highlighted when isStaleLabsRow flagged the patient as a probable discharge. */
-function labActivityCellHtml(row) {
-  if (!row.lastLabAt) {
-    return row.staleLabs
-      ? '<span class="cloud-sync-admin-stale-labs">Nunca</span>'
-      : '<span class="cloud-sync-hint">Sin datos</span>';
+/**
+ * Text for the Estado / Últ. actividad / Últ. labs cells. Estado: colored dot + age of last team
+ * activity (<24 h ok, <7 d quiet, 7 d+/none inactive). Últ. actividad: team clinical work only
+ * (see lastTeamActivity). Últ. labs: highlighted when isStaleLabsRow flagged a probable discharge.
+ */
+function censusCells(row, nowMs) {
+  let estado;
+  if (row.archived) estado = { tone: 'off', text: 'Archivado' };
+  else if (!row.lastUpdatedAt) estado = { tone: 'bad', text: 'Inactivo · nunca' };
+  else {
+    const tone = row.inactive ? 'bad' : nowMs - new Date(row.lastUpdatedAt).getTime() < 86400000 ? 'ok' : 'warn';
+    const label = tone === 'ok' ? 'Activo' : tone === 'warn' ? 'Sin cambios' : 'Inactivo';
+    estado = { tone, text: label + ' · ' + timeAgoLong(row.lastUpdatedAt, nowMs) };
   }
-  const text = 'hace ' + timeAgoLong(row.lastLabAt);
-  return row.staleLabs ? '<span class="cloud-sync-admin-stale-labs">' + text + '</span>' : text;
+  const activity = row.lastUpdatedAt
+    ? { text: row.lastKind + ' · hace ' + timeAgoLong(row.lastUpdatedAt, nowMs), who: row.lastActor || 'desconocido' }
+    : null;
+  const labs = !row.lastLabAt
+    ? { kind: row.staleLabs ? 'never' : 'nodata' }
+    : { kind: row.staleLabs ? 'stale' : 'plain', text: 'hace ' + timeAgoLong(row.lastLabAt, nowMs) };
+  return { estado, activity, labs };
 }
 
-function networkCensusCols() {
-  return [
-    {
-      label: '',
-      headHtml: '<input type="checkbox" data-network-select-all aria-label="Seleccionar todos los visibles" />',
-      cell: (row) =>
-        '<input type="checkbox" data-network-select data-room-id="' +
-        esc(String(row.roomId || '')) +
-        '" data-patient-id="' +
-        esc(String(row.patientId || '')) +
-        '" data-registro="' +
-        esc(String(row.registro || '')) +
-        '" data-archived="' +
-        (row.archived ? '1' : '0') +
-        '" aria-label="Seleccionar paciente" />',
-    },
-    { label: 'Sala', key: 'sala' },
-    { label: 'Nombre', key: 'nombre' },
-    { label: 'Cama', key: 'cama' },
-    { label: 'Cuarto', key: 'cuarto' },
-    { label: 'Servicio', key: 'servicio' },
-    { label: 'Estado', cell: estadoCellHtml },
-    { label: 'Últ. actividad del equipo', cell: activityCellHtml },
-    { label: 'Últ. labs', cell: labActivityCellHtml },
-    {
-      label: 'Acciones',
-      cell: (row) =>
-        '<div class="cloud-sync-admin-row-actions">' +
-        '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" ' +
-        'data-admin-action="switch-network-room" data-room-code="' +
-        esc(String(row.code || '')) +
-        '" data-patient-id="' +
-        esc(String(row.patientId || '')) +
-        '">Abrir expediente</button>' +
-        '<details class="cloud-sync-admin-equipos-edit wb-menu">' +
-        '<summary class="cloud-sync-admin-equipos-edit-summary" title="Más acciones">⋯</summary>' +
-        '<div class="wb-menu-panel">' +
-        '<button type="button" class="wb-menu-item" ' +
-        'data-admin-action="archive-network-patient" data-room-id="' +
-        esc(String(row.roomId || '')) +
-        '" data-patient-id="' +
-        esc(String(row.patientId || '')) +
-        '" data-archived="' +
-        (row.archived ? '1' : '0') +
-        '">' +
-        (row.archived ? 'Restaurar' : 'Archivar') +
-        '</button>' +
-        '<button type="button" class="wb-menu-item" ' +
-        'data-admin-action="delete-network-patient" data-room-id="' +
-        esc(String(row.roomId || '')) +
-        '" data-patient-id="' +
-        esc(String(row.patientId || '')) +
-        '" data-registro="' +
-        esc(String(row.registro || '')) +
-        '">Eliminar</button>' +
-        '</div></details>' +
-        '</div>',
-    },
-  ];
-}
 
-/** Salas the census could not read, grouped by reason: «Sin sala activa este mes: Sala 2, Sala E». */
-function networkCensusErrorsHtml(errors) {
-  if (!errors.length) return '';
+/**
+ * Cross-area patient list ("Red" tab) model — one row per patient, every sala's
+ * current room, drawn by AdminRed. Rows carry the patient's room code so a click can switch
+ * this device to that area (`data-admin-action="switch-network-room"`), plus
+ * `data-sala`/`data-team-id`/`data-archived` for the client-side filters
+ * (`applyNetworkCensusFilters` — no re-fetch on filter change).
+ * @param {Array<{ sala: string, roomId?: string, code?: string, entries?: object[], clinicalOps?: { teams?: object[], patient_team_assignment?: object[] }|null, entityVersions?: Record<string, { updatedAt: string, actorId: string }>|null, error?: string }>} census
+ * @param {Array<{ user_id?: string, clinical_name?: string, username?: string }>} [users] Clinical roster, for labeling "Últ. actividad" by actor id.
+ * @param {number} [nowMs]
+ */
+export function networkCensusModel(census, users, nowMs = Date.now()) {
+  const { rows, errors, teamOptions } = buildNetworkCensusRows(census, new Date(nowMs), users);
   const byReason = new Map();
   for (const a of errors) {
     const reason = String(a.error || 'Sin acceso').replace(/\.$/, '');
     byReason.set(reason, (byReason.get(reason) || []).concat(a.sala));
   }
-  return (
-    '<p class="cloud-sync-hint">' +
-    [...byReason].map(([reason, salas]) => esc(reason + ': ' + salas.join(', ') + '.')).join(' ') +
-    '</p>'
-  );
-}
-
-function networkCensusFiltersHtml(census, teamOptions) {
-  const salaOptionsHtml = (Array.isArray(census) ? census : [])
-    .filter((a) => !a.error)
-    .map((a) => '<option value="' + esc(a.sala) + '">' + esc(a.sala) + '</option>')
-    .join('');
-  const teamOptionsHtml = Array.from(teamOptions.entries())
-    .sort((a, b) => a[1].localeCompare(b[1], 'es'))
-    .map(([id, label]) => '<option value="' + esc(id) + '">' + esc(label) + '</option>')
-    .join('');
-
-  return (
-    '<div class="cloud-sync-admin-filters cloud-sync-admin-red-filters">' +
-    '<select class="profile-input" data-network-filter="sala" aria-label="Filtrar por área">' +
-    '<option value="">Todas las áreas</option>' +
-    salaOptionsHtml +
-    '</select>' +
-    '<select class="profile-input" data-network-filter="team" aria-label="Filtrar por equipo">' +
-    '<option value="">Todos los equipos</option>' +
-    '<option value="' + NO_TEAM_FILTER_VALUE + '">Sin equipo</option>' +
-    teamOptionsHtml +
-    '</select>' +
-    '<select class="profile-input" data-network-filter="activity" aria-label="Filtrar por estado">' +
-    '<option value="">Todos</option>' +
-    '<option value="active">Activos</option>' +
-    '<option value="inactive">Inactivos (7+ días)</option>' +
-    '<option value="archived">Archivados</option>' +
-    '</select>' +
-    '<select class="profile-input" data-network-filter="labs" aria-label="Filtrar por labs">' +
-    '<option value="">Todos</option>' +
-    '<option value="stale">Más de 6 días</option>' +
-    '<option value="fresh">Menos de 6 días</option>' +
-    '</select>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-admin-filters-end" ' +
-    'data-admin-action="verify-red-labs" title="Consulta el repositorio de labs por cada paciente visible">' +
-    'Verificar labs</button>' +
-    '</div>'
-  );
-}
-
-/**
- * Cross-area patient list ("Red" tab) — one row per patient, every sala's
- * current room. Rows carry the patient's room code so a click can switch
- * this device to that area (`data-admin-action="switch-network-room"`), plus
- * `data-sala`/`data-team-id`/`data-archived` for the client-side filters
- * (`applyNetworkCensusFilters` in panel-admin.mjs — no re-fetch on filter change).
- * @param {Array<{ sala: string, roomId?: string, code?: string, entries?: object[], clinicalOps?: { teams?: object[], patient_team_assignment?: object[] }|null, entityVersions?: Record<string, { updatedAt: string, actorId: string }>|null, error?: string }>} census
- * @param {Array<{ user_id?: string, clinical_name?: string, username?: string }>} [users] Clinical roster, for labeling "Últ. actividad" by actor id.
- */
-export function redCensusHtml(census, users) {
-  const { rows, errors, teamOptions } = buildNetworkCensusRows(census, new Date(), users);
-  return (
-    adminHeadHtml(
-      'Pacientes',
-      'Todos los pacientes de la red, con su sala actual.',
-      '<input type="search" class="profile-input cloud-sync-admin-search" data-network-filter="q" placeholder="Buscar" aria-label="Buscar paciente o registro" />' +
-        '<button type="button" class="cloud-sync-btn" data-admin-action="refresh-red">Actualizar</button>'
-    ) +
-    networkCensusFiltersHtml(census, teamOptions) +
-    unnamedBannerHtml(rows) +
-    networkCensusErrorsHtml(errors) +
-    adminTableHtml(rows, networkCensusCols(), {
-      emptyHtml: '<p class="cloud-sync-hint">Sin pacientes en ninguna área.</p>',
-      rowAttrs: (row) =>
-        'data-sala="' +
-        esc(row.sala) +
-        '" data-team-id="' +
-        esc(row.teamId || NO_TEAM_FILTER_VALUE) +
-        '" data-archived="' +
-        (row.archived ? '1' : '0') +
-        '" data-inactive="' +
-        (row.inactive ? '1' : '0') +
-        '" data-no-labs="' +
-        (row.lastLabAt ? '0' : '1') +
-        '" data-search="' +
-        esc((row.nombre + ' ' + row.registro).toLowerCase()) +
-        '"' +
-        (row.staleLabs ? ' class="cloud-sync-admin-row--stale-labs"' : ''),
-    }) +
-    // Board: the action bar appears only after rows are picked.
-    '<div class="cloud-sync-admin-bulkbar" data-admin-red-bulk-actions hidden>' +
-    '<span class="cloud-sync-admin-equipos-bulk-count" data-admin-red-bulk-count></span>' +
-    '<button type="button" class="cloud-sync-btn" data-admin-action="bulk-archive-network">Archivar</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger" data-admin-action="bulk-delete-network">Eliminar…</button>' +
-    '<button type="button" class="cloud-sync-admin-bulkbar-close" data-admin-action="clear-network-selection" aria-label="Quitar selección">×</button>' +
-    '</div>'
-  );
-}
-
-/** «4 registros sin nombre en Área A» with a button that filters to them. @param {Array<{ sala: string, nombre: string }>} rows */
-function unnamedBannerHtml(rows) {
   const unnamed = rows.filter((r) => r.nombre === '(sin nombre)');
-  if (!unnamed.length) return '';
-  const salas = [...new Set(unnamed.map((r) => r.sala))];
   const n = unnamed.length;
-  return (
-    '<div class="cloud-sync-admin-banner" role="status">' +
-    '<span><b>' +
-    esc(n + (n === 1 ? ' registro sin nombre' : ' registros sin nombre') + ' en ' + salas.join(', ') + '.') +
-    '</b> Parecen vacíos o repetidos.</span>' +
-    '<button type="button" class="cloud-sync-btn" data-admin-action="filter-unnamed">Revisar ' +
-    (n === 1 ? 'el registro' : 'los ' + n) +
-    '</button></div>'
-  );
+  return {
+    noTeamValue: NO_TEAM_FILTER_VALUE,
+    salas: (Array.isArray(census) ? census : []).filter((a) => !a.error).map((a) => String(a.sala)),
+    teams: Array.from(teamOptions.entries()).sort((a, b) => a[1].localeCompare(b[1], 'es')),
+    banner: n
+      ? {
+          text: n + (n === 1 ? ' registro sin nombre' : ' registros sin nombre') + ' en ' + [...new Set(unnamed.map((r) => r.sala))].join(', ') + '.',
+          button: 'Revisar ' + (n === 1 ? 'el registro' : 'los ' + n),
+        }
+      : null,
+    errorText: [...byReason].map(([reason, salas]) => reason + ': ' + salas.join(', ') + '.').join(' '),
+    rows: rows.map((row) => ({ ...row, ...censusCells(row, nowMs) })),
+  };
 }
+
 
 /** Estado filter: active / archived / inactive (no team activity 7+ days) — read off row attrs. */
 function matchesActivityFilter(tr, activity) {
@@ -916,48 +675,23 @@ export function updateNetworkBulkBarVisibility(root) {
   if (countEl) countEl.textContent = count ? count + ' seleccionado' + (count === 1 ? '' : 's') : '';
 }
 
-export function roomDetailHostHtml() {
-  return '<div class="cloud-sync-admin-room-detail" data-admin-room-detail></div>';
-}
-
-/** @param {object} data */
-export function roomDetailHtml(data) {
+/** Room detail model, drawn by AdminRoomDetail. @param {object} data */
+export function roomDetailModel(data) {
   const room = data.room || {};
   const members = data.members || [];
-  const memberRows = members.map((m) => ({
-    username: '@' + (m.username || ''),
-    displayName: m.displayName || '',
-    role: fmtRole(m.role),
-    joinedAt: m.joinedAt || '',
-  }));
-  return (
-    '<p class="cloud-sync-room-title">' +
-    esc(formatCloudRoomLabel(room)) +
-    '</p>' +
-    '<dl class="cloud-sync-room-meta">' +
-    '<div><dt>ID</dt><dd>' +
-    esc(String(room.id)) +
-    '</dd></div>' +
-    '<div><dt>Mes</dt><dd>' +
-    esc(String(room.turnKey || '—')) +
-    '</dd></div>' +
-    '<div><dt>Revisión</dt><dd>' +
-    esc(String(room.revision ?? 0)) +
-    '</dd></div>' +
-    '<div><dt>Storage</dt><dd>' +
-    esc(formatBytes(Number(room.storageBytes) || 0)) +
-    '</dd></div></dl>' +
-    '<p class="cloud-sync-hint">Miembros (' +
-    esc(String(members.length)) +
-    ')</p>' +
-    adminTableHtml(memberRows, [
-      { label: 'Usuario', key: 'username' },
-      { label: 'Nombre', key: 'displayName' },
-      { label: 'Rol', key: 'role' },
-      { label: 'Unido', key: 'joinedAt' },
-    ]) +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-action="close-room-detail">Cerrar detalle</button>'
-  );
+  return {
+    title: formatCloudRoomLabel(room),
+    id: String(room.id),
+    month: String(room.turnKey || '—'),
+    revision: String(room.revision ?? 0),
+    storage: formatBytes(Number(room.storageBytes) || 0),
+    members: members.map((m) => ({
+      username: '@' + (m.username || ''),
+      displayName: m.displayName || '',
+      role: fmtRole(m.role),
+      joinedAt: m.joinedAt || '',
+    })),
+  };
 }
 
 /** @deprecated Usuarios merged into Equipos — kept for tests/import stability. */
@@ -1080,37 +814,14 @@ function hourGroup(d, now) {
   return day + ' · ' + d.getHours() + ' h';
 }
 
-/** @param {Record<string, unknown>} m @param {string} who */
-function mutationEventHtml(m, who) {
-  const when = new Date(String(m.createdAt || ''));
-  const time = Number.isNaN(when.getTime()) ? String(m.createdAt || '') : when.toLocaleTimeString('es-MX', { hour12: false });
-  const meta = ['Rev. ' + String(m.revision ?? '—'), kb(m.totalBytes), String(m.maxOpPath || '')].filter(Boolean).join(' · ');
-  const ops = String(m.opsJson || '') + (m.opsJsonTruncated ? '…' : '');
-  return (
-    '<details class="cloud-sync-admin-event">' +
-    '<summary><span class="cloud-sync-avatar" aria-hidden="true">' + esc(initials(who)) + '</span>' +
-    '<span class="cloud-sync-options-entry-text"><span><b>' + esc(who) + '</b> ' + esc(mutationVerb(m)) + '</span>' +
-    '<span class="cloud-sync-admin-event-meta">' + esc(meta) + '</span></span>' +
-    '<span class="cloud-sync-admin-event-time">' + esc(time) + '</span></summary>' +
-    '<dl class="cloud-sync-admin-event-kv">' +
-    '<dt>Qué cambió</dt><dd>' + esc(String(m.maxOpPath || '—')) + '</dd>' +
-    '<dt>Operaciones</dt><dd>' + esc(String(m.opCount ?? '—')) + '</dd>' +
-    '<dt>Equipo</dt><dd>' + esc(String(m.clientMutationId || '—')) + '</dd>' +
-    '<dt>ID de usuario</dt><dd>' + esc(String(m.actorId || '—')) + '</dd>' +
-    '</dl>' +
-    '<code class="cloud-sync-admin-ops" tabindex="0">' + esc(ops) + '</code>' +
-    '</details>'
-  );
-}
-
 /**
- * Registro: last-hour count, typical size and active people, then one line
- * per change with a person's name (not a user ID), grouped by hour.
+ * Registro model: last-hour count, typical size and active people, then one line
+ * per change with a person's name (not a user ID), grouped by hour. Drawn by AdminMutations.
  * @param {Array<Record<string, unknown>>} mutations
  * @param {Array<{ user_id?: string, clinical_name?: string, username?: string }>} [users]
  * @param {number} [nowMs]
  */
-export function mutationsListHtml(mutations, users = [], nowMs = Date.now()) {
+export function mutationsModel(mutations, users = [], nowMs = Date.now()) {
   const list = Array.isArray(mutations) ? mutations : [];
   const byId = new Map((users || []).filter((u) => u && u.user_id).map((u) => [String(u.user_id), u]));
   const who = (id) => {
@@ -1122,23 +833,40 @@ export function mutationsListHtml(mutations, users = [], nowMs = Date.now()) {
   const sizes = list.map((m) => Number(m.totalBytes)).filter(Number.isFinite).sort((a, b) => a - b);
   const typical = sizes.length ? kb(sizes[Math.floor(sizes.length / 2)]) : '—';
   const people = new Set(list.map((m) => String(m.actorId || '')).filter(Boolean)).size;
-  let html =
-    '<div class="cloud-sync-admin-cards">' +
-    statCardHtml('Última hora', lastHour + (lastHour === 1 ? ' cambio' : ' cambios'), 'En esta sala') +
-    statCardHtml('Tamaño típico', typical, 'Por cambio') +
-    statCardHtml('Personas activas', String(people), 'En los últimos ' + list.length) +
-    '</div><div class="cloud-sync-inset-group cloud-sync-admin-events">';
+  const items = [];
   let group = '';
   for (const m of list) {
     const d = new Date(String(m.createdAt || ''));
     const g = Number.isNaN(d.getTime()) ? '' : hourGroup(d, now);
     if (g && g !== group) {
       group = g;
-      html += '<div class="cloud-sync-admin-event-group">' + esc(g) + '</div>';
+      items.push({ group: g });
     }
-    html += mutationEventHtml(m, who(m.actorId));
+    const name = who(m.actorId);
+    const time = Number.isNaN(d.getTime()) ? String(m.createdAt || '') : d.toLocaleTimeString('es-MX', { hour12: false });
+    items.push({
+      event: {
+        initials: initials(name),
+        who: name,
+        verb: mutationVerb(m),
+        meta: ['Rev. ' + String(m.revision ?? '—'), kb(m.totalBytes), String(m.maxOpPath || '')].filter(Boolean).join(' · '),
+        time,
+        path: String(m.maxOpPath || '—'),
+        opCount: String(m.opCount ?? '—'),
+        mutationId: String(m.clientMutationId || '—'),
+        actorId: String(m.actorId || '—'),
+        ops: String(m.opsJson || '') + (m.opsJsonTruncated ? '…' : ''),
+      },
+    });
   }
-  return html + '</div>';
+  return {
+    cards: [
+      { label: 'Última hora', value: lastHour + (lastHour === 1 ? ' cambio' : ' cambios'), meta: 'En esta sala' },
+      { label: 'Tamaño típico', value: typical, meta: 'Por cambio' },
+      { label: 'Personas activas', value: String(people), meta: 'En los últimos ' + list.length },
+    ],
+    items,
+  };
 }
 
 export function peligroHtml() {

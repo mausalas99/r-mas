@@ -5,16 +5,23 @@ import {
   applyCachedLabVerifications,
   applyNetworkCensusFilters,
   updateNetworkBulkBarVisibility,
-  mutationsListHtml,
+  mutationsModel,
+  networkCensusModel,
   networkCensusRows,
-  redCensusHtml,
-  resumenExtrasHtml,
-  resumenHtml,
-  roomDetailHtml,
-  salasTableHtml,
-  roomDetailHostHtml,
+  resumenExtrasModel,
+  resumenModel,
+  roomDetailModel,
+  salasModel,
   userActionsHtml,
 } from './panel-admin-html.mjs';
+import {
+  drawAdminMutations,
+  drawAdminRed,
+  drawAdminResumen,
+  drawAdminResumenExtras,
+  drawAdminRoomDetail,
+  drawAdminSalas,
+} from './panel-admin-view.jsx';
 import { getCloudSyncRoomId } from './settings.mjs';
 
 /** What each section loaded, so the Resumen can reuse it without refetching. @param {HTMLElement} root */
@@ -55,7 +62,7 @@ async function nubeAccountsForNames(root, getApi) {
 export function renderAdminResumenExtras(root) {
   const d = adminData(root);
   const extras = root.querySelector('[data-admin-resumen-extras]');
-  if (extras) extras.innerHTML = resumenExtrasHtml(d);
+  if (extras) drawAdminResumenExtras(extras, resumenExtrasModel(d));
   const card = root.querySelector('[data-admin-stat="patients"] .cloud-sync-admin-card-value');
   if (card && d.patients) card.textContent = String(d.patients.filter((p) => !p.archived).length);
 }
@@ -75,7 +82,7 @@ export async function loadAdminResumen(root, getApi) {
   if (!el) return;
   try {
     const data = await getApi().adminOverview();
-    el.innerHTML = resumenHtml(data);
+    drawAdminResumen(el, resumenModel(data));
     setAdminCount(root, 'equipos', Number(data?.counts?.users ?? 0));
     renderAdminResumenExtras(root);
   } catch (err) {
@@ -96,8 +103,7 @@ export async function loadAdminSalas(root, getApi, ctx) {
     ctx.roomsCache.length = 0;
     ctx.roomsCache.push(...(data.rooms || []));
     ctx.updateMutacionesRoomSelect();
-    el.innerHTML =
-      salasTableHtml(ctx.roomsCache, getCloudSyncRoomId()) + (ctx.openRoomDetailId ? roomDetailHostHtml() : '');
+    drawAdminSalas(el, salasModel(ctx.roomsCache, getCloudSyncRoomId(), !!ctx.openRoomDetailId));
     applyAdminSalasFilters(root);
     const months = ctx.roomsCache.map((r) => String(r.turnKey || '')).sort();
     const latest = months[months.length - 1] || '';
@@ -121,7 +127,7 @@ export async function loadAdminRoomDetail(root, getApi, roomId) {
   el.innerHTML = '<p class="cloud-sync-hint">Cargando detalle…</p>';
   try {
     const data = await getApi().adminRoom(roomId);
-    el.innerHTML = roomDetailHtml(data);
+    drawAdminRoomDetail(el, roomDetailModel(data));
   } catch (err) {
     el.innerHTML = adminErrorHtml(err?.data?.message || err?.message || 'No se pudo cargar el detalle.');
   }
@@ -141,7 +147,7 @@ export async function loadAdminNetworkCensus(root, deps) {
   try {
     const census = await fetchNetworkCensus(deps.getApi());
     const scope = clinicalSessionContext.scopeContext || getClinicalScopeContextForEvaluate();
-    el.innerHTML = redCensusHtml(census, scope.users || []);
+    drawAdminRed(el, networkCensusModel(census, scope.users || []));
     const rows = networkCensusRows(census, scope.users || []);
     adminData(root).patients = rows;
     setAdminCount(root, 'red', rows.filter((r) => !r.archived).length);
@@ -270,7 +276,7 @@ export async function loadAdminMutations(root, getApi, toast) {
       list.innerHTML = '<p class="cloud-sync-hint">Sin cambios registrados en esta sala.</p>';
       return;
     }
-    list.innerHTML = mutationsListHtml(mutations, await nubeAccountsForNames(root, getApi));
+    drawAdminMutations(list, mutationsModel(mutations, await nubeAccountsForNames(root, getApi)));
   } catch (err) {
     list.innerHTML = adminErrorHtml(err?.data?.message || err?.message || 'No se pudo cargar el registro.');
   }
