@@ -69,13 +69,6 @@ export function classifyTendDeltaTone(latest, previous, ref) {
   return 'neutral';
 }
 
-/**
- * @param {(s: string) => string} esc
- * @param {unknown} latest
- * @param {unknown} previous
- * @param {boolean} [isAbnormal]
- * @param {[number, number]|null|undefined} [ref]
- */
 export function tendChangeModel(latest, previous, ref) {
   var info = formatTendDelta(latest, previous);
   if (!info || info.delta === 0) return null;
@@ -90,20 +83,6 @@ export function tendChangeModel(latest, previous, ref) {
   };
 }
 
-export function buildTendInsightHtml(esc, latest, previous, isAbnormal, ref) {
-  void isAbnormal; // range signal lives on .tend-param-value.tend-abnormal and the status cell
-  var m = tendChangeModel(latest, previous, ref);
-  if (!m) return '';
-  var cls =
-    'tend-insight-delta tend-insight-delta--' +
-    m.direction +
-    ' tend-insight-delta--' +
-    m.tone +
-    (m.jump ? ' tend-insight-delta--jump' : '');
-  return '<div class="tend-insight"><span class="' + cls + '">' + esc(m.text) + '</span></div>';
-}
-
-
 /** Status word + arrow vs reference range (never colour alone). */
 export function tendStatusInfo(latest, ref) {
   if (latest == null || !ref || ref.length < 2) return { kind: 'none', text: '—' };
@@ -114,22 +93,9 @@ export function tendStatusInfo(latest, ref) {
   return { kind: 'ok', text: 'En rango' };
 }
 
-export function buildTendStatusHtml(esc, latest, ref) {
-  var st = tendStatusInfo(latest, ref);
-  return '<span class="tend-status tend-status--' + st.kind + '">' + esc(st.text) + '</span>';
-}
-
 export function tendRangeText(ref) {
   if (!ref || ref.length < 2) return '—';
   return String(ref[0]) + ' – ' + String(ref[1]);
-}
-
-/** Cambio cell: % delta with tone class, or a dash. */
-export function buildTendChangeHtml(esc, latest, previous, isAbnormal, ref) {
-  return (
-    buildTendInsightHtml(esc, latest, previous, isAbnormal, ref) ||
-    '<span class="tend-none">—</span>'
-  );
 }
 
 /** Align compare values onto primary chart labels (string equality). */

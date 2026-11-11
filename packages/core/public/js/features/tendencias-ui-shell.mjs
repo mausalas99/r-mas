@@ -8,6 +8,8 @@ import { loadChartJs } from '../vendor-loader.mjs';
 import { isAbgAnalysisHidden } from './tendencias-lab-prefs.mjs';
 import { aid, tendStore, esc } from './tendencias-state.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
+import { updateTendGrid } from './tendencias-render-view.jsx';
+import { gridWithRowOrder } from './tendencias-grid-model.mjs';
 import {
   tendParsedHistoryDesc,
   buildMergedTrendSeriesCatalog,
@@ -197,7 +199,13 @@ function syncTendCardOrderFromDom(sectionKey) {
     var k = el.getAttribute('data-series-key');
     if (k) order.push(k);
   });
-  if (order.length) writeTendCardOrder(aid(), sectionKey, order);
+  if (order.length) {
+    writeTendCardOrder(aid(), sectionKey, order);
+    // The dragged rows are already in this order on screen: tell the grid model, so a later redraw keeps it.
+    updateTendGrid(function (model) {
+      return gridWithRowOrder(model, sectionKey, order);
+    });
+  }
 }
 
 var _tendPointerDidDrag = false;

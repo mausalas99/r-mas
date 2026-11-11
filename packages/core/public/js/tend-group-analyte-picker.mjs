@@ -1,6 +1,6 @@
 import { crossSectionEligibleSpecs } from './tend-group-modal-open.mjs';
 import { writeGroupExtraFields, seriesColorKey } from './tend-prefs.mjs';
-import { drawPickerBar, drawSectionList, drawFieldList } from './tend-group-analyte-picker-view.jsx';
+import { drawAnalytePicker } from './tend-group-analyte-picker-view.jsx';
 
 function persistExtras(state) {
   writeGroupExtraFields(
@@ -26,11 +26,6 @@ function removeExtraSpec(ctx, rowKeyStr) {
   ctx.renderTable(ctx.sectionKey);
 }
 
-function closeDropdown(slot) {
-  var dd = slot.querySelector('.tend-analyte-picker-dropdown');
-  if (dd) dd.remove();
-}
-
 /** Agrupa los analitos elegibles por estudio, en el orden en que aparecen en la historia. */
 function groupOptionsBySection(deps, options) {
   var order = [];
@@ -51,94 +46,10 @@ function groupOptionsBySection(deps, options) {
   });
 }
 
-function openDropdown(ctx) {
-  var slot = ctx.slot;
-  closeDropdown(slot);
-  var groups = groupOptionsBySection(ctx.deps, crossSectionEligibleSpecs(ctx.deps, ctx.state));
-  var activeGroup = null;
-  var dd = document.createElement('div');
-  dd.className = 'tend-analyte-picker-dropdown';
-  dd.innerHTML =
-    '<input type="text" class="tend-analyte-picker-input" placeholder="Buscar estudio…" autocomplete="off">' +
-    '<div class="tend-analyte-picker-list"></div>';
-  var bar = slot.querySelector('.tend-analyte-picker-bar') || slot;
-  bar.appendChild(dd);
-  var input = dd.querySelector('.tend-analyte-picker-input');
-  var list = dd.querySelector('.tend-analyte-picker-list');
-
-  function renderSectionList(filter) {
-    input.placeholder = 'Buscar estudio…';
-    var q = String(filter || '').trim().toLowerCase();
-    var filtered = !q
-      ? groups
-      : groups.filter(function (g) {
-          return g.label.toLowerCase().indexOf(q) >= 0;
-        });
-    drawSectionList(list, {
-      groups: filtered,
-      onPick: function (ev, sk) {
-        ev.stopPropagation();
-        activeGroup = filtered.filter(function (g) {
-          return g.sectionKey === sk;
-        })[0];
-        if (!activeGroup) return;
-        input.value = '';
-        renderFieldList('');
-        input.focus();
-      },
-    });
-  }
-
-  function renderFieldList(filter) {
-    input.placeholder = 'Buscar analito…';
-    var q = String(filter || '').trim().toLowerCase();
-    var specs = activeGroup.specs;
-    var filtered = !q
-      ? specs
-      : specs.filter(function (sp) {
-          return (sp.cardTitle || sp.fieldKey).toLowerCase().indexOf(q) >= 0;
-        });
-    drawFieldList(list, {
-      label: activeGroup.label,
-      fields: filtered.map(function (sp) {
-        return { fieldKey: sp.fieldKey, title: sp.cardTitle || sp.fieldKey };
-      }),
-      onBack: function (ev) {
-        ev.stopPropagation();
-        activeGroup = null;
-        input.value = '';
-        renderSectionList('');
-        input.focus();
-      },
-      onPick: function (ev, fk) {
-        ev.stopPropagation();
-        var spec = activeGroup.specs.filter(function (sp) {
-          return sp.fieldKey === fk;
-        })[0];
-        if (spec) addExtraSpec(ctx, spec);
-      },
-    });
-  }
-
-  renderSectionList('');
-  input.addEventListener('input', function () {
-    if (activeGroup) renderFieldList(input.value);
-    else renderSectionList(input.value);
-  });
-  input.focus();
-
-  function onOutsideClick(ev) {
-    if (dd.contains(ev.target) || ev.target === ctx.addBtn) return;
-    closeDropdown(slot);
-    document.removeEventListener('mousedown', onOutsideClick);
-  }
-  document.addEventListener('mousedown', onOutsideClick);
-}
-
 export function renderAnalytePickerBar(ctx) {
   var slot = ctx.slot;
   if (!slot) return;
-  drawPickerBar(slot, {
+  drawAnalytePicker(slot, {
     chips: ctx.state.tableExtraSpecs.map(function (sp) {
       return {
         key: seriesColorKey(sp.sectionKey, sp.fieldKey),
@@ -146,18 +57,25 @@ export function renderAnalytePickerBar(ctx) {
         secLabel: ctx.deps.getSectionLabel(sp.sectionKey) || sp.sectionKey,
       };
     }),
-    onAdd: function (ev) {
-      ev.stopPropagation();
-      if (slot.querySelector('.tend-analyte-picker-dropdown')) {
-        closeDropdown(slot);
-        return;
-      }
-      openDropdown(ctx);
+    getGroups: function () {
+      return groupOptionsBySection(ctx.deps, crossSectionEligibleSpecs(ctx.deps, ctx.state)).map(function (g) {
+        return {
+          sectionKey: g.sectionKey,
+          label: g.label,
+          specs: g.specs.map(function (sp) {
+            return { fieldKey: sp.fieldKey, title: sp.cardTitle || sp.fieldKey };
+          }),
+        };
+      });
     },
-    onRemove: function (ev, key) {
-      ev.stopPropagation();
+    onPickField: function (sectionKey, fieldKey) {
+      var spec = crossSectionEligibleSpecs(ctx.deps, ctx.state).filter(function (sp) {
+        return sp.sectionKey === sectionKey && sp.fieldKey === fieldKey;
+      })[0];
+      if (spec) addExtraSpec(ctx, spec);
+    },
+    onRemove: function (key) {
       removeExtraSpec(ctx, key);
     },
   });
-  ctx.addBtn = slot.querySelector('.tend-analyte-picker-add-btn');
 }

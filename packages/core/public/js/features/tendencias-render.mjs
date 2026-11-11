@@ -1,4 +1,3 @@
-import { buildTextSkeletonPanel } from '../ui-skeleton.mjs';
 import {
   buildTrendSeriesIndexCached,
   getLabHistoryRevision,
@@ -6,18 +5,13 @@ import {
 } from '../lab-history-cache.mjs';
 import { readTendCardOrder } from '../tend-prefs.mjs';
 import { syncTendPaneAfterRender } from '../tend-pane.mjs';
-import { getSetTrendValueForSeries, buildTendChartLabels, parseFechaLabToMs } from '../tend-core.mjs';
-import { getTendSectionLabel, TEND_SECTION_ORDER } from './tendencias-constants.mjs';
+import { getSetTrendValueForSeries, buildTendChartLabels } from '../tend-core.mjs';
+import { TEND_SECTION_ORDER } from './tendencias-constants.mjs';
 import { syncAbgLabPrefRowVisibility, isAbgAnalysisHidden } from './tendencias-lab-prefs.mjs';
 import { tendAbnormalOnlyRead, tendHiddenSeriesRead, tendSectionIsExpanded, tendRefForSeries } from './tendencias-series.mjs';
 import * as tc from './tendencias-core.mjs';
-import {
-  tendStatusInfo,
-  tendChangeModel,
-  tendRangeText,
-  previousValueFromSetsDesc,
-} from './tendencias-insight.mjs';
-import { drawTendGrid, drawTendNote } from './tendencias-render-view.jsx';
+import { drawTendGrid, drawTendNote, drawTendSkeleton } from './tendencias-render-view.jsx';
+import { tendSectionModel, tendSummaryModel } from './tendencias-grid-model.mjs';
 
 function buildTendRenderKey(patientId, revision, prefsHash, sectionsExpanded) {
   return [patientId, revision, prefsHash, sectionsExpanded].join('::');
@@ -125,61 +119,6 @@ function tryPatchTendenciasDom(container, seriesAvail, seriesIndex, historyDesc,
   tc.updateSparkChartsFromJobs(buildTendPatchJobs(seriesAvail, seriesIndex), historyDesc);
   tc.syncTendHiddenModalIfOpen();
   return true;
-}
-
-function tendRowModel(sectionKey, spec, seriesIndex, expanded) {
-  var specFk = spec.fieldKey;
-  var idxRow = seriesIndex[tc.tendCatalogSeriesKey(sectionKey, specFk)];
-  var latest = idxRow ? idxRow.latest : null;
-  var isAb = idxRow ? idxRow.isAbnormal : false;
-  var ref = idxRow ? idxRow.ref : null;
-  var labelParts = tc.tendCardLabelParts(sectionKey, specFk);
-  var prev = idxRow
-    ? previousValueFromSetsDesc(idxRow.setsDescFull || idxRow.setsDesc, sectionKey, specFk, getSetTrendValueForSeries)
-    : null;
-  return {
-    key: tc.tendCatalogSeriesKey(sectionKey, specFk),
-    abnormal: !!isAb,
-    title: labelParts.title,
-    unit: labelParts.unit,
-    latest: latest,
-    status: tendStatusInfo(latest, ref),
-    range: tendRangeText(ref),
-    change: tendChangeModel(latest, prev, ref),
-    sparkId: expanded ? tc.trendSparkDomId(sectionKey, specFk) : null,
-  };
-}
-
-function countAbnormalInList(list, seriesIndex, sectionKey) {
-  return list.filter(function (spec) {
-    var i = seriesIndex[tc.tendCatalogSeriesKey(sectionKey, spec.fieldKey)];
-    return i && i.isAbnormal;
-  }).length;
-}
-
-function tendSectionModel(sectionKey, list, seriesIndex, expanded) {
-  return {
-    key: sectionKey,
-    label: getTendSectionLabel(sectionKey),
-    expanded: expanded,
-    oor: countAbnormalInList(list, seriesIndex, sectionKey),
-    rows: list.map(function (spec) {
-      return tendRowModel(sectionKey, spec, seriesIndex, expanded);
-    }),
-  };
-}
-
-var TEND_MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-
-function fmtTendDay(set, withYear) {
-  var ms = set ? parseFechaLabToMs(set.fecha, set.hora) : null;
-  if (typeof ms !== 'number' || !isFinite(ms)) return null;
-  var d = new Date(ms);
-  return d.getDate() + ' ' + TEND_MES[d.getMonth()] + (withYear ? ' ' + d.getFullYear() : '');
-}
-
-function tendSummaryModel(historyDesc, oorN, totalN) {
-  return { latestDay: fmtTendDay(historyDesc[0], true), prevDay: fmtTendDay(historyDesc[1], false), oor: oorN, total: totalN };
 }
 
 function paintTendenciasGrid(container, toolbar, sectionsOrdered, bySection, seriesIndex, seriesAvail, historyDesc, summary) {
@@ -311,7 +250,7 @@ function renderTendencias(opts) {
   }
 
   if (!container.querySelector('.tend-rows, .tend-toolbar, .tend-empty')) {
-    container.innerHTML = buildTextSkeletonPanel('tend-skeleton skel-panel', 4);
+    drawTendSkeleton(container, 4);
   }
   // Not scheduleAfterPaint: tab/patient switches cancel it, which left the skeleton stuck and onReady unfired.
   if (typeof requestAnimationFrame === 'function') {
@@ -321,4 +260,4 @@ function renderTendencias(opts) {
   } else setTimeout(paint, 0);
 }
 
-export { renderTendencias, tendRowModel, tendSectionModel, tendSummaryModel };
+export { renderTendencias };

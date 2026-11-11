@@ -100,7 +100,7 @@ export function Change({ m }) {
   );
 }
 
-function Row({ r }) {
+function Row({ r, expanded }) {
   return (
     <div class="tend-row" data-series-key={r.key} data-abnormal={r.abnormal ? '1' : '0'}>
       <input type="checkbox" class="tend-tick tend-row-tick" aria-label={'Agregar ' + r.title + ' a la tabla'} />
@@ -117,7 +117,7 @@ function Row({ r }) {
       <span class="tend-row-change"><Change m={r.change} /></span>
       <span class="tend-spark-wrap">
         <span class="tend-spark-canvas-cell">
-          {r.sparkId ? <canvas id={r.sparkId}></canvas> : <span class="tend-spark-placeholder" aria-hidden="true"></span>}
+          {expanded ? <canvas id={r.sparkId}></canvas> : <span class="tend-spark-placeholder" aria-hidden="true"></span>}
         </span>
       </span>
       <button type="button" class="tend-row-hide-btn" title="Ocultar analito" aria-label={'Ocultar ' + r.title}>{EYE_HIDE_ICON}</button>
@@ -151,7 +151,7 @@ export function Section({ s }) {
       <div class={'tend-section-body' + (s.expanded ? '' : ' tend-section-body--collapsed')}>
         <Cols />
         <div class="tend-rows tend-sort-zone" data-section-key={s.key}>
-          {s.rows.map((r) => <Row r={r} />)}
+          {s.rows.map((r) => <Row key={r.key} r={r} expanded={s.expanded} />)}
         </div>
       </div>
     </section>
@@ -174,7 +174,7 @@ export function Grid({ toolbar, summary, sections }) {
     <>
       <Toolbar m={toolbar} />
       <Summary m={summary} />
-      {sections.map((s) => <Section s={s} />)}
+      {sections.map((s) => <Section key={s.key} s={s} />)}
       <p class="tend-empty tend-search-empty" hidden>Ningún analito coincide con la búsqueda.</p>
     </>
   );
@@ -200,13 +200,45 @@ function draw(host, vnode) {
   render(vnode, host);
 }
 
+// The grid on screen and the model it was drawn from. Small updates (a section opened, new numbers, a saved
+// drag order) change the model and redraw in place, so the sparkline canvases and typed text stay put.
+let current = null;
+
 export function drawTendGrid(host, model) {
   draw(host, <Grid {...model} />);
+  current = { host, model };
+}
+
+/** Redraw the grid from `change(model)`; false when no grid is on screen or `change` gives null (caller repaints). */
+export function updateTendGrid(change) {
+  if (!current || !current.host.isConnected || !current.host.querySelector('.tend-rows')) return false;
+  const next = change(current.model);
+  if (!next) return false;
+  current.model = next;
+  render(<Grid {...next} />, current.host);
+  return true;
 }
 
 /** Toolbar (when given) above a canned note (`kind`) or a plain message (`text`). */
 export function drawTendNote(host, toolbar, note) {
+  current = null;
   draw(host, <>{toolbar && <Toolbar m={toolbar} />}<EmptyNote {...note} /></>);
+}
+
+/** Loading placeholder: `lines` grey bars of varied width. */
+export function Skeleton({ lines }) {
+  return (
+    <div class="tend-skeleton skel-panel" aria-busy="true">
+      {Array.from({ length: Math.max(1, Number(lines) || 3) }, (_, i) => (
+        <div class="skel-line" style={'width:' + (55 + ((i * 17) % 35)) + '%'}></div>
+      ))}
+    </div>
+  );
+}
+
+export function drawTendSkeleton(host, lines) {
+  current = null;
+  draw(host, <Skeleton lines={lines} />);
 }
 
 export function drawTendHiddenChips(host, chips) {

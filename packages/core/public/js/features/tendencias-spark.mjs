@@ -3,14 +3,10 @@ import { getSetTrendValueForSeries, buildTendChartLabels } from '../tend-core.mj
 import { loadChartJs } from '../vendor-loader.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
 import { tendenciasBridge } from './tendencias-bridge.mjs';
-import { tendStore, trendSparkDomId, trendSparkChartKey, esc } from './tendencias-state.mjs';
+import { tendStore, trendSparkDomId, trendSparkChartKey } from './tendencias-state.mjs';
 import { tendRefForSeries, tendCatalogSeriesKey, tendSectionIsExpanded, toTrendAscendingSets } from './tendencias-series.mjs';
-import {
-  buildTendStatusHtml,
-  buildTendChangeHtml,
-  tendRangeText,
-  previousValueFromSetsDesc,
-} from './tendencias-insight.mjs';
+import { tendRowModel, gridWithRows } from './tendencias-grid-model.mjs';
+import { updateTendGrid } from './tendencias-render-view.jsx';
 
 function tendSeriesKeySelector(seriesKey) {
   if (typeof CSS !== 'undefined' && CSS.escape) {
@@ -19,41 +15,18 @@ function tendSeriesKeySelector(seriesKey) {
   return '.tend-row[data-series-key="' + String(seriesKey).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]';
 }
 
-function patchOneTendRow(card, idx, sp) {
-  var valEl = card.querySelector('.tend-param-value');
-  if (valEl) {
-    valEl.textContent = idx.latest != null ? String(idx.latest) : '—';
-    valEl.classList.toggle('tend-abnormal', !!idx.isAbnormal);
-  }
-  var prev = previousValueFromSetsDesc(
-    idx.setsDescFull || idx.setsDesc,
-    sp.sectionKey,
-    sp.fieldKey,
-    getSetTrendValueForSeries
-  );
-  var setCell = function (sel, html) {
-    var el = card.querySelector(sel);
-    if (el) el.innerHTML = html;
-  };
-  setCell('.tend-row-status', buildTendStatusHtml(esc, idx.latest, idx.ref));
-  setCell('.tend-row-range', esc(tendRangeText(idx.ref)));
-  setCell('.tend-row-change', buildTendChangeHtml(esc, idx.latest, prev, !!idx.isAbnormal, idx.ref));
-  card.setAttribute('data-abnormal', idx.isAbnormal ? '1' : '0');
-}
-
+/** New numbers for the rows on screen: the grid is redrawn from its model. False → the caller repaints everything. */
 function patchTendRowsFromIndex(seriesIndex, seriesAvail) {
-  var patched = 0;
+  var rowsByKey = Object.create(null);
   for (var i = 0; i < seriesAvail.length; i += 1) {
     var sp = seriesAvail[i];
     var key = tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey);
-    var idx = seriesIndex[key];
-    if (!idx) return false;
-    var card = document.querySelector(tendSeriesKeySelector(key));
-    if (!card) return false;
-    patchOneTendRow(card, idx, sp);
-    patched += 1;
+    if (!seriesIndex[key]) return false;
+    rowsByKey[key] = tendRowModel(sp.sectionKey, sp, seriesIndex);
   }
-  return patched > 0;
+  return updateTendGrid(function (model) {
+    return gridWithRows(model, rowsByKey);
+  });
 }
 
 function destroySparkChartEntry(ck) {

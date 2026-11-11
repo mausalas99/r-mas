@@ -1,7 +1,6 @@
 import { sortLabHistoryChronological } from './tend-core.mjs';
 import { toAscendingHistory } from './tend-group-chart-helpers.mjs';
 import {
-  filterHistoryByDateRange,
   applyTendGroupDateRange,
   resolveExtraSpecs,
   copyTendGroupTablePng,
@@ -11,7 +10,7 @@ import { readGroupExtraFields, writeGroupExtraFields, seriesColorKey, toggleSpec
 import { renderGroupTable, tableLegendLabelForSpec } from './tend-group-table-render.mjs';
 import { renderGroupCharts, destroyGroupCharts } from './tend-group-charts-render.mjs';
 import { renderAnalytePickerBar } from './tend-group-analyte-picker.mjs';
-import { drawPivotHint } from './tend-group-analyte-picker-view.jsx';
+import { drawDynScaffold, clearTendHost } from './tend-group-analyte-picker-view.jsx';
 import { mountRpcDateInput } from './rpc-date-picker.mjs';
 import { closeOverlayAnimated, cancelOverlayClose } from './ui-motion.mjs';
 import { showTendPane, hideTendPane } from './tend-pane.mjs';
@@ -59,7 +58,15 @@ export function createTendDynamicTableModal(deps) {
     var wrap = chartsWrap();
     if (!wrap) return;
     destroyDynCharts();
-    wrap.innerHTML = '<div id="tend-group-analyte-picker-slot"></div><div id="tend-dynamic-charts-body"></div>';
+    var bySection = Object.create(null);
+    state.tableExtraSpecs.forEach(function (sp) {
+      (bySection[sp.sectionKey] = bySection[sp.sectionKey] || []).push(sp);
+    });
+    var sectionKeys = Object.keys(bySection);
+    drawDynScaffold(wrap, {
+      hint: state.tableExtraSpecs.length ? null : 'Aún no hay analitos. Marca uno en la lista de la izquierda.',
+      sections: sectionKeys,
+    });
     renderAnalytePickerBar({
       slot: wrap.querySelector('#tend-group-analyte-picker-slot'),
       deps: deps,
@@ -67,16 +74,9 @@ export function createTendDynamicTableModal(deps) {
       sectionKey: DYNAMIC_TABLE_SECTION_KEY,
       renderTable: renderTable,
     });
-    var body = wrap.querySelector('#tend-dynamic-charts-body');
-    if (!state.tableExtraSpecs.length) {
-      drawPivotHint(body, 'Aún no hay analitos. Marca uno en la lista de la izquierda.');
-      return;
-    }
-    var bySection = Object.create(null);
-    state.tableExtraSpecs.forEach(function (sp) {
-      (bySection[sp.sectionKey] = bySection[sp.sectionKey] || []).push(sp);
-    });
-    Object.keys(bySection).forEach(function (sk) {
+    if (!state.tableExtraSpecs.length) return;
+    var secs = wrap.querySelectorAll('#tend-dynamic-charts-body .tend-dynamic-charts-section');
+    sectionKeys.forEach(function (sk, secIndex) {
       var view = Object.create(state);
       view.sectionKey = sk;
       view.charts = [];
@@ -86,9 +86,7 @@ export function createTendDynamicTableModal(deps) {
       });
       var sortRef = { current: null };
       chartViews[sk] = { view: view, sortRef: sortRef };
-      var sec = document.createElement('div');
-      sec.className = 'tend-dynamic-charts-section';
-      body.appendChild(sec);
+      var sec = secs[secIndex];
       renderGroupCharts(
         deps,
         view,
@@ -210,9 +208,9 @@ export function createTendDynamicTableModal(deps) {
       if (bd) bd.style.display = 'none';
       destroyDynCharts();
       var cw = chartsWrap();
-      if (cw) cw.innerHTML = '';
+      if (cw) clearTendHost(cw);
       var wrap = document.getElementById('tend-dynamic-table-wrap');
-      if (wrap) wrap.innerHTML = '';
+      if (wrap) clearTendHost(wrap);
     });
   }
 

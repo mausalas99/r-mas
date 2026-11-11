@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tendStatusInfo, tendRangeText, buildTendChangeHtml, tendReadingsRows, tendReadingsText, tendHeroChange } from './tendencias-insight.mjs';
+import { tendStatusInfo, tendRangeText, tendChangeModel, tendReadingsRows, tendReadingsText, tendHeroChange } from './tendencias-insight.mjs';
 
 test('status is a word plus arrow, from the reference range', () => {
   assert.deepEqual(tendStatusInfo(11, [12, 18]), { kind: 'low', text: '▼ Bajo' });
@@ -13,9 +13,8 @@ test('status is a word plus arrow, from the reference range', () => {
 test('range text and empty change cell', () => {
   assert.equal(tendRangeText([4, 11]), '4 – 11');
   assert.equal(tendRangeText(null), '—');
-  const esc = (s) => String(s);
-  assert.match(buildTendChangeHtml(esc, 5, 5, false, [1, 9]), /tend-none/);
-  assert.match(buildTendChangeHtml(esc, 5, 4, false, [1, 9]), /tend-insight-delta/);
+  assert.equal(tendChangeModel(5, 5, [1, 9]), null);
+  assert.equal(tendChangeModel(5, 4, [1, 9]).text, '+25%');
 });
 
 test('readings rows: newest first, delta vs previous reading', () => {

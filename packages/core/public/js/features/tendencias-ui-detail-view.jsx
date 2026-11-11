@@ -102,6 +102,12 @@ export function drawTendDetailHeader(hosts, m) {
   draw(hosts.readings, <Readings rows={m.readings} />);
 }
 
+/** Empty a slot the detail pane drew into (replaces `innerHTML = ''`, which would leave Preact's tree behind). */
+export function clearTendSlot(host) {
+  render(null, host);
+  host.textContent = '';
+}
+
 export function drawTendDetailEvents(slot, items) {
   draw(slot, <EventsLegend items={items} />);
 }

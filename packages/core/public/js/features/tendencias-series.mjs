@@ -7,8 +7,9 @@ import { loadChartJs } from '../vendor-loader.mjs';
 import { openLabDisplayPrefsModal, closeLabDisplayPrefsModal, onLabDisplayPrefsChanged } from './tendencias-lab-prefs.mjs';
 import { TEND_SERIES_CATALOG } from './tendencias-constants.mjs';
 import { tendenciasBridge } from './tendencias-bridge.mjs';
-import { drawTendHiddenChips } from './tendencias-render-view.jsx';
-import { tendStore, trendSparkDomId } from './tendencias-state.mjs';
+import { drawTendHiddenChips, updateTendGrid } from './tendencias-render-view.jsx';
+import { gridWithSectionExpanded } from './tendencias-grid-model.mjs';
+import { tendStore } from './tendencias-state.mjs';
 import { destroySparkChartEntry, sparkChartAnim, mountOneTrendSparkChart } from './tendencias-spark.mjs';
 import {
   toTrendAscendingSets,
@@ -115,35 +116,16 @@ function mountSectionSparkCharts(sectionKey, history, chartAnim) {
   });
 }
 
-function applyTendSectionExpandedState(sectionEl, sectionKey, expanded) {
-  var btn = sectionEl.querySelector('.tend-section-toggle');
-  var body = sectionEl.querySelector('.tend-section-body');
-  if (btn) btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-  if (body) body.classList.toggle('tend-section-body--collapsed', !expanded);
-
-  if (!expanded) {
-    destroySparkChartsForSection(sectionKey);
-    sectionEl.querySelectorAll('.tend-spark-canvas-cell').forEach(function (cell) {
-      if (cell.querySelector('canvas')) {
-        cell.innerHTML = '<div class="tend-spark-placeholder" aria-hidden="true"></div>';
-      }
-    });
+function applyTendSectionExpandedState(sectionKey, expanded) {
+  if (!expanded) destroySparkChartsForSection(sectionKey);
+  var redrawn = updateTendGrid(function (model) {
+    return gridWithSectionExpanded(model, sectionKey, expanded);
+  });
+  if (!redrawn) {
+    tendenciasBridge.renderTendencias();
     return;
   }
-
-  sectionEl.querySelectorAll('.tend-row').forEach(function (card) {
-    var seriesKey = card.getAttribute('data-series-key');
-    if (!seriesKey) return;
-    var pipe = seriesKey.indexOf('|');
-    if (pipe < 0) return;
-    var sk = seriesKey.slice(0, pipe);
-    var fk = seriesKey.slice(pipe + 1);
-    var cell = card.querySelector('.tend-spark-canvas-cell');
-    if (!cell || cell.querySelector('canvas')) return;
-    cell.innerHTML = '<canvas id="' + trendSparkDomId(sk, fk) + '"></canvas>';
-  });
-
-  mountSectionSparkCharts(sectionKey, null, sparkChartAnim(400));
+  if (expanded) mountSectionSparkCharts(sectionKey, null, sparkChartAnim(400));
 }
 
 function toggleTendSection(ev, sectionKey) {
@@ -162,7 +144,7 @@ function toggleTendSection(ev, sectionKey) {
     container &&
     container.querySelector('.tend-section[data-section="' + String(sectionKey).replace(/"/g, '\\"') + '"]');
   if (sectionEl && container.querySelector('.tend-rows') && tendStore._tendRenderState.seriesIndex) {
-    applyTendSectionExpandedState(sectionEl, sectionKey, next);
+    applyTendSectionExpandedState(sectionKey, next);
     return;
   }
   tendenciasBridge.renderTendencias();

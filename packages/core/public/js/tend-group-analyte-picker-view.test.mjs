@@ -5,16 +5,18 @@ import { loadJsx } from './features/preact-view-test-helpers.mjs';
 import { PICKER } from './features/tendencias-render-scenarios.mjs';
 
 const m = await loadJsx(import.meta.url, `
-  import { PickerBar, SectionList, FieldList } from './tend-group-analyte-picker-view.jsx';
+  import { AnalytePicker, SectionList, FieldList, Dropdown, DynScaffold } from './tend-group-analyte-picker-view.jsx';
   const noop = () => {};
-  export const bar = (extras) => renderToString(<PickerBar chips={extras.map((sp) => ({ key: sp.sectionKey + '|' + sp.fieldKey, name: sp.cardTitle || sp.fieldKey, secLabel: sp.sectionKey }))} onAdd={noop} onRemove={noop} />);
+  export const bar = (extras) => renderToString(<AnalytePicker chips={extras.map((sp) => ({ key: sp.sectionKey + '|' + sp.fieldKey, name: sp.cardTitle || sp.fieldKey, secLabel: sp.sectionKey }))} getGroups={() => []} onPickField={noop} onRemove={noop} />);
   export const sections = (groups) => renderToString(<SectionList groups={groups} onPick={noop} />);
   export const fields = (g) => renderToString(<FieldList label={g.label} fields={g.specs.map((sp) => ({ fieldKey: sp.fieldKey, title: sp.cardTitle || sp.fieldKey }))} onBack={noop} onPick={noop} />);
-  export const noFields = renderToString(<FieldList label="L" fields={[]} onBack={noop} onPick={noop} />);`);
+  export const noFields = renderToString(<FieldList label="L" fields={[]} onBack={noop} onPick={noop} />);
+  export const dropdown = (placeholder) => renderToString(<Dropdown placeholder={placeholder} query="" onQuery={noop}><i /></Dropdown>);
+  export const scaffold = (p) => renderToString(<DynScaffold {...p} />);`);
 
 // Exact markup the string builders made before the port (captured from the old code).
 const OLD = JSON.parse(await readFile(new URL('./features/tendencias-render-view.old.json', import.meta.url), 'utf8')).picker;
-const norm = (s) => s.replace(/&gt;/g, '>').replace(/ (class|value)(?=[ >])/g, ' $1=""').replace(/&#34;|&quot;/g, '"').replace(/<(path|circle|line)([^>]*)><\/\1>/g, '<$1$2/>');
+const norm = (s) => s.replace(/&gt;/g, '>').replace(/ (class|value)(?=[ >])/g, ' $1=""').replace(/&#34;|&quot;/g, '"').replace(/ value(="")?(?=\/?>)/g, '').replace(/(<input(?:[^>"]|"[^"]*")*?)\/>/g, '$1>').replace(/<(path|circle|line)([^>]*)><\/\1>/g, '<$1$2/>');
 
 for (const [name, s] of Object.entries(PICKER)) {
   test(`analyte picker HTML equals the old builders: ${name}`, () => {
@@ -25,4 +27,17 @@ for (const [name, s] of Object.entries(PICKER)) {
 }
 test('analyte picker field list with no match keeps the back button and the note', () => {
   assert.match(m.noFields, /tend-analyte-picker-back.*Sin analitos que coincidan/);
+});
+
+// The old dropdown frame, as written in openDropdown (tend-group-analyte-picker.mjs) before the port.
+const OLD_DROPDOWN = (ph) => '<div class="tend-analyte-picker-dropdown"><input type="text" class="tend-analyte-picker-input" placeholder="' + ph + '" autocomplete="off"><div class="tend-analyte-picker-list"><i></i></div></div>';
+test('analyte picker dropdown frame equals the old markup', () => {
+  assert.equal(norm(m.dropdown('Buscar estudio…')), norm(OLD_DROPDOWN('Buscar estudio…')));
+});
+
+// The old charts scaffold (tend-dynamic-table-modal.mjs): two divs, a hint paragraph or one box per study.
+test('dynamic table scaffold equals the old markup', () => {
+  const head = '<div id="tend-group-analyte-picker-slot"></div><div id="tend-dynamic-charts-body">';
+  assert.equal(m.scaffold({ hint: 'Aún no hay analitos. Marca uno en la lista de la izquierda.', sections: [] }), head + '<p class="tend-pivot-hint">Aún no hay analitos. Marca uno en la lista de la izquierda.</p></div>');
+  assert.equal(m.scaffold({ hint: null, sections: ['BH', 'QS'] }), head + '<div class="tend-dynamic-charts-section"></div><div class="tend-dynamic-charts-section"></div></div>');
 });
