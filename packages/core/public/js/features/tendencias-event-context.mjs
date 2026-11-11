@@ -100,6 +100,21 @@ export function eventMarkerTagSpecs(bucket, opts) {
   return specs;
 }
 
+/** Header tags for the group table: one per entry (max 3), then a "+n" tag. */
+export function eventMarkerTagViews(bucket) {
+  const entries = (bucket && bucket.entries) || [];
+  const shown = entries.slice(0, EVENT_MARKER_TAG_MAX_ENTRIES);
+  const views = shown.map(function (entry) {
+    return {
+      kind: resolveEventualidadKind(entry),
+      label: abbreviatedEventualidadLabel(entry),
+      title: String((entry && entry.text) || '').trim(),
+    };
+  });
+  if (entries.length > shown.length) views.push({ kind: 'more', label: '+' + (entries.length - shown.length), title: '' });
+  return views;
+}
+
 export function eventMarkerTagText(bucket) {
   const entries = (bucket && bucket.entries) || [];
   if (!entries.length) return '';
