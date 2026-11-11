@@ -1,6 +1,6 @@
 import { parseCamaCellForCenso, formatCamaCellLabel } from './censo-build.mjs';
 import { CENSO_FULL_SET_W } from './censo-labs-diagrams-layout.mjs';
-import { classifyCensoTableLine } from './censo-table-style.mjs';
+import { classifyCensoTableLine, isCensoLab3Header } from './censo-table-style.mjs';
 import { censoEmphasisSegments } from './censo-emphasis.mjs';
 import {
   censoColgroupCssRules,
@@ -19,7 +19,7 @@ export function censoLineClass(role) {
   return 'censo-line';
 }
 
-export function renderCensoLines(text, colKey) {
+export function renderCensoLines(text, colKey, twoCol) {
   var raw = String(text || '').trim();
   if (!raw) {
     if (colKey === 'accesos' || colKey === 'cultivos' || colKey === 'pendientes') return '';
@@ -38,9 +38,15 @@ export function renderCensoLines(text, colKey) {
           return sg.bold ? '<b>' + escCensoHtml(sg.text) + '</b>' : escCensoHtml(sg.text);
         })
         .join('');
-      return '<span class="' + censoLineClass(role) + '">' + inner + '</span>';
+      return { line: l, role: role, html: '<span class="' + censoLineClass(role) + '">' + inner + '</span>' };
     })
-    .join('');
+    .reduce(function (out, it, i, arr) {
+      if (!twoCol) return out + it.html;
+      // Labs 3 días: encabezado + primer analito van juntos (no se separan entre columnas).
+      if (isCensoLab3Header(it.line)) return out + '<div class="censo-lab-sec"><b>' + it.html + '</b>' + (arr[i + 1] ? arr[i + 1].html : '') + '</div>';
+      if (i > 0 && isCensoLab3Header(arr[i - 1].line)) return out;
+      return out + it.html;
+    }, '');
 }
 
 export function renderCensoPacienteCell(row) {
@@ -70,9 +76,9 @@ export function renderCensoCamaCell(camaText) {
   return '<span class="censo-cama-vline">' + escCensoHtml(label) + '</span>';
 }
 
-export function renderCensoSectionCell(row, key, fallbackLabel) {
+export function renderCensoSectionCell(row, key, fallbackLabel, twoCol) {
   var v = row[key];
-  if (v) return renderCensoLines(v, key);
+  if (v) return renderCensoLines(v, key, twoCol);
   var sec = (row.sections || []).find(function (s) {
     return s.label === fallbackLabel;
   });
@@ -101,7 +107,10 @@ function censoPreviewCellClass(key) {
 /** Diagram image when the census was built in diagram mode, else text labs. */
 function renderCensoLabsCell(row) {
   var d = row.labsDiagrams;
-  if (!d) return renderCensoSectionCell(row, 'labs', 'Laboratorios');
+  if (!d) {
+    var h = renderCensoSectionCell(row, 'labs', 'Laboratorios', row.labs3d);
+    return row.labs3d ? '<div class="censo-labs-2col">' + h + '</div>' : h;
+  }
   // One line, one scale for all; never bigger than a full set, so a lone diagram stays small.
   var totalW = d.images.reduce(function (sum, img) { return sum + img.w; }, 0);
   var unitPct = 100 / Math.max(totalW, CENSO_FULL_SET_W);
@@ -224,6 +233,7 @@ export const CENSO_PREVIEW_STYLES =
   '.censo-line b{font-weight:700}' +
   '.censo-line--lab-date{font-weight:400;color:var(--color-accent);font-size:8px;margin-bottom:2px}' +
   '.censo-line--lab-panel{font-weight:400;font-size:7.5px;font-family:"IBM Plex Mono",ui-monospace,monospace;letter-spacing:-0.01em}' +
+  '.censo-labs-2col{column-width:150px;column-gap:16px}.censo-lab-sec{break-inside:avoid}' +
   '.censo-line--label-led{font-size:8px;font-weight:400}' +
   'td.censo-labs .censo-line{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:7.5px;line-height:1.15}' +
   'td.censo-signos,td.censo-pend,td.censo-acc,td.censo-cult{font-size:8px;text-align:left}' +

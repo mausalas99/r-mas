@@ -73,6 +73,11 @@ function classifyCensoPacienteLine(s) {
   return 'emphasis';
 }
 
+/** Labs 3 días: los analitos llevan doble espacio tras el nombre; el encabezado de sección no. */
+export function isCensoLab3Header(line) {
+  return !/\s{2}/.test(String(line || '').trim());
+}
+
 function classifyCensoLabsLine(s) {
   if (LAB_DATE_RE.test(s)) return 'lab-date';
   if (LAB_PANEL_LINE_RE.test(s)) return 'lab-panel';

@@ -68,12 +68,17 @@ function Group({ group, onRowClick }) {
   );
 }
 
-export function GuardiaCensusTable({ model, onChip, onRowClick }) {
+export function GuardiaCensusTable({ model, onChip, onRowClick, on3d, is3d }) {
   return (
     <div class="wb-table-card guardia-census-table">
       <div class="wb-table-card-header">
         <span class="wb-table-card-title">{model.title}</span>
         <div class="wb-table-card-actions">
+          {on3d && (
+            <button type="button" class="wb-btn wb-btn-secondary" id="guardia-btn-labs3d" aria-pressed={String(!!is3d)} onClick={on3d}>
+              {is3d ? 'Censo' : 'Labs 3 días'}
+            </button>
+          )}
           <button type="button" class="wb-btn wb-btn-secondary" id="guardia-btn-cambiar-sala">Cambiar</button>
           <div class="wb-chips">
             {model.chips.map((chip) => {

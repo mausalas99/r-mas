@@ -36,7 +36,7 @@ function labsSegments(line) {
     if (tokens[i] && !/^\s+$/.test(tokens[i]) && /\*$/.test(tokens[i])) {
       bold[i] = true;
       // nombre del analito: token anterior no vacío (salta el espacio)
-      if (i >= 2 && !/\*$/.test(tokens[i - 2])) {
+      if (i >= 2 && !/\*$/.test(tokens[i - 2]) && tokens[i - 2] !== '·' && !/\S {2}\S/.test(line)) {
         bold[i - 1] = true;
         bold[i - 2] = true;
       }

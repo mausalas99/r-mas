@@ -1,5 +1,8 @@
 import { buildPatientSections } from './censo-build-sections.mjs';
 import { latestCensoDayLabChunks } from './censo-labs-format-compact.mjs';
+import { buildCenso3dModel } from './features/censo-3dias-data.mjs';
+import { ensureParsedLabHistoryCached } from './lab-history-maint.mjs';
+import { listManualLabTypes } from './labs-manual-catalog.mjs';
 import { buildCensoDocumentHeader, resolveCensoEquipoMembers } from './censo-header-format.mjs';
 import { formatAccesoFechaDisplay } from './patient-date-fields.mjs';
 import { resolveCensoFimiLabel } from './censo-header-format.mjs';
@@ -41,6 +44,29 @@ export function sortPatientsForCensus(patients) {
 }
 
 export { patientBedSortKey };
+
+const LABS3D_HEAD = ['BH', 'QS', 'ESC', 'PFHS', 'GASES', 'COAG'];
+
+/**
+ * Labs de 3 días: encabezado por sección, un analito por línea, hasta 3 valores (viejo → nuevo).
+ * Fuera de rango: sufijo * (censo-emphasis lo cambia por negrita).
+ */
+const BH_CORE = ['Hb', 'Hto', 'Leu', 'Plt'];
+export function labs3DiasText(patientId, getHist = ensureParsedLabHistoryCached, bhExtendida = false) {
+  const { labs } = buildCenso3dModel([{ id: patientId }], { getHist, getVitals: () => ({}) });
+  const rank = (s) => { const i = LABS3D_HEAD.indexOf(s.toUpperCase()); return i < 0 ? LABS3D_HEAD.length : i; };
+  const secs = [];
+  labs.forEach((l) => {
+    if (!bhExtendida && l.section.toUpperCase() === 'BH' && !BH_CORE.includes(l.f)) return;
+    let g = secs.find((x) => x.s === l.section);
+    if (!g) secs.push((g = { s: l.section, rows: [] }));
+    g.rows.push(l.label + '  ' + l.cells[0].map((v) => v.text + (v.alt ? '*' : '')).join(' · '));
+  });
+  return secs
+    .sort((a, b) => rank(a.s) - rank(b.s)) // estable: el resto queda en orden de catálogo
+    .map((g) => [(listManualLabTypes().find((t) => t.sectionKey.toUpperCase() === g.s.toUpperCase()) || { label: g.s }).label].concat(g.rows).join('\n'))
+    .join('\n');
+}
 
 /** @param {Array<{ label: string, lines: string[] }>} sections */
 function flattenRowForCompactPdf(sections) {
@@ -173,6 +199,8 @@ export function formatPacienteMetaForCenso(patient, settings, teamLabel) {
  *   todosByPatient: Record<string, Array<{ text?: string, completed?: boolean }>>,
  *   teamLabelByPatientId?: Record<string, string>,
  *   labDiagrams?: boolean,
+ *   labTresDias?: boolean,
+ *   labBhExtendida?: boolean,
  *   now?: Date,
  * }} opts
  */
@@ -229,7 +257,8 @@ export function buildCensusPayload(opts) {
       signos: flat.signos,
       signosCol: built.signosIo.signosCol,
       ioCol: built.signosIo.ioCol,
-      labs: flat.labs,
+      labs3d: !!opts.labTresDias,
+      labs: opts.labTresDias ? labs3DiasText(String(patient.id), undefined, !!opts.labBhExtendida) : flat.labs,
       accesos: flat.accesos,
       cultivos: flat.cultivos,
       pendientes: flat.pendientes,

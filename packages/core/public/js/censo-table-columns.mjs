@@ -118,7 +118,27 @@ export function applyCensoCellEdit(row, key, text) {
  * @param {string[]} [hiddenKeys] columnas que el usuario ocultó
  * @returns {typeof CENSO_COL_WEIGHTS}
  */
+/** Labs 3 días: la columna Labs se ensancha y las demás se achican. */
+const LABS_WIDE_WEIGHTS = { labs: 345, paciente: 50, dx: 30, atb: 26, meds: 30, signos: 50 };
+
+/**
+ * @param {Array<Record<string, unknown>>} [rows]
+ * @param {string[]} [hiddenKeys] columnas que el usuario ocultó
+ * @returns {typeof CENSO_COL_WEIGHTS}
+ */
 export function resolveCensoColWeights(rows, hiddenKeys) {
+  var base = resolveCensoColWeightsBase(rows, hiddenKeys);
+  var wide = (rows || []).some(function (row) {
+    return row.labs3d;
+  });
+  if (!wide) return base;
+  return base.map(function (col) {
+    var w = LABS_WIDE_WEIGHTS[col.key];
+    return w ? { key: col.key, title: col.title, weight: w } : col;
+  });
+}
+
+function resolveCensoColWeightsBase(rows, hiddenKeys) {
   var optionalHidden = {};
   (hiddenKeys || []).forEach(function (key) {
     if (key !== 'num') optionalHidden[key] = true;

@@ -13,6 +13,7 @@ import { sortLabHistoryChronological, parseFechaLabToMs } from '../tend-core.mjs
 import { sortPatientsByPriorityThenBed } from '../../../lib/patient-priority-sort.mjs';
 import { buildGuardiaTeamCensusGroups } from './unified-patient-grid-team-groups.mjs';
 import { filterR4FollowUpPinPatients, R4_FOLLOWUP_PIN_LABEL } from './unified-patient-grid-board.mjs';
+import { draw3diasBody } from './censo-3dias-table.mjs';
 import { drawGuardiaCensusTable } from './guardia-census-table-view.jsx';
 import { appendExitingRows } from '../ui-motion.mjs';
 import { resolveEntregaChipMarkers } from '../../../lib/entrega/entrega-chip-markers.mjs';
@@ -431,7 +432,17 @@ export function mountGuardiaCensusTable(container, patients, guardiasMap, userRa
       model: buildGuardiaCensusModel(patients, guardiasMap, userRank, groupCtx, filterId),
       onChip: renderAt,
       onRowClick,
+      is3d: !!container._gct3d,
+      on3d: () => {
+        container._gct3d = !container._gct3d;
+        renderAt(filterId);
+      },
     });
+    if (container._gct3d) {
+      container._gct3dState = container._gct3dState || { page: 0 };
+      draw3diasBody(container, patients, container._gct3dState, () => renderAt(filterId));
+      return;
+    }
     var newIds = new Set();
     container.querySelectorAll('[data-wb-row-id]').forEach((row) => {
       var id = row.getAttribute('data-wb-row-id');

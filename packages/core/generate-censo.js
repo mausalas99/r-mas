@@ -6,7 +6,7 @@
 
 import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
 import { parseCamaCellForCenso, formatCamaCellLabel } from './public/js/censo-build.mjs';
-import { classifyCensoTableLine } from './public/js/censo-table-style.mjs';
+import { classifyCensoTableLine, isCensoLab3Header } from './public/js/censo-table-style.mjs';
 import { censoEmphasisSegments } from './public/js/censo-emphasis.mjs';
 import {
   CENSO_OPTIONAL_COL_KEYS,
@@ -409,6 +409,52 @@ function wrapLabsCellLines(font, fontBold, text, innerW, maxLines) {
   return lines;
 }
 
+const LABS3D_GAP = 6;
+const LABS3D_MAX_COLS = 4;
+
+/**
+ * Labs 3 días: dos sub-columnas del mismo ancho; se llena la primera y luego la segunda.
+ * Corte permitido en cualquier línea salvo justo después de un encabezado de sección.
+ * @returns {{ cols: string[][], subW: number }}
+ */
+function labs3dColumns(font, fontBold, text, innerW) {
+  var fs = colFontSize('labs');
+  var raw = String(text || '')
+    .replace(/\r/g, '')
+    .split('\n')
+    .map(function (l) {
+      return pdfSafeLine(l.trim());
+    })
+    .filter(Boolean);
+  var maxW = raw.reduce(function (m, l) {
+    return Math.max(m, font.widthOfTextAtSize(l, fs));
+  }, 0);
+  var n = Math.max(1, Math.min(LABS3D_MAX_COLS, Math.floor((innerW + LABS3D_GAP) / (Math.min(maxW, innerW) + LABS3D_GAP))));
+  var subW = (innerW - LABS3D_GAP * (n - 1)) / n;
+  var items = [];
+  String(text || '')
+    .replace(/\r/g, '')
+    .split('\n')
+    .map(function (l) {
+      return l.trim();
+    })
+    .filter(Boolean)
+    .forEach(function (block) {
+      var hdr = isCensoLab3Header(block);
+      wrapText(font, pdfSafeLine(block), subW, colFontSize('labs')).forEach(function (ln) {
+        items.push({ ln: pdfSafeLine(ln), hdr: hdr });
+      });
+    });
+  var target = Math.ceil(items.length / n);
+  var chunks = [[]];
+  items.forEach(function (it, i) {
+    var cur = chunks[chunks.length - 1];
+    if (chunks.length < n && cur.length >= target && i > 0 && !items[i - 1].hdr) chunks.push([]);
+    chunks[chunks.length - 1].push(it.ln);
+  });
+  return { cols: chunks, subW: subW };
+}
+
 /**
  * @param {import('pdf-lib').PDFFont} font
  * @param {string} text
@@ -583,7 +629,10 @@ function measureRowHeight(font, fontBold, row, layout) {
     if (col.key === 'cama') return;
     var innerW = col.w - CELL_PAD_X * 2;
     var lines;
-    if (SHRINK_FIT_COLS[col.key] || NO_WRAP_COLS[col.key]) {
+    if (col.key === 'labs' && row.labs3d && !row.labsDiagrams) {
+      var c2 = labs3dColumns(font, fontBold, cells.labs, innerW);
+      lines = new Array(c2.cols.reduce(function (m, c) { return Math.max(m, c.length); }, 1));
+    } else if (SHRINK_FIT_COLS[col.key] || NO_WRAP_COLS[col.key]) {
       lines = splitCellLinesNoWrap(cells[col.key] || '', col.key);
     } else {
       lines = cellLinesUnbounded(font, fontBold, cells[col.key] || '', innerW, col.key);
@@ -732,17 +781,18 @@ function cellLineStyle(font, fontBold, colKey, role, _lineIndex) {
   return { font: font, color: COLORS.ink, size: size };
 }
 
-function drawCellText(page, lines, tx, colW, innerW, yTop, rowH, font, fontBold, colKey) {
+function drawCellText(page, lines, tx, colW, innerW, yTop, rowH, font, fontBold, colKey, valignTop) {
   if (!lines || !lines.length) return;
   var centered = !!CENTER_COLS[colKey];
   var lineStep = colLineHeight(colKey);
   var minY = yTop - rowH + ROW_PAD;
-  var maxLines = maxLinesInRow(rowH);
+  var maxLines = valignTop ? lines.length : maxLinesInRow(rowH);
   var toDraw = [];
   lines.forEach(function (ln, idx) {
     if (toDraw.length >= maxLines) return;
     var role = classifyCensoTableLine(ln, colKey, idx);
     var style = cellLineStyle(font, fontBold, colKey, role, idx);
+    if (valignTop && colKey === 'labs' && isCensoLab3Header(ln)) style = { font: fontBold, color: COLORS.ink, size: style.size };
     var useShrink = !!SHRINK_FIT_COLS[colKey];
     var fit;
     if (useShrink) {
@@ -784,7 +834,7 @@ function drawCellText(page, lines, tx, colW, innerW, yTop, rowH, font, fontBold,
   }
   var blockH = toDraw.length * lineStep;
   var innerH = rowH - ROW_PAD * 2;
-  var y = yTop - ROW_PAD - (innerH - blockH) / 2 - toDraw[0].style.size;
+  var y = yTop - ROW_PAD - (valignTop ? 0 : (innerH - blockH) / 2) - toDraw[0].style.size;
   toDraw.forEach(function (item) {
     if (y < minY) return;
     var x = centered ? tx + (colW - item.textW) / 2 : tx + CELL_PAD_X;
@@ -856,6 +906,14 @@ function drawTableRow(page, row, yTop, rowH, font, fontBold, zebra, layout) {
       return;
     }
     var cellText = cells[col.key] || '';
+    if (col.key === 'labs' && row.labs3d) {
+      var c2 = labs3dColumns(font, fontBold, cellText, innerW);
+      c2.cols.forEach(function (colLines, k) {
+        drawCellText(page, colLines, tx + k * (c2.subW + LABS3D_GAP), col.w, c2.subW, yTop, rowH, font, fontBold, 'labs', true);
+      });
+      tx += col.w;
+      return;
+    }
     var lines = cellLines(font, fontBold, cellText, innerW, rowH, col.key);
     drawCellText(page, lines, tx, col.w, innerW, yTop, rowH, font, fontBold, col.key);
     tx += col.w;

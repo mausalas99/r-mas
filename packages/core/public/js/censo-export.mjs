@@ -114,6 +114,14 @@ function ensureCensoModal() {
     '<span class="lab-pref-row-label" id="censo-export-diagramas-lbl">Labs como diagramas</span>' +
     '<label class="rpc-switch"><input type="checkbox" id="censo-export-diagramas" class="rpc-switch-input" role="switch" aria-labelledby="censo-export-diagramas-lbl">' +
     '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div>' +
+    '<div class="lab-pref-row">' +
+    '<span class="lab-pref-row-label" id="censo-export-tres-dias-lbl">Labs 3 días</span>' +
+    '<label class="rpc-switch"><input type="checkbox" id="censo-export-tres-dias" class="rpc-switch-input" role="switch" aria-labelledby="censo-export-tres-dias-lbl">' +
+    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div>' +
+    '<div class="lab-pref-row">' +
+    '<span class="lab-pref-row-label" id="censo-export-bh-ext-lbl">BH extendida</span>' +
+    '<label class="rpc-switch"><input type="checkbox" id="censo-export-bh-ext" class="rpc-switch-input" role="switch" aria-labelledby="censo-export-bh-ext-lbl">' +
+    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div>' +
     '</div>' +
     '<p class="censo-export-note">En la vista previa eliges columnas, editas celdas y generas el PDF.</p>' +
     '<div class="modal-actions">' +
@@ -254,7 +262,7 @@ function patientsForPancensoExport() {
   });
 }
 
-function previewCenso(includeArchived, pancenso, labDiagrams) {
+function previewCenso(includeArchived, pancenso, labDiagrams, labTresDias, labBhExtendida) {
   if (!isModeSala(rt.getSettings())) return;
   preparePatientsForCensus();
   var censusPatients = pancenso ? patientsForPancensoExport() : patientsForCensoExport();
@@ -267,6 +275,8 @@ function previewCenso(includeArchived, pancenso, labDiagrams) {
     todosByPatient: buildTodosMap(),
     teamLabelByPatientId: pancenso ? buildTeamLabelMap(censusPatients) : undefined,
     labDiagrams: !!labDiagrams,
+    labTresDias: !!labTresDias,
+    labBhExtendida: !!labBhExtendida,
   });
   if (!payload.rows.length) {
     rt.showToast(pancenso ? 'Sin pacientes para el pancenso' : 'Sin pacientes para el censo', 'error');
@@ -304,7 +314,9 @@ function wireCensoModalOnce() {
       var archivedPreview = !!document.getElementById('censo-export-archived')?.checked;
       var pancensoPreview = !!document.getElementById('censo-export-pancenso')?.checked;
       var diagramasPreview = !!document.getElementById('censo-export-diagramas')?.checked;
-      previewCenso(archivedPreview, pancensoPreview, diagramasPreview);
+      var tresDiasPreview = !!document.getElementById('censo-export-tres-dias')?.checked;
+      var bhExtPreview = !!document.getElementById('censo-export-bh-ext')?.checked;
+      previewCenso(archivedPreview, pancensoPreview, diagramasPreview, tresDiasPreview, bhExtPreview);
       return;
     }
     var modal = document.getElementById('censo-export-modal');
