@@ -1,4 +1,4 @@
-import { esc, escAttr } from '../../dom-escape.mjs';
+import { esc } from '../../dom-escape.mjs';
 import { clinicalUserActivityHistoryEntries } from '../../../../lib/clinical-user-activity.mjs';
 import { STACKED_BACKDROP_CLASS } from './stacked-overlay.mjs';
 
@@ -97,29 +97,16 @@ function wireEquiposActivityHistoryModal(overlay) {
 }
 
 /**
- * Compact row trigger for admin Equipos history modal.
+ * What a row's «Historial» button shows, or null when there is no activity to list.
  * @param {string} handle
  * @param {string} displayName
  * @param {Array<{ at?: string, source?: string }>|null|undefined} history
- * @returns {string}
  */
-export function equiposRowHistoryButtonHtml(handle, displayName, history) {
+export function equiposRowHistoryButton(handle, displayName, history) {
   const list = Array.isArray(history) ? history : [];
   const { total } = clinicalUserActivityHistoryEntries(list, 1);
-  if (!total) return '';
-  return (
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact cloud-sync-admin-equipos-history-btn" ' +
-    'data-admin-action="equipos-activity-history" ' +
-    'data-equipos-handle="' +
-    escAttr(handle) +
-    '" data-equipos-display="' +
-    escAttr(displayName) +
-    '" data-equipos-history="' +
-    escAttr(JSON.stringify(list)) +
-    '">Historial<span class="cloud-sync-admin-equipos-history-count">' +
-    total +
-    '</span></button>'
-  );
+  if (!total) return null;
+  return { handle, display: displayName, json: JSON.stringify(list), total };
 }
 
 /**

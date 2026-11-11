@@ -2,18 +2,18 @@ import { hasProgramAdminPrivileges, effectiveClinicalRank } from '../../clinical
 import { getSessionAdminKey } from './panel-admin-helpers.mjs';
 import {
   applyAdminSalasFilters,
-  buildAdminShellHtml,
-  mutacionesShellHtml,
+  adminShellModel,
   mutationsRoomOptionsHtml,
-  peligroHtml,
   applyNetworkCensusFilters,
   setSelectAllVisibleNetwork,
   updateNetworkBulkBarVisibility,
 } from './panel-admin-html.mjs';
 import { loadAdminResumen, loadAdminSalas, loadAdminNetworkCensus, loadAdminMutations } from './panel-admin-data.mjs';
 import { createAdminClickHandler } from './panel-admin-actions.mjs';
-import { equiposShellHtml } from './panel-admin-equipos-html.mjs';
-import { solicitudesShellHtml, wireSolicitudesPanel } from './panel-admin-solicitudes.mjs';
+import { EQUIPOS_CHIPS } from './panel-admin-equipos-html.mjs';
+import { drawEquiposShell } from './panel-admin-equipos-view.jsx';
+import { drawAdminMutacionesShell, drawAdminPeligro, drawAdminShell, drawAdminSolicitudesShell } from './panel-admin-view.jsx';
+import { wireSolicitudesPanel } from './panel-admin-solicitudes.mjs';
 import { wireCloudEquiposPanel } from './panel-admin-equipos-actions.mjs';
 
 /**
@@ -51,13 +51,13 @@ function selectAdminTab(root, tabId) {
 /** @param {HTMLElement} root */
 function mountAdminPanelSections(root) {
   const peligroEl = root.querySelector('[data-admin-peligro]');
-  if (peligroEl) peligroEl.innerHTML = peligroHtml();
+  if (peligroEl) drawAdminPeligro(peligroEl);
   const mutEl = root.querySelector('[data-admin-mutaciones]');
-  if (mutEl) mutEl.innerHTML = mutacionesShellHtml();
+  if (mutEl) drawAdminMutacionesShell(mutEl);
   const equiposEl = root.querySelector('[data-admin-equipos]');
-  if (equiposEl) equiposEl.innerHTML = equiposShellHtml();
+  if (equiposEl) drawEquiposShell(equiposEl, EQUIPOS_CHIPS);
   const solEl = root.querySelector('[data-admin-solicitudes]');
-  if (solEl) solEl.innerHTML = solicitudesShellHtml();
+  if (solEl) drawAdminSolicitudesShell(solEl);
 }
 
 /**
@@ -82,7 +82,7 @@ export function mountCloudAdminPanel(host, deps) {
 
   const root = document.createElement('div');
   root.className = 'cloud-sync-admin';
-  root.innerHTML = buildAdminShellHtml(shouldShowAdminBootstrap());
+  drawAdminShell(root, adminShellModel(shouldShowAdminBootstrap()));
   host.appendChild(root);
 
   const keyInput = root.querySelector('[data-admin-key-input]');

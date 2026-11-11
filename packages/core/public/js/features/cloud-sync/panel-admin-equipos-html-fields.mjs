@@ -6,28 +6,26 @@ import { resolveMembershipCycleForUser } from '../../clinico-access.mjs';
 
 export const CLINICAL_RANK_OPTIONS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
 
-/** @param {string} selectedRank */
-export function rankSelectOptionsHtml(selectedRank) {
+/** Option lists are plain data: `{ value, label, selected }`. @param {string} selectedRank */
+export function rankOptions(selectedRank) {
   const selected = String(selectedRank || 'R1');
-  return CLINICAL_RANK_OPTIONS.map((rank) => {
-    const sel = rank === selected ? ' selected' : '';
-    return '<option value="' + esc(rank) + '"' + sel + '>' + esc(rank) + '</option>';
-  }).join('');
+  return CLINICAL_RANK_OPTIONS.map((rank) => ({ value: rank, label: rank, selected: rank === selected }));
 }
 
 /** @param {string} selectedSala */
-export function userSalaSelectOptionsHtml(selectedSala) {
+export function userSalaOptions(selectedSala) {
   const selected = String(selectedSala || '').trim();
-  const blank = selected ? '' : ' selected';
-  return (
-    '<option value=""' +
-    blank +
-    '>— Elegir —</option>' +
-    CLINICAL_SALAS.map((sala) => {
-      const sel = sala === selected ? ' selected' : '';
-      return '<option value="' + esc(sala) + '"' + sel + '>' + esc(sala) + '</option>';
-    }).join('')
-  );
+  return [
+    { value: '', label: '— Elegir —', selected: !selected },
+    ...CLINICAL_SALAS.map((sala) => ({ value: sala, label: sala, selected: sala === selected })),
+  ];
+}
+
+/** @param {{ value: string, label: string, selected?: boolean }[]} options */
+function optionsHtml(options) {
+  return options
+    .map((o) => '<option value="' + esc(o.value) + '"' + (o.selected ? ' selected' : '') + '>' + esc(o.label) + '</option>')
+    .join('');
 }
 
 /**
@@ -58,71 +56,68 @@ function groupTeamsBySala(list) {
 }
 
 /** @param {string} sala @param {object[]} rows @param {string} selected */
-function renderTeamOptgroupHtml(sala, rows, selected) {
+function teamOptgroup(sala, rows, selected) {
   const sorted = rows.slice().sort((a, b) => {
     const ca = String(a.sub_area_fraction || '').localeCompare(String(b.sub_area_fraction || ''), 'es');
     if (ca) return ca;
     return String(a.name || '').localeCompare(String(b.name || ''), 'es');
   });
-  const opts = sorted
-    .map((team) => {
-      const id = esc(String(team.team_id || ''));
-      const cycle = String(team.sub_area_fraction || '').trim();
-      const label =
-        esc(String(team.name || 'Equipo').trim()) +
-        (cycle ? ' · ' + esc(cycle) : '') +
-        ' (' +
-        (Array.isArray(team.members) ? team.members.length : 0) +
-        ')';
-      const isSelected = selected && id === selected ? ' selected' : '';
-      return '<option value="' + id + '"' + isSelected + '>' + label + '</option>';
-    })
-    .join('');
-  return '<optgroup label="' + esc(sala) + '">' + opts + '</optgroup>';
+  const options = sorted.map((team) => {
+    const value = String(team.team_id || '');
+    const cycle = String(team.sub_area_fraction || '').trim();
+    const label =
+      String(team.name || 'Equipo').trim() +
+      (cycle ? ' · ' + cycle : '') +
+      ' (' + (Array.isArray(team.members) ? team.members.length : 0) + ')';
+    return { value, label, selected: !!selected && value === selected };
+  });
+  return { sala, options };
 }
 
 /**
- * Clinical teams for admin assign, grouped by sala.
+ * Clinical teams for admin assign, grouped by sala: loose options first, then one group per sala.
  * @param {object[]} teams
  * @param {string} [selectedTeamId]
  * @param {string} [salaFilter]
+ * @returns {{ options: { value: string, label: string }[], groups: { sala: string, options: { value: string, label: string, selected: boolean }[] }[] }}
  */
-export function renderEquiposAssignTeamOptionsHtml(teams, selectedTeamId, salaFilter) {
+export function assignTeamOptions(teams, selectedTeamId, salaFilter) {
   const all = Array.isArray(teams) ? teams : [];
   const selected = String(selectedTeamId || '').trim();
   const sala = String(salaFilter || '').trim();
   const list = teamsForAssignOptions(all, selected, sala);
   if (!list.length) {
-    return sala
-      ? '<option value="">Sin equipos en esta sala</option>'
-      : '<option value="">Sin equipos</option>';
+    return { options: [{ value: '', label: sala ? 'Sin equipos en esta sala' : 'Sin equipos' }], groups: [] };
   }
-
   const bySala = groupTeamsBySala(list);
   const salaOrder = [
     ...CLINICAL_SALAS.filter((s) => bySala.has(s)),
     ...[...bySala.keys()].filter((s) => !CLINICAL_SALAS.includes(s)).sort((a, b) => a.localeCompare(b, 'es')),
   ];
-  const groups = salaOrder
-    .map((salaKey) => renderTeamOptgroupHtml(salaKey, bySala.get(salaKey) || [], selected))
-    .join('');
-  return '<option value="">Sin asignar</option>' + groups;
+  return {
+    options: [{ value: '', label: 'Sin asignar' }],
+    groups: salaOrder.map((salaKey) => teamOptgroup(salaKey, bySala.get(salaKey) || [], selected)),
+  };
+}
+
+/** The same options as `<option>` strings, for the selects that are refilled in place while a row is edited. */
+export function renderEquiposAssignTeamOptionsHtml(teams, selectedTeamId, salaFilter) {
+  const { options, groups } = assignTeamOptions(teams, selectedTeamId, salaFilter);
+  return optionsHtml(options) + groups.map((g) => '<optgroup label="' + esc(g.sala) + '">' + optionsHtml(g.options) + '</optgroup>').join('');
 }
 
 /** @param {object | null | undefined} team @param {string} userId @param {string} userRank @param {string} [selectedCycle] */
-export function cycleOptionsForTeam(team, userId, userRank, selectedCycle) {
-  if (!team) return '<option value="">Ciclo</option>';
+export function cycleOptions(team, userId, userRank, selectedCycle) {
+  const none = [{ value: '', label: 'Ciclo' }];
+  if (!team) return none;
   const service = String(team.service || 'Sala');
   const rank = String(userRank || 'R1');
   const letters = getCycleLetterOptionsForRank(service, rank);
   const defaultCycle = resolveMembershipCycleForUser(team, userId, rank);
   const selected = String(selectedCycle || '').trim() || defaultCycle;
-  if (!letters.length) return '<option value="">Ciclo</option>';
-  return letters
-    .map((letter) => {
-      const label = formatCycleOptionLabel(letter, rank);
-      const sel = letter === selected ? ' selected' : '';
-      return '<option value="' + esc(letter) + '"' + sel + '>' + esc(label) + '</option>';
-    })
-    .join('');
+  if (!letters.length) return none;
+  return letters.map((letter) => ({ value: letter, label: formatCycleOptionLabel(letter, rank), selected: letter === selected }));
 }
+
+export const cycleOptionsForTeam = (team, userId, userRank, selectedCycle) =>
+  optionsHtml(cycleOptions(team, userId, userRank, selectedCycle));

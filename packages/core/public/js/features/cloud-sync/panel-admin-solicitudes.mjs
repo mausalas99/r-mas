@@ -7,17 +7,6 @@ import { equiposDbApi } from './panel-admin-equipos-row-persist.mjs';
 
 const WHEN = new Intl.DateTimeFormat('es-MX', { dateStyle: 'short', timeStyle: 'short' });
 
-export function solicitudesShellHtml() {
-  return (
-    '<div class="cloud-sync-admin-toolbar">' +
-    '<button type="button" class="cloud-sync-btn is-active" data-sol-filter="pending">Pendientes</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-sol-filter="resolved">Resueltas</button>' +
-    '</div>' +
-    '<div data-sol-list></div>' +
-    '<p class="cloud-sync-hint">Al aprobar, la persona entra a la sala y aparece en la lista de usuarios clínicos.</p>'
-  );
-}
-
 /** @param {string} requested */
 function salaSelectHtml(requested) {
   return (

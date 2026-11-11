@@ -10,13 +10,13 @@
 import { render } from 'preact';
 
 /** Drop what Preact drew before and anything written into the host by hand, then draw `vnode`. */
-function mount(host, vnode) {
+export function mount(host, vnode) {
   render(null, host);
   host.textContent = '';
   render(vnode, host);
 }
 
-function Head({ title, sub, right }) {
+export function Head({ title, sub, right }) {
   // A <div>, not <header>: layout.css styles every <header> as the app bar.
   return (
     <div class="cloud-sync-admin-head">
@@ -29,7 +29,7 @@ function Head({ title, sub, right }) {
   );
 }
 
-const Refresh = ({ action }) => (
+export const Refresh = ({ action }) => (
   <button type="button" class="cloud-sync-btn" data-admin-action={action}>Actualizar</button>
 );
 
@@ -327,6 +327,128 @@ export function AdminMutations({ model }) {
     </>
   );
 }
+
+const Icon = ({ children }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{children}</svg>
+);
+
+const ICONS = {
+  resumen: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>,
+  salas: <><path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16" /><path d="M2 21h20" /><path d="M14 12h.01" /></>,
+  red: <><path d="M2 18V6" /><path d="M2 14h20v4" /><path d="M22 14v-2a3 3 0 0 0-3-3h-7v5" /><circle cx="7" cy="10.5" r="2" /></>,
+  equipos: <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M16 4.5a3.5 3.5 0 0 1 0 7" /><path d="M18 14a6 6 0 0 1 3.5 6" /></>,
+  solicitudes: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6" /><path d="M22 11h-6" /></>,
+  mutaciones: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+  peligro: <><path d="M12 3 2 20h20L12 3z" /><path d="M12 10v4" /><path d="M12 17h.01" /></>,
+};
+
+function NavItem({ t, active }) {
+  return (
+    <button type="button" class={'cloud-sync-admin-nav-item' + (t.danger ? ' cloud-sync-admin-nav-item--danger' : '') + (active ? ' is-active' : '')} role="tab" data-admin-tab={t.id} aria-selected={active ? 'true' : 'false'}>
+      <Icon>{ICONS[t.id]}</Icon>
+      <span>{t.label}</span>
+      {t.count ? <span class="cloud-sync-admin-nav-count" data-admin-count={t.id}></span> : null}
+    </button>
+  );
+}
+
+const Skeleton = () => (
+  <div class="cloud-sync-admin-skeleton" aria-busy="true" aria-label="Cargando">
+    <span class="cloud-sync-admin-skeleton-bar"></span>
+    <span class="cloud-sync-admin-skeleton-bar"></span>
+    <span class="cloud-sync-admin-skeleton-bar cloud-sync-admin-skeleton-bar--short"></span>
+  </div>
+);
+
+/** The panel's frame: side menu, optional key box and one (hidden but the first) panel per section. */
+export function AdminShell({ model }) {
+  return (
+    <div class="cloud-sync-admin-shell">
+      <nav class="cloud-sync-admin-nav" role="tablist" aria-orientation="vertical" aria-label="Secciones de administración">
+        {model.main.map((t, i) => <NavItem t={t} active={i === 0} />)}
+        <span class="cloud-sync-admin-nav-spacer" aria-hidden="true"></span>
+        {model.danger.map((t) => <NavItem t={t} active={false} />)}
+      </nav>
+      <div class="cloud-sync-admin-main">
+        {model.showBootstrap ? (
+          <div class="cloud-sync-admin-bootstrap" data-admin-bootstrap="">
+            <p class="cloud-sync-hint">Clave de administración (solo esta sesión) para promover tu cuenta.</p>
+            <div class="cloud-sync-field">
+              <label for="cloud-sync-admin-key">Clave de sesión</label>
+              <input id="cloud-sync-admin-key" type="password" class="profile-input" data-admin-key-input="" autocomplete="off" spellcheck="false" placeholder="Clave de sesión" />
+            </div>
+            <div class="cloud-sync-admin-bootstrap-actions">
+              <button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-action="save-key">Guardar clave</button>
+              <button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-admin-action="promote-self">Promover a admin</button>
+            </div>
+          </div>
+        ) : null}
+        <div class="cloud-sync-admin-panels">
+          {model.panels.map((p) => (
+            <div class="cloud-sync-admin-panel" role="tabpanel" data-admin-section={p.id} {...{ ['data-admin-' + p.id]: '' }} hidden={p.hidden}>
+              {p.skeleton ? <Skeleton /> : null}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Registro: the room menu is filled in place later; the list loads when a sala is picked. */
+export const AdminMutacionesShell = () => (
+  <>
+    <Head
+      title="Registro de cambios"
+      sub="Quién cambió qué, en cada sala. Se carga solo al elegir sala."
+      right={<select class="profile-input cloud-sync-admin-search" data-admin-mutations-room="" aria-label="Sala"><option value="">— Elige una sala —</option></select>}
+    />
+    <div data-admin-mutations-list=""></div>
+  </>
+);
+
+export const AdminPeligro = () => (
+  <>
+    <Head title="Zona de peligro" sub="Solo afecta datos en Nube. Lo guardado en cada equipo no se borra." />
+    <div class="cloud-sync-admin-danger">
+      <section class="cloud-sync-admin-danger-card">
+        <h5 class="cloud-sync-admin-danger-title">Purgar sala</h5>
+        <p class="cloud-sync-hint">Elimina miembros, cambios, estado y la sala. No se puede deshacer.</p>
+        <div class="cloud-sync-admin-toolbar">
+          <label class="cloud-sync-admin-toolbar-label" for="cloud-admin-peligro-room">Sala</label>
+          <select id="cloud-admin-peligro-room" class="profile-input" data-admin-peligro-room=""><option value="">— Elige una sala —</option></select>
+          <button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-action="purge-room-selected">Purgar…</button>
+        </div>
+      </section>
+      <section class="cloud-sync-admin-danger-card">
+        <h5 class="cloud-sync-admin-danger-title">Cuentas</h5>
+        <p class="cloud-sync-hint">Revocar sesiones, deshabilitar o borrar cuentas se hace en Usuarios.</p>
+        <button type="button" class="cloud-sync-btn" data-admin-tab="equipos">Ir a Usuarios</button>
+      </section>
+    </div>
+  </>
+);
+
+export const AdminSolicitudesShell = () => (
+  <>
+    <div class="cloud-sync-admin-toolbar">
+      <button type="button" class="cloud-sync-btn is-active" data-sol-filter="pending">Pendientes</button>
+      <button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-sol-filter="resolved">Resueltas</button>
+    </div>
+    <div data-sol-list=""></div>
+    <p class="cloud-sync-hint">Al aprobar, la persona entra a la sala y aparece en la lista de usuarios clínicos.</p>
+  </>
+);
+
+export const AdminError = ({ message }) => <p class="cloud-sync-admin-error">{message}</p>;
+export const AdminHint = ({ text }) => <p class="cloud-sync-hint">{text}</p>;
+
+export const drawAdminShell = (host, model) => mount(host, <AdminShell model={model} />);
+export const drawAdminMutacionesShell = (host) => mount(host, <AdminMutacionesShell />);
+export const drawAdminPeligro = (host) => mount(host, <AdminPeligro />);
+export const drawAdminSolicitudesShell = (host) => mount(host, <AdminSolicitudesShell />);
+export const drawAdminError = (host, message) => mount(host, <AdminError message={message} />);
+export const drawAdminHint = (host, text) => mount(host, <AdminHint text={text} />);
 
 export const drawAdminResumen = (host, model) => mount(host, <AdminResumen model={model} />);
 export const drawAdminResumenExtras = (host, model) => mount(host, <AdminResumenExtras model={model} />);
