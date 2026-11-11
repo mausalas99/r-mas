@@ -9,20 +9,6 @@ import { classifyCloudOpPath } from './cloud-sync-diagnostics.mjs';
 /** Sentinel team-filter value meaning "sin equipo" (no resolved team), distinct from "" = todos. */
 const NO_TEAM_FILTER_VALUE = '__sin_equipo__';
 
-const ADMIN_ICON_PATHS = {
-  resumen:
-    '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>' +
-    '<rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
-  salas: '<path d="M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16"/><path d="M2 21h20"/><path d="M14 12h.01"/>',
-  red: '<path d="M2 18V6"/><path d="M2 14h20v4"/><path d="M22 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="10.5" r="2"/>',
-  equipos:
-    '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/>' +
-    '<path d="M18 14a6 6 0 0 1 3.5 6"/>',
-  solicitudes: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>',
-  mutaciones: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-  peligro: '<path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
-};
-
 /**
  * Board «Nube + Admin»: a side menu instead of tabs. Ids stay the same
  * (data-admin-tab / data-admin-section) — «red» shows as Pacientes and
@@ -39,107 +25,14 @@ const ADMIN_TABS = [
   { id: 'peligro', label: 'Zona de peligro', danger: true },
 ];
 
-/** @param {string} id */
-function adminIconSvg(id) {
-  return (
-    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    (ADMIN_ICON_PATHS[id] || '') +
-    '</svg>'
-  );
-}
-
-/** @param {{ id: string, label: string, count?: boolean, danger?: boolean }} t @param {boolean} active */
-function adminNavItemHtml(t, active) {
-  return (
-    '<button type="button" class="cloud-sync-admin-nav-item' +
-    (t.danger ? ' cloud-sync-admin-nav-item--danger' : '') +
-    (active ? ' is-active' : '') +
-    '" role="tab" data-admin-tab="' +
-    esc(t.id) +
-    '" aria-selected="' +
-    (active ? 'true' : 'false') +
-    '">' +
-    adminIconSvg(t.id) +
-    '<span>' +
-    esc(t.label) +
-    '</span>' +
-    (t.count ? '<span class="cloud-sync-admin-nav-count" data-admin-count="' + esc(t.id) + '"></span>' : '') +
-    '</button>'
-  );
-}
-
-/** @param {boolean} [showBootstrap] */
-export function buildAdminShellHtml(showBootstrap = true) {
-  const main = ADMIN_TABS.filter((t) => !t.danger);
-  const danger = ADMIN_TABS.filter((t) => t.danger);
-  const panels = ADMIN_TABS.map((t, i) => {
-    const active = i === 0;
-    const loading = t.id === 'resumen' || t.id === 'salas' ? adminSkeletonHtml() : '';
-    return (
-      '<div class="cloud-sync-admin-panel" role="tabpanel" data-admin-section="' +
-      esc(t.id) +
-      '" data-admin-' +
-      esc(t.id) +
-      (active ? '' : ' hidden') +
-      '>' +
-      loading +
-      '</div>'
-    );
-  }).join('');
-
-  return (
-    '<div class="cloud-sync-admin-shell">' +
-    '<nav class="cloud-sync-admin-nav" role="tablist" aria-orientation="vertical" aria-label="Secciones de administración">' +
-    main.map((t, i) => adminNavItemHtml(t, i === 0)).join('') +
-    '<span class="cloud-sync-admin-nav-spacer" aria-hidden="true"></span>' +
-    danger.map((t) => adminNavItemHtml(t, false)).join('') +
-    '</nav>' +
-    '<div class="cloud-sync-admin-main">' +
-    (showBootstrap ? bootstrapHtml() : '') +
-    '<div class="cloud-sync-admin-panels">' +
-    panels +
-    '</div></div></div>'
-  );
-}
-
-/** Section title, one grey line, and optional controls on the right. @param {string} title @param {string} sub @param {string} [right] */
-export function adminHeadHtml(title, sub, right = '') {
-  return (
-    // A <div>, not <header>: layout.css styles every <header> as the app bar.
-    '<div class="cloud-sync-admin-head">' +
-    '<div class="cloud-sync-admin-head-text"><h4 class="cloud-sync-admin-h">' +
-    esc(title) +
-    '</h4>' +
-    (sub ? '<p class="cloud-sync-admin-sub">' + sub + '</p>' : '') +
-    '</div>' +
-    (right ? '<div class="cloud-sync-admin-head-right">' + right + '</div>' : '') +
-    '</div>'
-  );
-}
-
-export function bootstrapHtml() {
-  return (
-    '<div class="cloud-sync-admin-bootstrap" data-admin-bootstrap>' +
-    '<p class="cloud-sync-hint">Clave de administración (solo esta sesión) para promover tu cuenta.</p>' +
-    '<div class="cloud-sync-field">' +
-    '<label for="cloud-sync-admin-key">Clave de sesión</label>' +
-    '<input id="cloud-sync-admin-key" type="password" class="profile-input" data-admin-key-input ' +
-    'autocomplete="off" spellcheck="false" placeholder="Clave de sesión" /></div>' +
-    '<div class="cloud-sync-admin-bootstrap-actions">' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-action="save-key">Guardar clave</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-admin-action="promote-self">' +
-    'Promover a admin</button></div></div>'
-  );
-}
-
-export function adminSkeletonHtml() {
-  return (
-    '<div class="cloud-sync-admin-skeleton" aria-busy="true" aria-label="Cargando">' +
-    '<span class="cloud-sync-admin-skeleton-bar"></span>' +
-    '<span class="cloud-sync-admin-skeleton-bar"></span>' +
-    '<span class="cloud-sync-admin-skeleton-bar cloud-sync-admin-skeleton-bar--short"></span></div>'
-  );
+/** What the panel's frame shows: the side menu, the key box, and each section's panel. @param {boolean} [showBootstrap] */
+export function adminShellModel(showBootstrap = true) {
+  return {
+    showBootstrap,
+    main: ADMIN_TABS.filter((t) => !t.danger),
+    danger: ADMIN_TABS.filter((t) => t.danger),
+    panels: ADMIN_TABS.map((t, i) => ({ id: t.id, hidden: i !== 0, skeleton: t.id === 'resumen' || t.id === 'salas' })),
+  };
 }
 
 const MONTHS_ES = [
@@ -694,75 +587,6 @@ export function roomDetailModel(data) {
   };
 }
 
-/** @deprecated Usuarios merged into Equipos — kept for tests/import stability. */
-export function usuariosShellHtml() {
-  return equiposRedirectHintHtml();
-}
-
-function equiposRedirectHintHtml() {
-  return (
-    '<p class="cloud-sync-hint">La gestión de usuarios está en la pestaña <strong>Usuarios</strong> (equipos + cuenta Nube).</p>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-tab="equipos">Ir a Usuarios</button>'
-  );
-}
-
-/**
- * Compact Nube account actions for Equipos rows (replaces the old Usuarios table).
- * @param {{ id: string, username?: string }} user
- * @param {{ bare?: boolean }} [opts] — bare: return just the actions, no own <details> wrap (caller supplies one)
- */
-export function userActionsHtml(user, opts = {}) {
-  const id = esc(String(user.id));
-  const handle = esc(String(user.username || ''));
-  const actions =
-    '<div class="cloud-sync-admin-row-actions cloud-sync-admin-row-actions--compact">' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="revoke-sessions" data-user-id="' +
-    id +
-    '" data-user-handle="' +
-    handle +
-    '">Revocar</button>' +
-    '<select class="profile-input cloud-sync-admin-role-select" data-admin-promote-role data-user-id="' +
-    id +
-    '" title="Rol Nube" aria-label="Rol Nube">' +
-    '<option value="admin">Admin</option><option value="program_admin">Admin programa</option>' +
-    '<option value="member" selected>Miembro</option></select>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="promote-user" data-user-id="' +
-    id +
-    '" data-user-handle="' +
-    handle +
-    '">Rol</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="disable-user" data-user-id="' +
-    id +
-    '" data-user-handle="' +
-    handle +
-    '">Deshabilitar</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger cloud-sync-btn--compact" data-admin-action="delete-user" data-user-id="' +
-    id +
-    '" data-user-handle="' +
-    handle +
-    '">Eliminar Nube</button></div>';
-  if (opts.bare) return actions;
-  return (
-    '<details class="cloud-sync-admin-equipos-nube">' +
-    '<summary class="cloud-sync-admin-equipos-nube-summary">Nube</summary>' +
-    actions +
-    '</details>'
-  );
-}
-
-/** Registro (board «Admin · Registro»): loads on its own when a sala is picked. */
-export function mutacionesShellHtml() {
-  return (
-    adminHeadHtml(
-      'Registro de cambios',
-      'Quién cambió qué, en cada sala. Se carga solo al elegir sala.',
-      '<select class="profile-input cloud-sync-admin-search" data-admin-mutations-room aria-label="Sala">' +
-        '<option value="">— Elige una sala —</option></select>'
-    ) +
-    '<div data-admin-mutations-list></div>'
-  );
-}
-
 /** @param {Array<{ id: string, code?: string, sala?: string, turnKey?: string, memberCount?: number }>} rooms */
 export function mutationsRoomOptionsHtml(rooms) {
   return (
@@ -867,30 +691,4 @@ export function mutationsModel(mutations, users = [], nowMs = Date.now()) {
     ],
     items,
   };
-}
-
-export function peligroHtml() {
-  return (
-    adminHeadHtml('Zona de peligro', 'Solo afecta datos en Nube. Lo guardado en cada equipo no se borra.') +
-    '<div class="cloud-sync-admin-danger">' +
-    '<section class="cloud-sync-admin-danger-card">' +
-    '<h5 class="cloud-sync-admin-danger-title">Purgar sala</h5>' +
-    '<p class="cloud-sync-hint">Elimina miembros, cambios, estado y la sala. No se puede deshacer.</p>' +
-    '<div class="cloud-sync-admin-toolbar">' +
-    '<label class="cloud-sync-admin-toolbar-label" for="cloud-admin-peligro-room">Sala</label>' +
-    '<select id="cloud-admin-peligro-room" class="profile-input" data-admin-peligro-room>' +
-    '<option value="">— Elige una sala —</option></select>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-action="purge-room-selected">Purgar…</button>' +
-    '</div></section>' +
-    '<section class="cloud-sync-admin-danger-card">' +
-    '<h5 class="cloud-sync-admin-danger-title">Cuentas</h5>' +
-    '<p class="cloud-sync-hint">Revocar sesiones, deshabilitar o borrar cuentas se hace en Usuarios.</p>' +
-    '<button type="button" class="cloud-sync-btn" data-admin-tab="equipos">Ir a Usuarios</button>' +
-    '</section></div>'
-  );
-}
-
-/** @param {string} message */
-export function adminErrorHtml(message) {
-  return '<p class="cloud-sync-admin-error">' + esc(message) + '</p>';
 }

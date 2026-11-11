@@ -3,10 +3,11 @@ import { normalizeUsername } from '../../clinical-username.mjs';
 import { resolveUserPlacement } from '../clinical-teams/teams-roster-directory-render.mjs';
 import { CLINICAL_SALAS } from '../clinical-teams/shared.mjs';
 import {
-  adminErrorHtml,
-  equiposListHtml,
+  equiposListModel,
   equiposSalaOptionsHtml,
 } from './panel-admin-equipos-html.mjs';
+import { drawEquiposList } from './panel-admin-equipos-view.jsx';
+import { drawAdminError, drawAdminHint } from './panel-admin-view.jsx';
 import {
   countVisibleEquiposRows,
   paintEquiposFilterSummary,
@@ -356,7 +357,7 @@ function renderEquiposAdminList(root, payload) {
   paintEquiposSalaSelect(root, payload.teams);
   const list = root.querySelector('[data-admin-equipos-list]');
   if (!list) return rows;
-  list.innerHTML = equiposListHtml(rows, payload.teams);
+  drawEquiposList(list, equiposListModel(rows, payload.teams));
   applyEquiposFiltersFromToolbar(root);
   return rows;
 }
@@ -368,13 +369,11 @@ function renderEquiposAdminList(root, payload) {
 export async function loadAdminEquipos(root, getApi) {
   const list = root.querySelector('[data-admin-equipos-list]');
   if (!list) return;
-  list.innerHTML = '<p class="cloud-sync-hint">Cargando…</p>';
+  drawAdminHint(list, 'Cargando…');
 
   const api = dbApi();
   if (!api || typeof api.dbClinicalTeamsList !== 'function') {
-    list.innerHTML = adminErrorHtml(
-      'Asignar equipos requiere R+ de escritorio con base clínica desbloqueada.'
-    );
+    drawAdminError(list, 'Asignar equipos requiere R+ de escritorio con base clínica desbloqueada.');
     return;
   }
 
@@ -388,8 +387,6 @@ export async function loadAdminEquipos(root, getApi) {
       })
     );
   } catch (err) {
-    list.innerHTML = adminErrorHtml(
-      err?.data?.message || err?.message || 'No se pudieron cargar usuarios y equipos.'
-    );
+    drawAdminError(list, err?.data?.message || err?.message || 'No se pudieron cargar usuarios y equipos.');
   }
 }

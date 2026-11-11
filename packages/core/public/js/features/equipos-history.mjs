@@ -5,7 +5,6 @@ import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { DEVICE_LABELS } from '../../equipos/equipos-rotaciones.mjs';
 import { equiposCloudFetch, getEquiposCloudConfig } from '../equipos-cloud-config.mjs';
 
-import { esc } from '../dom-escape.mjs';
 const CLOSED_LABELS = {
   return: 'Devolución',
   admin_purge: 'Purgado',
@@ -56,33 +55,17 @@ async function fetchEquiposReports() {
   return { sessions: res.sessions || [], reports: res.reports || [] };
 }
 
-/** @param {object[]} sessions */
-function renderSessionsTable(sessions) {
-  if (!sessions.length) {
-    return '<p class="equipos-history-empty">Sin registros de uso todavía.</p>';
-  }
-  const rows = sessions
-    .map(
-      (s) =>
-        `<tr>` +
-        `<td>${esc(DEVICE_LABELS[s.device_type] || s.device_type)}</td>` +
-        `<td>${esc(s.holder_name)}</td>` +
-        `<td>${esc(s.holder_rotation)}</td>` +
-        `<td>${esc(fmtWhen(s.checked_out_at))}</td>` +
-        `<td>${esc(fmtWhen(s.returned_at))}</td>` +
-        `<td>${esc(fmtDuration(s.duration_seconds))}</td>` +
-        `<td>${esc(sessionStatus(s))}</td>` +
-        `</tr>`
-    )
-    .join('');
-  return (
-    `<div class="equipos-history-scroll">` +
-    `<table class="equipos-history-table">` +
-    `<thead><tr>` +
-    `<th>Equipo</th><th>Residente</th><th>Rotación</th>` +
-    `<th>Tomó</th><th>Devolvió</th><th>Duración</th><th>Estado</th>` +
-    `</tr></thead><tbody>${rows}</tbody></table></div>`
-  );
+/** The table's rows as plain text. @param {object[]} sessions */
+export function sessionRows(sessions) {
+  return sessions.map((s) => ({
+    device: DEVICE_LABELS[s.device_type] || s.device_type,
+    holder: s.holder_name,
+    rotation: s.holder_rotation,
+    out: fmtWhen(s.checked_out_at),
+    back: fmtWhen(s.returned_at),
+    duration: fmtDuration(s.duration_seconds),
+    status: sessionStatus(s),
+  }));
 }
 
 /**
@@ -92,21 +75,17 @@ function renderSessionsTable(sessions) {
 export async function loadEquiposHistoryPanel(host, showToast) {
   if (!host) return;
   host.hidden = false;
-  host.innerHTML = '<p class="equipos-history-loading">Cargando historial…</p>';
+  const view = await import('./equipos-history-view.jsx');
+  view.drawHistoryLoading(host);
   try {
     const { sessions } = await fetchEquiposReports();
-    host.innerHTML =
-      `<div class="equipos-history-head">` +
-      `<h3 class="equipos-history-title">Historial de uso</h3>` +
-      `<button type="button" class="wb-btn wb-btn-secondary equipos-history-close" data-eq-history-close>Cerrar</button>` +
-      `</div>` +
-      renderSessionsTable(sessions);
+    view.drawHistoryPanel(host, sessionRows(sessions));
     host.querySelector('[data-eq-history-close]')?.addEventListener('click', () => {
       host.hidden = true;
-      host.innerHTML = '';
+      view.clearHistory(host);
     });
   } catch (e) {
-    host.innerHTML = `<p class="equipos-history-empty">${esc(e.message || 'No se pudo cargar el historial.')}</p>`;
+    view.drawHistoryError(host, e.message || 'No se pudo cargar el historial.');
     showToast?.(e.message || 'Error al cargar historial.', 'error');
   }
 }
