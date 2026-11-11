@@ -69,40 +69,19 @@ export function classifyTendDeltaTone(latest, previous, ref) {
   return 'neutral';
 }
 
-/**
- * @param {(s: string) => string} esc
- * @param {unknown} latest
- * @param {unknown} previous
- * @param {boolean} [isAbnormal]
- * @param {[number, number]|null|undefined} [ref]
- */
-export function buildTendInsightHtml(esc, latest, previous, isAbnormal, ref) {
-  void isAbnormal; // range signal lives on .tend-param-value.tend-abnormal and the status cell
+export function tendChangeModel(latest, previous, ref) {
   var info = formatTendDelta(latest, previous);
-  if (!info || info.delta === 0) return '';
-  if (info.pct == null || !Number.isFinite(info.pct)) return '';
+  if (!info || info.delta === 0) return null;
+  if (info.pct == null || !Number.isFinite(info.pct)) return null;
   var pctRounded = Math.round(info.pct);
-  if (pctRounded === 0) return '';
-  var jump = isTendJump(latest, previous);
-  var tone = classifyTendDeltaTone(latest, previous, ref);
-  var deltaText =
-    (pctRounded > 0 ? '+' : '−') + String(Math.abs(pctRounded)) + '%';
-  var cls =
-    'tend-insight-delta tend-insight-delta--' +
-    info.direction +
-    ' tend-insight-delta--' +
-    tone +
-    (jump ? ' tend-insight-delta--jump' : '');
-  return (
-    '<div class="tend-insight">' +
-    '<span class="' +
-    cls +
-    '">' +
-    esc(deltaText) +
-    '</span></div>'
-  );
+  if (pctRounded === 0) return null;
+  return {
+    direction: info.direction,
+    tone: classifyTendDeltaTone(latest, previous, ref),
+    jump: isTendJump(latest, previous),
+    text: (pctRounded > 0 ? '+' : '−') + String(Math.abs(pctRounded)) + '%',
+  };
 }
-
 
 /** Status word + arrow vs reference range (never colour alone). */
 export function tendStatusInfo(latest, ref) {
@@ -114,22 +93,9 @@ export function tendStatusInfo(latest, ref) {
   return { kind: 'ok', text: 'En rango' };
 }
 
-export function buildTendStatusHtml(esc, latest, ref) {
-  var st = tendStatusInfo(latest, ref);
-  return '<span class="tend-status tend-status--' + st.kind + '">' + esc(st.text) + '</span>';
-}
-
 export function tendRangeText(ref) {
   if (!ref || ref.length < 2) return '—';
   return String(ref[0]) + ' – ' + String(ref[1]);
-}
-
-/** Cambio cell: % delta with tone class, or a dash. */
-export function buildTendChangeHtml(esc, latest, previous, isAbnormal, ref) {
-  return (
-    buildTendInsightHtml(esc, latest, previous, isAbnormal, ref) ||
-    '<span class="tend-none">—</span>'
-  );
 }
 
 /** Align compare values onto primary chart labels (string equality). */

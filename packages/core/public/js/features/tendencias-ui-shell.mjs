@@ -8,6 +8,8 @@ import { loadChartJs } from '../vendor-loader.mjs';
 import { isAbgAnalysisHidden } from './tendencias-lab-prefs.mjs';
 import { aid, tendStore, esc } from './tendencias-state.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
+import { updateTendGrid } from './tendencias-render-view.jsx';
+import { gridWithRowOrder } from './tendencias-grid-model.mjs';
 import {
   tendParsedHistoryDesc,
   buildMergedTrendSeriesCatalog,
@@ -176,15 +178,6 @@ function copyTendGroupTableText() {
   tendGroupModal.copyTableText();
 }
 
-function tendSectionChartSvg() {
-  return (
-    '<svg class="tend-section-chart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M3 17l6-6 4 4 8-10"/>' +
-    '<path d="M3 12l5-4 4 3 9-7"/>' +
-    '</svg>'
-  );
-}
-
 function destroyTendCardSortables() {
   tendStore._tendCardSortables.forEach(function (s) {
     try {
@@ -206,7 +199,13 @@ function syncTendCardOrderFromDom(sectionKey) {
     var k = el.getAttribute('data-series-key');
     if (k) order.push(k);
   });
-  if (order.length) writeTendCardOrder(aid(), sectionKey, order);
+  if (order.length) {
+    writeTendCardOrder(aid(), sectionKey, order);
+    // The dragged rows are already in this order on screen: tell the grid model, so a later redraw keeps it.
+    updateTendGrid(function (model) {
+      return gridWithRowOrder(model, sectionKey, order);
+    });
+  }
 }
 
 var _tendPointerDidDrag = false;
@@ -579,7 +578,6 @@ export {
   isTendDynamicTableModalOpen,
   copyTendDynamicTablePng,
   copyTendDynamicTableText,
-  tendSectionChartSvg,
   destroyTendCardSortables,
   syncTendCardOrderFromDom,
   ensureTendHiddenModalDelegation,

@@ -16,7 +16,7 @@ import {
 } from './tendencias-catalog.mjs';
 import {
   buildEventMarkerMapForSets,
-  buildTendDetailEventsLegendHtml,
+  tendEventsLegendModel,
   createTendEventMarkerPlugin,
   dayValueFromTrendChartIndex,
   eventTooltipLinesForChartIndex,
@@ -36,7 +36,7 @@ import { showTendPane, hideTendPane, registerTendPane, markTendSelectedRow, open
 import { copyTableText } from '../tend-export.mjs';
 import { getTendSectionLabel } from './tendencias-constants.mjs';
 import { tendHideSeriesFromCard } from './tendencias-series.mjs';
-import { drawTendDetailHeader, drawTendDetailCompare } from './tendencias-ui-detail-view.jsx';
+import { drawTendDetailHeader, drawTendDetailCompare, drawTendDetailEvents, clearTendSlot } from './tendencias-ui-detail-view.jsx';
 
 /**
  * Chart.js plugin: horizontal normality (reference) band for Tendencias.
@@ -301,9 +301,9 @@ export function refreshOpenTendDetail() {
 function syncTendDetailEventsLegend(markerMap, labels) {
   var slot = document.getElementById('tend-detail-events-slot');
   if (!slot) return;
-  var html = buildTendDetailEventsLegendHtml(markerMap, labels);
-  slot.innerHTML = html;
-  slot.setAttribute('aria-hidden', html ? 'false' : 'true');
+  var items = tendEventsLegendModel(markerMap, labels);
+  drawTendDetailEvents(slot, items);
+  slot.setAttribute('aria-hidden', items.length ? 'false' : 'true');
 }
 
 /**
@@ -470,7 +470,7 @@ function syncTendDetailVbar(ref, latest) {
   // Side column removed — normality is the chart horizontal band only.
   var vbarSlot = document.getElementById('tend-detail-vbar-slot');
   if (!vbarSlot) return;
-  vbarSlot.innerHTML = '';
+  clearTendSlot(vbarSlot);
   vbarSlot.setAttribute('aria-hidden', 'true');
 }
 
@@ -510,7 +510,7 @@ function ensureTendDetailCompareSlot(
   }
   var siblings = siblingFieldKeys(sectionKey, fieldKey, history);
   if (!siblings.length) {
-    slot.innerHTML = '';
+    clearTendSlot(slot);
     slot.hidden = true;
     tendStore.detailCompareFieldKey = null;
     return;
@@ -678,7 +678,7 @@ function openTendDetailAsync(sectionKey, fieldKey) {
   ensureTendDetailCompareSlot(sectionKey, fieldKey, history, labels, values, title, unit, ref, latest, markerMap);
   var vbarSlot = document.getElementById('tend-detail-vbar-slot');
   if (vbarSlot) {
-    vbarSlot.innerHTML = '';
+    clearTendSlot(vbarSlot);
     vbarSlot.setAttribute('aria-hidden', 'true');
   }
   syncTendDetailEventsLegend(markerMap, labels);
@@ -757,12 +757,12 @@ export function closeTendDetail() {
     if (backdrop) backdrop.style.display = 'none';
     var vbarSlot = document.getElementById('tend-detail-vbar-slot');
     if (vbarSlot) {
-      vbarSlot.innerHTML = '';
+      clearTendSlot(vbarSlot);
       vbarSlot.setAttribute('aria-hidden', 'true');
     }
     var eventsSlot = document.getElementById('tend-detail-events-slot');
     if (eventsSlot) {
-      eventsSlot.innerHTML = '';
+      clearTendSlot(eventsSlot);
       eventsSlot.setAttribute('aria-hidden', 'true');
     }
     tendStore.detailContext = null;
