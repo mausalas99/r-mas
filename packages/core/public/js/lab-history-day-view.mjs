@@ -2,7 +2,6 @@
  * Day-scoped lab history view: one picker row per calendar day, hour-window
  * groups inside the day (same rules as paste consolidation).
  */
-import { esc } from './dom-escape.mjs';
 import {
   clusterByDayTipoAndTimeWindow,
   labTimestampMsFromFechaHora,
@@ -357,22 +356,4 @@ export function filterOutDaySets(stored, day) {
     if (remove.has(s)) return false;
     return !(s && s.id != null && removeIds[String(s.id)]);
   });
-}
-
-export function buildLabHistoryDayOptionsHtml(days, selectedDayKey) {
-  return (days || [])
-    .map(function (day) {
-      var key = day && day.dayKey != null ? String(day.dayKey) : '';
-      var value = daySelectValue(key);
-      return (
-        '<option value="' +
-        esc(value) +
-        '"' +
-        (key === selectedDayKey ? ' selected' : '') +
-        '>' +
-        esc(key || 'Anterior') +
-        '</option>'
-      );
-    })
-    .join('');
 }
