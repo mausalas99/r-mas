@@ -25,6 +25,7 @@ import {
 import { salaPickerOptionsHtml, salaPickerRotacionHtml } from './sala-picker.mjs';
 import { renderSyncModeChoicePanel } from './clinical-onboarding-sync-mode.mjs';
 import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
+import { drawLocalOnlyConfirm } from './clinical-onboarding-view.jsx';
 import {
   getClientId,
   needsClinicalSyncModeChoice,
@@ -177,21 +178,6 @@ function buildLanProfileFormBody(settings) {
       </div>`;
 }
 
-function renderLocalOnlyConfirmPanel(host) {
-  host.innerHTML = buildOnboardingStageHtml({
-    title: 'Solo este equipo',
-    leadHtml:
-      '<p>Los expedientes y notas quedan solo en esta Mac. Sin Nube, rotaciones ni sala compartida.</p>',
-    stepperIndex: 2,
-    bodyHtml: `
-      <p id="onboard-local-only-error" class="clinical-registration-error" hidden></p>
-      <div class="modal-actions clinical-onboard-form-actions">
-        <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="clinical-onboard-local-confirm-btn">Entrar a R+</button>
-        <button type="button" id="clinical-onboard-mode-back-btn" class="wb-btn wb-btn-secondary">Cambiar modo</button>
-      </div>`,
-  });
-}
-
 function renderLanProfileForm(host, settings) {
   const profileGatePending = needsClinicalLanProfileGate(settings);
   const salaUpgrade = isCloudSalaUpgradePending(settings);
@@ -228,8 +214,8 @@ async function renderNoSessionOnboarding(host) {
     await wireOnboardingInteractions();
     return;
   }
-  const { buildOnboardingSessionBlockHtml } = await import('./clinical-onboarding-main.mjs');
-  host.innerHTML = await buildOnboardingSessionBlockHtml();
+  const { drawOnboardingSessionBlock } = await import('./clinical-onboarding-main.mjs');
+  await drawOnboardingSessionBlock(host);
 }
 
 /**
@@ -275,7 +261,7 @@ export async function renderOnboardingPanelInto(host) {
       await renderCompletedOnboarding(host);
       return;
     }
-    renderLocalOnlyConfirmPanel(host);
+    drawLocalOnlyConfirm(host);
     await wireOnboardingInteractions();
     return;
   }

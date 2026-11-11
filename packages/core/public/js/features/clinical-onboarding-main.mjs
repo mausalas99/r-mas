@@ -18,14 +18,17 @@ import {
   renderSyncModeChoicePanel,
   wireSyncModeOnboardingInteractions,
 } from './clinical-onboarding-sync-mode.mjs';
-import { buildOnboardingBootLoadingHtml, buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
+import {
+  drawBootLoading,
+  drawLoadError,
+  drawSessionBlock,
+} from './clinical-onboarding-view.jsx';
 import {
   animateOnboardingBootComplete,
   startOnboardingBootProgress,
   stopOnboardingBootProgress,
 } from './clinical-onboarding-boot-progress.mjs';
 
-import { escapeHtml } from '../dom-escape.mjs';
 export const CLINICAL_ONBOARDING_MAIN_ID = 'clinical-onboarding-main';
 export const CLINICAL_ONBOARDING_ACTIVE_CLASS = 'clinical-onboarding-active';
 
@@ -43,7 +46,7 @@ function ensureOnboardingBootLoading(host, opts = {}) {
       bootProgressStopper();
       bootProgressStopper = null;
     }
-    host.innerHTML = buildOnboardingBootLoadingHtml(opts);
+    drawBootLoading(host, opts);
     bootProgressStopper = startOnboardingBootProgress(host);
     return;
   }
@@ -132,19 +135,11 @@ export async function describeOnboardingSessionBlock() {
   return 'Abre la base de datos local de R+ para continuar. No necesitas R+ Cloud ni ⇄.';
 }
 
-/** Card HTML when session bootstrap failed (auto-unlock retries; no manual DB gate). */
-export async function buildOnboardingSessionBlockHtml() {
+/** Draw the card shown when session bootstrap failed (auto-unlock retries; no manual DB gate). */
+export async function drawOnboardingSessionBlock(host) {
   const lead = await describeOnboardingSessionBlock();
   const gate = await readClinicalDbGateKind();
-  const actions =
-    gate === 'native_blocked'
-      ? ''
-      : `<div class="modal-actions clinical-onboard-session-actions"><button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="clinical-onboard-retry-session-btn">Reintentar</button></div>`;
-  return buildOnboardingStageHtml({
-    title: 'Sesión clínica',
-    leadHtml: `<p>${escapeHtml(lead)}</p>`,
-    bodyHtml: actions,
-  });
+  drawSessionBlock(host, { lead, retry: gate !== 'native_blocked' });
 }
 
 export function wireOnboardingSessionRecoveryOnce(host) {
@@ -281,7 +276,7 @@ async function ensureOnboardingDbUnlockedAndFlushed(host) {
 
   const dbReady = await ensureClinicalDbUnlocked();
   if (!dbReady.unlocked) {
-    host.innerHTML = await buildOnboardingSessionBlockHtml();
+    await drawOnboardingSessionBlock(host);
     wireOnboardingSessionRecoveryOnce(host);
     return false;
   }
@@ -305,7 +300,7 @@ async function ensureOnboardingPanelSession(host) {
     sessionOk = await ensureClinicalPanelSession();
   }
   if (!sessionOk) {
-    host.innerHTML = await buildOnboardingSessionBlockHtml();
+    await drawOnboardingSessionBlock(host);
     wireOnboardingSessionRecoveryOnce(host);
     return false;
   }
@@ -331,7 +326,7 @@ async function renderOnboardingRegistrationForm(host) {
     const rot = await import('./clinical-rotation-entry.mjs');
     rot.syncClinicalRotationEntryChrome();
   } catch (err) {
-    host.innerHTML = `<p class="clinical-registration-error">${escapeHtml(err instanceof Error ? err.message : 'Error al cargar.')}</p>`;
+    drawLoadError(host, err instanceof Error ? err.message : 'Error al cargar.');
   }
 }
 

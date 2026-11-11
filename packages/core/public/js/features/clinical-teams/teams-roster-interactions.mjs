@@ -31,9 +31,8 @@ import {
   writeClinicalTeamsCollapseOpen,
   filterJoinedTeams,
   CLINICAL_SALAS,
-  escapeAttr,
-  escapeHtml,
 } from './shared.mjs';
+import { drawPerfilEquipo } from './teams-roster-interactions-view.jsx';
 import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
 import {
   resolveClinicalTeamsPanelContext,
@@ -308,35 +307,26 @@ function renderPerfilEquipo(host) {
   if (!perfilFilter) perfilFilter = home || PERFIL_ALL;
   const shown = perfilTeams.filter((t) => perfilFilter === PERFIL_ALL || String(t.sala || '') === perfilFilter);
   const mine = perfilTeams.find((t) => t.isMember);
-  const opt = (v, label) =>
-    `<option value="${escapeAttr(v)}"${perfilFilter === v ? ' selected' : ''}>${escapeHtml(label)}</option>`;
-  const pills = shown
-    .map((t) => {
-      const off = !t.isMember && !t.joinEligible;
-      const title = off && t.joinReason ? ` title="${escapeAttr(t.joinReason)}"` : '';
-      return `<button type="button" class="settings-perfil-chip settings-perfil-chip--team" data-perfil-equipo-team="${escapeAttr(t.team_id)}" aria-pressed="${!!t.isMember}"${off ? ' disabled' : ''}${title}>${escapeHtml(String(t.name || 'Equipo').trim())}</button>`;
-    })
-    .join('');
-  host.innerHTML = `
-    <section class="settings-perfil-sala settings-perfil-equipo">
-      <div class="settings-perfil-equipo-head">
-        <span class="settings-perfil-sala-title">Equipo</span>
-        <span class="settings-perfil-sala-current">${escapeHtml(mine ? String(mine.name || 'Equipo').trim() : 'Sin equipo')}</span>
-        <label class="settings-perfil-equipo-pick"><span>Ver equipos de</span><select class="profile-input" data-perfil-equipo-select>${opt(PERFIL_ALL, 'Todas las salas')}${CLINICAL_SALAS.map((s) => opt(s, s)).join('')}</select></label>
-      </div>
-      ${pills ? `<div class="settings-perfil-equipo-grid" role="group" aria-label="Equipo">${pills}</div>` : '<p class="settings-acc-hint settings-acc-hint--tight">Sin equipos en esta sala.</p>'}
-      <div class="settings-perfil-chips">
-        <button type="button" class="settings-perfil-chip settings-perfil-chip--add" data-perfil-equipo-open>+ Crear equipo</button>
-        <button type="button" class="settings-perfil-chip settings-perfil-chip--add" data-perfil-equipo-open>Tengo un código</button>
-      </div>
-    </section>`;
+  const options = [{ value: PERFIL_ALL, label: 'Todas las salas' }, ...CLINICAL_SALAS.map((s) => ({ value: s, label: s }))]
+    .map((o) => ({ ...o, selected: perfilFilter === o.value }));
+  const teams = shown.map((t) => {
+    const off = !t.isMember && !t.joinEligible;
+    return {
+      id: String(t.team_id),
+      name: String(t.name || 'Equipo').trim(),
+      pressed: !!t.isMember,
+      disabled: off,
+      title: off && t.joinReason ? String(t.joinReason) : '',
+    };
+  });
+  drawPerfilEquipo(host, { current: mine ? String(mine.name || 'Equipo').trim() : 'Sin equipo', options, teams });
 }
 
 async function loadPerfilEquipo(host) {
   const userId = currentUserId();
   const api = dbApi();
   if (!userId || !api || typeof api.dbClinicalTeamsListBySala !== 'function') {
-    host.innerHTML = '';
+    drawPerfilEquipo(host, null);
     return;
   }
   const res = await api.dbClinicalTeamsListBySala({ sala: '', forUserId: userId, allSalas: true });
