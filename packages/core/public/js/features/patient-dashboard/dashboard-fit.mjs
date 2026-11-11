@@ -62,6 +62,17 @@ function pickColumns(box) {
   }
 }
 
+/** Zones marked [data-fit-one-row] keep only the items on their first line. */
+function keepFirstRow(zone) {
+  var rows = items(zone);
+  if (!rows.length) return;
+  var top = rows[0].offsetTop;
+  rows.forEach(function (el) {
+    el.hidden = el.offsetTop > top + 1;
+  });
+  syncLabel(zone);
+}
+
 /** @param {ParentNode} root */
 export function fitDashboard(root) {
   var boxes = Array.prototype.slice.call(root.querySelectorAll('[data-fit]'));
@@ -69,6 +80,7 @@ export function fitDashboard(root) {
     items(box).forEach(function (el) {
       el.hidden = false;
     });
+    box.querySelectorAll('[data-fit-one-row]').forEach(keepFirstRow);
     box.closest('.card').querySelectorAll('[data-fit-zone]').forEach(syncLabel);
     pickColumns(box);
   });

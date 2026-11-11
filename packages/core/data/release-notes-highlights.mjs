@@ -4,31 +4,27 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_854 = [
+var RELEASE_NOTES_855 = [
   {
-    title: 'Antibiograma con CLSI',
-    body: 'La CMI se interpreta con los puntos de corte de <strong>CLSI M100 2026</strong>. Si hay duda, no se interpreta.',
+    title: 'Labs de 3 días',
+    body: 'El censo PDF y la tabla de Guardia muestran los <strong>labs de 3 días</strong>.',
   },
   {
-    title: 'Pistas de resistencia',
-    body: 'Aviso de posible <strong>BLEE o AmpC</strong> y de <strong>resistencia esperada</strong>. Es cribado, no diagnóstico.',
+    title: 'Negativo y positivo',
+    body: 'Los resultados <strong>NEGATIVO</strong>, <strong>POSITIVO</strong> y <strong>TRAZAS</strong> se ven tal cual, no como «---».',
   },
   {
-    title: 'Cultivos sin revisar',
-    body: 'Un cultivo o antibiograma nuevo queda pendiente hasta que lo marcas. <strong>⌘⇧C</strong> copia los cultivos del equipo.',
+    title: 'Medicamentos propuestos',
+    body: 'En Estado actual confirmas o descartas <strong>un medicamento a la vez</strong>. Los demás siguen pendientes.',
   },
   {
-    title: 'Registro por pasos',
-    body: 'En Estado actual, el registro manual va en <strong>Signos, Glucosa, Balance y Revisar</strong>. Avanza solo.',
-  },
-  {
-    title: 'Censo más claro',
-    body: 'Negrita solo para lo <strong>anormal</strong> en Labs y Signos. Cultivos y signos ocupan menos líneas.',
+    title: 'Pacientes en una línea',
+    body: 'En el tablero del paciente, las zonas marcadas muestran solo su primera línea.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_854;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_855;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.5.4': RELEASE_NOTES_854,
+  '8.5.5': RELEASE_NOTES_855,
 };

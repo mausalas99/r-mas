@@ -457,300 +457,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   }
 }
 
-.ea-clinico-med-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
-  align-items: start;
-  gap: 6px;
-  min-width: 0;
-  max-width: 100%;
-  width: 100%;
-  box-sizing: border-box;
-}
 
-.ea-med-cat {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  border: var(--border-hairline);
-  border-radius: var(--radius-sm);
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
-  overflow: hidden;
-}
-
-.ea-med-cat-summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  list-style: none;
-  font-size: calc(12px * var(--density-font, 1));
-  font-weight: 600;
-  line-height: 1.3;
-  border-radius: 0;
-  border-top: none;
-}
-
-.ea-med-cat-summary::-webkit-details-marker {
-  display: none;
-}
-
-.ea-med-cat-title {
-  flex: 0 0 auto;
-  color: var(--text);
-}
-
-.ea-med-cat-preview {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 400;
-  font-size: calc(11px * var(--density-font, 1));
-  color: var(--text-muted);
-}
-
-.ea-med-cat-summary .ea-confirmed-badge,
-.ea-med-cat-summary .ea-pendiente-badge {
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
-.ea-med-cat-body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 12px 10px;
-  border-top: var(--border-hairline);
-}
-
-.ea-med-subcat {
-  box-sizing: border-box;
-  max-width: 100%;
-  border: 1px solid color-mix(in oklab, var(--divider) 85%, transparent);
-  border-radius: var(--radius-sm);
-  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-  overflow: hidden;
-}
-
-.ea-med-subcat-summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  cursor: pointer;
-  list-style: none;
-  font-size: calc(11px * var(--density-font, 1));
-  font-weight: 600;
-  border-top: none;
-}
-
-.ea-med-subcat-summary::-webkit-details-marker {
-  display: none;
-}
-
-.ea-med-subcat-title {
-  flex: 0 0 auto;
-  color: var(--text);
-}
-
-.ea-med-subcat-preview {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 400;
-  font-size: calc(10px * var(--density-font, 1));
-}
-
-.ea-med-subcat-body {
-  padding: 4px 10px 8px;
-}
-
-.ea-med-item-list {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-  max-width: 100%;
-}
-
-.ea-med-item {
-  width: auto;
-  max-width: 100%;
-  border: var(--border-hairline);
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
-  box-sizing: border-box;
-}
-
-.ea-med-item-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px 4px 2px 8px;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.ea-med-item-text {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: calc(11px * var(--density-font, 1));
-  line-height: 1.35;
-}
-
-.ea-med-item-remove,
-.ea-med-item-remove.ea-btn,
-.ea-med-item-remove.ea-btn--icon {
-  flex: 0 0 auto;
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
-  min-height: 20px;
-  padding: 0;
-  margin: 0;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-  opacity: 0.7;
-  box-shadow: none;
-}
-
-.ea-med-item-remove:hover {
-  opacity: 1;
-  background: color-mix(in oklab, var(--error) 12%, transparent);
-  color: var(--error);
-}
-
-.ea-med-item-remove:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-focus-ring);
-}
-
-.ea-med-add-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-  max-width: 100%;
-}
-
-.ea-med-add-row .ea-med-add-select {
-  flex: 1 1 10rem;
-  min-width: 0;
-  max-width: min(100%, 20rem);
-  min-height: 30px;
-  padding: 4px 8px;
-  font-size: calc(11px * var(--density-font, 1));
-}
-
-.ea-med-add-row .ea-btn {
-  min-height: 30px;
-  height: 30px;
-  padding: 0 10px;
-  font-size: calc(11px * var(--density-font, 1));
-}
-
-.ea-med-add-category-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
-  padding-top: 10px;
-  border-top: var(--border-hairline);
-}
-
-.ea-med-add-category-label {
-  font-size: calc(11px * var(--density-font, 1));
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.ea-med-add-category-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.ea-med-add-category-controls .ea-med-pick-category {
-  flex: 1 1 12rem;
-  min-width: 0;
-}
-
-.ea-med-manual-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px;
-  border: 1px dashed var(--divider);
-  border-radius: var(--radius-sm);
-  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-}
-
-.ea-med-manual-panel[hidden] {
-  display: none !important;
-}
-
-.ea-med-manual-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.ea-med-pending {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.ea-med-reclassify-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--surface) 92%, var(--lab-chip-bg));
-}
-
-.ea-med-reclassify-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.ea-med-reclassify-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.ea-med-reclassify-controls .ea-med-reclassify-select {
-  flex: 1 1 12rem;
-  min-width: 0;
-}
-
-.ea-clinico-med-actions,
 .ea-clinico-text-actions {
   display: flex;
   flex-wrap: wrap;
@@ -768,17 +475,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-.ea-pendiente-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--todo-prio-media) 12%, var(--surface));
-  color: var(--warn);
-  font-size: 10px;
-  font-weight: 700;
 }
 
 .ea-confirmed-badge {
@@ -1065,13 +761,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   border-color: color-mix(in oklab, var(--action) 45%, var(--border));
   box-shadow: 0 0 0 3px var(--color-focus-ring);
   background: var(--surface);
-}
-
-.ea-diet-weight-hint {
-  margin: 0;
-  font-size: calc(11px * var(--density-font, 1));
-  color: var(--text-muted);
-  line-height: 1.4;
 }
 
 /* Vitals grid — compact clinical inputs */
@@ -1625,9 +1314,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 /* The add row spans the full width under the medicine columns */
-.ea-clinico-med-grid > .ea-med-add-category-row {
-  grid-column: 1 / -1;
-}
 
 .ea-vital-history-modal:has(.ea-turnos-table) {
   width: min(92vw, 720px);
@@ -3758,90 +3444,7 @@ select.ea-io-link {
   background: var(--surface);
 }
 
-.estado-actual-panel .ea-diet-weight-hint {
-  margin: 4px 0 0;
-  font-size: 11.5px;
-}
-
 /* Medications: one row per category, items inline, adds as links */
-.estado-actual-panel .ea-clinico-med-grid {
-  gap: 0 24px;
-  margin-top: 12px;
-  padding-top: 8px;
-  border-top: 1px solid var(--divider);
-}
-
-.estado-actual-panel .ea-med-cat {
-  border: 0;
-  border-radius: 0;
-  background: none;
-  overflow: visible;
-}
-
-.estado-actual-panel .ea-med-cat-summary {
-  padding: 8px 0 2px;
-}
-
-.estado-actual-panel .ea-med-cat[open] .ea-med-cat-preview {
-  display: none;
-}
-
-.estado-actual-panel .ea-med-cat-body {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-  padding: 2px 0 8px;
-  border: 0;
-}
-
-.estado-actual-panel .ea-med-item-list {
-  display: contents;
-}
-
-.estado-actual-panel .ea-med-item {
-  border: 0;
-  border-radius: 0;
-  background: none;
-}
-
-.estado-actual-panel .ea-med-item-row {
-  padding: 0;
-}
-
-.estado-actual-panel .ea-med-item-text {
-  font-size: calc(12px * var(--density-font, 1));
-}
-
-.estado-actual-panel .ea-med-item-remove {
-  opacity: 0;
-}
-
-.estado-actual-panel .ea-med-item:hover .ea-med-item-remove,
-.estado-actual-panel .ea-med-item:focus-within .ea-med-item-remove {
-  opacity: 1;
-}
-
-.estado-actual-panel .ea-med-add-row {
-  display: flex;
-  gap: 12px;
-  margin-left: auto;
-}
-
-.estado-actual-panel .ea-med-manual-panel {
-  flex-basis: 100%;
-}
-
-.estado-actual-panel .ea-med-add-category-row {
-  grid-column: 1 / -1;
-  margin-top: 0;
-  padding: 4px 0 0;
-  border: 0;
-}
-
-.estado-actual-panel .ea-med-add-category-row[hidden] {
-  display: none;
-}
 
 select.ea-io-link {
   appearance: none;
@@ -3917,102 +3520,7 @@ select.ea-io-link {
   color: var(--text-muted);
 }
 
-.estado-actual-panel .ea-clinico-med-grid {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
-}
-
-.estado-actual-panel .ea-med-cat-body {
-  flex-wrap: nowrap;
-  align-items: baseline;
-}
-
-.estado-actual-panel .ea-med-cat-body > .ea-med-item-list {
-  display: flex;
-  flex: 1 1 auto;
-  flex-wrap: wrap;
-  gap: 2px 14px;
-  min-width: 0;
-}
-
-.estado-actual-panel .ea-med-cat-body > .ea-med-pending,
-.estado-actual-panel .ea-med-cat-body > .ea-med-manual-panel,
-.estado-actual-panel .ea-med-cat-body > .ea-med-subcat {
-  flex-basis: 100%;
-}
-
-.estado-actual-panel .ea-med-cat-body:has(> .ea-med-pending, > .ea-med-subcat, > .ea-med-manual-panel:not([hidden])) {
-  flex-wrap: wrap;
-}
-
 /* Antidiabéticos subgroup inside "nm": same flat rows as a category */
-.estado-actual-panel .ea-med-subcat-body > .ea-med-item-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 14px;
-}
-
-.estado-actual-panel .ea-med-add-row {
-  flex: 0 0 auto;
-  flex-wrap: nowrap;
-  gap: 12px;
-  margin-left: auto;
-}
-
-.estado-actual-panel .ea-med-add-row .ea-med-add-select,
-.estado-actual-panel .ea-med-add-row .ea-io-link {
-  flex: 0 0 auto;
-  width: auto;
-  min-height: 0;
-  height: auto;
-  padding: 2px 0;
-  border: 0;
-  background: none;
-  font-size: 12.5px;
-}
-
-/* Clínico fields flow on one line: FOUR · Esferas · Soporte · params · Dieta · Kcal · Proteína.
-   Wraps only when the ventilator params do not fit. */
-@media (min-width: 1001px) {
-  .estado-actual-panel .ea-clinico-grid {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 6px 8px;
-    align-items: end;
-  }
-
-  .estado-actual-panel .ea-clinico-vitals-row,
-  .estado-actual-panel .ea-clinico-nutrition-row,
-  .estado-actual-panel .ea-soporte-vent-block,
-  .estado-actual-panel .ea-soporte-params,
-  .estado-actual-panel .ea-soporte-params-grid {
-    display: contents;
-  }
-
-  .estado-actual-panel .ea-clinico-grid .ea-field {
-    flex: 0 0 4.5rem;
-  }
-
-  .estado-actual-panel .ea-clinico-grid .ea-field--soporte {
-    flex-basis: 12rem;
-  }
-
-  .estado-actual-panel .ea-clinico-grid .ea-soporte-params-grid > .ea-field {
-    flex-basis: 6rem;
-  }
-
-  .estado-actual-panel .ea-clinico-grid .ea-field--dieta {
-    flex: 1 1 10rem;
-  }
-
-  .estado-actual-panel .ea-clinico-grid .ea-clinico-nutrition-row > .ea-field:not(.ea-field--dieta) {
-    flex-basis: 5.5rem;
-  }
-
-  .estado-actual-panel .ea-clinico-grid > :not(.ea-clinico-vitals-row, .ea-clinico-nutrition-row, .ea-soporte-vent-block) {
-    flex-basis: 100%;
-  }
-}
 
 .estado-actual-panel .ea-clinico-body .ea-field {
   gap: 3px;
@@ -4041,213 +3549,21 @@ select.ea-io-link {
    MED_GRID_COLUMNS). Each category is one row: its name in a fixed label
    column, its meds flowing to the right. Rows only move up or down between
    patients, never sideways. An empty half folds away. */
-.estado-actual-panel .ea-clinico-med-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 40px;
-  margin-top: 8px;
-  padding-top: 0;
-}
-
-.estado-actual-panel .ea-med-col {
-  flex: 1 1 0;
-  min-width: 22rem;
-}
-
-.estado-actual-panel .ea-med-col:empty {
-  display: none;
-}
-
-.estado-actual-panel .ea-clinico-med-grid > .ea-med-add-category-row {
-  flex-basis: 100%;
-}
-
-.estado-actual-panel .ea-med-cat,
-.estado-actual-panel .ea-med-subcat {
-  display: grid;
-  grid-template-columns: 9.5rem minmax(0, 1fr);
-  column-gap: 1rem;
-  align-items: start;
-}
-
-.estado-actual-panel .ea-med-cat > .ea-med-cat-summary,
-.estado-actual-panel .ea-med-subcat > .ea-med-subcat-summary {
-  display: block;
-  padding: 5px 0 6px;
-  cursor: default;
-}
-
-.estado-actual-panel .ea-med-cat::details-content,
-.estado-actual-panel .ea-med-subcat::details-content {
-  min-width: 0;
-}
-
-.estado-actual-panel .ea-med-cat-title,
-.estado-actual-panel .ea-med-subcat-title {
-  white-space: normal;
-  line-height: 1.35;
-}
 
 /* NM split in two: its sub-rows carry the labels, so NM's own title hides
    and its content takes the full row. */
-.estado-actual-panel .ea-med-cat:has(.ea-med-subcat) {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.estado-actual-panel .ea-med-cat:has(.ea-med-subcat) > .ea-med-cat-summary {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
-
-.estado-actual-panel .ea-med-cat-body,
-.estado-actual-panel .ea-med-subcat-body {
-  padding: 2px 0 6px;
-}
-
-.estado-actual-panel .ea-med-cat-body > .ea-med-item-list,
-.estado-actual-panel .ea-med-subcat-body > .ea-med-item-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 20px;
-}
-
-.estado-actual-panel .ea-med-cat-preview,
-.estado-actual-panel .ea-med-subcat-preview {
-  display: none;
-}
-
-@media (max-width: 640px) {
-  .estado-actual-panel .ea-med-col {
-    min-width: 0;
-    flex-basis: 100%;
-  }
-
-  .estado-actual-panel .ea-med-cat,
-  .estado-actual-panel .ea-med-subcat {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
 
 /* Tighter medicine rows: the hidden remove button no longer sets the row height */
-.estado-actual-panel .ea-med-item-row {
-  min-height: 0;
-  padding: 3px 0;
-}
-
-.estado-actual-panel .ea-med-item-remove {
-  min-height: 0;
-  height: auto;
-  padding: 0 4px;
-  line-height: 1;
-}
-
-.estado-actual-panel .ea-med-cat-summary {
-  padding-top: 6px;
-}
-
-.estado-actual-panel .ea-med-cat-body {
-  padding-bottom: 6px;
-}
 
 /* Medicine names get the full width: + Receta / + Manual sit on the category
    title line and show where the pointer or focus is. */
-.estado-actual-panel .ea-med-cat {
-  position: relative;
-}
-
-.estado-actual-panel .ea-med-cat-body > .ea-med-add-row {
-  position: absolute;
-  top: 4px;
-  right: 0;
-  padding-left: 12px;
-  background: var(--surface);
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
 
 /* Size "+ Receta" to its label, not to its longest option */
-.estado-actual-panel .ea-med-add-row .ea-med-add-select {
-  field-sizing: content;
-}
-
-.estado-actual-panel .ea-med-cat:hover > .ea-med-cat-body > .ea-med-add-row,
-.estado-actual-panel .ea-med-cat:focus-within > .ea-med-cat-body > .ea-med-add-row {
-  opacity: 1;
-}
 
 /* The actions take the badge's place instead of covering it */
-.estado-actual-panel .ea-med-cat:hover > .ea-med-cat-summary > .ea-confirmed-badge,
-.estado-actual-panel .ea-med-cat:hover > .ea-med-cat-summary > .ea-pendiente-badge,
-.estado-actual-panel .ea-med-cat:focus-within > .ea-med-cat-summary > .ea-confirmed-badge,
-.estado-actual-panel .ea-med-cat:focus-within > .ea-med-cat-summary > .ea-pendiente-badge {
-  visibility: hidden;
-}
-
-.estado-actual-panel .ea-med-item-text {
-  white-space: normal;
-}
-
-.estado-actual-panel .ea-med-subcat {
-  border: 0;
-  border-radius: 0;
-  background: none;
-  overflow: visible;
-}
-
-.estado-actual-panel .ea-med-subcat[open] .ea-med-subcat-preview {
-  display: none;
-}
-
-.estado-actual-panel .ea-med-subcat-summary,
-.estado-actual-panel .ea-med-subcat-body {
-  padding-left: 0;
-  padding-right: 0;
-}
-
-.estado-actual-panel .ea-med-subcat-summary {
-  padding-top: 2px;
-  padding-bottom: 2px;
-}
-
-.estado-actual-panel .ea-med-subcat-body {
-  padding-top: 0;
-  padding-bottom: 4px;
-}
 
 /* Dense medicine list: small uppercase group labels, one tight line per
    med, dose muted. Keeps a 15-20 med patient on one screen. */
-.estado-actual-panel .ea-med-cat-title,
-.estado-actual-panel .ea-med-subcat-title {
-  font-size: calc(10.5px * var(--density-font, 1));
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.estado-actual-panel .ea-med-cat-summary {
-  padding: 4px 0 1px;
-}
-
-.estado-actual-panel .ea-med-cat-body {
-  padding-bottom: 4px;
-}
-
-.estado-actual-panel .ea-med-subcat-summary {
-  padding: 2px 0 0;
-}
-
-.estado-actual-panel .ea-med-item-row {
-  padding: 1px 0;
-  line-height: 1.3;
-}
-
-.estado-actual-panel .ea-med-item-dose {
-  color: var(--text-muted);
-}
 
 /* The copy button floats bottom-right, over the empty end of Historial —
    no need to reserve a full band for it. */
@@ -4564,151 +3880,409 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   padding: 16px 24px 20px;
 }
 
-/* Estado actual "Por sistemas": one card per body system. iOS springs and radii. */
-.estado-actual-panel .ea-sys-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-}
 
-.estado-actual-panel .ea-sys-grid > * { min-width: 0; }
+/* Medicamentos: confirmed drugs as pills; each proposed drug as its own row. */
 
-.estado-actual-panel .ea-sys-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px 16px;
-  border: 1px solid var(--divider);
-  border-radius: 12px;
-  background: var(--surface);
-  transition: border-color 207ms cubic-bezier(.2, .9, .3, 1.15);
-}
 
-.estado-actual-panel .ea-sys-card:hover { border-color: var(--text-muted); }
-
-.estado-actual-panel .ea-sys-title {
-  margin: 0;
-  font-size: 11px;
+.ea-pendiente-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--todo-prio-media) 12%, var(--surface));
+  color: var(--warn);
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+}
+
+/* Medicamentos card: one row per category, one chip per drug (design A) */
+.estado-actual-panel .ea-clinico-med-grid {
+  margin-top: 12px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.estado-actual-panel .ea-med-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.estado-actual-panel .ea-med-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.estado-actual-panel .ea-med-head-spacer {
+  flex: 1;
+}
+
+.estado-actual-panel .ea-med-pending-count {
+  padding: 3px 10px;
+  border: 1px solid var(--success);
+  border-radius: var(--radius-pill);
+  color: var(--success);
+  font-size: 12px;
+}
+
+.estado-actual-panel .ea-med-add-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.estado-actual-panel .ea-med-add-panel[hidden] {
+  display: none;
+}
+
+.estado-actual-panel .ea-med-add-panel label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.estado-actual-panel .ea-med-add-panel [data-ea-med-add-text] {
+  flex: 1;
+  min-width: 240px;
+}
+
+.estado-actual-panel .ea-med-row {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 14px 0;
+  border-top: 1px solid var(--divider);
+}
+
+.estado-actual-panel .ea-med-row-label {
+  padding-top: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
-.estado-actual-panel .ea-sys-card .ea-snapshot-vitals {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 16px;
+.estado-actual-panel .ea-med-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
-.estado-actual-panel .ea-sys-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
-  gap: 8px 12px;
+.estado-actual-panel .ea-med-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--input-fill);
+  white-space: nowrap;
 }
 
-.estado-actual-panel .ea-sys-card--nutri,
-.estado-actual-panel .ea-sys-card--soporte:has(.ea-soporte-vent-block) { grid-column: 1 / -1; }
-
-.estado-actual-panel .ea-sys-card--nutri .ea-sys-fields {
-  grid-template-columns: minmax(10rem, 2fr) repeat(auto-fit, minmax(5.5rem, 1fr));
+.estado-actual-panel .ea-med-chip--pending {
+  padding-right: 4px;
+  border: 1px dashed var(--success);
+  background: transparent;
 }
 
-.estado-actual-panel .ea-sys-grid > .ea-diet-proposal-bar,
-.estado-actual-panel .ea-sys-grid > .ea-soporte-vent-block,
-.estado-actual-panel .ea-sys-grid > :not(.ea-sys-card) { grid-column: 1 / -1; }
-
-.estado-actual-panel .ea-sys-card .ea-soporte-params-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
-  gap: 8px 12px;
+.estado-actual-panel .ea-med-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
 }
 
-.estado-actual-panel .ea-sys-card .ea-field { flex: none; }
+.estado-actual-panel .ea-med-item-dose {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.estado-actual-panel .ea-med-chip-tag {
+  font-size: 11px;
+  color: var(--success);
+}
+
+.estado-actual-panel .ea-med-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--divider);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+}
+
+.estado-actual-panel .ea-med-chip-btn--ok {
+  background: var(--success);
+  color: var(--bg);
+}
+
+
+.estado-actual-panel .ea-med-add-category-row {
+  padding-top: 12px;
+  border-top: 1px solid var(--divider);
+}
+
+.estado-actual-panel .ea-med-add-category-row[hidden] {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .estado-actual-panel .ea-med-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}
+
+/* Medicamentos card: compact sizes to match design A (board artboard A). */
+.estado-actual-panel .ea-med-head .ea-btn {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 16px;
+  font-size: 13px;
+  letter-spacing: 0;
+  border-radius: var(--radius-pill);
+}
+
+/* Fixed sizes: the header does not follow --density-font (design A). */
+.estado-actual-panel .ea-med-head .ea-muted {
+  font-size: 12px;
+}
+
+.estado-actual-panel .ea-clinico-med-grid {
+  margin-top: 8px;
+  padding: 20px 24px;
+}
+
+.estado-actual-panel .ea-med-row {
+  padding: 10px 0;
+}
+
+.estado-actual-panel .ea-med-chip {
+  min-height: 30px;
+}
+
+/* Confirmed drug: the whole pill is the delete button. Hover shows the strike. */
+.estado-actual-panel .ea-med-chip--confirmed {
+  padding: 0;
+}
+
+.estado-actual-panel .ea-med-chip-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.estado-actual-panel .ea-med-chip-text:hover .ea-med-item-name,
+.estado-actual-panel .ea-med-chip-text:hover .ea-med-item-dose {
+  text-decoration: line-through;
+}
+
+/* Top section: design B. Header row, then two cards side by side (1.15fr / 1fr).
+   Each card is a list of rows: 150px label column, values on the right,
+   hairline between rows. */
+.estado-actual-panel .ea-action-bar {
+  min-height: 32px;
+  margin-bottom: 12px;
+}
+
+.estado-actual-panel .ea-action-bar .fit-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.estado-actual-panel .ea-action-bar__cluster .ea-btn {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+}
 
 .estado-actual-panel .ea-estado-clinico > summary { display: none; }
 .estado-actual-panel .ea-estado-clinico { border: 0; background: none; padding: 0; }
 
-@media (prefers-reduced-motion: reduce) {
-  .estado-actual-panel .ea-sys-card { transition: none; }
+.estado-actual-panel .ea-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
 }
 
-/* Medicamentos as one system card. Add buttons sit in flow, never over the med names. */
-.estado-actual-panel .ea-clinico-med-grid {
-  padding: 14px 16px 10px;
-  border: 1px solid var(--divider);
-  border-radius: 12px;
+.estado-actual-panel .ea-top-grid > .ea-sys-grid {
+  display: block;
+  margin: 0;
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   background: var(--surface);
-  column-gap: 32px;
+  box-shadow: none;
+  min-width: 0;
 }
 
-.estado-actual-panel .ea-clinico-med-grid::before {
-  content: 'Medicamentos';
-  flex-basis: 100%;
-  margin-bottom: 4px;
+.estado-actual-panel .ea-top-grid .ea-sys-card {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  min-height: 36px;
+  padding: 3px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: none;
+}
+
+.estado-actual-panel .ea-top-grid .ea-sys-card:first-child { border-top: 0; }
+
+.estado-actual-panel .ea-top-grid .ea-sys-title,
+.estado-actual-panel .ea-top-grid .ea-sys-card--soporte > .ea-label,
+.estado-actual-panel .ea-top-grid .ea-soporte-head .ea-label {
+  margin: 0;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
-.estado-actual-panel .ea-med-cat + .ea-med-cat,
-.estado-actual-panel .ea-med-cat + .ea-med-subcat {
-  border-top: 1px solid var(--divider);
+.estado-actual-panel .ea-top-grid .ea-soporte-head .ea-soporte-label--hints { color: var(--accent); }
+
+/* Left card: readings inline, label · value · unit */
+.estado-actual-panel .ea-top-grid .ea-snapshot-vitals,
+.estado-actual-panel .ea-top-grid .ea-snapshot-io {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
 }
 
-.estado-actual-panel .ea-med-cat { padding: 6px 0; }
-.estado-actual-panel .ea-med-cat-title { color: var(--text-muted); }
-
-.estado-actual-panel .ea-med-cat-body > .ea-med-add-row {
-  position: static;
-  padding: 2px 0 0;
+.estado-actual-panel .ea-top-grid .ea-snapshot-row,
+.estado-actual-panel .ea-top-grid .ea-snapshot-io > div {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 0;
+  padding: 2px 0;
   background: none;
-  opacity: 0.55;
 }
 
-.estado-actual-panel .ea-med-cat:hover > .ea-med-cat-body > .ea-med-add-row,
-.estado-actual-panel .ea-med-cat:focus-within > .ea-med-cat-body > .ea-med-add-row { opacity: 1; }
-
-.estado-actual-panel .ea-med-cat:hover > .ea-med-cat-summary > .ea-confirmed-badge,
-.estado-actual-panel .ea-med-cat:hover > .ea-med-cat-summary > .ea-pendiente-badge,
-.estado-actual-panel .ea-med-cat:focus-within > .ea-med-cat-summary > .ea-confirmed-badge,
-.estado-actual-panel .ea-med-cat:focus-within > .ea-med-cat-summary > .ea-pendiente-badge { visibility: visible; }
-
-/* Two full-width 12-column rows of cards, no empty cells. */
-.estado-actual-panel .ea-sys-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 10px 12px; }
-.estado-actual-panel .ea-sys-grid > .ea-sys-card { grid-column: span 4; }
-.estado-actual-panel .ea-sys-card--meta { grid-column: span 5 !important; }
-.estado-actual-panel .ea-sys-card--renal { grid-column: span 7 !important; }
-.estado-actual-panel .ea-sys-card--neuro,
-.estado-actual-panel .ea-sys-card--soporte { grid-column: span 3 !important; }
-.estado-actual-panel .ea-sys-card--soporte:has(.ea-soporte-vent-block) { grid-column: 1 / -1 !important; }
-.estado-actual-panel .ea-sys-card--nutri { grid-column: span 6 !important; }
-.estado-actual-panel .ea-sys-card--nutri .ea-sys-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.estado-actual-panel .ea-sys-card--nutri .ea-field--dieta { grid-column: 1 / -1; }
-.estado-actual-panel .ea-sys-card { padding: 10px 14px; gap: 6px; }
-.estado-actual-panel .ea-sys-grid > :not(.ea-sys-card) { grid-column: 1 / -1; }
-.estado-actual-panel .ea-med-cat,
-.estado-actual-panel .ea-med-subcat { grid-template-columns: 7rem minmax(0, 1fr); }
-
-@media (max-width: 1000px) {
-  .estado-actual-panel .ea-sys-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .estado-actual-panel .ea-sys-grid > .ea-sys-card { grid-column: span 1 !important; }
+.estado-actual-panel .ea-top-grid .ea-snapshot-row-label,
+.estado-actual-panel .ea-top-grid .ea-snapshot-io .ea-snapshot-label {
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--text-muted);
 }
 
-/* Tidy pass: rows align on top and stretch evenly, balance fits one line. */
-.estado-actual-panel .ea-sys-grid { align-items: stretch !important; }
-.estado-actual-panel .ea-sys-card--renal .ea-snapshot-io {
+.estado-actual-panel .ea-top-grid .ea-snapshot-row-value,
+.estado-actual-panel .ea-top-grid .ea-snapshot-io-val {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.estado-actual-panel .ea-top-grid .ea-snapshot-row-unit { font-size: 12px; }
+.estado-actual-panel .ea-top-grid .ea-snapshot-row-stamp--empty { display: none; }
+.estado-actual-panel .ea-top-grid .ea-snapshot-glu { align-items: center; padding: 4px 0; }
+
+/* Right card: fields inline, small label before each input */
+.estado-actual-panel .ea-top-grid .ea-sys-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  min-width: 0;
+}
+
+.estado-actual-panel .ea-top-grid .ea-sys-fields .ea-field {
+  flex: none;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.estado-actual-panel .ea-top-grid .ea-sys-fields .ea-field .ea-label {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.estado-actual-panel .ea-top-grid .ea-input {
+  width: 72px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 8px;
+}
+
+.estado-actual-panel .ea-top-grid .ea-field--dieta { flex: 1 1 160px; }
+.estado-actual-panel .ea-top-grid .ea-field--dieta .ea-input { flex: 1 1 auto; width: auto; min-width: 100px; }
+.estado-actual-panel .ea-top-grid .ea-field--soporte select.ea-input { width: 220px; max-width: 100%; }
+
+.estado-actual-panel .ea-top-grid .ea-soporte-vent-block { grid-column: 2; padding: 4px 0; }
+.estado-actual-panel .ea-top-grid .ea-soporte-params-grid {
   display: grid;
-  grid-template-columns: repeat(5, auto);
-  justify-content: space-between;
-  gap: 8px 20px;
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+  gap: 6px 12px;
 }
-.estado-actual-panel .ea-sys-card--renal .ea-snapshot-io-egr { grid-column: auto; }
-.estado-actual-panel .ea-sys-card--renal .ea-snapshot-io > div { min-width: 0; }
-.estado-actual-panel .ea-med-cat,
-.estado-actual-panel .ea-med-subcat { grid-template-columns: 11rem minmax(0, 1fr); }
+.estado-actual-panel .ea-top-grid .ea-soporte-params-grid .ea-input { width: 100%; }
+
+.estado-actual-panel .ea-peso-value {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.estado-actual-panel .ea-peso-unit {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.estado-actual-panel .ea-peso-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--action);
+  cursor: pointer;
+}
+
+.estado-actual-panel .ea-peso-link:hover { text-decoration: underline; }
+.estado-actual-panel .ea-peso-link:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (max-width: 900px) {
+  .estado-actual-panel .ea-top-grid { grid-template-columns: minmax(0, 1fr); }
+}

@@ -1,4 +1,4 @@
-import { addMedFieldItem, removeMedFieldItem } from './estado-actual-med-ui.mjs';
+import { addMedFieldItem, removeMedFieldItem, medRecetaSelectHtml } from './estado-actual-med-ui.mjs';
 
 function handleMedRemoveClick(ev, target, grid, mount, ctx, monitoreo, refreshBlock) {
   const removeBtn = target.closest('[data-ea-med-remove]');
@@ -17,52 +17,39 @@ function handleMedRemoveClick(ev, target, grid, mount, ctx, monitoreo, refreshBl
 }
 
 function handleMedToggleClick(target, grid) {
-  const toggleBtn = target.closest('[data-ea-med-manual-toggle]');
-  if (!toggleBtn) return false;
-  const tKey = toggleBtn.getAttribute('data-ea-med-manual-toggle');
-  if (!tKey) return true;
-  const panel = grid.querySelector('[data-ea-med-manual-panel="' + tKey + '"]');
+  if (!target.closest('[data-ea-med-add-toggle]')) return false;
+  const panel = grid.querySelector('[data-ea-med-add-panel]');
   if (!panel) return true;
   panel.hidden = !panel.hidden;
-  if (!panel.hidden) {
-    const input = panel.querySelector('[data-ea-med-manual-input="' + tKey + '"]');
-    if (input && 'focus' in input) /** @type {HTMLElement} */ (input).focus();
-  }
+  const input = panel.querySelector('[data-ea-med-add-text]');
+  if (!panel.hidden && input) /** @type {HTMLElement} */ (input).focus();
   return true;
 }
 
 function handleMedSaveClick(target, grid, mount, ctx, monitoreo, refreshBlock) {
-  const saveBtn = target.closest('[data-ea-med-manual-save]');
-  if (!saveBtn) return false;
-  const sKey = saveBtn.getAttribute('data-ea-med-manual-save');
-  if (!sKey) return true;
-  const sPanel = grid.querySelector('[data-ea-med-manual-panel="' + sKey + '"]');
-  const sInput = sPanel && sPanel.querySelector('[data-ea-med-manual-input="' + sKey + '"]');
-  const text = sInput && 'value' in sInput ? String(sInput.value).trim() : '';
-  if (text) {
-    addMedFieldItem(monitoreo, sKey, text, {
+  if (!target.closest('[data-ea-med-add-save]')) return false;
+  const input = grid.querySelector('[data-ea-med-add-text]');
+  const cat = grid.querySelector('[data-ea-med-add-cat]');
+  const text = input ? String(input.value).trim() : '';
+  const key = cat ? String(cat.value) : '';
+  if (text && key) {
+    addMedFieldItem(monitoreo, key, text, {
       activeId: ctx.getActiveId(),
       medRecetaByPatient: ctx.medRecetaByPatient,
       manual: true,
     });
-    if (sInput && 'value' in sInput) sInput.value = '';
-    if (sPanel) sPanel.hidden = true;
     ctx.persistClinicalState();
     ctx.syncTextarea();
-    refreshBlock(mount, sKey, monitoreo);
+    refreshBlock(mount, key, monitoreo);
   }
   return true;
 }
 
-function handleMedCancelClick(target, grid) {
-  const cancelBtn = target.closest('[data-ea-med-manual-cancel]');
-  if (!cancelBtn) return false;
-  const cKey = cancelBtn.getAttribute('data-ea-med-manual-cancel');
-  if (!cKey) return true;
-  const cPanel = grid.querySelector('[data-ea-med-manual-panel="' + cKey + '"]');
-  const cInput = cPanel && cPanel.querySelector('[data-ea-med-manual-input="' + cKey + '"]');
-  if (cInput && 'value' in cInput) cInput.value = '';
-  if (cPanel) cPanel.hidden = true;
+function handleMedFromRecetaClick(target, grid, ctx) {
+  if (!target.closest('[data-ea-med-from-receta]')) return false;
+  const cat = grid.querySelector('[data-ea-med-add-cat]');
+  const slot = grid.querySelector('[data-ea-med-receta-slot]');
+  if (cat && slot) slot.innerHTML = medRecetaSelectHtml(String(cat.value), ctx.getActiveId(), ctx.medRecetaByPatient);
   return true;
 }
 
@@ -80,6 +67,6 @@ export function handleMedGridClick(ev, grid, mount, ctx, liveMonitoreoFromCtx, r
   if (handleMedRemoveClick(ev, target, grid, mount, ctx, monitoreo, refreshBlock)) return true;
   if (handleMedToggleClick(target, grid)) return true;
   if (handleMedSaveClick(target, grid, mount, ctx, monitoreo, refreshBlock)) return true;
-  if (handleMedCancelClick(target, grid)) return true;
+  if (handleMedFromRecetaClick(target, grid, ctx)) return true;
   return false;
 }

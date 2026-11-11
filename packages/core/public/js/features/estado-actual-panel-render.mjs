@@ -38,7 +38,7 @@ import { renderSnapshotSection, renderHistorialSection } from './estado-actual-p
  */
 export function buildEaActionBarButtons(settings) {
   var html =
-    '<button type="button" class="ea-btn" data-onclick="openEstadoActualRegistroModal">Registro manual</button>';
+    '<button type="button" class="ea-btn ea-btn--primary" data-onclick="openEstadoActualRegistroModal">Registro manual</button>';
   if (!isModeSala(settings)) {
     html +=
       '<button type="button" class="ea-btn ea-btn--success" data-onclick="estadoActualEnviarANota">Enviar a nota</button>';
@@ -162,9 +162,6 @@ export function patchEaPanelDynamicSections(mount, patient, monitoreo, patchOpts
  */
 export function renderEaFullPanelShell(mount, patient, monitoreo, activeId, savedLabel) {
   var eaUiState = captureEaPanelUiState(mount);
-  var snapshot = deriveSnapshot(monitoreo);
-  var balTurno = balanceTurno(monitoreo);
-  var balGlobal = balanceGlobalHistorico(monitoreo);
 
   mount.innerHTML =
     '<div class="estado-actual-panel">' +
@@ -178,7 +175,6 @@ export function renderEaFullPanelShell(mount, patient, monitoreo, activeId, save
     buildEaActionBarButtons(getEaPanelRuntime().getSettings()) +
     '</div>' +
     '</div>' +
-    renderSnapshotSection(snapshot, balTurno, balGlobal) +
     '<div class="ea-main">' +
     renderEstadoClinicoSection(monitoreo, activeId, patient) +
     renderHistorialSection(Array.isArray(monitoreo.historial) ? monitoreo.historial : []) +

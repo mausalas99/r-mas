@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseCitoquimicoLiquidosParsed } from './labs-fluidos.mjs';
+import { parseCuantOrina_ } from './labs-fluidos-misc.mjs';
 import {
   citoquimicoTipoFingerprintFromLine_,
   citoquimicoTipoValueFromLine_,
@@ -229,4 +230,13 @@ test('bloques BACTERIOLOGIA y CITOQUIMICO — miles de líneas en blanco no cong
   const blocks = citoquimicoBlocksNormText_('CITOQUIMICO\nGLU 5\n\n\nBIOMETRIA\nHB 12');
   assert.equal(blocks.length, 1);
   assert.ok(/GLU 5/.test(blocks[0]) && !/HB 12/.test(blocks[0]), 'corta en el siguiente encabezado');
+});
+
+// Orina 24 h con resultado cualitativo (NEGATIVO) en vez de número.
+test('parseCuantOrina_ — proteínas cualitativas NEGATIVO se capturan', () => {
+  const raw = 'URIANALISIS\nCUANTIFICACION PROTEINAS EN ORINA 12 O 24 HRS\n' +
+    'Estudio\t\tResultado\tUnidades\tValor de Referencia\n' +
+    'VOLUMEN DE ORINA\t\nA\n2020\nml\tN/A\nRESULTADO\t\n*\nNEGATIVO\ngr/vol\tNEGATIVO\n' +
+    'OBSERVACIONES\t\n*\n24 HORAS';
+  assert.equal(parseCuantOrina_(raw), 'Prot24h\tVol 2020ml Prot NEGATIVO* gr/vol');
 });

@@ -5,6 +5,7 @@ import {
   ensureMonitoreo,
   deriveSnapshot,
   balanceTurno,
+  balanceGlobalHistorico,
   resolveDietWeightKg,
   syncDietKcalFromWeight,
   computeDietKcalTotal,
@@ -31,6 +32,7 @@ import {
   refreshSoporteCalcHints,
 } from './estado-actual-panel-clinico-html.mjs';
 import { normalizeSoporteValue } from './estado-actual-ventilatorio.mjs';
+import { renderSnapshotSection } from './estado-actual-panel-snapshot.mjs';
 import { resolveVentilatorioLabContext } from './estado-actual-ventilatorio-labs.mjs';
 import { cloudSyncNowIso } from './cloud-sync/cloud-sync-clock.mjs';
 
@@ -150,12 +152,6 @@ function resolveKcalDisplay(ec, pend, dietPending, dietWeight, dietaParenteral) 
   return kcalComputed != null ? String(kcalComputed) : ec.kcal;
 }
 
-function buildDietWeightHint(dietWeight) {
-  return dietWeight != null
-    ? 'Peso para cálculo: ' + dietWeight + ' kg (datos del paciente)'
-    : 'Peso para cálculo: — (captura peso en Datos del paciente)';
-}
-
 function resolveDietOptionSelected(monitoreo) {
   return monitoreo && monitoreo.dietOptionSelected != null ? Number(monitoreo.dietOptionSelected) : 0;
 }
@@ -178,7 +174,6 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
   var dietaParenteral = isDietaParenteral(ec.dieta);
   var dietWeight = resolveDietWeightKg({ patientPeso: patient && patient.peso, pesoRef: ec.pesoRef });
   var kcalDisplay = resolveKcalDisplay(ec, pend, dietPending, dietWeight, dietaParenteral);
-  var dietWeightHint = buildDietWeightHint(dietWeight);
   var medFieldsHtml = renderMedCategoryGrid(monitoreo, activeId, getMedRecetaByPatient());
   var anyPending = hasPendingEaProposals(pend);
   var dietOptions = getDietOptions(monitoreo);
@@ -193,13 +188,14 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
       dietPending,
       dietaSuplemento,
       kcalDisplay,
-      dietWeightHint,
+      dietWeight,
       medFieldsHtml,
       anyPending,
       dietOptions,
       dietOptionSelected,
       dietaParenteral,
-      vitalsCtx
+      vitalsCtx,
+      renderSnapshotSection(deriveSnapshot(monitoreo), balanceTurno(monitoreo), balanceGlobalHistorico(monitoreo))
     ) +
     '</details>'
   );

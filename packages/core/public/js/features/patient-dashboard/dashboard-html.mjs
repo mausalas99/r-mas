@@ -287,7 +287,7 @@ function trendArrowHtml(trend) {
 function renderDrawCellHtml(chip) {
   var value = String((chip && chip.value) || '').replace(/\*$/, '');
   return (
-    '<div class="draw-cell">' +
+    '<div class="draw-cell" data-fit-item>' +
     '<span class="draw-label">' +
     escHtml(String((chip && chip.label) || '')) +
     '</span>' +
@@ -310,8 +310,6 @@ function envioChipCount(envio) {
     return n + (g.chips ? g.chips.length : 0);
   }, 0);
 }
-
-var MAX_DRAW_CELLS = 6;
 
 /**
  * Orders altered-lab chips for display: worsening values (trend 'down', a
@@ -347,8 +345,6 @@ function renderDrawHtml(envio, showHead) {
   var all = (envio.groups || []).reduce(function (acc, g) {
     return acc.concat(g.chips || []);
   }, []);
-  var visible = sortDrawChips(all).slice(0, MAX_DRAW_CELLS);
-  var hidden = all.length - visible.length;
   return (
     '<button class="draw' +
     (envio.wide ? ' is-wide' : '') +
@@ -360,9 +356,9 @@ function renderDrawHtml(envio, showHead) {
         escHtml(envio.hora) +
         '</span></div>'
       : '') +
-    '<div class="draw-grid">' +
-    visible.map(renderDrawCellHtml).join('') +
-    (hidden > 0 ? '<span class="draw-cell draw-more">+' + hidden + ' más</span>' : '') +
+    '<div class="draw-grid" data-fit-zone data-fit-one-row>' +
+    sortDrawChips(all).map(renderDrawCellHtml).join('') +
+    '<span class="draw-cell draw-more" data-fit-more data-fit-base="0" data-fit-idle="" hidden></span>' +
     '</div></button>'
   );
 }
@@ -514,7 +510,7 @@ export function renderLabsHtml(model) {
   return (
     '<div class="card labs-card clickable" data-dash-labs data-dash-action="labs-full">' +
     labsHeaderHtml(pending ? [] : visibleEnvios, enRango, labs.prevFecha) +
-    '<div class="card-b">' +
+    '<div class="card-b" data-fit>' +
     body +
     '</div></div>'
   );

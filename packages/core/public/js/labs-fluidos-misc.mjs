@@ -296,6 +296,7 @@ function readNumericFromLines_(lineas, i, maxLook) {
     if (!v || /^[A-Z]$/.test(v)) continue;
     var m = v.match(/^(\d+\.?\d*)/);
     if (m) return m[1];
+    if (/^(NEGATIVO|POSITIVO|TRAZAS?)$/i.test(v)) return v.toUpperCase();
   }
   return '---';
 }

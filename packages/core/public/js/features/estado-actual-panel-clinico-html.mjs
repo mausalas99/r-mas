@@ -8,20 +8,24 @@ import {
   buildVentilatorioCalcHints,
 } from './estado-actual-ventilatorio.mjs';
 
-/**
- * @param {Record<string, unknown>} ec
- * @param {string} kcalDisplay
- * @param {(s: unknown) => string} escAttr
- * @returns {string}
- */
-export function renderDietCaloricFieldsHtml(ec, kcalDisplay, escAttr) {
+/** @param {Record<string, unknown>} ec */
+function renderKcalKgFieldHtml(ec) {
   return (
     '<label class="ea-field">' +
     '<span class="ea-label">Kcal/kg</span>' +
     '<input type="number" class="ea-input" data-ea-ec="kcalKg" step="any" value="' +
     escAttr(ec.kcalKg) +
     '">' +
-    '</label>' +
+    '</label>'
+  );
+}
+
+/**
+ * @param {Record<string, unknown>} ec
+ * @param {string} kcalDisplay
+ */
+function renderMacroFieldsHtml(ec, kcalDisplay) {
+  return (
     '<label class="ea-field">' +
     '<span class="ea-label">Kcal total</span>' +
     '<input type="number" class="ea-input" data-ea-ec="kcal" step="any" min="0" value="' +
@@ -38,12 +42,24 @@ export function renderDietCaloricFieldsHtml(ec, kcalDisplay, escAttr) {
 }
 
 /**
- * @param {string} dietWeightHint
- * @param {(s: unknown) => string} escHtml
- * @returns {string}
+ * "Peso para cálculo" row: the weight, and a link to Datos del paciente where it is captured.
+ * @param {number | null} dietWeight
  */
-export function renderDietWeightHintHtml(dietWeightHint, escHtml) {
-  return '<p class="ea-diet-weight-hint">' + escHtml(dietWeightHint) + '</p>';
+function renderDietWeightRowHtml(dietWeight) {
+  var has = dietWeight != null;
+  return (
+    '<div class="ea-sys-card ea-sys-card--peso">' +
+    '<h4 class="ea-sys-title">Peso para cálculo</h4>' +
+    '<div class="ea-sys-fields">' +
+    '<span class="ea-peso-value">' +
+    (has ? escHtml(String(dietWeight)) + ' <span class="ea-peso-unit">kg</span>' : '—') +
+    '</span>' +
+    '<button type="button" class="ea-peso-link" data-onclick="switchInnerTab" data-onclick-args=\'["datos"]\'>' +
+    (has ? 'Datos del paciente' : 'Capturar en Datos del paciente') +
+    '</button>' +
+    '</div>' +
+    '</div>'
+  );
 }
 
 /**
@@ -317,7 +333,7 @@ function renderVitalsRowHtml(ec, vitalsCtx) {
     '<h4 class="ea-sys-title">Neurológico</h4>' +
     '<div class="ea-sys-fields">' +
     '<label class="ea-field">' +
-    '<span class="ea-label">FOUR (/16)</span>' +
+    '<span class="ea-label">FOUR</span>' +
     '<input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value="' +
     escAttrNumeric(ec.four) +
     '">' +
@@ -331,9 +347,8 @@ function renderVitalsRowHtml(ec, vitalsCtx) {
     '</div>' +
     '</div>' +
     '<div class="ea-sys-card ea-sys-card--soporte">' +
-    '<h4 class="ea-sys-title">Soporte respiratorio</h4>' +
-    '<div class="ea-field ea-field--soporte">' +
     renderSoporteHeadHtml(ec, vitalsCtx) +
+    '<div class="ea-field ea-field--soporte">' +
     '<select class="ea-input" data-ea-ec="soporte" aria-label="Soporte respiratorio">' +
     renderSoporteOptions(ec) +
     '</select>' +
@@ -353,26 +368,7 @@ function renderVitalsRowHtml(ec, vitalsCtx) {
  * @param {boolean} [dietaParenteral]
  */
 function renderNutritionRowHtml(ec, dietPending, dietaSuplemento, kcalDisplay, dietaParenteral) {
-  var caloricHtml = '';
-  if (!dietaSuplemento) {
-    if (dietaParenteral) {
-      caloricHtml =
-        '<label class="ea-field">' +
-        '<span class="ea-label">Kcal total</span>' +
-        '<input type="number" class="ea-input" data-ea-ec="kcal" step="any" min="0" value="' +
-        escAttr(kcalDisplay) +
-        '" placeholder="Total">' +
-        '</label>' +
-        '<label class="ea-field">' +
-        '<span class="ea-label">Proteína (g/día)</span>' +
-        '<input type="number" class="ea-input" data-ea-ec="proteinG" step="any" min="0" value="' +
-        escAttr(ec.proteinG) +
-        '" placeholder="Gramos">' +
-        '</label>';
-    } else {
-      caloricHtml = renderDietCaloricFieldsHtml(ec, kcalDisplay, escAttr);
-    }
-  }
+  var kcalKgHtml = dietaSuplemento || dietaParenteral ? '' : renderKcalKgFieldHtml(ec);
   return (
     '<div class="ea-sys-card ea-sys-card--nutri">' +
     '<h4 class="ea-sys-title">Nutrición</h4>' +
@@ -385,9 +381,17 @@ function renderNutritionRowHtml(ec, dietPending, dietaSuplemento, kcalDisplay, d
     escAttr(ec.dieta) +
     '">' +
     '</label>' +
-    caloricHtml +
+    kcalKgHtml +
     '</div>' +
-    '</div>'
+    '</div>' +
+    (dietaSuplemento
+      ? ''
+      : '<div class="ea-sys-card ea-sys-card--macros">' +
+        '<h4 class="ea-sys-title">Macros</h4>' +
+        '<div class="ea-sys-fields">' +
+        renderMacroFieldsHtml(ec, kcalDisplay) +
+        '</div>' +
+        '</div>')
   );
 }
 
@@ -433,29 +437,28 @@ function renderDietProposalBarHtml(dietOptions, selectedIndex) {
  * @param {boolean} dietPending
  * @param {boolean} dietaSuplemento
  * @param {string} kcalDisplay
- * @param {string} dietWeightHint
+ * @param {number | null} dietWeight
  * @param {string} medFieldsHtml
  * @param {boolean} anyPending
  * @param {unknown[]} [dietOptions]
  * @param {number} [dietOptionSelected]
  * @param {boolean} [dietaParenteral]
  * @param {{ fr?: unknown, sat?: unknown, pesoKg?: unknown }} [vitalsCtx]
+ * @param {string} [snapshotHtml] left card (signos vitales, glucometrías, balance)
  */
-export function renderEstadoClinicoBodyHtml(ec, dietPending, dietaSuplemento, kcalDisplay, dietWeightHint, medFieldsHtml, anyPending, dietOptions, dietOptionSelected, dietaParenteral, vitalsCtx) {
+export function renderEstadoClinicoBodyHtml(ec, dietPending, dietaSuplemento, kcalDisplay, dietWeight, medFieldsHtml, anyPending, dietOptions, dietOptionSelected, dietaParenteral, vitalsCtx, snapshotHtml) {
   return (
     '<div class="ea-clinico-body">' +
+    '<div class="ea-top-grid">' +
+    (snapshotHtml || '') +
     '<div class="ea-clinico-grid ea-sys-grid">' +
     renderVitalsRowHtml(ec, vitalsCtx) +
     renderNutritionRowHtml(ec, dietPending, dietaSuplemento, kcalDisplay, dietaParenteral) +
-    (dietPending ? renderDietProposalBarHtml(dietOptions, dietOptionSelected == null ? 0 : dietOptionSelected) : '') +
+    (dietaSuplemento || dietaParenteral ? '' : renderDietWeightRowHtml(dietWeight)) +
     '</div>' +
-    (dietaSuplemento || dietaParenteral ? '' : renderDietWeightHintHtml(dietWeightHint, escHtml)) +
+    '</div>' +
+    (dietPending ? renderDietProposalBarHtml(dietOptions, dietOptionSelected == null ? 0 : dietOptionSelected) : '') +
     medFieldsHtml +
-    (anyPending
-      ? '<div class="ea-clinico-actions">' +
-        '<button type="button" class="ea-btn ea-btn--success" data-onclick="confirmAllEaMedProposals">Confirmar todas las propuestas</button>' +
-        '</div>'
-      : '') +
     '</div>'
   );
 }

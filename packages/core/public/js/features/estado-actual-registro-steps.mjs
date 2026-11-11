@@ -2,7 +2,6 @@
 import { VITAL_LABELS } from './estado-actual-panel-constants.mjs';
 
 var STEP_NAMES = ['Signos', 'Glucosa', 'Balance', 'Revisar'];
-var ADVANCE_MS = 700;
 var AUTO_KEY = 'ea-registro-auto-advance';
 /** iOS Motion.moderate (m 1, k 456.4, c 35.04) as a CSS curve. */
 var SPRING_MODERATE =
@@ -213,15 +212,6 @@ function paint(shell, form) {
   if (step === 3) renderReview(form, shell);
 }
 
-function clearAdvance(shell) {
-  if (shell._eaAdvanceTimer) clearTimeout(shell._eaAdvanceTimer);
-  shell._eaAdvanceTimer = null;
-  var bar = shell.querySelector('.ea-steps-advance');
-  if (bar) bar.classList.remove('is-running');
-  var msg = shell.querySelector('[data-ea-step-msg]');
-  if (msg) msg.textContent = '';
-}
-
 /**
  * @param {HTMLElement} form
  * @param {number} step
@@ -232,7 +222,6 @@ export function setEaRegistroStep(form, step, opts) {
   if (!shell) return;
   var from = currentStep(shell);
   var to = Math.max(0, Math.min(3, step));
-  clearAdvance(shell);
   shell.dataset.eaStep = String(to);
   shell._eaWasComplete = isStepComplete(form, to);
   shell.querySelectorAll('.ea-steps-panes [data-ea-step]').forEach(function (pane) {
@@ -252,32 +241,23 @@ export function setEaRegistroStep(form, step, opts) {
   }
 }
 
-/** Called after any field change: updates the rail and, when the step just filled up, advances. */
-function onFormEdited(form) {
+/**
+ * input: refresh the rail only. change (field committed on blur or Enter): advance when
+ * that field just made the step full.
+ * @param {HTMLElement} form
+ * @param {boolean} commit
+ */
+function onFormEdited(form, commit) {
   var shell = getShell(form);
   if (!shell) return;
   var step = currentStep(shell);
+  if (!commit) return paint(shell, form);
   var now = isStepComplete(form, step);
   var was = !!shell._eaWasComplete;
   shell._eaWasComplete = now;
   paint(shell, form);
   var auto = shell.querySelector('[data-ea-auto]');
-  if (!(auto && auto.checked) || !now || was || step >= 3) {
-    if (!now) clearAdvance(shell);
-    return;
-  }
-  clearAdvance(shell);
-  var bar = shell.querySelector('.ea-steps-advance');
-  if (bar) {
-    void bar.offsetWidth;
-    bar.classList.add('is-running');
-  }
-  var msg = shell.querySelector('[data-ea-step-msg]');
-  if (msg) msg.textContent = 'Paso completo. Siguiente…';
-  shell._eaAdvanceTimer = setTimeout(function () {
-    shell._eaAdvanceTimer = null;
-    if (currentStep(shell) === step) setEaRegistroStep(form, step + 1);
-  }, ADVANCE_MS);
+  if (auto && auto.checked && now && !was && step < 3) setEaRegistroStep(form, step + 1);
 }
 
 /** @param {HTMLElement | null} form */
@@ -296,21 +276,31 @@ export function wireEaRegistroSteps(form) {
         } catch (_e) {
           /* storage blocked: the switch still works for this session */
         }
-        if (!auto.checked) clearAdvance(shell);
       });
     }
+    // Blurring a field fires change before click. Remember the step on press so a
+    // Siguiente click does not skip the step that a blur-commit just opened.
+    shell.addEventListener('pointerdown', function (ev) {
+      var t = /** @type {HTMLElement} */ (ev.target);
+      if (t.closest && t.closest('[data-ea-step-next]')) shell._eaNextFrom = currentStep(shell);
+    });
     shell.addEventListener('click', function (ev) {
       var t = /** @type {HTMLElement} */ (ev.target);
       var go = t.closest && t.closest('[data-ea-step-go]');
       if (go) return setEaRegistroStep(form, Number(go.getAttribute('data-ea-step-go')));
       if (t.closest && t.closest('[data-ea-step-back]')) return setEaRegistroStep(form, currentStep(shell) - 1);
-      if (t.closest && t.closest('[data-ea-step-next]')) return setEaRegistroStep(form, currentStep(shell) + 1);
+      if (t.closest && t.closest('[data-ea-step-next]')) {
+        var from = shell._eaNextFrom;
+        shell._eaNextFrom = null;
+        if (from != null && currentStep(shell) > from) return;
+        return setEaRegistroStep(form, currentStep(shell) + 1);
+      }
     });
     form.addEventListener('input', function () {
-      onFormEdited(form);
+      onFormEdited(form, false);
     });
     form.addEventListener('change', function () {
-      onFormEdited(form);
+      onFormEdited(form, true);
     });
   }
   if (!shell.dataset.eaStep) setEaRegistroStep(form, 0, { focus: false });

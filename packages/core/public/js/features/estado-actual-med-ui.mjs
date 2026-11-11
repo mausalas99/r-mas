@@ -1,5 +1,6 @@
 import { MED_FIELD_KEYS, ensureMonitoreo } from './estado-actual-data.mjs';
 import { buildMedDropdownOptions, resolveEaAbxFechaActualizacion, ensureAbxDiaAnchorDate } from './estado-actual-meds.mjs';
+import { ensureRecetaProposalDismissed } from './estado-actual-meds-core.mjs';
 import { handleMedGridClick } from './estado-actual-med-grid-click.mjs';
 import {
   rewriteAbxDisplayText,
@@ -31,22 +32,6 @@ export const EA_MED_FIELD_LABELS = {
 };
 
 import { escHtml, escAttr } from '../dom-escape.mjs';
-
-// Two fixed halves: acute on the left, chronic on the right. Each category
-// always sits in the same half and order, so the layout holds still when
-// the user switches patients.
-var MED_GRID_COLUMNS = [
-  ['analgesia', 'antiemeticos', 'sedacion', 'antiepilepticos', 'antiparkinsonianos', 'antidotos',
-    'viaAerea', 'abx', 'transfusiones', 'vasop', 'antitromboticos', 'anticoagulacion'],
-  ['antihta', 'antiarritmicos', 'diureticos', 'estatinas', 'nm'],
-];
-
-function medGridColumnIndex(key) {
-  for (var i = 0; i < MED_GRID_COLUMNS.length; i++) {
-    if (MED_GRID_COLUMNS[i].indexOf(key) >= 0) return i;
-  }
-  return MED_GRID_COLUMNS.length - 1;
-}
 
 export function parseMedFieldItems(raw) {
   if (raw == null || !String(raw).trim()) return [];
@@ -110,15 +95,33 @@ export function removeMedFieldItem(monitoreo, key, index) {
   monitoreo.confirmado[key] = items.length > 0;
 }
 
-// A folded group lists its drug names only, doses dropped: short enough
-// to wrap under the title without cutting a name in half.
-function medCatPreviewText(items) {
-  return items
-    .map(function (item) {
-      var cut = item.search(/\s\d/);
-      return (cut > 0 ? item.slice(0, cut) : item).replace(/[:,;]\s*$/, '');
-    })
-    .join(' · ');
+// One proposed drug at a time. The pending text is one `' | '` string per
+// category, so split it, move one item, and write back what is left.
+export function confirmMedProposalItem(monitoreo, key, index, ctx) {
+  if (!monitoreo || !key || !monitoreo.pendienteReceta) return;
+  var pendingItems = parseMedFieldItems(monitoreo.pendienteReceta[key]);
+  if (index < 0 || index >= pendingItems.length) return;
+  var item = pendingItems.splice(index, 1)[0];
+  ensureObjectField(monitoreo, 'estadoClinico');
+  var items = parseMedFieldItems(monitoreo.estadoClinico[key]);
+  if (items.indexOf(item) === -1) items.push(item);
+  monitoreo.estadoClinico[key] = serializeMedFieldItems(items);
+  ensureObjectField(monitoreo, 'confirmado');
+  monitoreo.confirmado[key] = true;
+  monitoreo.pendienteReceta[key] = serializeMedFieldItems(pendingItems);
+  if (key === 'abx') {
+    ensureAbxDiaAnchorDate(monitoreo, ctx && ctx.patientId, ctx && ctx.medRecetaByPatient);
+  }
+}
+
+// Last drug gone = whole proposal dismissed, so the Receta does not offer it again.
+export function discardMedProposalItem(monitoreo, key, index) {
+  if (!monitoreo || !key || !monitoreo.pendienteReceta) return;
+  var pendingItems = parseMedFieldItems(monitoreo.pendienteReceta[key]);
+  if (index < 0 || index >= pendingItems.length) return;
+  pendingItems.splice(index, 1);
+  monitoreo.pendienteReceta[key] = serializeMedFieldItems(pendingItems);
+  if (!pendingItems.length) ensureRecetaProposalDismissed(monitoreo)[key] = true;
 }
 
 function displayAbxLine(text, activeId, medRecetaByPatient, monitoreo, refDate) {
@@ -152,22 +155,6 @@ function prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient, refDa
 export function medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient, refDate) {
   var block = prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient, refDate);
   return block.items.length > 0 || block.pendingVal.length > 0;
-}
-
-// Only a pending proposal gets a badge; confirmed is the normal state.
-function medCategoryBadgeHtml(pendingVal) {
-  return pendingVal ? '<span class="ea-pendiente-badge">Propuesta</span>' : '';
-}
-
-function medSelectOptionsHtml(key, options) {
-  return (
-    '<option value="">+ Receta</option>' +
-    options
-      .map(function (opt) {
-        return '<option value="' + escAttr(opt.value) + '">' + escHtml(opt.label) + '</option>';
-      })
-      .join('')
-  );
 }
 
 // Name first, dose/route/frequency muted: the eye scans drug names down the
@@ -213,142 +200,88 @@ function vasopRateBoxHtml(item, idx, src) {
   );
 }
 
-function medItemRowHtml(item, key, idx) {
-  return (
-    '<div class="ea-med-item">' +
-    '<div class="ea-med-item-row">' +
-    '<span class="ea-med-item-text" title="' +
-    escAttr(item) +
-    '">' +
-    medItemTextHtml(item) +
-    '</span>' +
-    (key === 'vasop' ? vasopRateBoxHtml(item, idx, 'items') : '') +
-    '<button type="button" class="ea-btn ea-btn--icon ea-med-item-remove" data-ea-med-remove="' +
-    escAttr(key) +
-    '" data-ea-med-idx="' +
-    idx +
-    '" aria-label="Quitar medicamento">×</button>' +
-    '</div></div>'
-  );
-}
-
-function medItemsListHtml(items, key) {
-  return items
-    .map(function (item, idx) {
-      return medItemRowHtml(item, key, idx);
-    })
-    .join('');
-}
-
-function medItemsListHtmlWithIndices(items, key, indices) {
-  return items
-    .map(function (item, displayIdx) {
-      return medItemRowHtml(item, key, indices[displayIdx]);
-    })
-    .join('');
-}
-
-function renderNmSubsectionHtml(key, title, mod, lines, indices) {
-  return (
-    '<details class="ea-med-subcat ea-med-subcat--' + mod + '" open>' +
-    '<summary class="ea-med-subcat-summary">' +
-    '<span class="ea-med-subcat-title">' + title + '</span>' +
-    '<span class="ea-med-subcat-preview ea-muted">' +
-    escHtml(medCatPreviewText(lines)) +
-    '</span>' +
-    '</summary>' +
-    '<div class="ea-med-subcat-body">' +
-    '<div class="ea-med-item-list">' +
-    medItemsListHtmlWithIndices(lines, key, indices) +
-    '</div></div></details>'
-  );
-}
-
-// With an Antidiabéticos group, the rest get their own "NM" row: headless
-// lines under it read as antidiabetics.
-function renderNmMedItemsBodyHtml(key, items) {
-  var part = partitionNmMedLines(items);
-  if (!part.antidiabeticos.length) {
-    return part.other.length
-      ? '<div class="ea-med-item-list">' + medItemsListHtmlWithIndices(part.other, key, part.otherIndices) + '</div>'
-      : '';
+function medChipHtml(item, key, idx, pending) {
+  var text = '<span class="ea-med-chip-text" title="' + escAttr(item) + '">' + medItemTextHtml(item) + '</span>';
+  var rate = key === 'vasop' ? vasopRateBoxHtml(item, idx, pending ? 'pending' : 'items') : '';
+  if (!pending) {
+    return (
+      '<span class="ea-med-chip ea-med-chip--confirmed">' +
+      '<button type="button" class="ea-med-chip-text" data-ea-med-remove="' + escAttr(key) +
+      '" data-ea-med-idx="' + idx + '" aria-label="Quitar ' + escAttr(item) + '" title="Quitar">' +
+      medItemTextHtml(item) + '</button>' + rate + '</span>'
+    );
   }
+  var args = escAttr(JSON.stringify([key, idx]));
   return (
-    renderNmSubsectionHtml(key, 'Antidiabéticos', 'antidiabeticos', part.antidiabeticos, part.antidiabeticIndices) +
-    (part.other.length ? renderNmSubsectionHtml(key, 'NM', 'otros', part.other, part.otherIndices) : '')
+    '<span class="ea-med-chip ea-med-chip--pending">' + text + rate +
+    '<span class="ea-med-chip-tag">de receta</span>' +
+    '<button type="button" class="ea-med-chip-btn ea-med-chip-btn--ok" data-onclick="confirmEaMedProposalItem" data-onclick-args=\'' + args + '\' aria-label="Confirmar ' + escAttr(item) + '">✓</button>' +
+    '<button type="button" class="ea-med-chip-btn" data-onclick="discardEaMedProposalItem" data-onclick-args=\'' + args + '\' aria-label="Descartar ' + escAttr(item) + '">×</button>' +
+    '</span>'
   );
 }
 
-function medMoveTargetOptionsHtml(fromKey) {
-  return soapDestinationSelectOptionsHtml(escHtml, {
-    omitEmpty: true,
-    excludeKey: fromKey,
-    mapKey: mapSoapDestKeyToEaField,
-    labels: EA_MED_FIELD_LABELS,
-  });
-}
-
-function medPendingBlockHtml(key, pendingVal) {
-  if (!pendingVal) return '';
-  var rateBoxes =
-    key === 'vasop'
-      ? parseMedFieldItems(pendingVal)
-          .map(function (line, i) {
-            return vasopRateBoxHtml(line, i, 'pending');
-          })
-          .join('')
-      : '';
+function medRowHtml(key, label, chips) {
   return (
-    '<div class="ea-med-pending">' +
-    '<div class="ea-pendiente-preview" title="Propuesta pendiente">' +
-    escHtml(pendingVal) +
-    '</div>' +
-    rateBoxes +
-    '<div class="ea-clinico-med-actions">' +
-    '<button type="button" class="ea-btn ea-btn--success" data-onclick="confirmEaMedField" data-onclick-args=\'' +
-    escAttr(JSON.stringify([key])) +
-    '\'>Confirmar</button>' +
-    '<button type="button" class="ea-btn ea-btn--ghost" data-onclick="discardEaMedProposal" data-onclick-args=\'' +
-    escAttr(JSON.stringify([key])) +
-    '\'>Descartar</button>' +
-    '<button type="button" class="ea-btn ea-btn--ghost" data-onclick="toggleEaMedReclassifyPanel" data-onclick-args=\'' +
-    escAttr(JSON.stringify([key])) +
-    '\' title="Corregir clasificación SOAP del medicamento">Reclasificar categoría</button>' +
-    '</div>' +
-    '<div class="ea-med-reclassify-panel" hidden data-ea-med-reclassify-panel="' +
-    escAttr(key) +
-    '">' +
-    '<span class="ea-med-reclassify-label">Categoría destino (SOAP)</span>' +
-    '<div class="ea-med-reclassify-controls">' +
-    '<select class="ea-input ea-med-reclassify-select" data-ea-med-reclassify-select="' +
-    escAttr(key) +
-    '" aria-label="Categoría destino (SOAP)">' +
-    '<option value="">Seleccionar categoría…</option>' +
-    medMoveTargetOptionsHtml(key) +
-    '</select>' +
-    '<button type="button" class="ea-btn ea-btn--ghost" data-onclick="applyEaMedReclassification" data-onclick-args=\'' +
-    escAttr(JSON.stringify([key])) +
-    '\'>Aplicar reclasificación</button>' +
-    '</div></div></div>'
-  );
-}
-
-function medManualPanelHtml(key) {
-  return (
-    '<div class="ea-med-manual-panel" hidden data-ea-med-manual-panel="' +
-    escAttr(key) +
-    '">' +
-    '<input type="text" class="ea-input" data-ea-med-manual-input="' +
-    escAttr(key) +
-    '" placeholder="Indicación manual">' +
-    '<div class="ea-med-manual-actions">' +
-    '<button type="button" class="ea-btn ea-btn--success" data-ea-med-manual-save="' +
-    escAttr(key) +
-    '">Añadir</button>' +
-    '<button type="button" class="ea-btn ea-btn--ghost" data-ea-med-manual-cancel="' +
-    escAttr(key) +
-    '">Cancelar</button>' +
+    '<div class="ea-med-row" data-ea-med-cat="' + escAttr(key) + '">' +
+    '<div class="ea-med-row-label">' + escHtml(label) + '</div>' +
+    '<div class="ea-med-chips">' +
+    (chips || '<span class="ea-muted">Sin medicamentos</span>') +
     '</div></div>'
+  );
+}
+
+// One row per category: confirmed chips first, then the pending ones.
+function medCategoryRowsHtml(key, block) {
+  var pending = parseMedFieldItems(block.pendingVal).map(function (item, idx) {
+    return medChipHtml(item, key, idx, true);
+  }).join('');
+  var label = EA_MED_FIELD_LABELS[key] || key;
+  if (key === 'nm') {
+    var part = partitionNmMedLines(block.items);
+    var chipsOf = function (lines, indices) {
+      return lines.map(function (item, i) { return medChipHtml(item, key, indices[i], false); }).join('');
+    };
+    if (part.antidiabeticos.length) {
+      return (
+        medRowHtml(key, 'Antidiabéticos', chipsOf(part.antidiabeticos, part.antidiabeticIndices)) +
+        medRowHtml(key, label, chipsOf(part.other, part.otherIndices) + pending)
+      );
+    }
+    return medRowHtml(key, label, chipsOf(part.other, part.otherIndices) + pending);
+  }
+  var chips = block.items.map(function (item, idx) { return medChipHtml(item, key, idx, false); }).join('');
+  return medRowHtml(key, label, chips + pending);
+}
+
+function medAddPanelHtml() {
+  var cats = MED_FIELD_KEYS.map(function (k) {
+    return '<option value="' + escAttr(k) + '"' + (k === 'nm' ? ' selected' : '') + '>' + escHtml(EA_MED_FIELD_LABELS[k] || k) + '</option>';
+  }).join('');
+  return (
+    '<div class="ea-med-add-panel" hidden data-ea-med-add-panel>' +
+    '<label for="ea-med-add-text">Fármaco y dosis</label>' +
+    '<input type="text" id="ea-med-add-text" class="ea-input" data-ea-med-add-text placeholder="Ondansetrón 8 mg IV c/8h">' +
+    '<label for="ea-med-add-cat">Categoría</label>' +
+    '<select id="ea-med-add-cat" class="ea-input" data-ea-med-add-cat>' + cats + '</select>' +
+    '<button type="button" class="ea-btn ea-btn--success" data-ea-med-add-save>Agregar</button>' +
+    '<button type="button" class="ea-btn ea-btn--ghost" data-ea-med-from-receta>Desde receta</button>' +
+    '<span data-ea-med-receta-slot></span>' +
+    '</div>'
+  );
+}
+
+/** Receta drugs that fit one category, as a select the grid change handler already understands. */
+export function medRecetaSelectHtml(key, activeId, medRecetaByPatient) {
+  var options = buildMedDropdownOptions(activeId, key, medRecetaByPatient, classifyMedicationSoapCategory);
+  if (!options.length) return '<span class="ea-muted">La receta no tiene fármacos para esta categoría</span>';
+  return (
+    '<select class="ea-input" data-ea-med-add-select="' + escAttr(key) + '" aria-label="Elegir de la receta">' +
+    '<option value="">Elegir de la receta…</option>' +
+    options.map(function (opt) {
+      return '<option value="' + escAttr(opt.value) + '">' + escHtml(opt.label) + '</option>';
+    }).join('') +
+    '</select>'
   );
 }
 
@@ -367,19 +300,6 @@ function renderMedCategoryPickOptions(keys) {
   );
 }
 
-function renderMedCategoryAddBar(hiddenKeys) {
-  var disabled = hiddenKeys.length === 0;
-  return (
-    '<div class="ea-med-add-category-row"' +
-    (disabled ? ' hidden' : '') +
-    '>' +
-    '<select class="ea-io-link ea-med-pick-category" data-ea-med-pick-category aria-label="Añadir categoría de medicamento">' +
-    renderMedCategoryPickOptions(hiddenKeys) +
-    '</select>' +
-    '</div>'
-  );
-}
-
 function parseRevealedMedKeys(grid) {
   if (!grid) return [];
   var raw = grid.getAttribute('data-ea-med-revealed');
@@ -392,99 +312,37 @@ function parseRevealedMedKeys(grid) {
   }
 }
 
-function getShownMedCategoryKeys(grid) {
-  if (!grid) return [];
-  return Array.prototype.map.call(grid.querySelectorAll('[data-ea-med-cat]'), function (el) {
-    return el.getAttribute('data-ea-med-cat');
-  }).filter(Boolean);
-}
-
-function syncMedCategoryAddBar(grid) {
-  if (!grid) return;
-  var addBar = grid.querySelector('.ea-med-add-category-row');
-  if (!addBar) return;
-  var shown = getShownMedCategoryKeys(grid);
+function medGridInnerHtml(monitoreo, activeId, medRecetaByPatient, revealedKeys, refDate) {
+  var blocks = {};
+  var active = 0;
+  var pendingTotal = 0;
+  MED_FIELD_KEYS.forEach(function (key) {
+    var b = prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient, refDate);
+    blocks[key] = b;
+    active += b.items.length;
+    pendingTotal += parseMedFieldItems(b.pendingVal).length;
+  });
+  var shown = MED_FIELD_KEYS.filter(function (key) {
+    return blocks[key].items.length > 0 || blocks[key].pendingVal.length > 0 || revealedKeys.indexOf(key) >= 0;
+  });
   var hidden = MED_FIELD_KEYS.filter(function (key) {
     return shown.indexOf(key) < 0;
   });
-  var select = addBar.querySelector('[data-ea-med-pick-category]');
-  if (select) {
-    select.innerHTML = renderMedCategoryPickOptions(hidden);
-    select.value = '';
-  }
-  addBar.hidden = hidden.length === 0;
-}
-
-function revealMedCategoryKey(mount, grid, key, ctx) {
-  if (!grid || !key) return;
-  var revealed = parseRevealedMedKeys(grid);
-  if (revealed.indexOf(key) < 0) revealed.push(key);
-  grid.setAttribute('data-ea-med-revealed', JSON.stringify(revealed));
-  var monitoreo = liveMonitoreoFromCtx(ctx);
-  if (!grid.querySelector('[data-ea-med-cat="' + key + '"]')) {
-    var col = grid.querySelector('[data-ea-med-col="' + medGridColumnIndex(key) + '"]');
-    var html = renderMedCategoryBlock(key, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient, { forceOpen: true });
-    var order = MED_FIELD_KEYS.indexOf(key);
-    var next = col && Array.prototype.find.call(col.children, function (el) {
-      return MED_FIELD_KEYS.indexOf(el.getAttribute('data-ea-med-cat')) > order;
-    });
-    if (next) next.insertAdjacentHTML('beforebegin', html);
-    else if (col) col.insertAdjacentHTML('beforeend', html);
-  }
-  var det = grid.querySelector('[data-ea-med-cat="' + key + '"]');
-  if (det && 'open' in det) det.open = true;
-  syncMedCategoryAddBar(grid);
-}
-
-export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, opts) {
-  opts = opts || {};
-  var refDate = opts.refDate;
-  var block = prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient, refDate);
-  var items = block.items;
-  var pendingVal = block.pendingVal;
-  var label = EA_MED_FIELD_LABELS[key] || key;
-  var options = buildMedDropdownOptions(
-    activeId,
-    key,
-    medRecetaByPatient,
-    classifyMedicationSoapCategory,
-    refDate
-  );
-  var itemsHtml =
-    key === 'nm' ? renderNmMedItemsBodyHtml(key, items) : medItemsListHtml(items, key);
-  var openAttr = items.length || pendingVal || opts.forceOpen ? ' open' : '';
-  var previewText = medCatPreviewText(items);
-
   return (
-    '<details class="ea-med-cat" data-ea-med-cat="' +
-    escAttr(key) +
-    '"' +
-    openAttr +
-    '>' +
-    '<summary class="ea-med-cat-summary">' +
-    '<span class="ea-med-cat-title">' +
-    escHtml(label) +
-    '</span>' +
-    (previewText
-      ? '<span class="ea-med-cat-preview ea-muted">' + escHtml(previewText) + '</span>'
-      : '') +
-    medCategoryBadgeHtml(pendingVal) +
-    '</summary>' +
-    '<div class="ea-med-cat-body">' +
-    medPendingBlockHtml(key, pendingVal) +
-    (itemsHtml ? (key === 'nm' ? itemsHtml : '<div class="ea-med-item-list">' + itemsHtml + '</div>') : '') +
-    '<div class="ea-med-add-row">' +
-    '<select class="ea-io-link ea-med-add-select" data-ea-med-add-select="' +
-    escAttr(key) +
-    '" aria-label="Agregar a ' + escAttr(label) + '">' +
-    medSelectOptionsHtml(key, options) +
-    '</select>' +
-    '<button type="button" class="ea-io-link ea-med-manual-toggle" data-ea-med-manual-toggle="' +
-    escAttr(key) +
-    '">+ Manual</button>' +
+    '<div class="ea-med-head">' +
+    '<h3 class="ea-med-title">Medicamentos</h3>' +
+    '<span class="ea-muted">' + (active + pendingTotal) + ' activos</span>' +
+    (pendingTotal ? '<span class="ea-med-pending-count">' + pendingTotal + ' por confirmar</span>' : '') +
+    '<span class="ea-med-head-spacer"></span>' +
+    (pendingTotal ? '<button type="button" class="ea-btn ea-btn--ghost" data-onclick="confirmAllEaMedProposals">Aceptar todas</button>' : '') +
+    '<button type="button" class="ea-btn ea-btn--success" data-ea-med-add-toggle>+ Agregar</button>' +
     '</div>' +
-    medManualPanelHtml(key) +
-    '</div></details>'
+    medAddPanelHtml() +
+    shown.map(function (key) { return medCategoryRowsHtml(key, blocks[key]); }).join('') +
+    '<div class="ea-med-add-category-row"' + (hidden.length ? '' : ' hidden') + '>' +
+    '<select class="ea-io-link ea-med-pick-category" data-ea-med-pick-category aria-label="Añadir categoría de medicamento">' +
+    renderMedCategoryPickOptions(hidden) +
+    '</select></div>'
   );
 }
 
@@ -497,65 +355,18 @@ export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPati
  */
 export function renderMedCategoryGrid(monitoreo, activeId, medRecetaByPatient, revealedKeys, refDate) {
   revealedKeys = Array.isArray(revealedKeys) ? revealedKeys : [];
-  var shownKeys = MED_FIELD_KEYS.filter(function (key) {
-    return (
-      medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient, refDate) ||
-      revealedKeys.indexOf(key) >= 0
-    );
-  });
-  var columns = MED_GRID_COLUMNS.map(function () {
-    return '';
-  });
-  shownKeys.forEach(function (key) {
-    var forceOpen =
-      revealedKeys.indexOf(key) >= 0 &&
-      !medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient, refDate);
-    columns[medGridColumnIndex(key)] += renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, {
-      forceOpen: forceOpen,
-      refDate: refDate,
-    });
-  });
-  var blocks = columns
-    .map(function (html, i) {
-      return '<div class="ea-med-col" data-ea-med-col="' + i + '">' + html + '</div>';
-    })
-    .join('');
-  var hiddenKeys = MED_FIELD_KEYS.filter(function (key) {
-    return shownKeys.indexOf(key) < 0;
-  });
   return (
-    '<div class="ea-clinico-med-grid" data-ea-med-revealed="' +
-    escAttr(JSON.stringify(revealedKeys)) +
-    '">' +
-    blocks +
-    renderMedCategoryAddBar(hiddenKeys) +
+    '<div class="ea-clinico-med-grid" data-ea-med-revealed="' + escAttr(JSON.stringify(revealedKeys)) + '">' +
+    medGridInnerHtml(monitoreo, activeId, medRecetaByPatient, revealedKeys, refDate) +
     '</div>'
   );
 }
 
-export function refreshMedCategoryBlock(mount, key, monitoreo, activeId, medRecetaByPatient) {
-  if (!mount || !key) return;
-  var grid = mount.querySelector('.ea-clinico-med-grid');
+// Any change re-renders the whole card: rows are cheap and the counts in the header stay true.
+export function refreshMedCategoryBlock(mount, _key, monitoreo, activeId, medRecetaByPatient) {
+  var grid = mount && mount.querySelector('.ea-clinico-med-grid');
   if (!grid) return;
-  var existing = grid.querySelector('[data-ea-med-cat="' + key + '"]');
-  var hasContent = medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient);
-  var revealed = parseRevealedMedKeys(grid);
-  var isRevealed = revealed.indexOf(key) >= 0;
-  if (!hasContent && !isRevealed) {
-    if (existing) existing.remove();
-    syncMedCategoryAddBar(grid);
-    return;
-  }
-  var html = renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, {
-    forceOpen: isRevealed && !hasContent,
-  });
-  if (existing) {
-    var wasOpen = existing.open;
-    existing.outerHTML = html;
-    var next = grid.querySelector('[data-ea-med-cat="' + key + '"]');
-    if (next && (wasOpen || hasContent || isRevealed)) next.open = true;
-  }
-  syncMedCategoryAddBar(grid);
+  grid.innerHTML = medGridInnerHtml(monitoreo, activeId, medRecetaByPatient, parseRevealedMedKeys(grid));
 }
 
 function liveMonitoreoFromCtx(ctx) {
@@ -577,8 +388,12 @@ export function wireMedCategoryGrid(mount, ctx) {
     if (!target) return;
     if (target.matches('[data-ea-med-pick-category]')) {
       var category = String(/** @type {HTMLSelectElement} */ (target).value);
-      /** @type {HTMLSelectElement} */ (target).value = '';
-      if (category) revealMedCategoryKey(mount, grid, category, ctx);
+      if (category) {
+        var revealed = parseRevealedMedKeys(grid);
+        if (revealed.indexOf(category) < 0) revealed.push(category);
+        grid.setAttribute('data-ea-med-revealed', JSON.stringify(revealed));
+        refreshMedCategoryBlock(mount, category, liveMonitoreoFromCtx(ctx), ctx.getActiveId(), ctx.medRecetaByPatient);
+      }
       return;
     }
     var rateIdx = target.getAttribute('data-ea-vasop-rate');
@@ -603,17 +418,12 @@ export function wireMedCategoryGrid(mount, ctx) {
       activeId: ctx.getActiveId(),
       medRecetaByPatient: ctx.medRecetaByPatient,
     });
-    /** @type {HTMLSelectElement} */ (target).value = '';
     ctx.persistClinicalState();
     ctx.syncTextarea();
     refreshMedCategoryBlock(mount, addKey, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
   });
 
   grid.addEventListener('click', function (ev) {
-    var target = /** @type {HTMLElement | null} */ (ev.target);
-    if (!target || !grid.contains(target)) return;
-    // Groups are rows that always show their meds: a title click must not fold them.
-    if (target.closest('summary') && !target.closest('button, select, input, a')) ev.preventDefault();
     handleMedGridClick(ev, grid, mount, ctx, liveMonitoreoFromCtx, function (blockMount, key, monitoreo) {
       refreshMedCategoryBlock(blockMount, key, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
     });
