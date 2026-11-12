@@ -4,7 +4,6 @@
 import { clinicalSessionContext, fetchClinicalTeamsFromDb } from '../clinical-access-runtime.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../clinical-settings.mjs';
-import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 import { needsProfileOnboarding } from './clinical-onboarding-gates.mjs';
 import { CLINICAL_SALAS, filterJoinedTeams } from './clinical-teams/shared.mjs';
 import { notify } from '../toast-notify.mjs';
@@ -56,21 +55,8 @@ export function shouldOfferRotationRejoin(opts = {}) {
   return !!opts.pending;
 }
 
-export function buildRotationRejoinLeadHtml(user) {
-  const elevated = hasElevatedTeamPrivileges(user);
-  const sala = String(user?.sala || '').trim();
-  if (elevated) {
-    return (
-      '<p>Se archivaron los equipos del mes anterior' +
-      (sala ? ` en <strong>${escapeHtml(sala)}</strong>` : '') +
-      '. Confirma tu sala y <strong>publica los equipos nuevos</strong> en Mi rotación para que el resto se una.</p>'
-    );
-  }
-  return (
-    '<p>Hay <strong>nueva rotación</strong>: los equipos anteriores ya no están activos' +
-    (sala ? ` (sala actual: <strong>${escapeHtml(sala)}</strong>)` : '') +
-    '. Tu líder de equipo o R4 ya publicó equipos nuevos en Nube — confirma tu sala y <strong>elige el tuyo</strong> en Mi rotación.</p>'
-  );
+function leadProps(user) {
+  return { elevated: hasElevatedTeamPrivileges(user), sala: String(user?.sala || '').trim() };
 }
 
 function updateRotationRejoinOpenButton() {
@@ -90,24 +76,19 @@ function backdropEl() {
   return document.getElementById('rotation-rejoin-backdrop');
 }
 
-function fillSalaSelect() {
+async function fillLeadAndSala() {
   const select = document.getElementById('rotation-rejoin-sala');
-  if (!(select instanceof HTMLSelectElement)) return;
   const settings = readRpcSettings();
   const current = String(
     clinicalSessionContext.user?.sala || settings.clinicalSala || ''
   ).trim();
-  select.innerHTML =
-    '<option value="">— Seleccionar sala —</option>' +
-    CLINICAL_SALAS.map(
-      (s) =>
-        `<option value="${escapeAttr(s)}"${s === current ? ' selected' : ''}>${escapeHtml(s)}</option>`
-    ).join('');
-}
-
-function fillLead() {
-  const lead = document.getElementById('rotation-rejoin-lead');
-  if (lead) lead.innerHTML = buildRotationRejoinLeadHtml(clinicalSessionContext.user);
+  const { drawRotationRejoin } = await import('./clinical-rotation-rejoin-view.jsx');
+  drawRotationRejoin(
+    document.getElementById('rotation-rejoin-lead'),
+    select instanceof HTMLSelectElement ? select : null,
+    leadProps(clinicalSessionContext.user),
+    { salas: CLINICAL_SALAS, current }
+  );
 }
 
 export function closeRotationRejoinModal() {
@@ -117,11 +98,10 @@ export function closeRotationRejoinModal() {
   bd.setAttribute('aria-hidden', 'true');
 }
 
-export function openRotationRejoinModal() {
+export async function openRotationRejoinModal() {
   const bd = backdropEl();
   if (!bd) return;
-  fillLead();
-  fillSalaSelect();
+  await fillLeadAndSala();
   updateRotationRejoinOpenButton();
   bd.classList.add('open');
   bd.setAttribute('aria-hidden', 'false');
