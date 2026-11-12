@@ -1,13 +1,22 @@
 /** Glucometría + bomba insulina form rows for Estado Actual registro. */
 import { STANDARD_GLUCOMETRIA_TIMES } from './estado-actual-registro-defaults.mjs';
 import {
-  buildStandardGluRowHtml,
-  buildExtraGluRowHtml,
   fillGluRowData,
   focusNextStandardGluOrIo,
   focusSiblingGluOrIo,
 } from './estado-actual-panel-glu-row.mjs';
 import { applyRegistroTabSkipAttributes } from './estado-actual-panel-registro-tab.mjs';
+
+/**
+ * Row contents are a Preact view loaded lazily. Rows are built synchronously by many callers, so the
+ * module is cached here and prefetched at import time (long before the registro modal can open).
+ * @type {typeof import('./estado-actual-panel-glu-view.jsx') | null}
+ */
+var gluView = null;
+export function loadGluView() {
+  return import('./estado-actual-panel-glu-view.jsx').then(function (m) { return (gluView = m); });
+}
+loadGluView().catch(function () { /* no JSX loader (tests): buildGluRow will say so */ });
 
 export function syncGluRowAltered(row) {
   var alteredEl = /** @type {HTMLInputElement | null} */ (row.querySelector('[data-ea-glu-altered]'));
@@ -87,7 +96,8 @@ export function buildGluRow(data, opts) {
   var row = document.createElement('div');
   row.className = 'ea-glu-row' + (isStandard ? ' ea-glu-row--standard' : ' ea-glu-row--extra');
   if (isStandard) row.setAttribute('data-ea-glu-standard', standardTime);
-  row.innerHTML = isStandard ? buildStandardGluRowHtml(standardTime) : buildExtraGluRowHtml();
+  if (!gluView) throw new Error('glucometría row view not loaded yet');
+  gluView.renderGluRowContent(row, standardTime);
   fillGluRowData(row, data, isStandard);
   var removeBtn = row.querySelector('[data-ea-glu-remove]');
   if (removeBtn) removeBtn.addEventListener('click', function () { row.remove(); });
@@ -108,7 +118,7 @@ export function fillStandardGluList(gluList, prefill) {
     var t = g.time != null ? String(g.time) : '';
     if (t) byTime.set(t, g);
   });
-  gluList.innerHTML = '';
+  gluList.replaceChildren();
   gluList.classList.add('ea-glu-list--slots');
   STANDARD_GLUCOMETRIA_TIMES.forEach(function (slotTime) {
     gluList.appendChild(buildGluRow(byTime.get(slotTime), { standardTime: slotTime }));
@@ -137,14 +147,6 @@ export function syncEaGluMode(form) {
     if (gluList && !gluList.querySelector('.ea-glu-row')) fillStandardGluList(gluList);
   }
 }
-
-/** Pump readings fall on the hour: pick 00:00–23:00, or type «14». */
-var BOMBA_HOUR_OPTIONS =
-  '<option value="">—</option>' +
-  Array.from({ length: 24 }, function (_, h) {
-    var t = String(h).padStart(2, '0') + ':00';
-    return '<option value="' + t + '">' + t + '</option>';
-  }).join('');
 
 /** Older readings may be off the hour (14:37): keep them as their own option. */
 function setBombaTime(select, time) {
@@ -204,11 +206,8 @@ function wireBombaRowKeyboard(row) {
 export function buildBombaRow(data) {
   var row = document.createElement('div');
   row.className = 'ea-bomba-row';
-  row.innerHTML =
-    '<select class="ea-input" data-ea-bomba-time aria-label="Hora">' + BOMBA_HOUR_OPTIONS + '</select>' +
-    '<input type="text" class="ea-input" data-ea-bomba-value inputmode="numeric" autocomplete="off" aria-label="Glucosa mg/dL">' +
-    '<input type="text" class="ea-input" data-ea-bomba-units inputmode="decimal" autocomplete="off" aria-label="Unidades de insulina">' +
-    '<button type="button" class="ea-io-remove" data-ea-bomba-remove title="Quitar" aria-label="Quitar lectura">×</button>';
+  if (!gluView) throw new Error('bomba row view not loaded yet');
+  gluView.renderBombaRowContent(row);
   if (data) {
     var val = row.querySelector('[data-ea-bomba-value]');
     var units = row.querySelector('[data-ea-bomba-units]');

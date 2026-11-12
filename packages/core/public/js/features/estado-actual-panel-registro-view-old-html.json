@@ -1,0 +1,13 @@
+{
+ "extra": {
+  "base": "<div class=\"ea-io-row-name\"><select data-ea-io-extra-kind aria-label=\"Fuente\"><option value=\"\">Tipo de fuente…</option><option value=\"ultrafiltrado\">Ultrafiltrado</option><option value=\"drain\">Drenaje</option><option value=\"thoracentesis\">Toracocentesis</option><option value=\"__custom__\">+ Otra…</option></select><input type=\"text\" class=\"ea-input\" data-ea-io-extra-custom hidden placeholder=\"Nombre\" autocomplete=\"off\"><button type=\"button\" class=\"ea-io-remove\" data-ea-io-extra-remove title=\"Quitar\" aria-label=\"Quitar fuente\">×</button></div><input type=\"text\" class=\"ea-input\" data-ea-io-extra-value inputmode=\"decimal\" autocomplete=\"off\" placeholder=\"cc\" aria-label=\"Volumen\">"
+ },
+ "event": {
+  "base": "<div class=\"ea-io-row-name\"><select data-ea-io-event-kind aria-label=\"Evento\"><option value=\"\">Evento…</option><option value=\"hemodialisis\">HD</option><option value=\"furosemida\">Furosemida</option><option value=\"fuera\">Fuera</option><option value=\"perdidas\">Pérdidas</option><option value=\"carga\">Carga</option><option value=\"transfusion\">Transfusión</option><option value=\"otro\">Otro</option></select><button type=\"button\" class=\"ea-io-remove\" data-ea-io-event-remove title=\"Quitar\" aria-label=\"Quitar evento\">×</button></div><select class=\"ea-input\" data-ea-io-event-turno aria-label=\"Turno\"><option value=\"t1\">T1</option><option value=\"t2\">T2</option><option value=\"t3\">T3</option></select><input type=\"text\" class=\"ea-input\" data-ea-io-event-detail autocomplete=\"off\" aria-label=\"Detalle\"><input type=\"text\" class=\"ea-input\" data-ea-io-event-ml inputmode=\"decimal\" autocomplete=\"off\" aria-label=\"Volumen\">"
+ },
+ "lead": {
+  "none": "",
+  "noTodo": "",
+  "open": "<div class=\"ea-registro-lead\"><div class=\"ea-registro-hint ea-registro-hint--hemodialisis\"><span>Hay hemodiálisis indicada. Registra el ultrafiltrado en egresos.</span><button type=\"button\" class=\"ea-btn ea-btn--ghost\" data-ea-hemodialisis-no-fue=\"todo-7\">No se realizó hoy</button></div></div>"
+ }
+}

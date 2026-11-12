@@ -39,6 +39,7 @@ import {
   addBombaRow,
   buildGluRow,
   syncGluRowAltered,
+  loadGluView,
 } from './estado-actual-panel-glu.mjs';
 import {
   applyRegistroTabSkipAttributes,
@@ -289,9 +290,30 @@ export function fillIoFields(form, io) {
   fillIoRowList(form.querySelector('#ea-io-event-list'), io.eventos, buildIoEventRow);
 }
 
+/** The Preact view loads lazily so Preact stays off the boot path; the form build prefetches it. */
+var registroView = null;
+var registroViewLoad = null;
+export function ensureRegistroView() {
+  if (registroView) return Promise.resolve(registroView);
+  if (!registroViewLoad) {
+    // Glucose rows (glu view) are built synchronously too, so wait for both views.
+    registroViewLoad = Promise.all([import('./estado-actual-panel-registro-view.jsx'), loadGluView()]).then(function (ms) {
+      registroView = ms[0];
+      return ms[0];
+    });
+  }
+  return registroViewLoad;
+}
+
+/** Runs `fn(view)` now when the view is loaded (the usual case), else as soon as it is. */
+export function whenRegistroViewReady(fn) {
+  if (registroView) fn(registroView);
+  else ensureRegistroView().then(fn);
+}
+
 function fillIoRowList(list, rows, buildRow) {
   if (!list) return;
-  list.innerHTML = '';
+  list.replaceChildren();
   (Array.isArray(rows) ? rows : []).forEach(function (r) {
     list.appendChild(buildRow(r));
   });
@@ -306,9 +328,9 @@ export function clearIoFields(form) {
   var evacEl = form.querySelector('#ea-io-evac');
   if (evacEl && 'value' in evacEl) evacEl.value = '';
   var extraList = form.querySelector('#ea-io-extra-list');
-  if (extraList) extraList.innerHTML = '';
+  if (extraList) extraList.replaceChildren();
   var eventList = form.querySelector('#ea-io-event-list');
-  if (eventList) eventList.innerHTML = '';
+  if (eventList) eventList.replaceChildren();
 }
 
 function defaultAlteredTimeFromForm(form) {
@@ -422,16 +444,18 @@ function tryHandleIoAddPick(form, target) {
   if (!kind) return true;
   var list = form.querySelector(isExtra ? '#ea-io-extra-list' : '#ea-io-event-list');
   if (!list) return true;
-  var row = isExtra ? buildIoExtraRow({ kind: kind }) : buildIoEventRow({ kind: kind });
-  list.appendChild(row);
-  if (isExtra && kind === IO_EXTRA_CUSTOM_VALUE) {
-    /** @type {HTMLSelectElement} */ (row.querySelector('[data-ea-io-extra-kind]')).value = kind;
-    syncIoExtraCustomField(row);
-  } else {
-    var first = row.querySelector('input:not([hidden])');
-    if (first) first.focus();
-  }
-  syncIoBalanceFromForm(form);
+  whenRegistroViewReady(function () {
+    var row = isExtra ? buildIoExtraRow({ kind: kind }) : buildIoEventRow({ kind: kind });
+    list.appendChild(row);
+    if (isExtra && kind === IO_EXTRA_CUSTOM_VALUE) {
+      /** @type {HTMLSelectElement} */ (row.querySelector('[data-ea-io-extra-kind]')).value = kind;
+      syncIoExtraCustomField(row);
+    } else {
+      var first = row.querySelector('input:not([hidden])');
+      if (first) first.focus();
+    }
+    syncIoBalanceFromForm(form);
+  });
   return true;
 }
 
@@ -576,12 +600,14 @@ function applyParsedSoporte(soporteHint) {
 export function applyEstadoActualParsedToForm(parsed) {
   var form = document.getElementById('ea-form');
   if (!form || !parsed || !parsed.ok) return;
-  applyParsedVitals(form, parsed.vitals, parsed.alteredAt);
-  applyParsedGlus(form, parsed.glucometrias);
-  fillIoFields(form, parsed.io);
-  syncIoBalanceFromForm(form);
-  applyParsedSoporte(parsed.soporteHint);
-  syncEaRegistroSteps(form);
+  whenRegistroViewReady(function () {
+    applyParsedVitals(form, parsed.vitals, parsed.alteredAt);
+    applyParsedGlus(form, parsed.glucometrias);
+    fillIoFields(form, parsed.io);
+    syncIoBalanceFromForm(form);
+    applyParsedSoporte(parsed.soporteHint);
+    syncEaRegistroSteps(form);
+  });
 }
 
 function buildRegistroVitalsSectionHtml(vitalFields) {
@@ -692,44 +718,37 @@ export function buildIoExtraRow(data) {
   var row = document.createElement('div');
   row.className = 'ea-io-extra-row';
   row.setAttribute('data-ea-io-extra-row', '');
-  var options =
-    '<option value="">Tipo de fuente…</option>' +
-    IO_EXTRA_SOURCE_KINDS.map(function (k) {
-      return '<option value="' + k.kind + '">' + ioExtraLabelForDisplay(k.label) + '</option>';
-    }).join('') +
-    '<option value="' + IO_EXTRA_CUSTOM_VALUE + '">+ Otra…</option>';
-  row.innerHTML =
-    '<div class="ea-io-row-name">' +
-    '<select data-ea-io-extra-kind aria-label="Fuente">' + options + '</select>' +
-    '<input type="text" class="ea-input" data-ea-io-extra-custom hidden placeholder="Nombre" autocomplete="off">' +
-    '<button type="button" class="ea-io-remove" data-ea-io-extra-remove title="Quitar" aria-label="Quitar fuente">×</button>' +
-    '</div>' +
-    '<input type="text" class="ea-input" data-ea-io-extra-value inputmode="decimal" autocomplete="off" placeholder="cc" aria-label="Volumen">';
-  var kindEl = row.querySelector('[data-ea-io-extra-kind]');
-  var customEl = ioExtraCustomInput(row);
-  var known = data.kind && IO_EXTRA_SOURCE_KINDS.find(function (k) { return k.kind === data.kind; });
-  if (kindEl && known) {
-    kindEl.value = known.kind;
-  } else if (kindEl && data.label) {
-    kindEl.value = IO_EXTRA_CUSTOM_VALUE;
-    if (customEl) customEl.value = ioExtraLabelForDisplay(data.label);
-  }
-  if (kindEl) setIoExtraCustomVisible(row, kindEl.value === IO_EXTRA_CUSTOM_VALUE);
-  var valueEl = row.querySelector('[data-ea-io-extra-value]');
-  if (valueEl && data.value != null && data.value !== '') valueEl.value = String(data.value);
-  var removeBtn = row.querySelector('[data-ea-io-extra-remove]');
-  if (removeBtn) {
-    removeBtn.addEventListener('click', function () {
-      var form = row.closest('form');
-      row.remove();
-      syncIoBalanceFromForm(form);
-    });
-  }
-  if (kindEl) {
-    kindEl.addEventListener('change', function () {
-      syncIoExtraCustomField(row);
-    });
-  }
+  var options = IO_EXTRA_SOURCE_KINDS.map(function (k) {
+    return { value: k.kind, label: ioExtraLabelForDisplay(k.label) };
+  }).concat([{ value: IO_EXTRA_CUSTOM_VALUE, label: '+ Otra…' }]);
+  whenRegistroViewReady(function (view) {
+    view.renderIoExtraRowBody(row, options);
+    var kindEl = row.querySelector('[data-ea-io-extra-kind]');
+    var customEl = ioExtraCustomInput(row);
+    var known = data.kind && IO_EXTRA_SOURCE_KINDS.find(function (k) { return k.kind === data.kind; });
+    if (kindEl && known) {
+      kindEl.value = known.kind;
+    } else if (kindEl && data.label) {
+      kindEl.value = IO_EXTRA_CUSTOM_VALUE;
+      if (customEl) customEl.value = ioExtraLabelForDisplay(data.label);
+    }
+    if (kindEl) setIoExtraCustomVisible(row, kindEl.value === IO_EXTRA_CUSTOM_VALUE);
+    var valueEl = row.querySelector('[data-ea-io-extra-value]');
+    if (valueEl && data.value != null && data.value !== '') valueEl.value = String(data.value);
+    var removeBtn = row.querySelector('[data-ea-io-extra-remove]');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function () {
+        var form = row.closest('form');
+        row.remove();
+        syncIoBalanceFromForm(form);
+      });
+    }
+    if (kindEl) {
+      kindEl.addEventListener('change', function () {
+        syncIoExtraCustomField(row);
+      });
+    }
+  });
   return row;
 }
 
@@ -796,41 +815,32 @@ export function buildIoEventRow(data) {
   var row = document.createElement('div');
   row.className = 'ea-io-extra-row ea-io-event-row';
   row.setAttribute('data-ea-io-event-row', '');
-  row.innerHTML =
-    '<div class="ea-io-row-name">' +
-    '<select data-ea-io-event-kind aria-label="Evento">' +
-    '<option value="">Evento…</option>' +
-    IO_TURNO_EVENT_KINDS.map(function (k) {
-      return '<option value="' + k.kind + '">' + k.short + '</option>';
-    }).join('') +
-    '</select>' +
-    '<button type="button" class="ea-io-remove" data-ea-io-event-remove title="Quitar" aria-label="Quitar evento">×</button>' +
-    '</div>' +
-    '<select class="ea-input" data-ea-io-event-turno aria-label="Turno">' +
-    IO_TURNO_IDS.map(function (t) { return '<option value="' + t + '">' + t.toUpperCase() + '</option>'; }).join('') +
-    '</select>' +
-    '<input type="text" class="ea-input" data-ea-io-event-detail autocomplete="off" aria-label="Detalle">' +
-    '<input type="text" class="ea-input" data-ea-io-event-ml inputmode="decimal" autocomplete="off" aria-label="Volumen">';
-  var set = function (sel, v) {
-    var el = row.querySelector(sel);
-    if (el && v != null && v !== '') el.value = String(v);
-  };
-  set('[data-ea-io-event-turno]', data.turno || 't1');
-  set('[data-ea-io-event-kind]', data.kind);
-  set('[data-ea-io-event-detail]', data.detail);
-  set('[data-ea-io-event-ml]', data.ml);
-  syncIoEventRow(row, false);
-  row.addEventListener('change', function (ev) {
-    if (ev.target && ev.target.matches('select')) syncIoEventRow(row, true);
+  var kinds = IO_TURNO_EVENT_KINDS.map(function (k) {
+    return { value: k.kind, label: k.short };
   });
-  var removeBtn = row.querySelector('[data-ea-io-event-remove]');
-  if (removeBtn) {
-    removeBtn.addEventListener('click', function () {
-      var form = row.closest('form');
-      row.remove();
-      syncIoBalanceFromForm(form);
+  whenRegistroViewReady(function (view) {
+    view.renderIoEventRowBody(row, kinds, IO_TURNO_IDS);
+    var set = function (sel, v) {
+      var el = row.querySelector(sel);
+      if (el && v != null && v !== '') el.value = String(v);
+    };
+    set('[data-ea-io-event-turno]', data.turno || 't1');
+    set('[data-ea-io-event-kind]', data.kind);
+    set('[data-ea-io-event-detail]', data.detail);
+    set('[data-ea-io-event-ml]', data.ml);
+    syncIoEventRow(row, false);
+    row.addEventListener('change', function (ev) {
+      if (ev.target && ev.target.matches('select')) syncIoEventRow(row, true);
     });
-  }
+    var removeBtn = row.querySelector('[data-ea-io-event-remove]');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function () {
+        var form = row.closest('form');
+        row.remove();
+        syncIoBalanceFromForm(form);
+      });
+    }
+  });
   return row;
 }
 
@@ -928,22 +938,17 @@ export function findOpenHemodialisisReminder(activeId) {
 
 /** The registro form is built once and reused: re-read the HD reminder on every open. */
 export function refreshRegistroLead(form, activeId) {
-  var old = form.querySelector('.ea-registro-lead');
-  if (old) old.remove();
-  form.insertAdjacentHTML('afterbegin', buildRegistroLeadHtml(activeId));
-}
-
-function buildRegistroLeadHtml(activeId) {
+  var removeOld = function () {
+    var old = form.querySelector('.ea-registro-lead');
+    if (old) old.remove();
+  };
+  removeOld();
   var reminder = findOpenHemodialisisReminder(activeId);
-  var reminderHtml = reminder
-    ? '<div class="ea-registro-hint ea-registro-hint--hemodialisis">' +
-      '<span>Hay hemodiálisis indicada. Registra el ultrafiltrado en egresos.</span>' +
-      '<button type="button" class="ea-btn ea-btn--ghost" data-ea-hemodialisis-no-fue="' +
-      reminder.id +
-      '">No se realizó hoy</button>' +
-      '</div>'
-    : '';
-  return reminderHtml ? '<div class="ea-registro-lead">' + reminderHtml + '</div>' : '';
+  if (!reminder) return;
+  whenRegistroViewReady(function (view) {
+    removeOld();
+    view.insertRegistroLead(form, reminder.id);
+  });
 }
 
 var REGISTRO_STEP_NAMES = ['Signos', 'Glucosa', 'Balance', 'Revisar'];
@@ -999,6 +1004,7 @@ function buildRegistroFooterHtml() {
 }
 
 export function buildRegistroFormMarkup() {
+  void ensureRegistroView();
   var vitalFields = buildVitalFieldsHtml();
   var activeId = getEaFormOpenPatientId();
   if (activeId == null) activeId = getEaPanelRuntime().getActiveId();
@@ -1007,7 +1013,6 @@ export function buildRegistroFormMarkup() {
     '<div class="ea-registro-shell">' +
     '<div class="ea-registro-form-scroll wb-modal-body">' +
     '<form id="ea-form" class="ea-form ea-form--registro" data-prevent-submit>' +
-    buildRegistroLeadHtml(activeId) +
     '<div class="ea-registro-top">' +
     '<div class="ea-registro-when">' +
     '<label class="ea-field ea-field--datetime">' +
@@ -1071,7 +1076,7 @@ function resetGluAndBombaFields() {
   var bombaList = document.getElementById('ea-bomba-list');
   if (bombaToggle && 'checked' in bombaToggle) bombaToggle.checked = false;
   if (bombaList) {
-    bombaList.innerHTML = '';
+    bombaList.replaceChildren();
     bombaList.appendChild(buildBombaRow());
   }
 }

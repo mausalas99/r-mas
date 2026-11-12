@@ -72,8 +72,6 @@ import {
 } from './ea-indicaciones-clipboard.mjs';
 import { resolveEaNoteSend } from './estado-actual-send-note.mjs';
 import { isModeSala } from '../mode-features.mjs';
-import { buildRecommendationCardHtml } from '../ui-recommendation.mjs';
-import { wrapApprovalInConflictModal } from '../ui-approval-card.mjs';
 
 function parseFormMedicion() {
   var form = document.getElementById('ea-form');
@@ -293,48 +291,29 @@ function navigateToNotasAfterEaSend() {
 }
 
 function showEaReplaceEvolucionConfirm(onReplace) {
-  var backdrop = document.createElement('div');
-  backdrop.className = 'lab-conflict-backdrop';
-  backdrop.id = 'ea-note-confirm-backdrop';
-  var altsOpen = false;
-  function paint() {
-    var card = buildRecommendationCardHtml({
-      title: '¿Reemplazar evolución?',
-      bodyHtml: '<p>La evolución ya tiene contenido. ¿Reemplazarlo con el estado actual?</p>',
-      signal: 2,
-      tone: 'var(--color-accent)',
-      confidenceLabel: 'Revisión humana',
-      primaryLabel: 'Reemplazar',
-      alternativesLabel: 'Alternativas',
-      alternativesOpen: altsOpen,
-      alternatives: [
-        { key: 'keep', short: 'Conservar la evolución actual', label: 'Sin cambios', signal: 1 },
-      ],
-    });
-    backdrop.innerHTML = wrapApprovalInConflictModal(card);
+  import('./estado-actual-panel-actions-view.jsx').then(function (view) {
+    var backdrop = document.createElement('div');
+    backdrop.className = 'lab-conflict-backdrop';
+    backdrop.id = 'ea-note-confirm-backdrop';
+    var altsOpen = false;
     var dismiss = function () { backdrop.remove(); };
-    var accept = backdrop.querySelector('[data-rec-accept]');
-    var altsBtn = backdrop.querySelector('[data-rec-alts]');
-    if (accept) {
-      accept.addEventListener('click', function () {
+    // Preact keeps the same buttons across repaints, so wire once by delegation.
+    backdrop.addEventListener('click', function (ev) {
+      var t = /** @type {Element} */ (ev.target);
+      if (t === backdrop) return dismiss();
+      if (t.closest('[data-rec-accept]')) {
         backdrop.remove();
         onReplace();
-      });
-    }
-    if (altsBtn) {
-      altsBtn.addEventListener('click', function () {
+      } else if (t.closest('[data-rec-alts]')) {
         altsOpen = !altsOpen;
-        paint();
-      });
-    }
-    var keep = backdrop.querySelector('[data-rec-alt="keep"]');
-    if (keep) keep.addEventListener('click', dismiss);
-    backdrop.addEventListener('click', function (ev) {
-      if (ev.target === backdrop) dismiss();
+        view.paintReplaceEvolucionCard(backdrop, altsOpen);
+      } else if (t.closest('[data-rec-alt="keep"]')) {
+        dismiss();
+      }
     });
-  }
-  paint();
-  document.body.appendChild(backdrop);
+    view.paintReplaceEvolucionCard(backdrop, altsOpen);
+    document.body.appendChild(backdrop);
+  });
 }
 
 function commitEstadoActualToNote(patient, replaceEvolucion) {
