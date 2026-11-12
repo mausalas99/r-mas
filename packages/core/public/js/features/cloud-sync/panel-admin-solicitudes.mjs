@@ -1,58 +1,8 @@
-import { esc } from '../../dom-escape.mjs';
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { publishClinicalTeamsAfterChange } from '../clinical-teams/teams-guardia-bridge.mjs';
-import { CLOUD_SALAS } from './sala-allowlist.mjs';
-import { adminTableHtml } from './panel-admin-helpers.mjs';
+import { drawAdminHint } from './panel-admin-view.jsx';
+import { drawSolicitudesList, solicitudesModel } from './panel-admin-solicitudes-view.jsx';
 import { equiposDbApi } from './panel-admin-equipos-row-persist.mjs';
-
-const WHEN = new Intl.DateTimeFormat('es-MX', { dateStyle: 'short', timeStyle: 'short' });
-
-/** @param {string} requested */
-function salaSelectHtml(requested) {
-  return (
-    '<select class="cloud-sync-select" data-sol-sala aria-label="Sala asignada">' +
-    CLOUD_SALAS.map(
-      (s) => '<option' + (s === requested ? ' selected' : '') + '>' + esc(s) + '</option>'
-    ).join('') +
-    '</select>'
-  );
-}
-
-/** @param {{ status: string, assignedSala?: string|null }} r */
-function statusText(r) {
-  return r.status === 'approved' ? 'Aprobada · ' + (r.assignedSala || '') : 'Rechazada';
-}
-
-/** @param {object[]} rows @param {boolean} pending */
-function listHtml(rows, pending) {
-  return adminTableHtml(
-    rows,
-    [
-      {
-        label: 'Persona',
-        cell: (r) =>
-          '<b>' + esc(r.displayName || r.username) + '</b><br><span class="cloud-sync-hint">@' + esc(r.username) + ' · ' +
-          esc(WHEN.format(new Date(r.createdAt))) + '</span>',
-      },
-      { label: 'Pidió', cell: (r) => esc(r.requestedSala) },
-      pending
-        ? { label: 'Asignar', cell: (r) => salaSelectHtml(r.requestedSala) }
-        : { label: 'Estado', cell: (r) => esc(statusText(r)) },
-      {
-        label: '',
-        cell: () =>
-          pending
-            ? '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-sol-reject>Rechazar</button> ' +
-              '<button type="button" class="cloud-sync-btn" data-sol-approve>Aprobar</button>'
-            : '',
-      },
-    ],
-    {
-      rowAttrs: (r) => 'data-sol-id="' + esc(r.id) + '"',
-      emptyHtml: '<p class="cloud-sync-hint">' + (pending ? 'No hay solicitudes pendientes.' : 'Sin solicitudes resueltas.') + '</p>',
-    }
-  );
-}
 
 /**
  * Admin tab «Solicitudes»: iPad users who asked for a sala wait here for approval.
@@ -85,9 +35,9 @@ export function wireSolicitudesPanel(root, { getApi, toast }) {
       }
       byId.clear();
       rows.forEach((r) => byId.set(r.id, r));
-      host.innerHTML = listHtml(rows, filter === 'pending');
+      drawSolicitudesList(host, solicitudesModel(rows, filter === 'pending'));
     } catch (err) {
-      host.innerHTML = '<p class="cloud-sync-hint">' + esc(err?.message || 'No se pudieron cargar las solicitudes.') + '</p>';
+      drawAdminHint(host, err?.message || 'No se pudieron cargar las solicitudes.');
     }
   }
 
