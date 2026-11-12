@@ -1,3 +1,4 @@
+import { buildHeaderIcon } from '../header-icons.mjs';
 import { normalizeMotionMode, motionClassFor, ALL_MOTION_CLASSES } from '../motion-mode.mjs';
 import { isModeSala } from '../mode-features.mjs';
 import { openDatePopover, buildDatePopoverQuickFilters } from './workbench/date-popover.mjs';
@@ -30,11 +31,6 @@ export function registerChromeRuntime(ctx) {
   if (!ctx || typeof ctx !== 'object') return;
   Object.assign(runtime, ctx);
 }
-
-const THEME_ICON_SUN =
-  '<svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
-const THEME_ICON_MOON =
-  '<svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
 
 const FONT_ZOOM_LS = 'rpc-font-zoom';
 const HIGH_CONTRAST_LS = 'rpc-high-contrast';
@@ -138,7 +134,7 @@ export function syncThemeToggleIcon() {
   const themeBtn = document.getElementById('theme-toggle');
   if (!themeBtn) return;
   const isDark = document.documentElement.classList.contains('dark');
-  themeBtn.innerHTML = isDark ? THEME_ICON_MOON : THEME_ICON_SUN;
+  themeBtn.replaceChildren(buildHeaderIcon(isDark ? 'moon' : 'sun'));
 }
 
 export function setThemeMode(mode) {

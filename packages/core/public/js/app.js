@@ -30,7 +30,7 @@ if (typeof globalThis !== 'undefined' && globalThis.__RPC_CLOUD_MOBILE__) {
         var gate = document.getElementById('rpc-cloud-mobile-gate');
         if (gate) {
           gate.hidden = true;
-          gate.innerHTML = '';
+          gate.replaceChildren();
         }
         document.body.classList.remove('rpc-cloud-mobile-gated');
       } catch (_e) {

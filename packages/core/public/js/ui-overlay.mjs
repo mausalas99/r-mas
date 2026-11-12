@@ -472,11 +472,16 @@ export function mountHybridDemoSheet() {
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
   panel.setAttribute('aria-label', 'Demo sheet Hybrid H');
-  panel.innerHTML =
-    '<div class="ui-overlay-sheet__handle" aria-hidden="true"></div>' +
-    '<p style="margin:16px 20px 8px;font-size:15px;font-weight:600;color:var(--text);">Sheet de prueba</p>' +
-    '<p style="margin:0 20px 24px;font-size:13px;line-height:1.45;color:var(--text-muted);">' +
-    'Arrastrá hacia abajo para cerrar (velocidad o m\u00e1s del 30% de altura).</p>';
+  var handle = document.createElement('div');
+  handle.className = 'ui-overlay-sheet__handle';
+  handle.setAttribute('aria-hidden', 'true');
+  var heading = document.createElement('p');
+  heading.setAttribute('style', 'margin:16px 20px 8px;font-size:15px;font-weight:600;color:var(--text);');
+  heading.textContent = 'Sheet de prueba';
+  var hint = document.createElement('p');
+  hint.setAttribute('style', 'margin:0 20px 24px;font-size:13px;line-height:1.45;color:var(--text-muted);');
+  hint.textContent = 'Arrastrá hacia abajo para cerrar (velocidad o m\u00e1s del 30% de altura).';
+  panel.append(handle, heading, hint);
 
   document.body.appendChild(scrim);
   document.body.appendChild(panel);

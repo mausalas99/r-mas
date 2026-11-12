@@ -3,7 +3,7 @@
  */
 
 import { isMobileWeb } from './mobile-web.mjs';
-import { buildLabPanelSkeletonHtml } from './ui-skeleton.mjs';
+import { buildLabPanelSkeletonElement } from './ui-skeleton.mjs';
 import { buildLazyWindowHandlers, patchWindowHandlers } from './lazy-feature-routes-core.mjs';
 import {
   buildPlatformWindowHandlersLazy,
@@ -361,9 +361,7 @@ export function showLabPanelLoadingSkeleton() {
   var scroll = root.querySelector('.lab-work-scroll');
   var el = document.getElementById('lab-panel-loading');
   if (!el) {
-    var wrap = document.createElement('div');
-    wrap.innerHTML = buildLabPanelSkeletonHtml();
-    el = wrap.firstElementChild;
+    el = buildLabPanelSkeletonElement();
     if (el && scroll) scroll.prepend(el);
     else if (el) root.prepend(el);
   }

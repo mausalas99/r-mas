@@ -116,7 +116,12 @@ function chartsAsyncFn(exportName, fallback) {
     }).catch(function (err) {
       console.error('[R+ Tendencias] No se pudo cargar el módulo:', err);
       var box = document.getElementById('tendencias-container');
-      if (box) box.innerHTML = '<p class="tend-empty">No se pudieron cargar las tendencias. Vuelve a abrir la pestaña.</p>';
+      if (box) {
+        var msg = document.createElement('p');
+        msg.className = 'tend-empty';
+        msg.textContent = 'No se pudieron cargar las tendencias. Vuelve a abrir la pestaña.';
+        box.replaceChildren(msg);
+      }
     });
   };
 }

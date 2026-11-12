@@ -9,6 +9,7 @@
  * visible — one MutationObserver keeps that true for every code path that
  * shows or hides those owners.
  */
+import { buildHeaderIcon } from '../header-icons.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import { wireGlide } from './nav-glide.mjs';
 
@@ -226,7 +227,7 @@ function buildHelpMenu(header) {
   btn.setAttribute('aria-label', 'Ayuda');
   btn.setAttribute('aria-haspopup', 'menu');
   btn.setAttribute('aria-expanded', 'false');
-  btn.innerHTML = '<svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><path d="M12 17h.01"/></svg>';
+  btn.appendChild(buildHeaderIcon('help'));
   var menu = document.createElement('div');
   menu.className = 'topbar-help-menu';
   menu.setAttribute('role', 'menu');
