@@ -1,0 +1,13 @@
+{
+ "options": {
+  "flat": "<option value=\"\">Equipo</option><option value=\"t3\">Cardio &lt;MI&gt;</option><option value=\"t4\">Zeta</option><option value=\"t1\" selected>Equipo A</option><option value=\"t2\">Equipo &quot;B&quot; &amp; co</option>",
+  "flatNoSel": "<option value=\"\">Equipo</option><option value=\"t3\">Cardio &lt;MI&gt;</option><option value=\"t4\">Zeta</option><option value=\"t1\">Equipo A</option><option value=\"t2\">Equipo &quot;B&quot; &amp; co</option>",
+  "grouped": "<optgroup label=\"Sala X\"><option value=\"t1\">Equipo A</option><option value=\"t2\">Equipo &quot;B&quot; &amp; co</option></optgroup><optgroup label=\"Sala Y\"><option value=\"t4\" selected>Zeta</option></optgroup><optgroup label=\"Sin sala\"><option value=\"\">Equipo</option><option value=\"t3\">Cardio &lt;MI&gt;</option></optgroup>",
+  "empty": ""
+ },
+ "body": {
+  "withSala": "<div id=\"clinical-census-filters-body\" class=\"clinical-census-filters-body\"><label class=\"clinical-census-filter\"><span>Sala</span><select id=\"clinical-filter-sala\" class=\"profile-input\"><option value=\"__all__\">Todas</option><option value=\"Sala 1\">Sala 1</option><option value=\"Sala 2\">Sala 2</option><option value=\"Sala E\">Sala E</option><option value=\"Torre HU\">Torre HU</option><option value=\"Área A/Pensionistas\">Área A/Pensionistas</option><option value=\"Interconsultas\">Interconsultas</option><option value=\"UX\">UX</option><option value=\"Eme\">Eme</option><option value=\"UCI\">UCI</option><option value=\"PostQx\">PostQx</option><option value=\"Subespecialidad\">Subespecialidad</option></select></label><label class=\"clinical-census-filter\"><span>Equipo</span><select id=\"clinical-filter-team\" class=\"profile-input\"><option value=\"\">Todos los equipos</option><option value=\"__unassigned__\">Sin equipo asignado</option></select></label><label class=\"clinical-census-filter\"><span>Servicio</span><input type=\"search\" id=\"clinical-filter-service\" class=\"profile-input\" placeholder=\"Filtrar…\" autocomplete=\"off\"></label></div>",
+  "noSala": "<div id=\"clinical-census-filters-body\" class=\"clinical-census-filters-body\"><label class=\"clinical-census-filter\"><span>Equipo</span><select id=\"clinical-filter-team\" class=\"profile-input\"><option value=\"\">Todos los equipos</option><option value=\"__unassigned__\">Sin equipo asignado</option></select></label><label class=\"clinical-census-filter\"><span>Servicio</span><input type=\"search\" id=\"clinical-filter-service\" class=\"profile-input\" placeholder=\"Filtrar…\" autocomplete=\"off\"></label></div>"
+ },
+ "unassigned": "<option value=\"__unassigned__\">Sin equipo asignado</option>"
+}

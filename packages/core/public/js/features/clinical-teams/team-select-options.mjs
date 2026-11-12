@@ -4,11 +4,14 @@
 import { CLINICAL_SALA_VALUES } from '../../../../lib/clinical-salas.mjs';
 import { esc } from '../../dom-escape.mjs';
 
-function teamOptionHtml(team, selectedTeamId) {
+function teamOption(team, selectedTeamId) {
   const id = String(team?.team_id || '');
   const label = String(team?.name || team?.service || 'Equipo').trim() || 'Equipo';
-  const sel = id && id === String(selectedTeamId || '') ? ' selected' : '';
-  return '<option value="' + esc(id) + '"' + sel + '>' + esc(label) + '</option>';
+  return { value: id, label, selected: !!id && id === String(selectedTeamId || '') };
+}
+
+function optionHtml(o) {
+  return '<option value="' + esc(o.value) + '"' + (o.selected ? ' selected' : '') + '>' + esc(o.label) + '</option>';
 }
 
 function sortTeamsForSelect(teams) {
@@ -22,17 +25,15 @@ function sortTeamsForSelect(teams) {
 }
 
 /**
+ * Plain model of the options: `{ options }` flat, or `{ groups: [{ label, options }] }` by sala.
  * @param {object[]} teams
  * @param {string} [selectedTeamId]
  * @param {{ groupBySala?: boolean }} [opts]
  */
-export function buildTeamSelectOptions(teams, selectedTeamId, opts = {}) {
+export function teamSelectModel(teams, selectedTeamId, opts = {}) {
   const list = Array.isArray(teams) ? teams : [];
-  if (!opts.groupBySala) {
-    return sortTeamsForSelect(list)
-      .map((team) => teamOptionHtml(team, selectedTeamId))
-      .join('');
-  }
+  const options = (l) => sortTeamsForSelect(l).map((team) => teamOption(team, selectedTeamId));
+  if (!opts.groupBySala) return { options: options(list) };
 
   /** @type {Map<string, object[]>} */
   const bySala = new Map();
@@ -48,13 +49,18 @@ export function buildTeamSelectOptions(teams, selectedTeamId, opts = {}) {
       .filter((s) => !CLINICAL_SALA_VALUES.includes(s))
       .sort((a, b) => a.localeCompare(b, 'es')),
   ];
+  return { groups: salaOrder.map((sala) => ({ label: sala, options: options(bySala.get(sala) || []) })) };
+}
 
-  return salaOrder
-    .map((sala) => {
-      const optsHtml = sortTeamsForSelect(bySala.get(sala) || [])
-        .map((team) => teamOptionHtml(team, selectedTeamId))
-        .join('');
-      return '<optgroup label="' + esc(sala) + '">' + optsHtml + '</optgroup>';
-    })
+/**
+ * @param {object[]} teams
+ * @param {string} [selectedTeamId]
+ * @param {{ groupBySala?: boolean }} [opts]
+ */
+export function buildTeamSelectOptions(teams, selectedTeamId, opts = {}) {
+  const model = teamSelectModel(teams, selectedTeamId, opts);
+  if (model.options) return model.options.map(optionHtml).join('');
+  return model.groups
+    .map((g) => '<optgroup label="' + esc(g.label) + '">' + g.options.map(optionHtml).join('') + '</optgroup>')
     .join('');
 }
