@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  buildVitalFieldsHtml,
   collapseAllVitalStacks,
   expandVitalNextLayer,
   readVitalSeriesFromStack,
@@ -72,17 +71,6 @@ function fakeForm() {
 var tas = function (f, i) { return f.querySelector('[data-ea-vital="tas"][data-ea-layer-idx="' + i + '"]'); };
 var tad = function (f, i) { return f.querySelector('[data-ea-vital="tad"][data-ea-layer-idx="' + i + '"]'); };
 var slot = function (f, key, i) { return f.querySelector('[data-ea-vital-stack="' + key + '"] [data-ea-layer="' + i + '"]'); };
-
-test('buildVitalFieldsHtml: one TA pair with a single +1, keys unchanged', () => {
-  var html = buildVitalFieldsHtml();
-  assert.equal((html.match(/class="ea-ta-pair"/g) || []).length, 1);
-  assert.equal((html.match(/data-ea-vital-add="ta"/g) || []).length, 1);
-  assert.equal(html.includes('data-ea-vital-add="tas"'), false);
-  assert.equal(html.includes('data-ea-vital-add="tad"'), false);
-  ['tas', 'tad', 'fc', 'fr', 'temp', 'sat'].forEach(function (k) {
-    assert.ok(html.includes('data-ea-vital-stack="' + k + '"'), k);
-  });
-});
 
 test('one +1 opens the same row for TAS and TAD; max 4 pairs', () => {
   var f = fakeForm();

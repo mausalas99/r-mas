@@ -3,6 +3,9 @@ import { render } from 'preact';
 import { EaClinicoSection } from './estado-actual-panel-clinico-view.jsx';
 import { EaHistorialSection, EaSnapshotSection } from './estado-actual-panel-snapshot-view.jsx';
 
+// One lazy entry for the panel and the registro form: fewer separately loaded chunks (boot chunk budget).
+export { paintRegistroForm } from './estado-actual-panel-registro-form-view.jsx';
+
 export function EmptyPanel() {
   return (
     <div class="estado-actual-panel ea-empty">
@@ -43,7 +46,7 @@ export function ActionBarButtons({ sala }) {
   );
 }
 
-/** @param {{ savedLabel: string, chartsCanOpen: boolean, sala: boolean, clinico: object, historial: unknown[], now?: Date }} p */
+/** @param {{ savedLabel: string, chartsCanOpen: boolean, sala: boolean, clinico: object, historial: object }} p */
 export function EaPanelShell(p) {
   return (
     <div class="estado-actual-panel">
@@ -56,8 +59,8 @@ export function EaPanelShell(p) {
         </div>
       </div>
       <div class="ea-main">
-        <EaClinicoSection {...p.clinico} now={p.now} />
-        <EaHistorialSection historial={p.historial} now={p.now} />
+        <EaClinicoSection {...p.clinico} />
+        <EaHistorialSection {...p.historial} />
       </div>
     </div>
   );
@@ -81,16 +84,16 @@ export function paintShell(mount, props) {
   paint((nodes) => mount.replaceChildren(...nodes), <EaPanelShell {...props} />);
 }
 
-export function replaceClinico(el, clinico, now) {
-  paint((nodes) => el.replaceWith(...nodes), <EaClinicoSection {...clinico} now={now} />);
+export function replaceClinico(el, clinico) {
+  paint((nodes) => el.replaceWith(...nodes), <EaClinicoSection {...clinico} />);
 }
 
-export function replaceSnapshot(el, snapshot, balGlobal, now) {
-  paint((nodes) => el.replaceWith(...nodes), <EaSnapshotSection snapshot={snapshot} balGlobal={balGlobal} now={now} />);
+export function replaceSnapshot(el, snapshot) {
+  paint((nodes) => el.replaceWith(...nodes), <EaSnapshotSection {...snapshot} />);
 }
 
-export function replaceHistorial(el, historial, now) {
-  paint((nodes) => el.replaceWith(...nodes), <EaHistorialSection historial={historial} now={now} />);
+export function replaceHistorial(el, historial) {
+  paint((nodes) => el.replaceWith(...nodes), <EaHistorialSection {...historial} />);
 }
 
 export function replaceChartsSummary(el, canOpen) {

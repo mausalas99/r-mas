@@ -15,7 +15,7 @@ import {
   syncRecetaProposalsFromSoapSelection,
 } from './estado-actual-meds.mjs';
 import { buildEaHistorialChartsRevision, eaChartsCanOpen } from './estado-actual-charts.mjs';
-import { syncEaCopyFab } from './estado-actual-panel-actions.mjs';
+import { prefetchEaRegistroForm, syncEaCopyFab } from './estado-actual-panel-actions.mjs';
 import {
   buildEstadoClinicoProps,
   fillEstadoClinicoMedGrid,
@@ -24,6 +24,7 @@ import {
   restoreEaPanelUiState,
 } from './estado-actual-panel-clinico.mjs';
 import { _eaPanelCache, findActivePatient, invalidateEaPanelCache } from './estado-actual-panel-core.mjs';
+import { buildHistorialViewProps, buildSnapshotViewProps } from './estado-actual-panel-snapshot-html.mjs';
 import { formatEaSavedLabel } from './estado-actual-panel-format.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 
@@ -101,6 +102,24 @@ export function syncEaRecetaProposals(patient, activeId, monitoreo) {
   if (changed) persistClinicalState();
 }
 
+function patchHistorial(view, mount, monitoreo) {
+  var histEl = mount.querySelector('#ea-historial');
+  if (!histEl) return;
+  var wasOpen = histEl.open;
+  view.replaceHistorial(histEl, buildHistorialViewProps(Array.isArray(monitoreo.historial) ? monitoreo.historial : []));
+  var newHist = wasOpen && mount.querySelector('#ea-historial');
+  if (newHist) newHist.open = true;
+}
+
+function patchChartsSummary(view, mount, monitoreo) {
+  var chartsSummary = mount.querySelector('#ea-charts-summary');
+  if (!chartsSummary) return;
+  var chartsRev = buildEaHistorialChartsRevision(monitoreo);
+  if (mount._eaChartsSummaryRev === chartsRev) return;
+  mount._eaChartsSummaryRev = chartsRev;
+  view.replaceChartsSummary(chartsSummary, eaChartsCanOpen(monitoreo));
+}
+
 /**
  * @param {HTMLElement} mount
  * @param {ReturnType<typeof import('./estado-actual-panel-core.mjs').findActivePatient>} patient
@@ -126,31 +145,14 @@ export function patchEaPanelDynamicSections(mount, patient, monitoreo, patchOpts
   }
 
   var snapEl = mount.querySelector('#ea-snapshot');
-  if (snapEl) view.replaceSnapshot(snapEl, snapshot, balGlobal);
+  if (snapEl) view.replaceSnapshot(snapEl, buildSnapshotViewProps(snapshot, balGlobal));
 
-  var histEl = mount.querySelector('#ea-historial');
-  if (histEl) {
-    var histWasOpen = histEl.open;
-    view.replaceHistorial(histEl, Array.isArray(monitoreo.historial) ? monitoreo.historial : []);
-    if (histWasOpen) {
-      var newHist = mount.querySelector('#ea-historial');
-      if (newHist) newHist.open = true;
-    }
-  }
+  patchHistorial(view, mount, monitoreo);
 
   var meta = mount.querySelector('#ea-meta-guardado');
   if (meta) meta.textContent = savedLabel;
 
-  if (!patchOpts.skipChartsSummary) {
-    var chartsSummary = mount.querySelector('#ea-charts-summary');
-    if (chartsSummary) {
-      var chartsRev = buildEaHistorialChartsRevision(monitoreo);
-      if (mount._eaChartsSummaryRev !== chartsRev) {
-        mount._eaChartsSummaryRev = chartsRev;
-        view.replaceChartsSummary(chartsSummary, eaChartsCanOpen(monitoreo));
-      }
-    }
-  }
+  if (!patchOpts.skipChartsSummary) patchChartsSummary(view, mount, monitoreo);
 }
 
 /**
@@ -171,11 +173,12 @@ export function renderEaFullPanelShell(mount, patient, monitoreo, activeId, save
       chartsCanOpen: eaChartsCanOpen(monitoreo),
       sala: isModeSala(getEaPanelRuntime().getSettings()),
       clinico: buildEstadoClinicoProps(monitoreo, activeId, patient),
-      historial: Array.isArray(monitoreo.historial) ? monitoreo.historial : [],
+      historial: buildHistorialViewProps(Array.isArray(monitoreo.historial) ? monitoreo.historial : []),
     });
     fillEstadoClinicoMedGrid(mount, monitoreo, activeId);
     restoreEaPanelUiState(mount, eaUiState);
     wireEstadoClinicoInteractions(mount, patient);
+    prefetchEaRegistroForm();
     if (onPainted) onPainted();
   });
 }

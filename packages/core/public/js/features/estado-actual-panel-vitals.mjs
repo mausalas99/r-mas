@@ -5,61 +5,13 @@ import {
   collectVitalReadingsInRegistroWindow,
   pushVitalReading,
 } from './estado-actual-vital-series.mjs';
-import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-constants.mjs';
+import { VITAL_KEYS, VITAL_LABELS } from './estado-actual-panel-constants.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 import { applyRegistroTabSkipAttributes } from './estado-actual-panel-registro-tab.mjs';
 import { isDoubtfulVital } from './vitals-doubt.mjs';
 
 export function vitalLayerBoxKey(baseKey, layerIdx) {
   return baseKey + '__L' + layerIdx;
-}
-
-function buildVitalChipHtml(baseKey, labelOverride, opts) {
-  opts = opts || {};
-  var label = labelOverride || VITAL_LABELS[baseKey] || baseKey;
-  var layerIdx = opts.layerIdx != null ? opts.layerIdx : 0;
-  var boxKey = vitalLayerBoxKey(baseKey, layerIdx);
-  var unit = VITAL_UNITS[baseKey] || '';
-  var labelHtml =
-    '<div class="vital-label">' +
-    '<span class="ea-vital-name">' +
-    label +
-    '</span>' +
-    '<span class="ea-vital-unit">' +
-    unit +
-    '</span></div>';
-  // El panel "Alterado" flota anclado a una esquina del chip (position:
-  // absolute, como el botón "+1"), fuera del flujo normal: la altura del
-  // chip y el tamaño del valor nunca cambian al abrirlo. La etiqueta de
-  // texto queda oculta visualmente (visually-hidden) — el aro ámbar del
-  // chip (ea-vital-box--altered) ya comunica el estado; el reloj
-  // compacto solo añade la hora exacta.
-  return (
-    '<div class="vital-box ea-vital-box ea-vital-chip" data-ea-vital-box="' +
-    boxKey +
-    '">' +
-    labelHtml +
-    '<div class="ea-vital-value-wrap">' +
-    '<input type="number" class="ea-vital-input" data-ea-vital="' +
-    baseKey +
-    '" data-ea-layer-idx="' +
-    layerIdx +
-    '" step="any" inputmode="decimal" placeholder="—" aria-label="' +
-    label +
-    '">' +
-    '</div>' +
-    '<div class="ea-altered-slot ea-altered-slot--hidden" data-ea-altered-wrap="' +
-    boxKey +
-    '" hidden>' +
-    '<span class="ea-altered-label visually-hidden">Alterado</span>' +
-    '<input type="time" class="ea-altered-time-input" data-ea-altered="' +
-    boxKey +
-    '" aria-label="Hora ' +
-    label +
-    ' alterado">' +
-    '</div>' +
-    '</div>'
-  );
 }
 
 /**
@@ -82,61 +34,6 @@ function addKeyOf(vitalKey) {
 /** Signos que comparten el "+1" de addKey; el último aloja el botón. */
 function stackKeysOfAdd(addKey) {
   return addKey === TA_ADD_KEY ? TA_PAIR : [addKey];
-}
-
-/**
- * @param {string} vitalKey
- * @param {string | null} [addKey] botón "+1" que lleva esta pila (null: ninguno)
- * @returns {string}
- */
-export function buildVitalStackHtml(vitalKey, addKey) {
-  var label = VITAL_LABELS[vitalKey] || vitalKey;
-  if (addKey === undefined) addKey = vitalKey;
-  var addLabel = addKey === TA_ADD_KEY ? 'TA' : label;
-  var slots = '';
-  for (var li = 0; li < MAX_VITAL_LAYERS_IN_FORM; li++) {
-    slots +=
-      '<div class="ea-vital-slot" data-ea-layer="' +
-      li +
-      '"' +
-      (li > 0 ? ' hidden' : '') +
-      '>' +
-      buildVitalChipHtml(vitalKey, label, { layerIdx: li }) +
-      '</div>';
-  }
-  var addBtn = addKey
-    ? '<button type="button" class="ea-vital-add-btn ea-temp-add-btn" data-ea-vital-add="' +
-      addKey +
-      '" hidden title="Otra lectura de ' +
-      addLabel +
-      ' (máx. ' +
-      MAX_VITAL_READINGS_PER_DAY +
-      '/día)">+1</button>'
-    : '';
-  return (
-    '<div class="ea-vital-stack" data-ea-vital-stack="' +
-    vitalKey +
-    '" data-ea-layer-count="1">' +
-    slots +
-    addBtn +
-    '</div>'
-  );
-}
-
-/** Todas las pilas del formulario; TAS y TAD van juntas, con un solo "+1". */
-export function buildVitalFieldsHtml() {
-  return VITAL_KEYS.map(function (key) {
-    if (key === 'tas') return '';
-    if (key === 'tad') {
-      return (
-        '<div class="ea-ta-pair">' +
-        buildVitalStackHtml('tas', null) +
-        buildVitalStackHtml('tad', TA_ADD_KEY) +
-        '</div>'
-      );
-    }
-    return buildVitalStackHtml(key);
-  }).join('');
 }
 
 /**

@@ -56,7 +56,9 @@ import {
   getEstadoActualTextForPatient,
 } from './estado-actual-panel-clinico.mjs';
 import {
-  buildRegistroFormMarkup,
+  ensureRegistroView,
+  isRegistroFormViewReady,
+  paintRegistroFormInto,
   wireEaRegistroForm,
   resetEaRegistroForm,
   applyEstadoActualParsedToForm,
@@ -186,14 +188,28 @@ export function registrarEstadoActualMedicion() {
  * @param {Record<string, number>} vals
  */
 export function quickSaveVitals(vals) {
-  ensureEaRegistroModalForm();
-  resetEaRegistroForm(null);
-  var form = document.getElementById('ea-form');
-  if (!form) return;
-  applyParsedVitals(form, vals, {});
-  registrarEstadoActualMedicion();
+  var save = function () {
+    resetEaRegistroForm(null);
+    var form = document.getElementById('ea-form');
+    if (!form) return;
+    applyParsedVitals(form, vals, {});
+    registrarEstadoActualMedicion();
+  };
+  var ready = ensureEaRegistroModalForm();
+  if (ready) ready.then(save);
+  else save();
 }
 
+/** Load the registro form views ahead of the first open (they are lazy chunks). */
+export function prefetchEaRegistroForm() {
+  void ensureRegistroView();
+}
+
+/**
+ * Builds and wires the registro form in the modal body when it is missing.
+ * @returns {Promise<void> | undefined} a promise only when the form views were not loaded yet
+ *   (the form is then painted once they are); otherwise the form is ready on return.
+ */
 export function ensureEaRegistroModalForm() {
   var body = document.getElementById('ea-registro-modal-body');
   if (!body) return;
@@ -204,7 +220,12 @@ export function ensureEaRegistroModalForm() {
     !body.querySelector('#ea-add-glu.ea-glu-add-inline') ||
     !body.querySelector('#ea-io-evac')
   ) {
-    body.innerHTML = buildRegistroFormMarkup();
+    if (!isRegistroFormViewReady()) {
+      return ensureRegistroView().then(function () {
+        ensureEaRegistroModalForm();
+      });
+    }
+    paintRegistroFormInto(body);
   }
   var patient = findActivePatient();
   setEaFormOpenPatientId(patient ? patient.id : null);

@@ -1,22 +1,8 @@
-/** Estado actual snapshot strip + historial list (Preact). Loaded lazily from estado-actual-panel-render.mjs. */
-import { liveHistorial } from './estado-actual-data-model.mjs';
-import { formatEvacForText, formatIoBalanceDisplay } from './estado-actual-io.mjs';
-import { isGlucometriaMarkedAltered } from './estado-actual-ranges.mjs';
-import { displayBalance, displayValue } from './estado-actual-panel-format.mjs';
-import {
-  buildHistorialRowParts,
-  formatHistorialWhen,
-  formatSnapshotEgresos,
-  formatSnapshotIngresos,
-  hasIoTurnoEvents,
-  renderSnapshotGluZoneTitle,
-  snapshotInsulinPumpAlgLabel,
-  snapshotVitalRowsOpts,
-  todayDayMonth,
-  vitalsHeadStamp,
-} from './estado-actual-panel-snapshot-html.mjs';
-
-function VitalRow({ r, headStamp, today }) {
+/**
+ * Estado actual snapshot strip + historial list (Preact). Loaded lazily from estado-actual-panel-render.mjs.
+ * Props only (built by estado-actual-panel-snapshot-html.mjs): no data imports, so the lazy chunk stays small.
+ */
+function VitalRow({ r }) {
   const cls =
     'ea-snapshot-row' + (r.altered ? ' ea-snapshot-row--altered' : '') + (r.hasHistory ? ' ea-snapshot-row--interactive' : '');
   const keyArgs = JSON.stringify([String(r.vitalKey)]);
@@ -34,9 +20,6 @@ function VitalRow({ r, headStamp, today }) {
         title: 'Ver historial del turno',
       }
     : {};
-  // Today's date on every vital is noise: only an older reading shows its date.
-  // The date shared by most rows sits beside the title; a row shows only a different one.
-  const showStamp = r.stamp && r.stamp !== today && r.stamp !== headStamp;
   return (
     <div class={cls} {...interact}>
       <span class="ea-snapshot-row-label">{r.label}</span>
@@ -44,7 +27,7 @@ function VitalRow({ r, headStamp, today }) {
         <span class="ea-snapshot-row-value">{r.value}</span>
         {r.unit ? <span class="ea-snapshot-row-unit">{r.unit}</span> : null}
       </span>
-      {showStamp ? (
+      {r.showStamp ? (
         <span class="ea-snapshot-row-stamp">{r.stamp}</span>
       ) : (
         <span class="ea-snapshot-row-stamp ea-snapshot-row-stamp--empty" aria-hidden="true"></span>
@@ -54,65 +37,58 @@ function VitalRow({ r, headStamp, today }) {
 }
 
 function BombaChip({ b }) {
-  const hasUnits = b.units != null && b.units !== '' && Number(b.units) !== 0;
   return (
     <span class="ea-snapshot-glu-chip ea-snapshot-glu-chip--bomba">
-      {displayValue(b.value)}
+      {b.value}
       {' MG/DL'}
-      {hasUnits ? [' ', <span class="ea-snapshot-glu-units">({displayValue(b.units)} U)</span>] : null}
+      {b.units ? [' ', <span class="ea-snapshot-glu-units">({b.units} U)</span>] : null}
       {b.time ? [' ', <span class="ea-snapshot-glu-time">{b.time}</span>] : null}
     </span>
   );
 }
 
 function GluChip({ g }) {
-  const rescue = g.rescueUnits != null && g.rescueUnits !== '' && Number(g.rescueUnits) !== 0;
-  const post = g.postRescueValue != null && g.postRescueValue !== '';
   return (
-    <span class={'ea-snapshot-glu-chip' + (isGlucometriaMarkedAltered(g) ? ' ea-snapshot-glu-chip--altered' : '')}>
-      {displayValue(g.value)}
+    <span class={'ea-snapshot-glu-chip' + (g.altered ? ' ea-snapshot-glu-chip--altered' : '')}>
+      {g.value}
       {' MG/DL'}
-      {rescue ? [' ', <span class="ea-snapshot-glu-rescue">({displayValue(g.rescueUnits)} U rescate)</span>] : null}
-      {post ? [' ', <span class="ea-snapshot-glu-post">→ {displayValue(g.postRescueValue)} MG/DL</span>] : null}
+      {g.rescue ? [' ', <span class="ea-snapshot-glu-rescue">({g.rescue} U rescate)</span>] : null}
+      {g.post ? [' ', <span class="ea-snapshot-glu-post">→ {g.post} MG/DL</span>] : null}
       {g.time ? [' ', <span class="ea-snapshot-glu-time">{g.time}</span>] : null}
     </span>
   );
 }
 
-function GluBody({ snapshot }) {
-  const alg = snapshotInsulinPumpAlgLabel(snapshot);
-  const badge = alg ? <span class="ea-snapshot-glu-alg-badge ea-muted">{alg}</span> : null;
-  if (snapshot.bombaInsulina && snapshot.bombaInsulina.length) {
+function GluBody({ p }) {
+  const badge = p.gluAlg ? <span class="ea-snapshot-glu-alg-badge ea-muted">{p.gluAlg}</span> : null;
+  if (p.bomba.length) {
     return (
       <>
         {badge}
-        {snapshot.bombaInsulina.map((b) => <BombaChip b={b} />)}
+        {p.bomba.map((b) => <BombaChip b={b} />)}
       </>
     );
   }
   if (badge) return badge;
-  if (snapshot.glucometrias && snapshot.glucometrias.length) {
-    return <>{snapshot.glucometrias.map((g) => <GluChip g={g} />)}</>;
-  }
+  if (p.glu.length) return <>{p.glu.map((g) => <GluChip g={g} />)}</>;
   return <span class="ea-muted">—</span>;
 }
 
-function IoBody({ snapshot, balGlobal }) {
-  const io = snapshot.io;
+function IoBody({ io }) {
   return (
     <div class="ea-snapshot-io">
       <div>
         <span class="ea-snapshot-label">Ingresos</span>
-        <span class="ea-snapshot-io-val">{formatSnapshotIngresos(io.ing)}</span>
+        <span class="ea-snapshot-io-val">{io.ing}</span>
       </div>
       <div class="ea-snapshot-io-egr">
         <span class="ea-snapshot-label">Egresos</span>
-        <span class="ea-snapshot-io-val">{formatSnapshotEgresos(io)}</span>
+        <span class="ea-snapshot-io-val">{io.egr}</span>
       </div>
-      {io.evac != null && io.evac !== '' ? (
+      {io.evac != null ? (
         <div>
           <span class="ea-snapshot-label">Evacuaciones</span>
-          <span class="ea-snapshot-io-val">{formatEvacForText(io.evac)}</span>
+          <span class="ea-snapshot-io-val">{io.evac}</span>
         </div>
       ) : null}
       <div
@@ -127,13 +103,13 @@ function IoBody({ snapshot, balGlobal }) {
       >
         <span class="ea-snapshot-label">
           Turno <span aria-hidden="true">›</span>
-          {io.turnos && hasIoTurnoEvents(io.turnos) ? [' ', <span class="ea-turno-event-dot" aria-label="con eventos">●</span>] : null}
+          {io.turnoEvents ? [' ', <span class="ea-turno-event-dot" aria-label="con eventos">●</span>] : null}
         </span>
-        <span class="ea-snapshot-io-val">{formatIoBalanceDisplay(io.ing, io)}</span>
+        <span class="ea-snapshot-io-val">{io.turno}</span>
       </div>
       <div>
         <span class="ea-snapshot-label">Global</span>
-        <span class="ea-snapshot-io-val">{displayBalance(balGlobal)}</span>
+        <span class="ea-snapshot-io-val">{io.global}</span>
       </div>
     </div>
   );
@@ -149,40 +125,31 @@ function SysCard({ id, title, children }) {
   );
 }
 
-/**
- * @param {{ snapshot: object, balGlobal: number, now?: Date }} props
- * `now`: the clock for "today" (rows dated today show no date); defaults to the real time.
- */
-export function EaSnapshotSection({ snapshot, balGlobal, now }) {
-  const rows = snapshotVitalRowsOpts(snapshot);
-  const headStamp = vitalsHeadStamp(rows);
-  const today = todayDayMonth(now);
+/** @param {ReturnType<typeof import('./estado-actual-panel-snapshot-html.mjs').buildSnapshotViewProps>} p */
+export function EaSnapshotSection(p) {
   const vitals = (keys) => (
     <div class="ea-snapshot-vitals">
-      {rows.filter((r) => keys.indexOf(r.vitalKey) >= 0).map((r) => <VitalRow r={r} headStamp={headStamp} today={today} />)}
+      {p.vitals.filter((r) => keys.indexOf(r.vitalKey) >= 0).map((r) => <VitalRow r={r} />)}
     </div>
   );
   return (
     <section class="ea-section ea-sys-grid ea-snapshot-strip" id="ea-snapshot">
-      <SysCard id="hemo" title={['Hemodinámico', headStamp ? [' ', <span class="ea-snapshot-zone-stamp">{headStamp}</span>] : null]}>
+      <SysCard id="hemo" title={['Hemodinámico', p.headStamp ? [' ', <span class="ea-snapshot-zone-stamp">{p.headStamp}</span>] : null]}>
         {vitals(['bp', 'fc'])}
       </SysCard>
       <SysCard id="resp-lectura" title="Respiratorio">{vitals(['fr', 'sat'])}</SysCard>
       <SysCard id="inf" title="Infeccioso">{vitals(['temp'])}</SysCard>
-      <SysCard id="meta" title={renderSnapshotGluZoneTitle(snapshot)}>
-        <div class="ea-snapshot-glu"><GluBody snapshot={snapshot} /></div>
+      <SysCard id="meta" title={p.gluTitle}>
+        <div class="ea-snapshot-glu"><GluBody p={p} /></div>
       </SysCard>
-      <SysCard id="renal" title="Renal y balance"><IoBody snapshot={snapshot} balGlobal={balGlobal} /></SysCard>
+      <SysCard id="renal" title="Renal y balance"><IoBody io={p.io} /></SysCard>
     </section>
   );
 }
 
-/** @param {{ historial: Array<{ id?: string, recordedAt?: string }>, now?: Date }} props */
-export function EaHistorialSection({ historial, now }) {
-  const recent = liveHistorial(historial)
-    .sort((a, b) => String(b.recordedAt || '').localeCompare(String(a.recordedAt || '')))
-    .slice(0, 8);
-  if (!recent.length) {
+/** @param {ReturnType<typeof import('./estado-actual-panel-snapshot-html.mjs').buildHistorialViewProps>} p */
+export function EaHistorialSection({ rows }) {
+  if (!rows.length) {
     return (
       <details class="ea-section ea-card ea-historial" id="ea-historial">
         <summary class="ea-historial-summary">Historial reciente</summary>
@@ -193,25 +160,21 @@ export function EaHistorialSection({ historial, now }) {
   return (
     <details class="ea-section ea-card ea-historial" id="ea-historial">
       <summary class="ea-historial-summary">
-        Historial reciente<span class="ea-historial-count">{recent.length}</span>
+        Historial reciente<span class="ea-historial-count">{rows.length}</span>
       </summary>
       <ul class="ea-historial-list">
-        {recent.map((row) => {
-          const parts = buildHistorialRowParts(row);
-          const idArgs = JSON.stringify([String(row.id || '')]);
-          return (
-            <li class="ea-historial-row">
-              <div class="ea-historial-main">
-                <span class="ea-historial-when">{formatHistorialWhen(row.recordedAt, now)}</span>
-                <span class="ea-historial-summary">{parts.length ? parts.join(' · ') : 'Registro vacío'}</span>
-              </div>
-              <div class="ea-historial-actions">
-                <button type="button" class="ea-btn ea-btn--ghost" data-onclick="editarEstadoActualMedicion" data-onclick-args={idArgs}>Editar</button>
-                <button type="button" class="ea-btn ea-btn--ghost ea-btn--danger" data-onclick="eliminarEstadoActualMedicion" data-onclick-args={idArgs}>Eliminar</button>
-              </div>
-            </li>
-          );
-        })}
+        {rows.map((row) => (
+          <li class="ea-historial-row">
+            <div class="ea-historial-main">
+              <span class="ea-historial-when">{row.when}</span>
+              <span class="ea-historial-summary">{row.summary}</span>
+            </div>
+            <div class="ea-historial-actions">
+              <button type="button" class="ea-btn ea-btn--ghost" data-onclick="editarEstadoActualMedicion" data-onclick-args={row.idArgs}>Editar</button>
+              <button type="button" class="ea-btn ea-btn--ghost ea-btn--danger" data-onclick="eliminarEstadoActualMedicion" data-onclick-args={row.idArgs}>Eliminar</button>
+            </div>
+          </li>
+        ))}
       </ul>
     </details>
   );

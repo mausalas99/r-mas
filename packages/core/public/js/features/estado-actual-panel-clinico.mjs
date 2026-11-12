@@ -25,7 +25,11 @@ import { refreshMedCategoryBlock, wireMedCategoryGrid } from './estado-actual-me
 import { buildEstadoActualText } from './estado-actual-text.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 import { eaPanelBridge } from './estado-actual-panel-bridge.mjs';
-import { syncSoporteParamsVisibility, refreshSoporteCalcHints } from './estado-actual-panel-clinico-html.mjs';
+import {
+  buildClinicoViewProps,
+  syncSoporteParamsVisibility,
+  refreshSoporteCalcHints,
+} from './estado-actual-panel-clinico-html.mjs';
 import { normalizeSoporteValue } from './estado-actual-ventilatorio.mjs';
 import { resolveVentilatorioLabContext } from './estado-actual-ventilatorio-labs.mjs';
 import { cloudSyncNowIso } from './cloud-sync/cloud-sync-clock.mjs';
@@ -165,14 +169,15 @@ function buildVitalsCtx(monitoreo, activeId, patient) {
  * @param {Record<string, any>} monitoreo
  * @param {string | null} activeId
  * @param {{ peso?: unknown } | null} patient
+ * @param {Date} [now] the clock for "today" in the snapshot strip
  */
-function buildEstadoClinicoProps(monitoreo, activeId, patient) {
+function buildEstadoClinicoProps(monitoreo, activeId, patient, now) {
   var pend = monitoreo.pendienteReceta || {};
   var dietPending = hasDietProposal(pend);
   var ec = estadoClinicoForDisplay(monitoreo, eaManejoFechaOpts(activeId, monitoreo));
   var dietaParenteral = isDietaParenteral(ec.dieta);
   var dietWeight = resolveDietWeightKg({ patientPeso: patient && patient.peso, pesoRef: ec.pesoRef });
-  return {
+  return buildClinicoViewProps({
     ec: ec,
     dietPending: dietPending,
     dietaSuplemento: isDietaSuplemento(ec.dieta),
@@ -184,7 +189,8 @@ function buildEstadoClinicoProps(monitoreo, activeId, patient) {
     vitalsCtx: buildVitalsCtx(monitoreo, activeId, patient),
     snapshot: deriveSnapshot(monitoreo),
     balGlobal: balanceGlobalHistorico(monitoreo),
-  };
+    now: now,
+  });
 }
 
 /** Fill the medication grid frame the view leaves empty (the grid is still built as a string). */

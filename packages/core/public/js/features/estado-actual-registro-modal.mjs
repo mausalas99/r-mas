@@ -4,7 +4,7 @@ import { setEaRegistroEditMode } from './estado-actual-panel-registro-edit.mjs';
 import { toDatetimeLocalValue } from './estado-actual-panel-format.mjs';
 import { syncIoBalanceFromForm, buildIoExtraRow, whenRegistroViewReady } from './estado-actual-panel-registro.mjs';
 
-/** @type {{ ensureForm(): void, resetForm(): void, showToast(msg: string, type?: string): void }} */
+/** @type {{ ensureForm(): void | Promise<void>, resetForm(): void, showToast(msg: string, type?: string): void }} */
 let rt = {
   ensureForm() {},
   resetForm() {},
@@ -75,14 +75,19 @@ export function openEstadoActualRegistroModal(opts) {
     rt.showToast('Formulario de registro no disponible', 'error');
     return;
   }
-  rt.ensureForm();
-  if (!opts || !opts.preserveForm) rt.resetForm();
-  else if (typeof rt.syncGluMode === 'function') rt.syncGluMode();
-  backdrop.classList.add('open');
-  backdrop.setAttribute('aria-hidden', 'false');
-  document.documentElement.classList.add('ea-registro-modal-open');
-  var first = backdrop.querySelector('[data-ea-vital="tas"], [data-ea-vital="temp"]');
-  if (first && 'focus' in first) first.focus();
+  var open = function () {
+    if (!opts || !opts.preserveForm) rt.resetForm();
+    else if (typeof rt.syncGluMode === 'function') rt.syncGluMode();
+    backdrop.classList.add('open');
+    backdrop.setAttribute('aria-hidden', 'false');
+    document.documentElement.classList.add('ea-registro-modal-open');
+    var first = backdrop.querySelector('[data-ea-vital="tas"], [data-ea-vital="temp"]');
+    if (first && 'focus' in first) first.focus();
+  };
+  // The form views load lazily: the very first open can have to wait for them.
+  var ready = rt.ensureForm();
+  if (ready && typeof ready.then === 'function') return ready.then(open);
+  open();
 }
 
 /**
@@ -92,7 +97,12 @@ export function openEstadoActualRegistroModal(opts) {
  * cuantificables sueltas.
  */
 export function openPastHemodialisisRegistro() {
-  openEstadoActualRegistroModal();
+  var opened = openEstadoActualRegistroModal();
+  if (opened) opened.then(fillPastHemodialisis);
+  else fillPastHemodialisis();
+}
+
+function fillPastHemodialisis() {
   var form = document.getElementById('ea-form');
   if (!form) return;
   var yesterday = new Date();

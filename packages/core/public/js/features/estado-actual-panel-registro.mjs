@@ -23,7 +23,7 @@ import {
   toEaSalidaText,
 } from './estado-actual-io.mjs';
 import { persistEstadoClinicoLight } from './estado-actual-panel-clinico.mjs';
-import { VITAL_KEYS } from './estado-actual-panel-constants.mjs';
+import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-constants.mjs';
 import {
   wireEaRegistroSteps,
   resetEaRegistroSteps,
@@ -47,7 +47,6 @@ import {
 } from './estado-actual-panel-registro-tab.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 import {
-  buildVitalFieldsHtml,
   syncAllVitalAddButtonVisibility,
   collapseAllVitalStacks,
   expandVitalNextLayer,
@@ -65,7 +64,7 @@ import {
 } from './estado-actual-registro-defaults.mjs';
 import { setEaRegistroEditMode } from './estado-actual-panel-registro-edit.mjs';
 import { getVitalExtraStorageKey } from './estado-actual-vital-extras.mjs';
-import { MAX_VITAL_LAYERS_IN_FORM } from './estado-actual-vital-series.mjs';
+import { MAX_VITAL_LAYERS_IN_FORM, MAX_VITAL_READINGS_PER_DAY } from './estado-actual-vital-series.mjs';
 
 /**
  * @param {HTMLElement | null} form
@@ -101,7 +100,6 @@ export function syncEaRegistroInsulinPumpFlag(form, monitoreo) {
 
 var IO_TURNO_IDS = ['t1', 't2', 't3'];
 /** Shift names shown in the registro panel (t1/t2/t3 stay the stored ids). */
-var IO_TURNO_NAMES = { t1: 'Matutino', t2: 'Vespertino', t3: 'Nocturno' };
 
 /**
  * @param {HTMLElement} form
@@ -290,15 +288,21 @@ export function fillIoFields(form, io) {
   fillIoRowList(form.querySelector('#ea-io-event-list'), io.eventos, buildIoEventRow);
 }
 
-/** The Preact view loads lazily so Preact stays off the boot path; the form build prefetches it. */
+/** The Preact views load lazily so Preact stays off the boot path; `ensureRegistroView` prefetches them. */
 var registroView = null;
+var registroFormView = null;
 var registroViewLoad = null;
 export function ensureRegistroView() {
   if (registroView) return Promise.resolve(registroView);
   if (!registroViewLoad) {
     // Glucose rows (glu view) are built synchronously too, so wait for both views.
-    registroViewLoad = Promise.all([import('./estado-actual-panel-registro-view.jsx'), loadGluView()]).then(function (ms) {
+    registroViewLoad = Promise.all([
+      import('./estado-actual-panel-registro-view.jsx'),
+      loadGluView(),
+      import('./estado-actual-panel-render-view.jsx'),
+    ]).then(function (ms) {
       registroView = ms[0];
+      registroFormView = ms[2];
       return ms[0];
     });
   }
@@ -610,71 +614,6 @@ export function applyEstadoActualParsedToForm(parsed) {
   });
 }
 
-function buildRegistroVitalsSectionHtml(vitalFields) {
-  return (
-    '<section class="ea-registro-section" aria-labelledby="ea-vitals-section-lbl">' +
-    '<div class="ea-registro-section-head">' +
-    '<h4 id="ea-vitals-section-lbl" class="ea-registro-section-label">Signos vitales</h4>' +
-    '<span class="ea-registro-section-hint">+1 lectura previa</span>' +
-    '</div>' +
-    '<div class="vitals-grid ea-vitals-grid">' +
-    vitalFields +
-    '</div>' +
-    '</section>'
-  );
-}
-
-function buildRegistroGluSectionHtml() {
-  return (
-    '<section class="ea-registro-section ea-glu-section" aria-labelledby="ea-glu-section-lbl">' +
-    '<div class="ea-glu-mode-row lab-pref-row ea-registro-section-head">' +
-    '<h4 class="ea-registro-section-label lab-pref-row-label" id="ea-glu-section-lbl">Glucometrías</h4>' +
-    '<div class="ea-glu-mode-switch">' +
-    '<span class="ea-glu-mode-switch-label" id="ea-bomba-enabled-lbl">Bomba</span>' +
-    '<label class="rpc-switch">' +
-    '<input type="checkbox" id="ea-bomba-enabled" class="rpc-switch-input" role="switch" aria-labelledby="ea-bomba-enabled-lbl">' +
-    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span>' +
-    '</label>' +
-    '<button type="button" class="ea-btn ea-btn--ghost ea-glu-add-inline" id="ea-add-glu">+ Agregar hora</button>' +
-    '</div>' +
-    '</div>' +
-    '<div id="ea-glu-normal-block" class="ea-glu-pane ea-glu-block">' +
-    '<div id="ea-glu-list" class="ea-glu-list"></div>' +
-    '</div>' +
-    '<div id="ea-bomba-block" class="ea-glu-pane ea-glu-block ea-bomba-block ea-glu-pane--off" hidden>' +
-    '<p id="ea-bomba-algoritmo-hint" class="ea-bomba-algoritmo-hint ea-muted" hidden></p>' +
-    '<div class="ea-bomba-head" aria-hidden="true"><span>Hora</span><span>mg/dL</span><span>U</span><span></span></div>' +
-    '<div id="ea-bomba-list" class="ea-bomba-list"></div>' +
-    '<button type="button" class="ea-io-link" id="ea-add-bomba">+ Hora</button>' +
-    '</div>' +
-    '</section>'
-  );
-}
-
-function buildIoTurnoBoxHtml(prefix, turno, inputmode, placeholder, label) {
-  var id = 'ea-io-' + prefix + '-' + turno;
-  return (
-    '<div class="ea-turno-box">' +
-    '<input type="text" aria-label="' +
-    label +
-    ' ' +
-    turno.toUpperCase() +
-    '" id="' +
-    id +
-    '" inputmode="' +
-    inputmode +
-    '" autocomplete="off" placeholder="' +
-    placeholder +
-    '" data-ea-io-turno="' +
-    prefix +
-    '">' +
-    '<button type="button" class="ea-turno-nc-btn" data-ea-io-turno-nc aria-pressed="false" title="Marcar ' +
-    turno.toUpperCase() +
-    ' como NC">NC</button>' +
-    '</div>'
-  );
-}
-
 /** Title-cases a stored uppercase source label for display (e.g. "ULTRAFILTRADO" -> "Ultrafiltrado"). */
 function ioExtraLabelForDisplay(label) {
   var s = String(label || '');
@@ -844,75 +783,6 @@ export function buildIoEventRow(data) {
   return row;
 }
 
-function ioTableRowHtml(label, cellsHtml, totalHtml, cls) {
-  return (
-    '<div class="ea-io-table-row' + (cls ? ' ' + cls : '') + '">' +
-    '<span class="ea-io-table-label">' + label + '</span>' +
-    cellsHtml +
-    '<span class="ea-turno-total">' + totalHtml + '</span>' +
-    '</div>'
-  );
-}
-
-function ioTurnoCellsHtml(prefix, label, inputmode, placeholder) {
-  return IO_TURNO_IDS.map(function (t) {
-    return buildIoTurnoBoxHtml(prefix, t, inputmode, placeholder, label);
-  }).join('');
-}
-
-/**
- * Balance hídrico as one table: columns are the turns, rows go from what
- * counts in the balance (ingresos, egresos, otras fuentes) to the balance
- * itself, then what only annotates it (evacuaciones, eventos).
- */
-function buildRegistroIoSectionHtml() {
-  var cols = IO_TURNO_IDS.map(function (t) {
-    return '<span class="ea-io-table-head" title="' + t.toUpperCase() + '">' + IO_TURNO_NAMES[t] + '</span>';
-  }).join('');
-  return (
-    '<section class="ea-registro-section" aria-labelledby="ea-io-section-lbl">' +
-    '<div class="ea-registro-section-head">' +
-    '<h4 id="ea-io-section-lbl" class="ea-registro-section-label">Balance hídrico <span class="ea-muted">cc</span></h4>' +
-    '</div>' +
-    '<div class="ea-io-grid ea-io-table">' +
-    ioTableRowHtml('', cols, 'Total', 'ea-io-table-row--head') +
-    ioTableRowHtml('Ingresos', ioTurnoCellsHtml('ing', 'Ingresos', 'decimal', ''), '<span id="ea-io-ing-total">—</span>') +
-    ioTableRowHtml('Egresos', ioTurnoCellsHtml('egr', 'Egresos', 'text', ''), '<span id="ea-io-egr-total">—</span>') +
-    '<div id="ea-io-extra-list" class="ea-io-extra-list"></div>' +
-    ioTableRowHtml(
-      'Evacuaciones',
-      '<span></span><span></span><span></span>',
-      '<input type="text" class="ea-input" id="ea-io-evac" autocomplete="off" aria-label="Evacuaciones de los 3 turnos">'
-    ) +
-    ioTableRowHtml(
-      'Balance',
-      IO_TURNO_IDS.map(function (t) {
-        return '<span class="ea-io-bal" id="ea-io-bal-' + t + '">—</span>';
-      }).join(''),
-      '<span id="ea-balance-turno-live" class="ea-balance-live">—</span>',
-      'ea-io-table-row--balance'
-    ) +
-    '<div id="ea-io-event-list" class="ea-io-extra-list ea-io-event-list"></div>' +
-    '<div class="ea-io-adds">' +
-    '<select class="ea-io-link" id="ea-add-io-extra" aria-label="Agregar fuente">' +
-    '<option value="">+ Otra fuente</option>' +
-    IO_EXTRA_SOURCE_KINDS.map(function (k) {
-      return '<option value="' + k.kind + '">' + ioExtraLabelForDisplay(k.label) + '</option>';
-    }).join('') +
-    '<option value="' + IO_EXTRA_CUSTOM_VALUE + '">Otra…</option>' +
-    '</select>' +
-    '<select class="ea-io-link" data-ea-io-event-add aria-label="Agregar evento">' +
-    '<option value="">+ Evento</option>' +
-    IO_TURNO_EVENT_KINDS.map(function (k) {
-      return '<option value="' + k.kind + '">' + ioExtraLabelForDisplay(k.label) + '</option>';
-    }).join('') +
-    '</select>' +
-    '</div>' +
-    '</div>' +
-    '</section>'
-  );
-}
-
 /**
  * Pendiente de hemodiálisis abierto que no fue silenciado hoy — dispara el
  * recordatorio en el registro para que se documente el ultrafiltrado, o se
@@ -951,87 +821,31 @@ export function refreshRegistroLead(form, activeId) {
   });
 }
 
-var REGISTRO_STEP_NAMES = ['Signos', 'Glucosa', 'Balance', 'Revisar'];
-
-/** Progress bars, step rail and the four panes (all stay in the form so the reader finds every field). */
-function buildRegistroStepsHtml(vitalFields) {
-  var bars = REGISTRO_STEP_NAMES.map(function () {
-    return '<div class="ea-steps-bar"><i></i></div>';
-  }).join('');
-  var rail = REGISTRO_STEP_NAMES.map(function (name, i) {
-    return (
-      '<button type="button" class="ea-steps-item" data-ea-step-go="' + i + '">' +
-      '<span class="ea-steps-dot" aria-hidden="true">' + (i + 1) + '</span>' +
-      '<span class="ea-steps-text"><span class="ea-steps-name">' + name + '</span>' +
-      '<span class="ea-steps-sub">' + (i === 3 ? 'Un solo envío' : 'Sin datos') + '</span></span>' +
-      '</button>'
-    );
-  }).join('');
-  return (
-    '<div class="ea-steps-progress" aria-hidden="true">' + bars + '</div>' +
-    '<div class="ea-steps">' +
-    '<nav class="ea-steps-rail" aria-label="Pasos del registro">' + rail + '</nav>' +
-    '<div class="ea-steps-panes">' +
-    '<div class="ea-step-pane" data-ea-step="0">' + buildRegistroVitalsSectionHtml(vitalFields) + '</div>' +
-    '<div class="ea-step-pane" data-ea-step="1" hidden>' + buildRegistroGluSectionHtml() + '</div>' +
-    '<div class="ea-step-pane" data-ea-step="2" hidden>' + buildRegistroIoSectionHtml() + '</div>' +
-    '<div class="ea-step-pane" data-ea-step="3" hidden><section class="ea-registro-section">' +
-    '<div class="ea-registro-section-head"><h4 class="ea-registro-section-label">Revisar</h4></div>' +
-    '<div id="ea-step-review"></div></section></div>' +
-    '</div>' +
-    '</div>'
-  );
+/** Inputs for `RegistroForm` (estado-actual-panel-registro-form-view.jsx). */
+export function buildRegistroFormProps() {
+  var opt = function (k) {
+    return { value: k.kind, label: ioExtraLabelForDisplay(k.label) };
+  };
+  return {
+    recordedAt: toDatetimeLocalValue(getDefaultRegistroRecordedAt()),
+    ioExtraKinds: IO_EXTRA_SOURCE_KINDS.map(opt),
+    ioEventKinds: IO_TURNO_EVENT_KINDS.map(opt),
+    vitals: VITAL_KEYS.map(function (k) {
+      return { key: k, label: VITAL_LABELS[k] || k, unit: VITAL_UNITS[k] || '' };
+    }),
+    maxLayers: MAX_VITAL_LAYERS_IN_FORM,
+    maxReadings: MAX_VITAL_READINGS_PER_DAY,
+  };
 }
 
-function buildRegistroFooterHtml() {
-  return (
-    '<div class="ea-steps-advance" aria-hidden="true"><i></i></div>' +
-    '<footer class="ea-registro-modal-foot wb-modal-foot">' +
-    '<button type="button" class="wb-btn wb-btn-ghost ea-registro-paste-btn" data-onclick="openEstadoActualPasteModal" data-onclick-args=\'[{"skipRegistro":true}]\'>Pegar monitoreo</button>' +
-    '<label class="ea-steps-auto"><span class="rpc-switch">' +
-    '<input type="checkbox" class="rpc-switch-input" role="switch" data-ea-auto checked>' +
-    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></span>' +
-    '<span>Avance automático</span></label>' +
-    '<span class="ea-steps-msg ea-muted" data-ea-step-msg role="status" aria-live="polite"></span>' +
-    '<span class="ea-steps-spacer"></span>' +
-    '<button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-ea-layout-switch aria-pressed="false">Vista anterior</button>' +
-    '<button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-ea-step-back>Atrás</button>' +
-    '<button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-onclick="closeEstadoActualRegistroModal">Cancelar</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-ea-step-next>Siguiente: Glucosa</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg ea-registro-submit" data-onclick="registrarEstadoActualMedicion" hidden>Registrar</button>' +
-    '</footer>'
-  );
+/** True once the lazy views (form, rows, glu) are loaded: the form can be painted synchronously. */
+export function isRegistroFormViewReady() {
+  return !!registroFormView;
 }
 
-export function buildRegistroFormMarkup() {
-  void ensureRegistroView();
-  var vitalFields = buildVitalFieldsHtml();
-  var activeId = getEaFormOpenPatientId();
-  if (activeId == null) activeId = getEaPanelRuntime().getActiveId();
-
-  return (
-    '<div class="ea-registro-shell">' +
-    '<div class="ea-registro-form-scroll wb-modal-body">' +
-    '<form id="ea-form" class="ea-form ea-form--registro" data-prevent-submit>' +
-    '<div class="ea-registro-top">' +
-    '<div class="ea-registro-when">' +
-    '<label class="ea-field ea-field--datetime">' +
-    '<span class="ea-label">Fecha y hora</span>' +
-    '<input type="datetime-local" class="ea-input rpc-datetime-input" id="ea-recorded-at" value="' +
-    toDatetimeLocalValue(getDefaultRegistroRecordedAt()) +
-    '">' +
-    '</label>' +
-    '<button type="button" class="ea-turno-pill" data-ea-turno aria-pressed="false">Turno en curso</button>' +
-    '<span class="ea-turno-hint" hidden>Cierra esta noche 00:00 · se ve como hoy</span>' +
-    '</div>' +
-    '<p class="ea-registro-hint">Basta un dato para registrar · <span class="ea-registro-kbd-hint">⌘↵</span></p>' +
-    '</div>' +
-    buildRegistroStepsHtml(vitalFields) +
-    '</form>' +
-    '</div>' +
-    buildRegistroFooterHtml() +
-    '</div>'
-  );
+/** Paint the form into the modal body. Call only when `isRegistroFormViewReady()`. */
+export function paintRegistroFormInto(body) {
+  registroFormView.paintRegistroForm(body, buildRegistroFormProps());
 }
 
 export function wireEaRegistroForm(monitoreo) {

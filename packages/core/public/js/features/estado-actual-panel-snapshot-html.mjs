@@ -1,12 +1,14 @@
-/** Snapshot / historial data helpers (the markup lives in estado-actual-panel-snapshot-view.jsx). */
+/** Snapshot / historial data: turns a snapshot into the plain props of estado-actual-panel-snapshot-view.jsx. */
 import { isIoNumericValue } from './estado-actual-data.mjs';
+import { liveHistorial } from './estado-actual-data-model.mjs';
 import {
   formatEgresoPartsForText,
   formatEvacForText,
+  formatIoBalanceDisplay,
   toEaSalidaText,
   formatIoTurnoEvent,
 } from './estado-actual-io.mjs';
-import { isVitalAltered } from './estado-actual-ranges.mjs';
+import { isGlucometriaMarkedAltered, isVitalAltered } from './estado-actual-ranges.mjs';
 import {
   formatEaVitalStampDateOnly,
   formatEaVitalStampForSnapshot,
@@ -15,13 +17,13 @@ import {
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-constants.mjs';
 import { formatInsulinPumpAlgoritmoLabel } from '../insulin-pump-some-detect.mjs';
-import { pad2, displayValue } from './estado-actual-panel-format.mjs';
+import { pad2, displayValue, displayBalance } from './estado-actual-panel-format.mjs';
 
 /**
  * @param {{ ing?: unknown, egr?: unknown, egrParts?: Array<{ label?: string, value?: unknown }>, evac?: unknown }} io
  * @returns {string}
  */
-export function formatSnapshotEgresos(io) {
+function formatSnapshotEgresos(io) {
   io = io || {};
   if (Array.isArray(io.egrParts) && io.egrParts.length) {
     return formatEgresoPartsForText(io.egrParts, { showTurnCount: false }).join(' · ');
@@ -36,7 +38,7 @@ export function formatSnapshotEgresos(io) {
  * @param {unknown} ing
  * @returns {string}
  */
-export function formatSnapshotIngresos(ing) {
+function formatSnapshotIngresos(ing) {
   if (ing === 'NC' || String(ing || '').toUpperCase() === 'NC') return 'NC';
   if (ing == null || ing === '') return '—';
   return String(ing) + ' CC';
@@ -135,7 +137,7 @@ function resolveVitalStamp(reading, fallbackKey, snapshot) {
 }
 
 /** @param {Date} [now] */
-export function todayDayMonth(now) {
+function todayDayMonth(now) {
   var d = now || new Date();
   return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
 }
@@ -208,7 +210,7 @@ function bpSnapshotRowOpts(snapshot) {
 /**
  * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
  */
-export function snapshotVitalRowsOpts(snapshot) {
+function snapshotVitalRowsOpts(snapshot) {
   return [bpSnapshotRowOpts(snapshot)].concat(
     SNAPSHOT_STRIP_VITAL_KEYS.map(function (key) {
       return vitalSnapshotRowOpts(key, snapshot);
@@ -217,7 +219,7 @@ export function snapshotVitalRowsOpts(snapshot) {
 }
 
 /** Most common dd/mm among the vital rows (today included), or ''. */
-export function vitalsHeadStamp(rows) {
+function vitalsHeadStamp(rows) {
   /** @type {Record<string, number>} */
   var counts = {};
   var best = '';
@@ -232,7 +234,7 @@ export function vitalsHeadStamp(rows) {
 /**
  * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
  */
-export function renderSnapshotGluZoneTitle(snapshot) {
+function snapshotGluZoneTitle(snapshot) {
   var alg = snapshot.bombaInsulinaAlgoritmo;
   if (alg != null && Number.isFinite(Number(alg))) {
     return formatInsulinPumpAlgoritmoLabel(Number(alg)) || 'Glucometrías';
@@ -242,7 +244,7 @@ export function renderSnapshotGluZoneTitle(snapshot) {
 }
 
 /** @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot */
-export function snapshotInsulinPumpAlgLabel(snapshot) {
+function snapshotInsulinPumpAlgLabel(snapshot) {
   return snapshot.bombaInsulinaAlgoritmo != null && Number.isFinite(Number(snapshot.bombaInsulinaAlgoritmo))
     ? formatInsulinPumpAlgoritmoLabel(Number(snapshot.bombaInsulinaAlgoritmo))
     : '';
@@ -329,6 +331,76 @@ function appendHistorialIoParts(parts, io) {
 export { isIoNumericValue, toEaSalidaText };
 
 /** @param {{ eventos?: unknown[] }} turnos */
-export function hasIoTurnoEvents(turnos) {
+function hasIoTurnoEvents(turnos) {
   return Array.isArray(turnos.eventos) && turnos.eventos.length > 0;
+}
+
+/**
+ * Plain props for `EaSnapshotSection`: every text is already formatted, the view only lays it out.
+ * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
+ * @param {number} balGlobal
+ * @param {Date} [now] the clock for "today" (rows dated today show no date)
+ */
+export function buildSnapshotViewProps(snapshot, balGlobal, now) {
+  var rows = snapshotVitalRowsOpts(snapshot);
+  var headStamp = vitalsHeadStamp(rows);
+  var today = todayDayMonth(now);
+  var io = snapshot.io;
+  return {
+    headStamp: headStamp,
+    vitals: rows.map(function (r) {
+      // Today's date on every vital is noise: only an older reading shows its date.
+      // The date shared by most rows sits beside the title; a row shows only a different one.
+      return Object.assign({}, r, { showStamp: !!r.stamp && r.stamp !== today && r.stamp !== headStamp });
+    }),
+    gluTitle: snapshotGluZoneTitle(snapshot),
+    gluAlg: snapshotInsulinPumpAlgLabel(snapshot),
+    bomba: (snapshot.bombaInsulina || []).map(function (b) {
+      return {
+        value: displayValue(b.value),
+        units: b.units != null && b.units !== '' && Number(b.units) !== 0 ? displayValue(b.units) : '',
+        time: b.time || '',
+      };
+    }),
+    glu: (snapshot.glucometrias || []).map(function (g) {
+      return {
+        value: displayValue(g.value),
+        altered: isGlucometriaMarkedAltered(g),
+        rescue: g.rescueUnits != null && g.rescueUnits !== '' && Number(g.rescueUnits) !== 0 ? displayValue(g.rescueUnits) : '',
+        post: g.postRescueValue != null && g.postRescueValue !== '' ? displayValue(g.postRescueValue) : '',
+        time: g.time || '',
+      };
+    }),
+    io: {
+      ing: formatSnapshotIngresos(io.ing),
+      egr: formatSnapshotEgresos(io),
+      evac: io.evac != null && io.evac !== '' ? formatEvacForText(io.evac) : null,
+      turnoEvents: !!(io.turnos && hasIoTurnoEvents(io.turnos)),
+      turno: formatIoBalanceDisplay(io.ing, io),
+      global: displayBalance(balGlobal),
+    },
+  };
+}
+
+/**
+ * Plain props for `EaHistorialSection`: the 8 newest live rows, each with its date text and summary.
+ * @param {Array<{ id?: string, recordedAt?: string }>} historial
+ * @param {Date} [now]
+ */
+export function buildHistorialViewProps(historial, now) {
+  var recent = liveHistorial(historial)
+    .sort(function (a, b) {
+      return String(b.recordedAt || '').localeCompare(String(a.recordedAt || ''));
+    })
+    .slice(0, 8);
+  return {
+    rows: recent.map(function (row) {
+      var parts = buildHistorialRowParts(row);
+      return {
+        idArgs: JSON.stringify([String(row.id || '')]),
+        when: formatHistorialWhen(row.recordedAt, now),
+        summary: parts.length ? parts.join(' · ') : 'Registro vacío',
+      };
+    }),
+  };
 }

@@ -1,12 +1,7 @@
-/** Estado actual "Estado clínico general" section (Preact). Loaded lazily from estado-actual-panel-render.mjs. */
-import { SOPORTE_OPTIONS } from './estado-actual-panel-constants.mjs';
-import { escAttrNumeric } from './estado-actual-panel-format.mjs';
-import {
-  normalizeSoporteValue,
-  soporteTier,
-  VM_MODO_OPTIONS,
-  buildVentilatorioCalcHints,
-} from './estado-actual-ventilatorio.mjs';
+/**
+ * Estado actual "Estado clínico general" section (Preact). Loaded lazily from estado-actual-panel-render.mjs.
+ * Props only (built by buildEstadoClinicoProps in estado-actual-panel-clinico.mjs): no data imports.
+ */
 import { EaSnapshotSection } from './estado-actual-panel-snapshot-view.jsx';
 
 // Same text the old string builders wrote with escAttr/escHtml: empty for null, undefined, '' and 0.
@@ -54,16 +49,17 @@ function DietWeightRow({ dietWeight }) {
 
 const hide = (show) => (show ? undefined : 'display:none');
 
-function NumField({ ec, cls, show, label, k, ph, min = '0', max }) {
+function NumField({ num, cls, show, label, k, ph, min = '0', max }) {
   return (
     <label class={'ea-field ' + cls} style={hide(show)}>
       <span class="ea-label">{label}</span>
-      <input type="number" class="ea-input" data-ea-ec={k} min={min} max={max} step="any" value={escAttrNumeric(ec[k])} placeholder={ph} />
+      <input type="number" class="ea-input" data-ea-ec={k} min={min} max={max} step="any" value={num[k]} placeholder={ph} />
     </label>
   );
 }
 
-function SoporteParams({ ec, tier }) {
+function SoporteParams({ p, tier }) {
+  const num = p.num;
   const litros = tier === 'litros';
   const hfnc = tier === 'hfnc';
   const vmni = tier === 'vmni';
@@ -73,22 +69,22 @@ function SoporteParams({ ec, tier }) {
   return (
     <div class="ea-soporte-params" data-ea-soporte-params="">
       <div class="ea-soporte-params-grid">
-        <NumField ec={ec} cls="ea-soporte-tier-litros" show={litros} label="Litros O₂" k="soporteLitros" ph="L/min" />
-        <NumField ec={ec} cls="ea-soporte-tier-hfnc" show={hfnc} label="Flujo (L/min)" k="soporteFlujoLmin" ph="60" />
-        <NumField ec={ec} cls="ea-soporte-tier-vmni ea-soporte-tier-vm" show={vmni || vm} label="PEEP / EPAP" k="vmPeep" ph="cmH₂O" />
-        <NumField ec={ec} cls="ea-soporte-tier-vmni" show={vmni} label="PS (cmH₂O)" k="vmPsoporte" ph="Sobre EPAP" />
+        <NumField num={num} cls="ea-soporte-tier-litros" show={litros} label="Litros O₂" k="soporteLitros" ph="L/min" />
+        <NumField num={num} cls="ea-soporte-tier-hfnc" show={hfnc} label="Flujo (L/min)" k="soporteFlujoLmin" ph="60" />
+        <NumField num={num} cls="ea-soporte-tier-vmni ea-soporte-tier-vm" show={vmni || vm} label="PEEP / EPAP" k="vmPeep" ph="cmH₂O" />
+        <NumField num={num} cls="ea-soporte-tier-vmni" show={vmni} label="PS (cmH₂O)" k="vmPsoporte" ph="Sobre EPAP" />
         <label class="ea-field ea-soporte-tier-vm" style={hide(vm)}>
           <span class="ea-label">Modo</span>
           <select class="ea-input" data-ea-ec="vmModo">
-            {VM_MODO_OPTIONS.map((opt) => (
-              <option value={txt(opt.value)} selected={ec.vmModo === opt.value}>{opt.label}</option>
+            {p.vmModoOptions.map((opt) => (
+              <option value={txt(opt.value)} selected={p.ec.vmModo === opt.value}>{opt.label}</option>
             ))}
           </select>
         </label>
-        <NumField ec={ec} cls="ea-soporte-tier-vm" show={vm} label="VT (mL)" k="vmVt" ph="420" />
-        <NumField ec={ec} cls="ea-soporte-tier-vm" show={vm} label="Flujo insp." k="vmFlujo" ph="L/min" />
-        <NumField ec={ec} cls="ea-soporte-tier-vm" show={vm} label="P meseta" k="vmPmeseta" ph="cmH₂O" />
-        <NumField ec={ec} cls="ea-soporte-tier-fio2" show={needsFio2} label="FiO₂ (%)" k="soporteFio2" ph="%" min="21" max="100" />
+        <NumField num={num} cls="ea-soporte-tier-vm" show={vm} label="VT (mL)" k="vmVt" ph="420" />
+        <NumField num={num} cls="ea-soporte-tier-vm" show={vm} label="Flujo insp." k="vmFlujo" ph="L/min" />
+        <NumField num={num} cls="ea-soporte-tier-vm" show={vm} label="P meseta" k="vmPmeseta" ph="cmH₂O" />
+        <NumField num={num} cls="ea-soporte-tier-fio2" show={needsFio2} label="FiO₂ (%)" k="soporteFio2" ph="%" min="21" max="100" />
       </div>
     </div>
   );
@@ -117,9 +113,7 @@ function SoporteLabFeed({ labCtx }) {
   );
 }
 
-function SoporteCalcHints({ ec, vitalsCtx }) {
-  if (!soporteTier(ec.soporte != null ? String(ec.soporte) : '')) return null;
-  const hints = buildVentilatorioCalcHints(ec, vitalsCtx || {});
+function SoporteCalcHints({ hints }) {
   if (!hints.length) return null;
   return (
     <ul class="ea-soporte-calc-list" data-ea-soporte-calc="">
@@ -129,8 +123,8 @@ function SoporteCalcHints({ ec, vitalsCtx }) {
 }
 
 /** Soporte label; with gaso/cálculos it is highlighted and hover shows them over the page. */
-function SoporteHead({ ec, vitalsCtx }) {
-  const tier = soporteTier(ec.soporte != null ? String(ec.soporte) : '');
+function SoporteHead({ p }) {
+  const tier = p.soporteTier;
   if (tier !== 'hfnc' && tier !== 'vmni' && tier !== 'vm' && tier !== 'tqt') {
     return <span class="ea-label">Soporte respiratorio</span>;
   }
@@ -138,16 +132,16 @@ function SoporteHead({ ec, vitalsCtx }) {
     <div class="ea-soporte-head" tabindex="0">
       <span class="ea-label ea-soporte-label--hints">Soporte respiratorio</span>
       <div class="ea-soporte-insights">
-        <SoporteLabFeed labCtx={vitalsCtx && vitalsCtx.lab ? vitalsCtx.lab : null} />
-        <SoporteCalcHints ec={ec} vitalsCtx={vitalsCtx} />
+        <SoporteLabFeed labCtx={p.vitalsCtx && p.vitalsCtx.lab ? p.vitalsCtx.lab : null} />
+        <SoporteCalcHints hints={p.calcHints} />
       </div>
     </div>
   );
 }
 
-function VitalsRow({ ec, vitalsCtx }) {
-  const tier = soporteTier(ec.soporte != null ? String(ec.soporte) : '');
-  const current = normalizeSoporteValue(ec.soporte);
+function VitalsRow({ p }) {
+  const tier = p.soporteTier;
+  const num = p.num;
   return (
     <>
       <div class="ea-sys-card ea-sys-card--neuro">
@@ -155,24 +149,24 @@ function VitalsRow({ ec, vitalsCtx }) {
         <div class="ea-sys-fields">
           <label class="ea-field">
             <span class="ea-label">FOUR</span>
-            <input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value={escAttrNumeric(ec.four)} />
+            <input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value={num.four} />
           </label>
           <label class="ea-field">
             <span class="ea-label">Esferas</span>
-            <input type="number" class="ea-input" data-ea-ec="esferas" min="0" step="1" value={escAttrNumeric(ec.esferas)} />
+            <input type="number" class="ea-input" data-ea-ec="esferas" min="0" step="1" value={num.esferas} />
           </label>
         </div>
       </div>
       <div class="ea-sys-card ea-sys-card--soporte">
-        <SoporteHead ec={ec} vitalsCtx={vitalsCtx} />
+        <SoporteHead p={p} />
         <div class="ea-field ea-field--soporte">
           <select class="ea-input" data-ea-ec="soporte" aria-label="Soporte respiratorio">
-            {SOPORTE_OPTIONS.map((opt) => <option value={opt} selected={current === opt}>{opt}</option>)}
+            {p.soporteOptions.map((opt) => <option value={opt} selected={p.soporteCurrent === opt}>{opt}</option>)}
           </select>
         </div>
         {tier ? (
           <div class="ea-soporte-vent-block" data-ea-soporte-wrap="">
-            <SoporteParams ec={ec} tier={tier} />
+            <SoporteParams p={p} tier={tier} />
           </div>
         ) : null}
       </div>
@@ -241,9 +235,7 @@ function DietProposalBar({ dietOptions, selectedIndex }) {
 /**
  * The whole `<details>`. The medication grid is still a string (estado-actual-med-ui.mjs): this
  * leaves its empty frame as the last child of `.ea-clinico-body` and the caller fills it.
- * @param {{ ec: object, dietPending: boolean, dietaSuplemento: boolean, dietaParenteral: boolean,
- *   kcalDisplay: string, dietWeight: number | null, dietOptions?: unknown[], dietOptionSelected?: number,
- *   vitalsCtx?: object, snapshot: object, balGlobal: number, now?: Date }} p
+ * @param {ReturnType<typeof import('./estado-actual-panel-clinico.mjs').buildEstadoClinicoProps>} p
  */
 export function EaClinicoSection(p) {
   return (
@@ -251,9 +243,9 @@ export function EaClinicoSection(p) {
       <summary>Estado clínico general</summary>
       <div class="ea-clinico-body">
         <div class="ea-top-grid">
-          <EaSnapshotSection snapshot={p.snapshot} balGlobal={p.balGlobal} now={p.now} />
+          <EaSnapshotSection {...p.snapshot} />
           <div class="ea-clinico-grid ea-sys-grid">
-            <VitalsRow ec={p.ec} vitalsCtx={p.vitalsCtx} />
+            <VitalsRow p={p} />
             <NutritionRow
               ec={p.ec}
               dietPending={p.dietPending}

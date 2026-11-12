@@ -1,14 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import { loadJsx } from './preact-view-test-helpers.mjs';
 import { deriveSnapshot, balanceGlobalHistorico } from './estado-actual-data.mjs';
+import { buildHistorialViewProps, buildSnapshotViewProps } from './estado-actual-panel-snapshot-html.mjs';
+import { buildClinicoViewProps } from './estado-actual-panel-clinico-html.mjs';
 import { eaChartsCanOpen } from './estado-actual-charts.mjs';
 
 // Output of the old string builders (renderSnapshotSection, renderHistorialSection,
 // renderEaChartsSummarySection, buildEaActionBarButtons, renderEstadoClinicoBodyHtml) captured before
 // the port, with the clock frozen at OLD.now. Synthetic patients only.
-const OLD = JSON.parse(fs.readFileSync(new URL('./estado-actual-panel-shell-view-old-html.json', import.meta.url), 'utf8'));
+const { default: OLD } = await import('./estado-actual-panel-shell-view-old-html.json', { with: { type: 'json' } });
 const NOW = new Date(OLD.now);
 
 // Same markup, other spelling: Preact quotes single-quoted attrs, prints empty-valued attributes as
@@ -71,10 +72,10 @@ async function view() {
 for (const k of Object.keys(MON)) {
   test(`snapshot ${k}`, async () => {
     const m = MON[k];
-    assert.equal(same((await view()).snapshot({ snapshot: deriveSnapshot(m), balGlobal: balanceGlobalHistorico(m), now: NOW })), same(OLD.snapshot[k]));
+    assert.equal(same((await view()).snapshot(buildSnapshotViewProps(deriveSnapshot(m), balanceGlobalHistorico(m), NOW))), same(OLD.snapshot[k]));
   });
   test(`historial ${k}`, async () => {
-    assert.equal(same((await view()).historial({ historial: m(k).historial || [], now: NOW })), same(OLD.historial[k]));
+    assert.equal(same((await view()).historial(buildHistorialViewProps(m(k).historial || [], NOW))), same(OLD.historial[k]));
   });
   test(`charts summary ${k}`, async () => {
     assert.equal(same((await view()).charts({ canOpen: eaChartsCanOpen(m(k)) })), same(OLD.charts[k]));
@@ -90,10 +91,12 @@ test('action bar, sala and interconsulta', async () => {
 for (const [k, c] of Object.entries(OLD.clinicoCases)) {
   test(`clinico ${k}`, async () => {
     const [ec, dietPending, dietaSuplemento, kcalDisplay, dietWeight, , dietOptions, dietOptionSelected, dietaParenteral, vitalsCtx] = c;
-    const html = (await view()).clinico({
-      ec, dietPending, dietaSuplemento, kcalDisplay, dietWeight, dietOptions, dietOptionSelected, dietaParenteral, vitalsCtx,
-      snapshot: deriveSnapshot(busy), balGlobal: balanceGlobalHistorico(busy), now: NOW,
-    });
+    const html = (await view()).clinico(
+      buildClinicoViewProps({
+        ec, dietPending, dietaSuplemento, kcalDisplay, dietWeight, dietOptions, dietOptionSelected, dietaParenteral, vitalsCtx,
+        snapshot: deriveSnapshot(busy), balGlobal: balanceGlobalHistorico(busy), now: NOW,
+      })
+    );
     // The med grid frame is empty here (the caller fills it); the old output had a marker in its place.
     const old = `<details class="ea-estado-clinico" open><summary>Estado clínico general</summary>${OLD.clinico[k]}</details>`
       .replace('<!--med-->', '<div class="ea-clinico-med-grid" data-ea-med-revealed="[]"></div>');
@@ -103,11 +106,13 @@ for (const [k, c] of Object.entries(OLD.clinicoCases)) {
 
 test('shell composes bar, clinico and historial', async () => {
   const c = OLD.clinicoCases.default;
-  const clinico = {
+  const clinico = buildClinicoViewProps({
     ec: c[0], dietPending: false, dietaSuplemento: false, kcalDisplay: c[3], dietWeight: c[4], dietOptions: [], dietOptionSelected: 0,
-    dietaParenteral: false, vitalsCtx: c[9], snapshot: deriveSnapshot(busy), balGlobal: balanceGlobalHistorico(busy),
-  };
-  const html = (await view()).shell({ savedLabel: 'Guardado 07/03 09:15', chartsCanOpen: true, sala: false, clinico, historial: busy.historial, now: NOW });
+    dietaParenteral: false, vitalsCtx: c[9], snapshot: deriveSnapshot(busy), balGlobal: balanceGlobalHistorico(busy), now: NOW,
+  });
+  const html = (await view()).shell({
+    savedLabel: 'Guardado 07/03 09:15', chartsCanOpen: true, sala: false, clinico, historial: buildHistorialViewProps(busy.historial, NOW),
+  });
   const old =
     '<div class="estado-actual-panel"><div class="ea-action-bar"><h3 class="fit-title">Estado actual</h3>' +
     '<span id="ea-meta-guardado" class="ea-meta-guardado">Guardado 07/03 09:15</span>' +

@@ -1,6 +1,43 @@
 /** Soporte respiratorio live DOM sync (the section markup is estado-actual-panel-clinico-view.jsx). */
-import { escHtml } from './estado-actual-panel-format.mjs';
-import { soporteTier, buildVentilatorioCalcHints } from './estado-actual-ventilatorio.mjs';
+import { SOPORTE_OPTIONS } from './estado-actual-panel-constants.mjs';
+import { escHtml, escAttrNumeric } from './estado-actual-panel-format.mjs';
+import { buildSnapshotViewProps } from './estado-actual-panel-snapshot-html.mjs';
+import {
+  normalizeSoporteValue,
+  soporteTier,
+  VM_MODO_OPTIONS,
+  buildVentilatorioCalcHints,
+} from './estado-actual-ventilatorio.mjs';
+
+/** Estado clínico fields that go in number inputs (non-numeric legacy strings are dropped). */
+var NUMERIC_EC_KEYS = [
+  'four', 'esferas', 'soporteLitros', 'soporteFlujoLmin', 'vmPeep', 'vmPsoporte', 'vmVt', 'vmFlujo', 'vmPmeseta', 'soporteFio2',
+];
+
+/**
+ * Plain props for `EaClinicoSection`: derives what the view must not import (soporte tier, hints, options,
+ * numeric field values, the snapshot strip props) from the already-gathered `a`.
+ * @param {{ ec: Record<string, any>, snapshot: object, balGlobal: number, vitalsCtx: object, now?: Date }} a
+ *   the rest of `a` (dietPending, dietaSuplemento, dietaParenteral, kcalDisplay, dietWeight, dietOptions,
+ *   dietOptionSelected) goes through unchanged
+ */
+export function buildClinicoViewProps(a) {
+  var ec = a.ec;
+  var tier = soporteTier(ec.soporte != null ? String(ec.soporte) : '');
+  var num = {};
+  NUMERIC_EC_KEYS.forEach(function (k) {
+    num[k] = escAttrNumeric(ec[k]);
+  });
+  return Object.assign({}, a, {
+    soporteOptions: SOPORTE_OPTIONS,
+    soporteCurrent: normalizeSoporteValue(ec.soporte),
+    soporteTier: tier,
+    vmModoOptions: VM_MODO_OPTIONS,
+    calcHints: tier ? buildVentilatorioCalcHints(ec, a.vitalsCtx || {}) : [],
+    num: num,
+    snapshot: buildSnapshotViewProps(a.snapshot, a.balGlobal, a.now),
+  });
+}
 
 /**
  * @param {Record<string, unknown>} ec

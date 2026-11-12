@@ -15,7 +15,6 @@ import {
 import { flushEaEstadoClinicoFieldsFromDom } from './estado-actual-panel-clinico.mjs';
 import {
   applyEstadoActualParsedToForm,
-  buildRegistroFormMarkup,
   wireEaRegistroForm,
   syncEaRegistroGluMode,
   resetEaRegistroForm,
@@ -67,7 +66,6 @@ export {
   parseNumOrNull,
   flushEaEstadoClinicoFieldsFromDom,
   applyEstadoActualParsedToForm,
-  buildRegistroFormMarkup,
   wireEaRegistroForm,
   syncEaRegistroGluMode,
   resetEaRegistroForm,
