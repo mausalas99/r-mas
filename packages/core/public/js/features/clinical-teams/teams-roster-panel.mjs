@@ -11,6 +11,7 @@ import {
 } from '../clinical-rotation.mjs';
 import { readRpcSettings } from '../../clinical-settings.mjs';
 import {
+  claimClinicalTeamsPanelHost,
   getClinicalTeamsPanelHost,
   safeRenderClinicalTeamsPanel,
   setClinicalTeamsPanelError,
@@ -22,21 +23,19 @@ import {
 } from './shared.mjs';
 import { refreshClinicalOpsDirectory } from './teams-guardia-bridge.mjs';
 import { wireDirectoryUsersControls } from './teams-roster-users.mjs';
-import { renderNewTeamCardHtml } from './teams-roster-create.mjs';
+import { newTeamCardProps } from './teams-roster-create.mjs';
 import {
   resolveBrowseSala,
-  renderDirectorySectionHtml,
-  resolveTeamMemberHintHtml,
+  directorySectionProps,
+  resolveTeamMemberHintProps,
 } from './teams-roster-directory.mjs';
-import { renderJoinedTeamCard } from './teams-roster-team-cards.mjs';
+import { joinedTeamCardProps } from './teams-roster-team-cards.mjs';
 import { isRotationRejoinPending } from '../clinical-rotation-rejoin-modal.mjs';
 import {
   resolveDisplayLanHandle,
   resolveClinicalTeamsPanelContext,
-  buildClinicalProfileSectionHtml,
-  buildClinicalTeamsConfigSectionHtml,
-  buildRotationAdminSectionHtml,
-  buildPickTeamsBannerHtml,
+  profileSectionProps,
+  otherOptionsProps,
   shouldUsePickTeamPanelLayout,
 } from './teams-roster-panel-build.mjs';
 import {
@@ -117,74 +116,59 @@ async function maybeRefreshClinicalOpsDirectory(skipPull, browseSala, homeSala) 
 async function resolveClinicalTeamsPanelSections(userId, user, joined, ctx, elevated, embedded) {
   const siblingTeams = Array.isArray(clinicalSessionContext.teams) ? clinicalSessionContext.teams : [];
   const browseSala = resolveBrowseSala(elevated, ctx.sala);
-  const lanMemberHint = await resolveTeamMemberHintHtml(joined);
-  const mineSection = joined.length
-    ? `<section class="clinical-teams-mine">${lanMemberHint}${joined
-        .map((team) => renderJoinedTeamCard(team, siblingTeams))
-        .join('')}</section>`
-    : '';
+  const now = new Date();
+  const mine = joined.length
+    ? {
+        hint: await resolveTeamMemberHintProps(joined),
+        cards: joined.map((team) => joinedTeamCardProps(team, siblingTeams, now)),
+      }
+    : null;
 
   // Crear is the primary action only when there is no team to join or be in.
-  const { html: directorySection, count: directoryCount } = await renderDirectorySectionHtml({
+  const { props: directory, count: directoryCount } = await directorySectionProps({
     userId,
     elevated,
     browseSala,
     homeSala: ctx.sala,
     mineCount: joined.length,
-    trailingCard: (count) => renderNewTeamCardHtml({ primary: !count && !joined.length }),
+    now,
+    trailingCard: (count) => newTeamCardProps({ primary: !count && !joined.length }),
   });
   const pickTeamLayout = shouldUsePickTeamPanelLayout(joined.length, directoryCount, elevated);
 
-  const pickBanner = buildPickTeamsBannerHtml({
-    directoryCount,
-    sala: browseSala === '__all__' ? ctx.sala : browseSala || ctx.sala,
-    elevated,
-    rejoinPending: isRotationRejoinPending(),
-  });
-
-  const profileSection = buildClinicalProfileSectionHtml(ctx, user);
+  const rejoinPending = isRotationRejoinPending();
+  const other = otherOptionsProps(user, embedded);
   return {
     pickTeamLayout,
-    pickBanner,
-    mineSection,
-    directorySection,
-    rotationSection: buildRotationAdminSectionHtml(user),
-    configSection: embedded ? '' : buildClinicalTeamsConfigSectionHtml(profileSection),
+    banner: directoryCount > 0 && (elevated || rejoinPending)
+      ? {
+          directoryCount,
+          sala: browseSala === '__all__' ? ctx.sala : browseSala || ctx.sala,
+          elevated,
+          rejoinPending,
+        }
+      : null,
+    mine,
+    directory,
+    rotation: other.rotation,
+    config: other.config && { ...other.config, profile: profileSectionProps(ctx, user) },
   };
 }
 
-function renderClinicalTeamsPanelBody(host, sections, hasJoinedTeam) {
-  const { pickTeamLayout, pickBanner, mineSection, directorySection, rotationSection, configSection } = sections;
-  host.classList.toggle('clinical-teams-panel-body--pick-team', pickTeamLayout);
+async function renderClinicalTeamsPanelBody(host, sections, hasJoinedTeam) {
+  host.classList.toggle('clinical-teams-panel-body--pick-team', sections.pickTeamLayout);
   host.classList.toggle('clinical-teams-panel-body--has-joined', hasJoinedTeam);
-
-  // Rare actions (rotation for R4/admin, profile in the legacy modal) share
-  // one «Otras opciones» list, same as the shortcuts sheet.
-  const otherOptions = rotationSection || configSection
-    ? `
-    <section class="clinical-teams-other" aria-labelledby="clinical-teams-other-label">
-      <h4 id="clinical-teams-other-label" class="clinical-teams-group-label">Otras opciones</h4>
-      <div class="clinical-teams-other-list">
-        ${rotationSection}
-        ${configSection}
-      </div>
-    </section>`
-    : '';
-  // Fixed order so the screen never reshuffles between visits: your team
-  // (status card), the sala's teams ending in «¿No ves tu equipo?», rare
-  // options.
-  host.innerHTML = `
-    ${pickTeamLayout ? pickBanner : ''}
-    ${mineSection}
-    ${directorySection}
-    ${otherOptions}`;
+  const { drawTeamsPanel } = await import('./teams-roster-panel-view.jsx');
+  claimClinicalTeamsPanelHost();
+  drawTeamsPanel(host, sections);
 }
 
 export async function renderClinicalTeamsPanelInto(host, opts = {}) {
   const userId = currentUserId();
   if (!userId) {
-    host.innerHTML =
-      '<p class="clinical-teams-lead">Activa la sesión clínica para gestionar equipos.</p>';
+    const { drawPanelNotice } = await import('./teams-roster-panel-view.jsx');
+    claimClinicalTeamsPanelHost();
+    drawPanelNotice(host, 'Activa la sesión clínica para gestionar equipos.');
     return;
   }
 
@@ -201,7 +185,7 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
 
   const embedded = !!host.closest('.cloud-sync-equipo-embed');
   const sections = await resolveClinicalTeamsPanelSections(userId, user, joined, ctx, elevated, embedded);
-  renderClinicalTeamsPanelBody(host, sections, joined.length > 0);
+  await renderClinicalTeamsPanelBody(host, sections, joined.length > 0);
 
   wireDirectoryUsersControls();
   syncRotationConfigButton();

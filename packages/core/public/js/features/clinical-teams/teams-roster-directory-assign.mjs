@@ -2,7 +2,7 @@
 import { fetchClinicalTeamsFromDb } from '../../clinical-access-runtime.mjs';
 import { resolveMembershipCycleForUser } from '../../clinico-access.mjs';
 import { publishClinicalTeamsToSync } from './teams-guardia-bridge.mjs';
-import { dbApi, toast, currentUserId, escapeHtml, escapeAttr } from './shared.mjs';
+import { dbApi, toast, currentUserId } from './shared.mjs';
 import { directoryRt } from './teams-roster-directory-state.mjs';
 import {
   cycleLettersForAssign,
@@ -25,7 +25,7 @@ export function syncAssignCycleSelect(teamSelect, preferredCycle = '') {
 
   const teamId = String(teamSelect.value || '').trim();
   if (!teamId) {
-    cycleSelect.innerHTML = '<option value="">— Ciclo —</option>';
+    cycleSelect.replaceChildren(new Option('— Ciclo —', ''));
     cycleSelect.disabled = true;
     return;
   }
@@ -37,12 +37,11 @@ export function syncAssignCycleSelect(teamSelect, preferredCycle = '') {
   const rowPreferred = String(preferredCycle || row?.dataset.preferredCycle || '').trim();
   const defaultCycle = resolveLanAssignDefaultCycle(team, userId, userRank, rowPreferred, letters);
 
-  cycleSelect.innerHTML = letters
-    .map((letter) => {
-      const label = formatCycleOptionLabel(letter, userRank);
-      return `<option value="${escapeAttr(letter)}" ${letter === defaultCycle ? 'selected' : ''}>${escapeHtml(label)}</option>`;
-    })
-    .join('');
+  cycleSelect.replaceChildren(
+    ...letters.map(
+      (letter) => new Option(formatCycleOptionLabel(letter, userRank), letter, false, letter === defaultCycle)
+    )
+  );
   cycleSelect.disabled = letters.length === 0;
   cycleSelect.value = defaultCycle;
 }

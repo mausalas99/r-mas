@@ -22,6 +22,7 @@ const JOIN_CODE_FIELD_IDS = [
 
 import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
 import { isEquipoEmbedActive } from '../cloud-sync/panel-equipo-embed.mjs';
+import { syncCreateTeamServiceFromSala, syncCreateTeamCycleField } from './teams-roster-create.mjs';
 
 /** Scrollport for Equipo embed is #connection-dropdown-scroll; modal uses host itself. */
 export function resolveClinicalTeamsScrollHost(panelHost) {
@@ -176,10 +177,8 @@ function restoreCreateTeamPanelDraft(draft) {
   const createPanel = document.getElementById('clinical-team-create-panel');
   if (!(createPanel instanceof HTMLDialogElement) || !draft.createPanelOpen) return;
   createPanel.showModal();
-  void import('./teams-roster-create.mjs').then((m) => {
-    m.syncCreateTeamServiceFromSala();
-    m.syncCreateTeamCycleField();
-  });
+  syncCreateTeamServiceFromSala();
+  syncCreateTeamCycleField();
 }
 
 function restoreBrowseSalaDraft(draft) {

@@ -12,7 +12,6 @@ import {
   ensureClinicalDbUnlocked,
   getClinicalBootDelays,
 } from './db-unlock.mjs';
-import { buildTextSkeletonPanel } from '../ui-skeleton.mjs';
 
 /** @type {HTMLElement | null} */
 let clinicalTeamsEmbedHost = null;
@@ -33,16 +32,27 @@ export function getClinicalTeamsPanelHost() {
   return document.getElementById('clinical-teams-panel-body');
 }
 
+/** Latest draw into the panel host wins: the view loads lazily, so an older draw may land late. */
+let hostDrawSeq = 0;
+
+/** Call right before drawing the panel body, so a pending skeleton or error draw is dropped. */
+export function claimClinicalTeamsPanelHost() {
+  hostDrawSeq += 1;
+}
+
+async function drawHostState(host, draw) {
+  const seq = ++hostDrawSeq;
+  const view = await import('./clinical-panel-host-view.jsx');
+  if (seq === hostDrawSeq) draw(view);
+}
+
 export function setClinicalTeamsPanelLoading() {
   const host = getClinicalTeamsPanelHost();
-  if (host) {
-    host.innerHTML = buildTextSkeletonPanel('clinical-teams-skeleton skel-panel', 3);
-  }
+  if (host) void drawHostState(host, (v) => v.drawPanelSkeleton(host));
 }
 
 /** Open Mi rotación shell immediately; content loads additively. */
 
-import { escapeHtml } from '../dom-escape.mjs';
 export function showClinicalTeamsPanelShell() {
   const bd = document.getElementById('clinical-teams-backdrop');
   if (!bd) return false;
@@ -57,9 +67,7 @@ export function showClinicalTeamsPanelShell() {
 export function setClinicalTeamsPanelError(message) {
   const host = getClinicalTeamsPanelHost();
   if (!host) return;
-  host.innerHTML = `
-    <p class="clinical-registration-error">${escapeHtml(message)}</p>
-    <p class="clinical-teams-lead">Cierra este diálogo y vuelve a abrir <strong>Mi rotación</strong>. Si sigue vacío, reinicia R+ por completo (Cmd+Q).</p>`;
+  void drawHostState(host, (v) => v.drawPanelError(host, message));
 }
 
 /**

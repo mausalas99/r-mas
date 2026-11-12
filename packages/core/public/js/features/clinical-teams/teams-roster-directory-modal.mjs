@@ -2,7 +2,7 @@
 import { clinicalSessionContext, touchClinicalSessionActivity } from '../../clinical-access-runtime.mjs';
 import { canViewUserDirectory } from '../../clinical-privileges.mjs';
 import { flushPendingClinicalOpsSnapshot } from '../../clinical-ops-sync.mjs';
-import { toast, escapeHtml } from './shared.mjs';
+import { toast } from './shared.mjs';
 import { directoryRt } from './teams-roster-directory-state.mjs';
 import {
   directoryUsersModalBackdropEl,
@@ -35,7 +35,8 @@ export async function openDirectoryUsersModal() {
     return;
   }
 
-  host.innerHTML = '<p class="clinical-teams-empty">Cargando directorio…</p>';
+  const { drawDirectoryMessage } = await import('./teams-roster-directory-view.jsx');
+  drawDirectoryMessage(host, 'Cargando directorio…');
   document.body.classList.add('clinical-directory-open');
   bd.classList.add('open');
   bd.setAttribute('aria-hidden', 'false');
@@ -54,9 +55,7 @@ export async function openDirectoryUsersModal() {
     }
   } catch (err) {
     console.error('[Directorio LAN]', err);
-    host.innerHTML = `<p class="clinical-teams-empty">${escapeHtml(
-      err instanceof Error ? err.message : 'No se pudo cargar el directorio.'
-    )}</p>`;
+    drawDirectoryMessage(host, err instanceof Error ? err.message : 'No se pudo cargar el directorio.');
   }
 
 }

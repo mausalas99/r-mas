@@ -2,7 +2,7 @@
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { recordClinicalOpsTrace } from '../../clinical-ops-sync.mjs';
 import { canDeleteDirectoryUser } from '../../clinical-privileges.mjs';
-import { dbApi, escapeHtml, currentUserId } from './shared.mjs';
+import { dbApi, currentUserId } from './shared.mjs';
 import { directoryRt, DIRECTORY_IPC_MIN_MS } from './teams-roster-directory-state.mjs';
 import {
   directoryUsersModalBackdropEl,
@@ -14,7 +14,7 @@ import {
   applyDirectoryFilters,
   bindDirectoryFilterControls,
 } from './teams-roster-directory-filters.mjs';
-import { renderDirectoryUsersModalBodyHtml } from './teams-roster-directory-render.mjs';
+import { directoryUsersModalBodyProps } from './teams-roster-directory-render.mjs';
 import {
   initUserRowAssignState,
   syncAssignCycleSelect,
@@ -74,11 +74,15 @@ function shouldSkipDirectoryIpcRefresh(options, host, now) {
   );
 }
 
-function paintDirectoryHost(host, users, sessionUser) {
-  host.innerHTML = renderDirectoryUsersModalBodyHtml(users, directoryRt.teams, {
-    canDelete: canDeleteDirectoryUser(sessionUser),
-    callerUserId: currentUserId(),
-  });
+async function paintDirectoryHost(host, users, sessionUser) {
+  const { drawDirectoryBody } = await import('./teams-roster-directory-view.jsx');
+  drawDirectoryBody(
+    host,
+    directoryUsersModalBodyProps(users, directoryRt.teams, {
+      canDelete: canDeleteDirectoryUser(sessionUser),
+      callerUserId: currentUserId(),
+    })
+  );
   host.querySelectorAll('.clinical-lan-user-row').forEach((row) => initUserRowAssignState(row));
   bindDirectoryFilterControls(host);
   applyDirectoryFilters(host);
@@ -104,8 +108,9 @@ async function loadDirectoryData_(api, callerUserId) {
   return { usersRes, teamsRes };
 }
 
-function renderDirectoryLoadError(host, message) {
-  host.innerHTML = `<p class="clinical-teams-empty">${escapeHtml(message || 'No se pudo cargar el directorio.')}</p>`;
+async function renderDirectoryLoadError(host, message) {
+  const { drawDirectoryMessage } = await import('./teams-roster-directory-view.jsx');
+  drawDirectoryMessage(host, message || 'No se pudo cargar el directorio.');
 }
 
 /** @param {HTMLElement} host @param {{ forceRender?: boolean, forceIpc?: boolean }} [options] */
@@ -115,7 +120,7 @@ export async function loadDirectoryUsersIntoHost(host, options = {}) {
 
   const api = dbApi();
   if (!api || typeof api.dbClinicalUsersList !== 'function') {
-    renderDirectoryLoadError(
+    await renderDirectoryLoadError(
       host,
       'Directorio solo en la app de escritorio R+ (base clínica desbloqueada). En iPad/móvil usa el censo de R+ Cloud; Mi rotación con directorio requiere Mac.'
     );
@@ -125,7 +130,7 @@ export async function loadDirectoryUsersIntoHost(host, options = {}) {
   directoryRt.ipcLastAt = now;
   const { usersRes, teamsRes } = await loadDirectoryData_(api, currentUserId());
   if (!usersRes?.ok) {
-    renderDirectoryLoadError(host, usersRes?.error);
+    await renderDirectoryLoadError(host, usersRes?.error);
     return;
   }
 
@@ -139,7 +144,7 @@ export async function loadDirectoryUsersIntoHost(host, options = {}) {
     return;
   }
   directoryRt.lastFingerprint = fingerprint;
-  paintDirectoryHost(host, users, clinicalSessionContext.user || {});
+  await paintDirectoryHost(host, users, clinicalSessionContext.user || {});
 }
 
 function isDirectoryUserInteracting() {

@@ -1,0 +1,17 @@
+{
+  "salas": [
+    "Sala <A>",
+    "Sala B & \"C\"",
+    "Sala D"
+  ],
+  "lead": {
+    "elevatedSala": "<p>Se archivaron los equipos del mes anterior en <strong>Sala &lt;A&gt;</strong>. Confirma tu sala y <strong>publica los equipos nuevos</strong> en Mi rotación para que el resto se una.</p>",
+    "elevatedNone": "<p>Se archivaron los equipos del mes anterior. Confirma tu sala y <strong>publica los equipos nuevos</strong> en Mi rotación para que el resto se una.</p>",
+    "residentSala": "<p>Hay <strong>nueva rotación</strong>: los equipos anteriores ya no están activos (sala actual: <strong>Sala B &amp; &quot;C&quot;</strong>). Tu líder de equipo o R4 ya publicó equipos nuevos en Nube — confirma tu sala y <strong>elige el tuyo</strong> en Mi rotación.</p>",
+    "residentNone": "<p>Hay <strong>nueva rotación</strong>: los equipos anteriores ya no están activos. Tu líder de equipo o R4 ya publicó equipos nuevos en Nube — confirma tu sala y <strong>elige el tuyo</strong> en Mi rotación.</p>"
+  },
+  "options": {
+    "none": "<option value=\"\">— Seleccionar sala —</option><option value=\"Sala &lt;A&gt;\">Sala &lt;A&gt;</option><option value=\"Sala B &amp; &quot;C&quot;\">Sala B &amp; &quot;C&quot;</option><option value=\"Sala D\">Sala D</option>",
+    "picked": "<option value=\"\">— Seleccionar sala —</option><option value=\"Sala &lt;A&gt;\">Sala &lt;A&gt;</option><option value=\"Sala B &amp; &quot;C&quot;\" selected>Sala B &amp; &quot;C&quot;</option><option value=\"Sala D\">Sala D</option>"
+  }
+}

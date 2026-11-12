@@ -6,7 +6,7 @@ import {
 import { resolvePatientTeamIdFromAssignments, stampPatientClinicalSala } from './clinico-access.mjs';
 import { hasElevatedTeamPrivileges } from './clinical-privileges.mjs';
 import { filterJoinedTeams } from './features/clinical-teams/shared.mjs';
-import { buildTeamSelectOptions } from './features/clinical-teams/team-select-options.mjs';
+import { buildTeamSelectOptions, fillTeamSelectOptions } from './features/clinical-teams/team-select-options.mjs';
 import { resolveActiveTeamFilterId } from './features/clinical-census-filters-ui.mjs';
 import { getPatients, persistClinicalState } from './app-state.mjs';
 
@@ -215,17 +215,18 @@ export function syncPatientRegistrationTeamSelect(selectedTeamId) {
   const teams = assignableTeamsForUser(user);
   if (!teams.length) {
     group.style.display = 'none';
-    select.innerHTML = '<option value="">— Sin asignar —</option>';
+    fillTeamSelectOptions(select, { teams: [], placeholder: '— Sin asignar —' });
     select.value = '';
     return;
   }
   group.style.display = '';
   const selected = String(selectedTeamId || defaultPatientRegistrationTeamId(user) || '');
-  select.innerHTML =
-    '<option value="">— Sin asignar —</option>' +
-    buildTeamSelectOptions(teams, selected, {
-      groupBySala: shouldGroupAssignableTeamsBySala(user),
-    });
+  fillTeamSelectOptions(select, {
+    teams,
+    selectedTeamId: selected,
+    groupBySala: shouldGroupAssignableTeamsBySala(user),
+    placeholder: '— Sin asignar —',
+  });
   select.value = selected;
 }
 
