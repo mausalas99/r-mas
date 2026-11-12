@@ -459,8 +459,8 @@ html.dark .patient-dash .svc.is-on {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
-  padding: 5px 10px;
+  gap: 1px;
+  padding: 3px 8px;
   border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--color-ink) 4%, transparent);
 }
@@ -1156,7 +1156,9 @@ html.dark .ic-cf--svc.is-picked::before {
   justify-content: start;
 }
 .patient-dash .vital b,
-.patient-dash .vital-input,
+.patient-dash .vital-input {
+  font-size: 1.35em;
+}
 .patient-dash .draw-value {
   font-size: 1.7em;
 }
