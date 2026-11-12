@@ -1,0 +1,6 @@
+{
+ "empty_hint": "<p class=\"cloud-sync-hint\" data-network-empty>Ningún paciente coincide con estos filtros.</p>",
+ "none": "<span class=\"cloud-sync-admin-stale-labs\">Sin labs (verificado)</span>",
+ "ago": "hace 3 días (verificado)",
+ "has": "<span class=\"cloud-sync-hint\">Tiene labs (verificado)</span>"
+}

@@ -1,7 +1,5 @@
 import {
   applyAdminSalasFilters,
-  applyCachedLabVerifications,
-  applyNetworkCensusFilters,
   updateNetworkBulkBarVisibility,
   mutationsModel,
   networkCensusModel,
@@ -11,6 +9,7 @@ import {
   roomDetailModel,
   salasModel,
 } from './panel-admin-html.mjs';
+import { applyCachedLabVerifications, applyNetworkCensusFilters } from './panel-admin-network-dom.mjs';
 import {
   drawAdminError,
   drawAdminHint,

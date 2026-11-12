@@ -443,6 +443,26 @@ export const AdminSolicitudesShell = () => (
 export const AdminError = ({ message }) => <p class="cloud-sync-admin-error">{message}</p>;
 export const AdminHint = ({ text }) => <p class="cloud-sync-hint">{text}</p>;
 
+/** The Red tab's note when the filters hide every row. */
+export const NetworkEmpty = () => <p class="cloud-sync-hint" data-network-empty="">Ningún paciente coincide con estos filtros.</p>;
+
+/** The Red tab's «Últ. labs» cell once a lab-portal check ran: no labs, last request `ago`, or labs without a date. */
+export function LabsVerifiedCell({ kind, ago }) {
+  if (kind === 'none') return <span class="cloud-sync-admin-stale-labs">Sin labs (verificado)</span>;
+  if (kind === 'ago') return <>{'hace ' + ago + ' (verificado)'}</>;
+  return <span class="cloud-sync-hint">Tiene labs (verificado)</span>;
+}
+
+/** Rewrite one cell of the drawn Red table in place. */
+export const drawLabsVerifiedCell = (cell, kind, ago) => mount(cell, <LabsVerifiedCell kind={kind} ago={ago} />);
+
+/** Put the empty note right after `node` (no wrapper element: it is drawn aside, then moved). */
+export function drawNetworkEmptyAfter(node) {
+  const tmp = document.createElement('div');
+  render(<NetworkEmpty />, tmp);
+  node.after(...tmp.childNodes);
+}
+
 export const drawAdminShell = (host, model) => mount(host, <AdminShell model={model} />);
 export const drawAdminMutacionesShell = (host) => mount(host, <AdminMutacionesShell />);
 export const drawAdminPeligro = (host) => mount(host, <AdminPeligro />);
