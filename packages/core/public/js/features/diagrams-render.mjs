@@ -327,28 +327,14 @@ export function buildDiagramCards(resLabs) {
 
 export function renderDiagramas(resLabs) {
   var grid = document.getElementById("diagrams-grid");
-  grid.innerHTML = "";
-  var cards = buildDiagramCards(resLabs);
-  var any = false;
-  cards.forEach(function (c) {
-    if (!c.svg) return;
-    any = true;
-    var div = document.createElement("div");
-    div.className = "dcard";
-    div.style.width = c.w + "px";
-    var btn = document.createElement("button");
-    btn.className = "dcard-copy";
-    btn.textContent = "Copiar";
-    var svgStr = c.svg,
-      vw = c.vw,
-      vh = c.vh,
-      title = c.title;
-    btn.onclick = function () {
-      copiarDiagrama(svgStr, vw, vh, title, btn);
-    };
-    div.innerHTML = '<div class="dcard-title">' + c.title + "</div>" + c.svg;
-    div.appendChild(btn);
-    grid.appendChild(div);
+  var cards = buildDiagramCards(resLabs).filter(function (c) {
+    return c.svg;
+  });
+  var any = cards.length > 0;
+  import("./diagrams-view.jsx").then(function (view) {
+    view.drawDiagramGrid(grid, cards, function (c, btn) {
+      copiarDiagrama(c.svg, c.vw, c.vh, c.title, btn);
+    });
   });
   var btn = document.getElementById("lab-diagrams-btn");
   if (btn) btn.hidden = !any;
