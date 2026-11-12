@@ -2,8 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadJsx } from './preact-view-test-helpers.mjs';
 
-const view = await loadJsx(import.meta.url, `import { PanelToolbarButtons, ChartError, ChartsLoadError } from './tend-group-charts-view.jsx';
-  import { GasoExtDialog, GasoEmpty } from './tend-group-gaso-view.jsx';
+const view = await loadJsx(import.meta.url, `import { PanelToolbarButtons, ChartError, ChartsLoadError, GasoExtDialog, GasoEmpty } from './tend-group-charts-view.jsx';
   export const toolbar = () => renderToString(<PanelToolbarButtons />);
   export const chartError = () => renderToString(<ChartError />);
   export const loadError = () => renderToString(<ChartsLoadError />);

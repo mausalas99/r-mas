@@ -1,4 +1,4 @@
-import { drawGasoDialog } from './features/tend-group-gaso-view.jsx';
+import { drawGasoDialog } from './features/tend-group-charts-view.jsx';
 import { cancelOverlayClose, closeOverlayAnimated } from './ui-motion.mjs';
 
 export function ensureGasoExtendedDialog(onBackdropClick) {
