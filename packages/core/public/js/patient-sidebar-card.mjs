@@ -67,7 +67,7 @@ function patientCardOpenButtonHtml(opts, nombreRaw, nombreDisplay) {
  * @param {{ roundRow?: boolean, showServicio?: boolean, servicioLabel?: string, openButton?: boolean }|undefined} [opts]
  */
 // Auto-admitted stubs ("PACIENTE SIN NOMBRE (6)") would shorten to "PACIENTE (6)": show the registro instead.
-function sidebarNameDisplay(nombreRaw, registro) {
+export function sidebarNameDisplay(nombreRaw, registro) {
   if (nombreRaw && !/^SIN NOMBRE$|^PACIENTE( SIN NOMBRE)?( \(\d+\))?$/i.test(nombreRaw)) return shortenPatientDisplayName(nombreRaw);
   return 'Sin nombre' + (registro ? ' · ' + registro : '');
 }
