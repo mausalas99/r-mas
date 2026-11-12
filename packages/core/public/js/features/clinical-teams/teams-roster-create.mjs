@@ -1,4 +1,4 @@
-/** Mi rotación — create/join team form HTML. */
+/** Mi rotación — create/join team: props for the Preact card and the cycle-field sync. */
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import {
   getCycleLettersForTeamCreate,
@@ -11,28 +11,19 @@ import {
   getTeamCompositionLimits,
   serviceUsesStructuredComposition,
 } from '../../../../lib/clinical-team-composition.mjs';
-import { effectiveClinicalRank, canManageTeamRoster } from '../../clinical-privileges.mjs';
-import {
-  escapeHtml,
-  escapeAttr,
-  hintHtml,
-  CLINICAL_TEAM_SERVICES,
-  CLINICAL_SALAS,
-} from './shared.mjs';
-import { renderDirectoryUsersTopButtonHtml } from './teams-roster-users.mjs';
-import { renderCycleSelectForRank } from './teams-roster-team-cards.mjs';
+import { effectiveClinicalRank, canManageTeamRoster, canViewUserDirectory } from '../../clinical-privileges.mjs';
+import { CLINICAL_TEAM_SERVICES, CLINICAL_SALAS } from './shared.mjs';
 
-function compositionHintForService(service) {
-  if (!serviceUsesStructuredComposition(service)) return '';
+/** «2 R1», «1 R2»… for services with fixed team composition; [] otherwise. */
+export function compositionHintParts(service) {
+  if (!serviceUsesStructuredComposition(service)) return [];
   const limits = getTeamCompositionLimits(service);
-  if (!limits) return '';
+  if (!limits) return [];
   const parts = [];
   if (limits.r1) parts.push(`${limits.r1} R1`);
   if (limits.r2) parts.push(`${limits.r2} R2`);
   if (limits.r3) parts.push(`${limits.r3} R3`);
-  return parts.length
-    ? `<p class="clinical-teams-hint clinical-teams-composition-hint">Composición: ${parts.join(', ')}.</p>`
-    : '';
+  return parts;
 }
 
 function setR1LineGroupVisible(visible) {
@@ -63,14 +54,18 @@ function updateCreateTeamCycleLabels(meta, service) {
   const compositionHint = document.getElementById('clinical-team-composition-hint');
   if (label) label.textContent = meta.label;
   if (hint) hint.textContent = meta.hint;
-  if (compositionHint) compositionHint.innerHTML = compositionHintForService(service);
+  if (compositionHint) {
+    const parts = compositionHintParts(service);
+    const p = document.createElement('p');
+    p.className = 'clinical-teams-hint clinical-teams-composition-hint';
+    p.textContent = `Composición: ${parts.join(', ')}.`;
+    compositionHint.replaceChildren(...(parts.length ? [p] : []));
+  }
 }
 
 function refreshCreateTeamDayOptions(daySelect, letters, prev) {
   if (!daySelect) return;
-  daySelect.innerHTML = letters
-    .map((letter) => `<option value="${escapeAttr(letter)}">${escapeHtml(letter)}</option>`)
-    .join('');
+  daySelect.replaceChildren(...letters.map((letter) => new Option(letter, letter)));
   if (prev && letters.includes(prev)) daySelect.value = prev;
 }
 
@@ -101,156 +96,34 @@ export function syncCreateTeamCycleField() {
   refreshCreateTeamDayOptions(daySelect, letters, prev);
 }
 
-export function renderCreateTeamForm() {
+/** Props for NewTeamCard (teams-roster-create-view.jsx), read from the clinical session. */
+export function newTeamCardProps({ primary = true } = {}) {
   const user = clinicalSessionContext.user || {};
-  if (canManageTeamRoster(user)) {
-    return renderCreateTeamFormElevated(user);
+  const elevated = canManageTeamRoster(user);
+  const userSala = String(user.sala || '').trim();
+  const rank = effectiveClinicalRank(user);
+  const joinService = clinicalServiceForSala(clinicalSessionContext.user?.sala) || 'Sala';
+  let form;
+  if (elevated) {
+    form = { homeSala: userSala, salas: CLINICAL_SALAS };
+  } else {
+    const defaultService = clinicalServiceForSala(userSala) || CLINICAL_TEAM_SERVICES[0];
+    form = {
+      userSala,
+      salas: CLINICAL_SALAS,
+      services: CLINICAL_TEAM_SERVICES,
+      defaultService,
+      letters: getCycleLetterOptionsForRank(defaultService, rank),
+      meta: getCycleFieldMetaForTeamCreate(defaultService, rank, 0),
+      showR1Line: rank === 'R1' && usesSalaR1LinePicker(defaultService, userSala),
+      compositionParts: compositionHintParts(defaultService),
+    };
   }
-  return renderCreateTeamFormStandard();
-}
-
-export function renderCreateTeamFormElevated(user) {
-  const homeSala = String(user?.sala || '').trim();
-  return `
-    <form id="clinical-team-create-form" class="clinical-teams-create-form clinical-teams-create-form--elevated">
-      <div class="field-group">
-        <label for="clinical-team-create-name">Nombre del equipo</label>
-        <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Equipo A · Dr. Gutiérrez" required>
-        ${hintHtml('Solo el nombre; sin integrantes todavía.')}
-      </div>
-      <div class="field-group">
-        <label for="clinical-team-create-sala">Sala</label>
-        <select id="clinical-team-create-sala" class="profile-input" required>
-          <option value="">— Seleccionar sala —</option>
-          ${CLINICAL_SALAS.map(
-            (s) =>
-              `<option value="${escapeAttr(s)}" ${homeSala === s ? 'selected' : ''}>${escapeHtml(s)}</option>`
-          ).join('')}
-        </select>
-      </div>
-      <p class="clinical-teams-hint clinical-teams-create-elevated-hint">Asigna residentes después desde <strong>Directorio de usuarios LAN</strong>.</p>
-      <div class="modal-actions clinical-teams-create-submit-wrap">
-        <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg">Crear equipo vacío</button>
-        <button type="button" class="wb-btn wb-btn-secondary clinical-teams-create-cancel">Cancelar</button>
-      </div>
-    </form>`;
-}
-
-export function renderCreateTeamFormStandard() {
-  const userSala = String(clinicalSessionContext.user?.sala || '').trim();
-  const defaultService = clinicalServiceForSala(userSala) || CLINICAL_TEAM_SERVICES[0];
-  const serviceOptions = CLINICAL_TEAM_SERVICES.map(
-    (svc) =>
-      `<option value="${escapeAttr(svc)}" ${svc === defaultService ? 'selected' : ''}>${escapeHtml(svc)}</option>`
-  ).join('');
-  const rank = effectiveClinicalRank(clinicalSessionContext.user);
-  const defaultLetters = getCycleLetterOptionsForRank(defaultService, rank);
-  const defaultMeta = getCycleFieldMetaForTeamCreate(defaultService, rank, 0);
-  const letterOptions = defaultLetters
-    .map((letter) => `<option value="${escapeAttr(letter)}">${escapeHtml(letter)}</option>`)
-    .join('');
-  const showR1Line = rank === 'R1' && usesSalaR1LinePicker(defaultService, userSala);
-
-  return `
-    <form id="clinical-team-create-form" class="clinical-teams-create-form">
-      <div class="field-group" id="clinical-team-sala-group">
-        <label for="clinical-team-create-sala">Sala</label>
-        <select id="clinical-team-create-sala" class="profile-input">
-          <option value="">— Seleccionar sala —</option>
-          ${CLINICAL_SALAS.map(
-            (s) =>
-              `<option value="${escapeAttr(s)}" ${s === userSala ? 'selected' : ''}>${escapeHtml(s)}</option>`
-          ).join('')}
-        </select>
-      </div>
-      <div class="field-group">
-        <label for="clinical-team-create-name">Nombre del equipo (residente líder)</label>
-        <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Dr. Gutiérrez" required>
-      </div>
-      <div class="field-group" id="clinical-team-r1-line-group" ${showR1Line ? '' : 'hidden style="display:none"'}>
-        <label for="clinical-team-create-r1-line">Línea R1 en el equipo</label>
-        <select id="clinical-team-create-r1-line" class="profile-input">
-          <option value="0">Primera línea · A1–D1</option>
-          <option value="1">Segunda línea · A2–D2</option>
-        </select>
-      </div>
-      <div class="clinical-teams-create-service-row">
-        <div class="field-group">
-          <label for="clinical-team-create-service">Servicio</label>
-          <select id="clinical-team-create-service" class="profile-input" required>${serviceOptions}</select>
-        </div>
-        <div class="field-group">
-          <label id="clinical-team-create-day-label" for="clinical-team-create-day">${escapeHtml(defaultMeta.label)}</label>
-          <select id="clinical-team-create-day" class="profile-input" required>${letterOptions}</select>
-        </div>
-      </div>
-      <p id="clinical-team-create-day-hint" class="clinical-teams-hint clinical-teams-create-cycle-hint">${escapeHtml(defaultMeta.hint)}</p>
-      <div id="clinical-team-composition-hint">${compositionHintForService(defaultService)}</div>
-      <div class="modal-actions clinical-teams-create-submit-wrap">
-        <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg">Crear equipo</button>
-        <button type="button" class="wb-btn wb-btn-secondary clinical-teams-create-cancel">Cancelar</button>
-      </div>
-    </form>`;
-}
-
-function renderJoinWithCodeFormHtml() {
-  return `
-      <p class="clinical-teams-hint clinical-teams-join-code-warn"><strong>No</strong> pegues aquí el enlace ⇄ de sala (<code>http://…/join/req_…</code>) — ese va en <strong>Wi‑Fi → Conexión guardia</strong>.</p>
-      <form id="clinical-team-join-code-form" class="clinical-teams-join-code-form">
-        <div class="field-group">
-          <label for="clinical-team-join-code-input">Código de equipo</label>
-          <input id="clinical-team-join-code-input" type="text" class="profile-input" placeholder="ej. 2017936e" maxlength="36" autocomplete="off" required>
-        </div>
-        <div class="field-group clinical-teams-add-cycle-group">
-          <label for="clinical-team-join-code-cycle">Tu ciclo al unirte</label>
-          ${renderCycleSelectForRank(
-            {
-              service:
-                clinicalServiceForSala(clinicalSessionContext.user?.sala) || 'Sala',
-              team_id: 'join',
-            },
-            effectiveClinicalRank(clinicalSessionContext.user),
-            '',
-            'clinical-team-join-code-cycle'
-          )}
-        </div>
-        <div class="modal-actions clinical-teams-create-submit-wrap">
-          <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg">Unirme</button>
-          <button type="button" class="wb-btn wb-btn-secondary clinical-teams-create-cancel">Cancelar</button>
-        </div>
-      </form>`;
-}
-
-/**
- * Last card of the team grid: create a team or join one by code. Each form
- * opens in a native <dialog>, so the grid never grows a half-open form.
- * @param {{ primary?: boolean }} [opts] primary=false while the resident should pick an existing team
- */
-export function renderNewTeamCardHtml({ primary = true } = {}) {
-  const user = clinicalSessionContext.user || {};
-  const createLabel = canManageTeamRoster(user) ? 'Crear equipo vacío' : 'Crear equipo';
-  const lead = primary
-    ? ['Equipo nuevo', 'Tú quedas como líder y se publica en tu sala.']
-    : ['¿No ves tu equipo?', 'Crea uno o usa el código que te envió el líder de tu equipo.'];
-  return `
-    <article class="clinical-teams-card clinical-teams-card--new">
-      <div class="clinical-teams-card-top-text">
-        <h5 class="clinical-teams-card-title">${lead[0]}</h5>
-        <p class="clinical-teams-card-meta">${lead[1]}</p>
-      </div>
-      <div class="clinical-teams-card-actions">
-        <button type="button" id="btn-clinical-team-create-open" class="wb-btn ${primary ? 'wb-btn-primary' : 'wb-btn-secondary'} clinical-teams-create-open-btn">${createLabel}</button>
-        <button type="button" id="btn-clinical-team-join-code-open" class="wb-btn wb-btn-secondary">Tengo un código</button>
-        ${renderDirectoryUsersTopButtonHtml(user)}
-      </div>
-      <dialog id="clinical-team-create-panel" class="clinical-teams-dialog" aria-labelledby="clinical-team-create-title">
-        <h4 id="clinical-team-create-title" class="clinical-teams-dialog-title">${createLabel}</h4>
-        ${renderCreateTeamForm()}
-      </dialog>
-      <dialog id="clinical-team-join-code-dialog" class="clinical-teams-dialog" aria-labelledby="clinical-team-join-code-title">
-        <h4 id="clinical-team-join-code-title" class="clinical-teams-dialog-title">Unirte con código</h4>
-        <p class="clinical-teams-section-desc">Escribe el código de 8 caracteres que te envió el líder de tu equipo.</p>
-        ${renderJoinWithCodeFormHtml()}
-      </dialog>
-    </article>`;
+  return {
+    primary,
+    elevated,
+    showDirectory: canViewUserDirectory(user),
+    form,
+    joinLetters: getCycleLetterOptionsForRank(joinService, rank),
+  };
 }

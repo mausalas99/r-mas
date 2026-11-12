@@ -65,3 +65,29 @@ export function buildTeamSelectOptions(teams, selectedTeamId, opts = {}) {
     })
     .join('');
 }
+
+/**
+ * Fill `select` with the same options buildTeamSelectOptions writes, built as DOM nodes
+ * (sync, so callers can set `select.value` right after). `placeholder` is the empty first option.
+ * @param {HTMLSelectElement} select
+ * @param {{ teams: object[], selectedTeamId?: string, groupBySala?: boolean, placeholder?: string }} p
+ */
+export function fillTeamSelectOptions(select, { teams, selectedTeamId, groupBySala, placeholder }) {
+  const picked = String(selectedTeamId || '');
+  const option = (team) => {
+    const id = String(team?.team_id || '');
+    return new Option(teamSelectLabel(team), id, false, !!id && id === picked);
+  };
+  const nodes = placeholder ? [new Option(placeholder, '')] : [];
+  for (const { label, teams: group } of teamSelectGroups(teams, groupBySala)) {
+    if (label === null) {
+      nodes.push(...group.map(option));
+      continue;
+    }
+    const og = document.createElement('optgroup');
+    og.label = label;
+    og.append(...group.map(option));
+    nodes.push(og);
+  }
+  select.replaceChildren(...nodes);
+}

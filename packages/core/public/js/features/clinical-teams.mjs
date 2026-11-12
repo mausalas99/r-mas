@@ -18,7 +18,6 @@ export { wireClinicalTeamsModalChrome } from './clinical-teams/teams-roster-moda
 export { wireClinicalTeamsPanelInteractions } from './clinical-teams/teams-roster-interactions.mjs';
 
 export {
-  renderCreateTeamForm,
   renderClinicalTeamsPanel,
 } from './clinical-teams/teams-roster-render.mjs';
 

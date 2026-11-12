@@ -1,6 +1,5 @@
 /** LAN directorio toolbar, client-side filters, collapse persistence. */
 import { CLINICAL_SALAS } from './shared.mjs';
-import { escapeHtml, escapeAttr } from './shared.mjs';
 import { directoryUserMatchesFilters } from './teams-directory-filters.mjs';
 import { directoryUsersModalBackdropEl, directoryUsersModalBodyEl } from './teams-roster-directory-dom.mjs';
 import {
@@ -53,47 +52,15 @@ function lanDirectorySalaFilterOptions(users, teams) {
   return [...salas].sort((a, b) => a.localeCompare(b, 'es'));
 }
 
-export function renderDirectoryToolbarHtml(users, teams) {
-  const salas = lanDirectorySalaFilterOptions(users, teams);
-  const salaOptions = salas
-    .map(
-      (s) =>
-        `<option value="${escapeAttr(s)}"${directoryRt.filterSala === s ? ' selected' : ''}>${escapeHtml(s)}</option>`
-    )
-    .join('');
-  const statusSelected = (value) => (directoryRt.filterStatus === value ? ' selected' : '');
-  const activitySelected = (value) => (directoryRt.filterActivity === value ? ' selected' : '');
-  return `
-    <div class="clinical-directory-toolbar">
-      <label class="clinical-directory-search-wrap">
-        <span class="visually-hidden">Buscar usuario</span>
-        <input type="search" id="clinical-directory-search" class="profile-input clinical-directory-search" placeholder="Buscar @usuario o nombre…" value="${escapeAttr(directoryRt.filterQuery)}" autocomplete="off">
-      </label>
-      <label class="clinical-directory-filter">
-        <span class="clinical-directory-filter-label">Actividad</span>
-        <select id="clinical-directory-activity-filter" class="profile-input">
-          <option value="all"${activitySelected('all')}>Todas</option>
-          <option value="active"${activitySelected('active')}>Activos (24 h)</option>
-          <option value="inactive"${activitySelected('inactive')}>Inactivos</option>
-        </select>
-      </label>
-      <label class="clinical-directory-filter">
-        <span class="clinical-directory-filter-label">Equipo</span>
-        <select id="clinical-directory-status-filter" class="profile-input">
-          <option value="all"${statusSelected('all')}>Todos</option>
-          <option value="unassigned"${statusSelected('unassigned')}>Sin equipo</option>
-          <option value="assigned"${statusSelected('assigned')}>Con equipo</option>
-        </select>
-      </label>
-      <label class="clinical-directory-filter">
-        <span class="clinical-directory-filter-label">Sala</span>
-        <select id="clinical-directory-sala-filter" class="profile-input">
-          <option value=""${directoryRt.filterSala ? '' : ' selected'}>Todas</option>
-          ${salaOptions}
-        </select>
-      </label>
-      <span class="clinical-directory-match-count" aria-live="polite"></span>
-    </div>`;
+/** Toolbar state for the view: sala list plus the filter values to show. */
+export function directoryToolbarProps(users, teams) {
+  return {
+    salas: lanDirectorySalaFilterOptions(users, teams),
+    query: directoryRt.filterQuery,
+    status: directoryRt.filterStatus,
+    activity: directoryRt.filterActivity,
+    sala: directoryRt.filterSala,
+  };
 }
 
 /** @param {HTMLElement} host */
@@ -162,7 +129,7 @@ function runDirectoryFiltersFromUi() {
   if (host?.querySelector('.clinical-directory-rank-groups')) applyDirectoryFilters(host);
 }
 
-/** Re-bind filter controls after each directory render (innerHTML replaces nodes). */
+/** Re-bind filter controls after each directory render (each paint replaces nodes). */
 export function bindDirectoryFilterControls(host) {
   if (!host) return;
   if (host._lanDirFilterAbort) host._lanDirFilterAbort.abort();
@@ -182,7 +149,7 @@ export function bindDirectoryFilterControls(host) {
   }
 }
 
-/** One-time delegation on modal backdrop (survives panel-body innerHTML swaps). */
+/** One-time delegation on modal backdrop (survives panel-body repaints). */
 export function ensureDirectoryFilterDelegation() {
   const bd = directoryUsersModalBackdropEl();
   if (!bd || bd._rpcDirectoryFilterDelegated) return;

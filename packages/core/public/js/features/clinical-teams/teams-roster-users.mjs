@@ -6,11 +6,6 @@ export {
 } from './teams-roster-directory-dom.mjs';
 
 export {
-  renderDirectoryUsersTopButtonHtml,
-  renderDirectoryUsersEntryHtml,
-} from './teams-roster-directory-render.mjs';
-
-export {
   loadDirectoryUsersIntoHost,
   refreshDirectoryFromHostUi,
 } from './teams-roster-directory-load.mjs';

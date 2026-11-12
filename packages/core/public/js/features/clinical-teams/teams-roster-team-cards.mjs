@@ -1,4 +1,4 @@
-/** Mi rotación — team card HTML fragments. */
+/** Mi rotación — team card props (drawn by teams-roster-cards-view.jsx). */
 import { getClinicalScopeContextForEvaluate, clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { getPatients } from '../../app-state.mjs';
 import { resolvePatientTeamIdFromAssignments } from '../../clinico-access.mjs';
@@ -11,7 +11,7 @@ import {
 import { teamInviteCode } from '../../clinical-team-invite.mjs';
 import { effectiveClinicalRank, canManageTeamRoster } from '../../clinical-privileges.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
-import { escapeHtml, escapeAttr, CLINICAL_SALAS, renderClinicalTeamsCollapsible } from './shared.mjs';
+import { CLINICAL_SALAS, readClinicalTeamsCollapseOpen } from './shared.mjs';
 import { shouldShowInheritPatientsUi } from './teams-roster-inherit-gate.mjs';
 
 /** @param {string} teamId @param {object[]} assignments @param {string|Date} now */
@@ -28,15 +28,14 @@ export function countLocalCensusPatientsForTeam(teamId, assignments, now) {
   return listLocalCensusPatientsForTeam(teamId, assignments, now).length;
 }
 
-/** Una línea de contexto sin repetir sala/servicio. @param {object} team */
-export function renderTeamMetaLine(team) {
+/** Parts of the one context line (sala · servicio), or [] when there is none. @param {object} team */
+export function teamMetaParts(team) {
   const parts = [];
   const sala = String(team.sala || '').trim();
   const service = String(team.service || '').trim();
   if (sala) parts.push(sala);
   if (service && service.toLowerCase() !== 'sala') parts.push(service);
-  if (!parts.length) return '';
-  return `<p class="clinical-teams-card-meta">${parts.map((p) => escapeHtml(p)).join(' · ')}</p>`;
+  return parts;
 }
 
 /** @param {number} onDevice @param {number} assignedLan */
@@ -58,123 +57,43 @@ function formatTeamPatientCountMessage(onDevice, assignedLan) {
   return onDevice === 1 ? '1 paciente en censo' : `${onDevice} pacientes en censo`;
 }
 
-/** @param {object} team */
-export function renderTeamPatientCountLine(team) {
+/** «N pacientes en censo» line text, or '' when there is nothing to say. @param {object} team @param {Date|string} now */
+export function teamPatientLabel(team, now) {
   const teamId = String(team?.team_id || '');
   const ctx = getClinicalScopeContextForEvaluate();
   const assignments = Array.isArray(ctx?.assignments) ? ctx.assignments : [];
-  const now = ctx?.now || new Date().toISOString();
-  const onDevice = countLocalCensusPatientsForTeam(teamId, assignments, now);
-  const assignedLan = Math.max(
-    Number(team?.lanAssignmentCount) || 0,
-    Number(team?.patientCount) || 0
-  );
-
+  const onDevice = countLocalCensusPatientsForTeam(teamId, assignments, ctx?.now || now);
+  const assignedLan = Math.max(Number(team?.lanAssignmentCount) || 0, Number(team?.patientCount) || 0);
   if (onDevice <= 0 && assignedLan <= 0) return '';
-
-  const label = formatTeamPatientCountMessage(onDevice, assignedLan);
-  return `<p class="clinical-teams-card-meta clinical-teams-card-patients">${escapeHtml(label)}</p>`;
+  return formatTeamPatientCountMessage(onDevice, assignedLan);
 }
 
-/**
- * @param {object} team
- * @param {string} rank
- * @param {string} [current]
- * @param {string} selectId
- */
-export function renderCycleSelectForRank(team, rank, current, selectId) {
-  const service = String(team.service || 'Sala');
-  const id = selectId || 'clinical-cycle-select';
-  const cur = String(current || '').trim();
-  const letters = getCycleLetterOptionsForRank(service, rank);
-  const opts = letters
-    .map(
-      (l) =>
-        `<option value="${escapeAttr(l)}" ${l === cur ? 'selected' : ''}>${escapeHtml(l)}</option>`
-    )
-    .join('');
-  return `<select id="${escapeAttr(id)}" class="profile-input clinical-teams-cycle-select" required>${opts}</select>`;
-}
-
-/** @param {object} team */
-export function renderAddMemberCycleSelect(team) {
-  const teamId = String(team.team_id || '');
-  const service = String(team.service || 'Sala');
-  const id = `clinical-add-cycle-${teamId}`;
-  if (!isSalaWardService(service)) {
-    const letters = getCycleLetterOptionsForRank(service, 'R2');
-    return `<select id="${escapeAttr(id)}" class="profile-input clinical-teams-add-member-cycle" required>
-      ${letters.map((l) => `<option value="${escapeAttr(l)}">${escapeHtml(l)}</option>`).join('')}
-    </select>`;
-  }
-  const r2 = getCycleLettersForTeamCreate('Sala', 'R2');
-  const r1a = getCycleLettersForTeamCreate('Sala', 'R1', 0);
-  const r1b = getCycleLettersForTeamCreate('Sala', 'R1', 1);
-  return `<select id="${escapeAttr(id)}" class="profile-input clinical-teams-add-member-cycle" required>
-    <optgroup label="R2 · A–F">${r2.map((l) => `<option value="${escapeAttr(l)}">${escapeHtml(l)}</option>`).join('')}</optgroup>
-    <optgroup label="R1 · primera línea">${r1a.map((l) => `<option value="${escapeAttr(l)}">${escapeHtml(l)}</option>`).join('')}</optgroup>
-    <optgroup label="R1 · segunda línea">${r1b.map((l) => `<option value="${escapeAttr(l)}">${escapeHtml(l)}</option>`).join('')}</optgroup>
-  </select>`;
-}
-
-function renderMemberRemoveButton(m, handle, memberUserId, opts) {
-  const canRemove =
-    opts.canRemove &&
-    opts.teamId &&
-    memberUserId &&
-    memberUserId !== String(opts.callerUserId || '').trim();
-  if (!canRemove) return '';
-  return `<button type="button" class="wb-btn wb-btn-danger-outline clinical-teams-member-remove-btn" data-user-id="${escapeAttr(memberUserId)}" data-team-id="${escapeAttr(String(opts.teamId))}" data-user-label="${escapeAttr(String(m.clinical_name || handle || memberUserId))}" title="Quitar del equipo y de la base clínica">Quitar</button>`;
-}
-
-/**
- * @param {object} m
- * @param {{ canRemove?: boolean, teamId?: string, callerUserId?: string }} [opts]
- */
-export function renderMemberRow(m, opts = {}) {
-  const handle = escapeHtml(m.username || m.user_id);
-  const name = String(m.clinical_name || '').trim();
-  const rank = escapeHtml(effectiveClinicalRank({ rank: m.rank }));
-  const displayName = name ? escapeHtml(name) : handle;
-  const cycle = formatMemberCycleLabel(m);
-  const cycleHtml = cycle
-    ? `<span class="clinical-teams-member-cycle">${escapeHtml(cycle)}</span>`
-    : '';
-  const memberUserId = String(m.user_id || '').trim();
-  const removeBtn = renderMemberRemoveButton(m, handle, memberUserId, opts);
-  return `<li class="clinical-teams-member-row">
-    <span class="clinical-teams-member-row-line"><span class="clinical-teams-member-row-meta">${rank}</span> <span class="clinical-teams-member-row-name">${displayName}</span>${cycleHtml ? ` · ${cycleHtml}` : ''}</span>
-    ${removeBtn}
-  </li>`;
-}
-
-/** @param {object[]} members */
-export function renderMembersBlock(members, { compact = false, teamId = '' } = {}) {
+/** Props for <MembersBlock>, or null when a compact block has no members. */
+export function membersBlockProps(members, { compact = false, teamId = '' } = {}) {
   const list = Array.isArray(members) ? members : [];
-  const count = list.length;
-  if (compact && count === 0) return '';
-  const canRemove = !!teamId && canManageTeamRoster(clinicalSessionContext.user);
-  const callerUserId = String(clinicalSessionContext.user?.user_id || '');
-  const rows = count
-    ? list
-        .map((m) => renderMemberRow(m, { canRemove, teamId, callerUserId }))
-        .join('')
-    : '<li class="clinical-teams-empty clinical-teams-empty--inline">Sin integrantes</li>';
-  const heading = count === 1 ? 'Integrantes (1)' : `Integrantes (${count})`;
-  const listHtml = `<ul class="clinical-teams-member-rows">${rows}</ul>`;
-  // Always open: in the card grid you pick a team by who is in it.
-  return `
-    <div class="clinical-teams-card-members${compact ? ' clinical-teams-card-members--compact' : ''}">
-      <h6 class="clinical-teams-members-heading">${heading}</h6>
-      ${listHtml}
-    </div>`;
+  if (compact && list.length === 0) return null;
+  const user = clinicalSessionContext.user;
+  const canRemove = !!teamId && canManageTeamRoster(user);
+  const callerUserId = String(user?.user_id || '').trim();
+  const rows = list.map((m) => {
+    const userId = String(m.user_id || '').trim();
+    const handle = String(m.username || m.user_id || '');
+    const name = String(m.clinical_name || '').trim();
+    return {
+      rank: effectiveClinicalRank({ rank: m.rank }),
+      displayName: name || handle,
+      cycle: formatMemberCycleLabel(m),
+      canRemove: !!(canRemove && teamId && userId && userId !== callerUserId),
+      userId,
+      teamId: String(teamId),
+      label: String(m.clinical_name || handle || userId),
+    };
+  });
+  return { rows, count: list.length, compact };
 }
 
-/**
- * @param {object} team
- * @param {{ user_id?: string, username?: string }} user
- */
-export function renderMyCycleEditBlock(team, user) {
+/** Props for <MyCycleBlock>, or null when `user` is not in the team. */
+export function myCycleProps(team, user) {
   const teamId = String(team.team_id || '');
   const userId = String(user?.user_id || '');
   const handle = normalizeUsername(user?.username || '');
@@ -184,11 +103,8 @@ export function renderMyCycleEditBlock(team, user) {
     if (handle && normalizeUsername(m.username || '') === handle) return true;
     return false;
   });
-  if (!me) return '';
-
+  if (!me) return null;
   const rank = effectiveClinicalRank({ rank: me.rank });
-  const current = String(me.sub_area_fraction || '').trim();
-  const selectId = `clinical-my-cycle-${teamId}`;
   const service = String(team.service || 'Sala');
   const hint = isSalaWardService(service)
     ? rank === 'R2'
@@ -197,101 +113,36 @@ export function renderMyCycleEditBlock(team, user) {
         ? 'Tu subciclo (A1–D1 o A2–D2), independiente del resto del equipo.'
         : 'Letra de rotación para este servicio.'
     : 'Letra de rotación A–D (misma para todos los rangos en este servicio).';
-
-  const formHtml = `
-      <form class="clinical-teams-my-cycle-form" data-team-id="${escapeAttr(teamId)}">
-        <p class="clinical-teams-hint">${escapeHtml(hint)}</p>
-        <div class="clinical-teams-my-cycle-row">
-          <label class="visually-hidden" for="${escapeAttr(selectId)}">Mi ciclo</label>
-          ${renderCycleSelectForRank(team, rank, current, selectId)}
-          <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg">Guardar</button>
-        </div>
-      </form>`;
-  return renderClinicalTeamsCollapsible({
-    collapseKey: `card.${teamId}.cycle2`,
-    defaultOpen: false,
-    className: 'clinical-teams-collapse--card-block clinical-teams-my-cycle-box',
-    summaryHtml: '<span class="clinical-teams-my-cycle-title">Mi ciclo en este equipo</span>',
-    bodyHtml: formHtml,
-  });
+  return {
+    teamId,
+    hint,
+    selectId: `clinical-my-cycle-${teamId}`,
+    letters: getCycleLetterOptionsForRank(service, rank),
+    current: String(me.sub_area_fraction || '').trim(),
+    open: readClinicalTeamsCollapseOpen(`card.${teamId}.cycle2`, false),
+  };
 }
 
 /**
- * Read-only preview of the predecessor team's current patients, so a staged
- * (next-rotation) team's members can see what they'll inherit before the
- * rotation actually starts. Separate from the "Heredar pacientes…" action,
- * which moves patients and only appears near the handoff window.
- * @param {object} team @param {object[]} [siblingTeams] this sala's other teams
+ * Preview of the predecessor team's patients for a staged team; null when it does not apply.
+ * @param {object} team @param {object[]} [siblingTeams] this sala's other teams @param {Date|string} now
  */
-export function renderInheritedPatientsPreview(team, siblingTeams = []) {
+export function inheritedPreviewProps(team, siblingTeams = [], now = new Date()) {
   const staged = Number(team.rotation_active) === 0;
   const predecessorId = String(team.succeeds_team_id || '').trim();
-  if (!staged || !predecessorId) return '';
-  const predecessor = (siblingTeams || []).find(
-    (t) => String(t?.team_id || '').trim() === predecessorId
-  );
-  if (!predecessor) return '';
-
+  if (!staged || !predecessorId) return null;
+  const predecessor = (siblingTeams || []).find((t) => String(t?.team_id || '').trim() === predecessorId);
+  if (!predecessor) return null;
   const ctx = getClinicalScopeContextForEvaluate();
   const assignments = Array.isArray(ctx?.assignments) ? ctx.assignments : [];
-  const now = ctx?.now || new Date().toISOString();
-  const patients = listLocalCensusPatientsForTeam(predecessorId, assignments, now);
-  const predecessorName = String(predecessor.name || 'equipo anterior').trim();
-
-  const bodyHtml = patients.length
-    ? `<ul class="clinical-teams-inherit-preview-list">${patients
-        .map(
-          (p) =>
-            `<li>${escapeHtml(String(p.nombre || 'Sin nombre'))} · ${escapeHtml(String(p.registro || 's/reg'))}</li>`
-        )
-        .join('')}</ul>`
-    : `<p class="clinical-teams-hint">Sin expedientes locales de «${escapeHtml(predecessorName)}» en este Mac todavía.</p>`;
-  const summary = patients.length
-    ? `Pacientes que heredarás de «${escapeHtml(predecessorName)}» (${patients.length})`
-    : `Pacientes que heredarás de «${escapeHtml(predecessorName)}»`;
-
-  return renderClinicalTeamsCollapsible({
-    collapseKey: `card.${String(team.team_id || '')}.inherit-preview`,
-    defaultOpen: false,
-    className: 'clinical-teams-collapse--card-block clinical-teams-inherit-preview-box',
-    summaryHtml: `<span class="clinical-teams-inherit-preview-summary">${summary}</span>`,
-    bodyHtml,
-  });
-}
-
-/** @param {object} team */
-export function renderInheritPatientsBox(team) {
-  const teamId = escapeAttr(String(team.team_id || ''));
-  const teamName = escapeAttr(String(team.name || 'Equipo'));
-  return `
-    <div class="clinical-teams-inherit-box">
-      <button type="button" class="wb-btn wb-btn-secondary clinical-teams-inherit-btn ui-pressable" data-team-id="${teamId}" data-team-name="${teamName}" title="Traer pacientes del equipo del mes anterior">
-        Heredar pacientes del mes anterior…
-      </button>
-    </div>`;
-}
-
-/** @param {object} team */
-export function renderLeaveTeamBox(team) {
-  const teamId = escapeAttr(String(team.team_id || ''));
-  const teamName = escapeAttr(String(team.name || 'este equipo'));
-  return `
-    <div class="clinical-teams-leave-box">
-      <button type="button" class="wb-btn wb-btn-secondary clinical-teams-leave-btn" data-team-id="${teamId}" data-team-name="${teamName}">
-        Salir del equipo
-      </button>
-    </div>`;
-}
-
-/** @param {object} team */
-export function renderTeamManageActionsHtml(team) {
-  const teamId = escapeAttr(String(team.team_id || ''));
-  const teamNameAttr = escapeAttr(String(team.name || 'Equipo'));
-  return `
-    <div class="clinical-teams-manage-actions">
-      <button type="button" class="wb-btn wb-btn-secondary clinical-teams-edit-btn" data-team-id="${teamId}">Editar</button>
-      <button type="button" class="wb-btn wb-btn-danger-outline clinical-teams-delete-btn" data-team-id="${teamId}" data-team-name="${teamNameAttr}">Eliminar</button>
-    </div>`;
+  const patients = listLocalCensusPatientsForTeam(predecessorId, assignments, ctx?.now || now);
+  const teamId = String(team.team_id || '');
+  return {
+    teamId,
+    predecessorName: String(predecessor.name || 'equipo anterior').trim(),
+    patients: patients.map((p) => ({ nombre: String(p.nombre || 'Sin nombre'), registro: String(p.registro || 's/reg') })),
+    open: readClinicalTeamsCollapseOpen(`card.${teamId}.inherit-preview`, false),
+  };
 }
 
 /** Active (this month's) teams in `sala` that `team` could link to as its predecessor. */
@@ -308,187 +159,98 @@ function succeedsOptionsFor(team, siblingTeams) {
   );
 }
 
-/** @param {object} team @param {object[]} [siblingTeams] this sala's other teams, for the "Hereda de" picker */
-export function renderTeamEditPanelHtml(team, siblingTeams = []) {
-  const teamId = escapeAttr(String(team.team_id || ''));
-  const name = escapeHtml(String(team.name || ''));
-  const sala = String(team.sala || '').trim();
+/** Props for the edit/delete buttons and the hidden edit form; null when the user cannot manage. */
+export function teamManageProps(team, siblingTeams = []) {
+  if (!canManageTeamRoster(clinicalSessionContext.user || {})) return null;
   const staged = Number(team.rotation_active) === 0;
-  const succeedsId = String(team.succeeds_team_id || '').trim();
-  const cycleLetter = String(team.sub_area_fraction || '').trim().toUpperCase();
-  const succeedsOptions = staged ? succeedsOptionsFor(team, siblingTeams) : [];
-  const succeedsField = staged
-    ? `<div class="field-group">
-          <label for="clinical-edit-succeeds-${teamId}">Hereda pacientes de</label>
-          <select id="clinical-edit-succeeds-${teamId}" class="profile-input clinical-teams-edit-succeeds">
-            <option value="">— Ninguno —</option>
-            ${succeedsOptions
-              .map(
-                (t) =>
-                  `<option value="${escapeAttr(String(t.team_id))}" ${succeedsId === String(t.team_id) ? 'selected' : ''}>${escapeHtml(String(t.name || 'Equipo'))}</option>`
-              )
-              .join('')}
-          </select>
-          <p class="clinical-teams-hint">Al iniciar la nueva rotación, sus pacientes pasan aquí automáticamente.</p>
-        </div>`
-    : '';
-  return `
-    <div class="clinical-teams-edit-panel" hidden data-team-id="${teamId}">
-      <form class="clinical-teams-edit-form" data-team-id="${teamId}">
-        <div class="field-group">
-          <label for="clinical-edit-name-${teamId}">Nombre del equipo</label>
-          <input id="clinical-edit-name-${teamId}" type="text" class="profile-input clinical-teams-edit-name" value="${name}" required>
-        </div>
-        <div class="field-group">
-          <label for="clinical-edit-sala-${teamId}">Sala</label>
-          <select id="clinical-edit-sala-${teamId}" class="profile-input clinical-teams-edit-sala" required>
-            ${CLINICAL_SALAS.map(
-              (s) =>
-                `<option value="${escapeAttr(s)}" ${sala === s ? 'selected' : ''}>${escapeHtml(s)}</option>`
-            ).join('')}
-          </select>
-        </div>
-        <div class="field-group">
-          <label for="clinical-edit-rotation-${teamId}">Rotación</label>
-          <select id="clinical-edit-rotation-${teamId}" class="profile-input clinical-teams-edit-rotation-active">
-            <option value="1" ${staged ? '' : 'selected'}>Esta rotación (activo ahora)</option>
-            <option value="0" ${staged ? 'selected' : ''}>Próxima rotación (aún no activo)</option>
-          </select>
-          <p class="clinical-teams-hint">Se asigna solo al crear el equipo; cámbialo aquí si no corresponde.</p>
-        </div>
-        <div class="field-group">
-          <label for="clinical-edit-cycle-${teamId}">Ciclo de guardia</label>
-          <select id="clinical-edit-cycle-${teamId}" class="profile-input clinical-teams-edit-cycle">
-            <option value="">— Sin letra —</option>
-            ${['A', 'B', 'C', 'D']
-              .map(
-                (l) =>
-                  `<option value="${l}" ${cycleLetter === l ? 'selected' : ''}>${l} · días ${['1, 5, 9…', '2, 6, 10…', '3, 7, 11…', '4, 8, 12…'][['A', 'B', 'C', 'D'].indexOf(l)]} del mes</option>`
-              )
-              .join('')}
-          </select>
-          <p class="clinical-teams-hint">A es el día 1 del mes, B el 2, C el 3, D el 4. Luego se repite.</p>
-        </div>
-        ${succeedsField}
-        <div class="clinical-teams-edit-form-actions">
-          <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg">Guardar cambios</button>
-          <button type="button" class="wb-btn wb-btn-secondary clinical-teams-edit-cancel">Cancelar</button>
-        </div>
-      </form>
-    </div>`;
-}
-
-/** @param {object} team @param {object[]} [siblingTeams] this sala's other teams, for the "Hereda de" picker */
-export function renderTeamManageBlock(team, siblingTeams = []) {
-  const user = clinicalSessionContext.user || {};
-  if (!canManageTeamRoster(user)) return { actionsHtml: '', editPanelHtml: '' };
   return {
-    actionsHtml: renderTeamManageActionsHtml(team),
-    editPanelHtml: renderTeamEditPanelHtml(team, siblingTeams),
+    teamName: String(team.name || 'Equipo'),
+    edit: {
+      teamId: String(team.team_id || ''),
+      name: String(team.name || ''),
+      sala: String(team.sala || '').trim(),
+      salas: CLINICAL_SALAS,
+      staged,
+      cycleLetter: String(team.sub_area_fraction || '').trim().toUpperCase(),
+      succeedsId: String(team.succeeds_team_id || '').trim(),
+      succeedsOptions: staged
+        ? succeedsOptionsFor(team, siblingTeams).map((t) => ({ id: String(t.team_id), name: String(t.name || 'Equipo') }))
+        : [],
+    },
   };
 }
 
-/** @param {object} team @param {string} teamId */
-export function renderTeamInviteCollapsible(team, teamId) {
+function inviteProps(team, teamId) {
   const tid = String(teamId || team?.team_id || '').trim();
-  const inviteBody = `
-        <p class="clinical-teams-invite-code-line">Código para invitar: <code class="clinical-teams-invite-code">${escapeHtml(teamInviteCode(tid))}</code></p>
-        <div class="clinical-teams-invite-link-row">
-          <button type="button" class="wb-btn wb-btn-secondary clinical-teams-copy-invite-btn" data-team-id="${escapeAttr(tid)}">Copiar invitación</button>
-          <p class="clinical-teams-invite-hint">Incluye el código e instrucciones para <strong>Mi rotación</strong> en la app R+ del Mac (no Safari).</p>
-        </div>
-        <form class="clinical-teams-add-member-form" data-team-id="${escapeAttr(tid)}" data-team-service="${escapeAttr(team.service || '')}">
-          <p class="clinical-teams-add-member-label">Agregar integrante</p>
-          <div class="clinical-teams-add-member-fields">
-            <div class="field-group clinical-teams-add-member-user">
-              <label for="clinical-add-member-${escapeAttr(tid)}">@usuario</label>
-              <input id="clinical-add-member-${escapeAttr(tid)}" type="text" class="profile-input clinical-teams-add-member-input" placeholder="sin @" required aria-describedby="clinical-add-hint-${escapeAttr(tid)}">
-            </div>
-            <div class="field-group clinical-teams-add-cycle-group">
-              <label for="clinical-add-cycle-${escapeAttr(tid)}">Ciclo del integrante</label>
-              ${renderAddMemberCycleSelect(team)}
-            </div>
-            <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg clinical-teams-btn-add">Agregar</button>
-          </div>
-          <p class="clinical-teams-invite-hint" id="clinical-add-hint-${escapeAttr(tid)}">Debe existir en Mi rotación (@usuario, sin @). Cada R1/R2 lleva su propio ciclo (D1, D2, A–F).</p>
-        </form>`;
-  return renderClinicalTeamsCollapsible({
-    collapseKey: `card.${tid}.invite`,
-    defaultOpen: false,
-    className: 'clinical-teams-collapse--card-block clinical-teams-invite-box',
-    summaryHtml: '<span class="clinical-teams-invite-summary">Invitar y agregar integrantes</span>',
-    bodyHtml: inviteBody,
-  });
+  const service = String(team.service || 'Sala');
+  const addCycle = { id: `clinical-add-cycle-${tid}` };
+  if (!isSalaWardService(service)) {
+    addCycle.letters = getCycleLetterOptionsForRank(service, 'R2');
+  } else {
+    addCycle.groups = [
+      { label: 'R2 · A–F', letters: getCycleLettersForTeamCreate('Sala', 'R2') },
+      { label: 'R1 · primera línea', letters: getCycleLettersForTeamCreate('Sala', 'R1', 0) },
+      { label: 'R1 · segunda línea', letters: getCycleLettersForTeamCreate('Sala', 'R1', 1) },
+    ];
+  }
+  return {
+    teamId: tid,
+    code: teamInviteCode(tid),
+    service: String(team.service || ''),
+    addCycle,
+    open: readClinicalTeamsCollapseOpen(`card.${tid}.invite`, false),
+  };
 }
 
 /**
+ * Props for <JoinedTeamCard>.
  * @param {object} team
  * @param {object[]} [siblingTeams] this sala's other teams, for the "Hereda de" picker
+ * @param {Date} [now]
  */
-export function renderJoinedTeamCard(team, siblingTeams = []) {
+export function joinedTeamCardProps(team, siblingTeams = [], now = new Date()) {
   const user = clinicalSessionContext.user || {};
   const teamId = String(team.team_id || '');
-  const members = Array.isArray(team.members) ? team.members : [];
-  const manage = renderTeamManageBlock(team, siblingTeams);
-  const check = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"></path></svg>';
-
-  // Status first (like Nube): which team you are in, then its people, then the rare stuff.
-  return `
-    <article class="clinical-teams-card clinical-teams-card--mine" data-team-id="${escapeAttr(teamId)}">
-      <div class="clinical-teams-mine-hero">
-        <span class="clinical-teams-mine-check">${check}</span>
-        <div class="clinical-teams-card-top-text">
-          <p class="clinical-teams-card-eyebrow">Estás en</p>
-          <h5 class="clinical-teams-card-title">${escapeHtml(team.name || 'Equipo')}</h5>
-          ${renderTeamMetaLine(team)}
-          ${renderTeamPatientCountLine(team)}
-        </div>
-        <div class="clinical-teams-card-actions">
-          <button type="button" class="wb-btn wb-btn-primary clinical-teams-copy-invite-btn" data-team-id="${escapeAttr(teamId)}">Invitar</button>
-          ${manage.actionsHtml}
-        </div>
-      </div>
-      ${manage.editPanelHtml}
-      ${renderInheritedPatientsPreview(team, siblingTeams)}
-      ${renderMembersBlock(members, { compact: true, teamId })}
-      ${renderMyCycleEditBlock(team, user)}
-      ${shouldShowInheritPatientsUi() ? renderInheritPatientsBox(team) : ''}
-      ${renderTeamInviteCollapsible(team, teamId)}
-      ${renderLeaveTeamBox(team)}
-    </article>`;
+  return {
+    teamId,
+    name: String(team.name || 'Equipo'),
+    metaParts: teamMetaParts(team),
+    patientLabel: teamPatientLabel(team, now),
+    manage: teamManageProps(team, siblingTeams),
+    preview: inheritedPreviewProps(team, siblingTeams, now),
+    members: membersBlockProps(team.members, { compact: true, teamId }),
+    myCycle: myCycleProps(team, user),
+    inheritName: shouldShowInheritPatientsUi(now) ? String(team.name || 'Equipo') : null,
+    invite: inviteProps(team, teamId),
+    leaveName: String(team.name || 'este equipo'),
+  };
 }
 
 /**
+ * Props for <DirectoryTeamCard>.
  * @param {object} team
- * @param {{ joinBtnHtml?: string, joinHintHtml?: string, manageHtml?: string, editPanelHtml?: string, patientsPreviewHtml?: string }} [opts]
+ * @param {{ elevated?: boolean, siblingTeams?: object[] }} [opts]
+ * @param {Date} [now]
  */
-export function renderDirectoryTeamCard(team, opts = {}) {
+export function directoryTeamCardProps(team, opts = {}, now = new Date()) {
+  const { elevated = false, siblingTeams = [] } = opts;
+  let joinHint = '';
+  if (team.joinEligible) {
+    if (team.joinWarning) joinHint = String(team.joinWarning);
+  } else if (team.joinReason) {
+    joinHint = String(team.joinReason);
+  }
   const teamId = String(team.team_id || '');
-  const members = Array.isArray(team.members) ? team.members : [];
-  const joinBtn = opts.joinBtnHtml || '';
-  const joinHint = opts.joinHintHtml || '';
-  const manage = opts.manageHtml || '';
-  const editPanel = opts.editPanelHtml || '';
-  const patientsPreview = opts.patientsPreviewHtml || '';
-  const actionButtons = [joinBtn, manage].filter(Boolean).join('');
-  const staged = Number(team.rotation_active) === 0;
-  // Only a staged team needs a label; «Equipo en sala» fit every card in the list.
-  const eyebrow = staged
-    ? '<p class="clinical-teams-card-eyebrow clinical-teams-card-eyebrow--staged">Próxima rotación · aún no activo</p>'
-    : '';
-
-  return `
-    <article class="clinical-teams-card clinical-teams-card--directory" data-team-id="${escapeAttr(teamId)}">
-      <div class="clinical-teams-card-top-text">
-        ${eyebrow}
-        <h5 class="clinical-teams-card-title">${escapeHtml(team.name || '')}</h5>
-        ${renderTeamMetaLine(team)}
-        ${renderTeamPatientCountLine(team)}
-      </div>
-      ${patientsPreview}
-      ${renderMembersBlock(members, { compact: true, teamId })}
-      ${joinHint ? `<p class="clinical-teams-card-join-reason">${escapeHtml(joinHint)}</p>` : ''}
-      ${editPanel}
-      ${actionButtons ? `<div class="clinical-teams-card-actions">${actionButtons}</div>` : ''}
-    </article>`;
+  return {
+    teamId,
+    staged: Number(team.rotation_active) === 0,
+    name: String(team.name || ''),
+    metaParts: teamMetaParts(team),
+    patientLabel: teamPatientLabel(team, now),
+    preview: inheritedPreviewProps(team, siblingTeams, now),
+    members: membersBlockProps(team.members, { compact: true, teamId }),
+    joinHint,
+    canJoin: !!team.joinEligible,
+    manage: elevated ? teamManageProps(team, siblingTeams) : null,
+  };
 }

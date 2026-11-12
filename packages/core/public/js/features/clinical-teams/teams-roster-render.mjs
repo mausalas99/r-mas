@@ -2,34 +2,18 @@
 export {
   syncCreateTeamServiceFromSala,
   syncCreateTeamCycleField,
-  renderCreateTeamForm,
-  renderCreateTeamFormElevated,
-  renderCreateTeamFormStandard,
-  renderNewTeamCardHtml,
 } from './teams-roster-create.mjs';
 
 export {
   countLocalCensusPatientsForTeam,
-  renderTeamMetaLine,
-  renderTeamPatientCountLine,
-  renderCycleSelectForRank,
-  renderAddMemberCycleSelect,
-  renderMemberRow,
-  renderMembersBlock,
-  renderMyCycleEditBlock,
-  renderLeaveTeamBox,
-  renderTeamManageActionsHtml,
-  renderTeamEditPanelHtml,
-  renderTeamManageBlock,
-  renderTeamInviteCollapsible,
-  renderJoinedTeamCard,
-  renderDirectoryTeamCard,
+  joinedTeamCardProps,
+  directoryTeamCardProps,
 } from './teams-roster-team-cards.mjs';
 
 export {
-  resolveTeamMemberHintHtml,
+  resolveTeamMemberHintProps,
   resolveBrowseSala,
-  renderDirectorySectionHtml,
+  directorySectionProps,
 } from './teams-roster-directory.mjs';
 
 export {
