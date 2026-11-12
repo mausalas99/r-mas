@@ -1,5 +1,4 @@
 /** Help center articles and quick help modal. */
-import { esc } from '../patients-html.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
 import { closeSettingsDropdown } from './settings-dropdown.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
@@ -362,6 +361,19 @@ function onHelpListKeydown(e) {
   }
 }
 
+/** Drawing lives in help-content-view.jsx, loaded once (started now so it is ready when help opens). */
+var helpViewPromise = import('./help-content-view.jsx');
+var helpShown = { filtered: [], q: '' };
+
+function drawHelpListNow() {
+  var list = document.getElementById('help-articles-list');
+  if (!list) return;
+  var shown = helpShown;
+  helpViewPromise.then(function (view) {
+    view.drawHelpList(list, { articles: shown.filtered, query: shown.q, currentId: helpCurrentArticleId, onSelect: selectHelpArticle });
+  });
+}
+
 function renderHelpArticles(query) {
   var list = document.getElementById('help-articles-list');
   if (!list) return;
@@ -371,26 +383,9 @@ function renderHelpArticles(query) {
     var haystack = (a.title + ' ' + a.keywords + ' ' + a.html.replace(/<[^>]+>/g, ' ')).toLowerCase();
     return haystack.indexOf(q) !== -1;
   });
-  list.innerHTML = '';
-  if (filtered.length === 0) {
-    var empty = document.createElement('div');
-    empty.className = 'help-empty';
-    empty.textContent = 'Sin resultados para “' + q + '”.';
-    list.appendChild(empty);
-    return;
-  }
-  filtered.forEach(function(a) {
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'help-article-item';
-    btn.setAttribute('data-article-id', a.id);
-    btn.setAttribute('role', 'option');
-    btn.tabIndex = 0;
-    btn.textContent = a.title;
-    btn.addEventListener('click', function() { selectHelpArticle(a.id); btn.focus(); });
-    if (a.id === helpCurrentArticleId) btn.classList.add('active');
-    list.appendChild(btn);
-  });
+  helpShown = { filtered: filtered, q: q };
+  drawHelpListNow();
+  if (filtered.length === 0) return;
   if (helpCurrentArticleId && !filtered.some(function(a){ return a.id === helpCurrentArticleId; })) {
     selectHelpArticle(filtered[0].id);
   }
@@ -402,16 +397,9 @@ function selectHelpArticle(id) {
   helpCurrentArticleId = id;
   var contentEl = document.getElementById('help-article-content');
   if (contentEl) {
-    contentEl.innerHTML = '<h4>' + esc(article.title) + '</h4>' + article.html;
+    helpViewPromise.then(function (view) { view.drawHelpArticle(contentEl, article); });
   }
-  var list = document.getElementById('help-articles-list');
-  if (list) {
-    Array.prototype.forEach.call(list.querySelectorAll('.help-article-item'), function(btn) {
-      if (btn.getAttribute('data-article-id') === id) btn.classList.add('active');
-      else btn.classList.remove('active');
-    });
-  }
+  drawHelpListNow();
 }
-
 
 export { openQuickHelp, onHelpSearchInput, onHelpSearchKeydown, onHelpListKeydown };

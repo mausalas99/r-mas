@@ -5,6 +5,7 @@
  * modules. Every draw unmounts first, so the DOM is rebuilt from scratch like the old `innerHTML` swap.
  */
 import { render } from 'preact';
+import { HtmlNodes } from './simple-html-nodes.jsx';
 
 /** Copy kept as `<strong>` runs in tour-flow-guardia-copy.mjs: drawn as nodes, no HTML string. */
 function Rich({ text }) {
@@ -210,4 +211,6 @@ function draw(host, vnode) {
 
 export const drawFundamentosBody = (host, props) => draw(host, <FundamentosBody {...props} />);
 export const drawQuickRouteBody = (host, stepId) => draw(host, <QuickRouteBody stepId={stepId} />);
+/** Guardia module step: copy (and the «Más en ayuda» button) comes as a trusted HTML string from tour-flow-guardia-copy.mjs. */
+export const drawGuardiaBody = (host, html) => draw(host, <HtmlNodes html={html} />);
 export const drawTourBadge = (host, props) => draw(host, <TourBadge {...props} />);

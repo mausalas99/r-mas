@@ -11,7 +11,7 @@ import {
   guidedTourStepIndex,
 } from './tour-engine.mjs';
 import { getGuardiaV7StepHtml } from './tour-flow-guardia-copy.mjs';
-import { drawQuickRouteBody, drawTourBadge } from './tour-flow-views.jsx';
+import { drawGuardiaBody, drawQuickRouteBody, drawTourBadge } from './tour-flow-views.jsx';
 import { renderFundamentosStep } from './tour-flow-fundamentos-steps.mjs';
 import { tourState } from './tour-state.mjs';
 
@@ -38,7 +38,7 @@ function renderQuickRouteStepCopy(bodyEl, nextBtn) {
     return true;
   }
   if (id.indexOf('gv7_') === 0) {
-    bodyEl.innerHTML = getGuardiaV7StepHtml(id);
+    drawGuardiaBody(bodyEl, getGuardiaV7StepHtml(id));
     nextBtn.textContent = 'Siguiente';
     return true;
   }
@@ -84,7 +84,7 @@ function renderQuickRouteBranch(bodyEl, nextBtn, prevBtn) {
 }
 
 function renderGuardiaV7Branch(bodyEl, nextBtn, prevBtn) {
-  bodyEl.innerHTML = getGuardiaV7StepHtml(tourState.tourStepId);
+  drawGuardiaBody(bodyEl, getGuardiaV7StepHtml(tourState.tourStepId));
   var gv7Steps = getGuidedTourSteps();
   var gv7Idx = gv7Steps.indexOf(tourState.tourStepId);
   nextBtn.textContent =
