@@ -48,6 +48,13 @@ function monthLabel(key) {
 
 const ONE_MB = 1024 * 1024;
 
+/** «aviso 50 MB · tope 100 MB» from the meters, or '' when neither limit is set. @param {Record<string, unknown>} m */
+function storageLimitsText(m) {
+  const soft = Number(m.storageSoftBytes ?? 0);
+  const hard = Number(m.storageHardBytes ?? 0);
+  return [soft ? 'aviso ' + formatBytes(soft) : '', hard ? 'tope ' + formatBytes(hard) : ''].filter(Boolean).join(' · ');
+}
+
 /**
  * Resumen model (board «Admin · Resumen»): four cards. The attention list and the patient card
  * fill in once the salas and the network census load (see renderAdminResumenExtras).
@@ -57,11 +64,7 @@ export function resumenModel(data, now = new Date()) {
   const c = data.counts || {};
   const m = data.meters || {};
   const storage = Number(c.storageBytes ?? m.storageBytes ?? 0);
-  const soft = Number(m.storageSoftBytes ?? 0);
-  const hard = Number(m.storageHardBytes ?? 0);
-  const storageMeta = [soft ? 'aviso ' + formatBytes(soft) : '', hard ? 'tope ' + formatBytes(hard) : '']
-    .filter(Boolean)
-    .join(' · ');
+  const storageMeta = storageLimitsText(m);
   const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   return {
     sub: monthLabel(thisMonth) + ' · actualizado ahora',
@@ -545,6 +548,41 @@ function hourGroup(d, now) {
   return day + ' · ' + d.getHours() + ' h';
 }
 
+/** The Registro rows: an hour heading when the hour changes, then one event per change. */
+function mutationItems(list, who, now) {
+  const items = [];
+  let group = '';
+  for (const m of list) {
+    const d = new Date(String(m.createdAt || ''));
+    const bad = Number.isNaN(d.getTime());
+    const g = bad ? '' : hourGroup(d, now);
+    if (g && g !== group) {
+      group = g;
+      items.push({ group: g });
+    }
+    const name = who(m.actorId);
+    const time = bad ? String(m.createdAt || '') : d.toLocaleTimeString('es-MX', { hour12: false });
+    items.push({ event: mutationEvent(m, name, time) });
+  }
+  return items;
+}
+
+/** @param {Record<string, unknown>} m @param {string} name @param {string} time */
+function mutationEvent(m, name, time) {
+  return {
+    initials: initials(name),
+    who: name,
+    verb: mutationVerb(m),
+    meta: ['Rev. ' + String(m.revision ?? '—'), kb(m.totalBytes), String(m.maxOpPath || '')].filter(Boolean).join(' · '),
+    time,
+    path: String(m.maxOpPath || '—'),
+    opCount: String(m.opCount ?? '—'),
+    mutationId: String(m.clientMutationId || '—'),
+    actorId: String(m.actorId || '—'),
+    ops: String(m.opsJson || '') + (m.opsJsonTruncated ? '…' : ''),
+  };
+}
+
 /**
  * Registro model: last-hour count, typical size and active people, then one line
  * per change with a person's name (not a user ID), grouped by hour. Drawn by AdminMutations.
@@ -564,32 +602,7 @@ export function mutationsModel(mutations, users = [], nowMs = Date.now()) {
   const sizes = list.map((m) => Number(m.totalBytes)).filter(Number.isFinite).sort((a, b) => a - b);
   const typical = sizes.length ? kb(sizes[Math.floor(sizes.length / 2)]) : '—';
   const people = new Set(list.map((m) => String(m.actorId || '')).filter(Boolean)).size;
-  const items = [];
-  let group = '';
-  for (const m of list) {
-    const d = new Date(String(m.createdAt || ''));
-    const g = Number.isNaN(d.getTime()) ? '' : hourGroup(d, now);
-    if (g && g !== group) {
-      group = g;
-      items.push({ group: g });
-    }
-    const name = who(m.actorId);
-    const time = Number.isNaN(d.getTime()) ? String(m.createdAt || '') : d.toLocaleTimeString('es-MX', { hour12: false });
-    items.push({
-      event: {
-        initials: initials(name),
-        who: name,
-        verb: mutationVerb(m),
-        meta: ['Rev. ' + String(m.revision ?? '—'), kb(m.totalBytes), String(m.maxOpPath || '')].filter(Boolean).join(' · '),
-        time,
-        path: String(m.maxOpPath || '—'),
-        opCount: String(m.opCount ?? '—'),
-        mutationId: String(m.clientMutationId || '—'),
-        actorId: String(m.actorId || '—'),
-        ops: String(m.opsJson || '') + (m.opsJsonTruncated ? '…' : ''),
-      },
-    });
-  }
+  const items = mutationItems(list, who, now);
   return {
     cards: [
       { label: 'Última hora', value: lastHour + (lastHour === 1 ? ' cambio' : ' cambios'), meta: 'En esta sala' },
