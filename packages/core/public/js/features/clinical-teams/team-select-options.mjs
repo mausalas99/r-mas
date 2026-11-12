@@ -91,3 +91,20 @@ export function fillTeamSelectOptions(select, { teams, selectedTeamId, groupBySa
   }
   select.replaceChildren(...nodes);
 }
+
+/**
+ * Plain model of the options: `{ options }` flat, or `{ groups: [{ label, options }] }` by sala.
+ * @param {object[]} teams
+ * @param {string} [selectedTeamId]
+ * @param {{ groupBySala?: boolean }} [opts]
+ */
+export function teamSelectModel(teams, selectedTeamId, opts = {}) {
+  const picked = String(selectedTeamId || '');
+  const option = (team) => {
+    const id = String(team?.team_id || '');
+    return { value: id, label: teamSelectLabel(team), selected: !!id && id === picked };
+  };
+  const groups = teamSelectGroups(teams, opts.groupBySala);
+  if (!opts.groupBySala) return { options: groups[0].teams.map(option) };
+  return { groups: groups.map((g) => ({ label: g.label, options: g.teams.map(option) })) };
+}

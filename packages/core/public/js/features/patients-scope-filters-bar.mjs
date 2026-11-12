@@ -1,6 +1,7 @@
 import { CLINICAL_SALA_VALUES } from '../../../lib/clinical-salas.mjs';
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
-import { buildTeamSelectOptions } from './clinical-teams/team-select-options.mjs';
+import { teamSelectModel } from './clinical-teams/team-select-options.mjs';
+import { drawCensusFiltersBody, drawTeamSelectOptions } from './patients-scope-filters-bar-view.jsx';
 import { censusFiltersAreActive, elevatedPatientFilters } from './clinical-census-filters-state.mjs';
 import {
   readCensusFiltersCollapsed,
@@ -116,29 +117,6 @@ export function initPatientFiltersChrome() {
   });
 }
 
-function buildCensusFiltersBodyHtml(user, mobileSidebar) {
-  const showSalaFilter = !mobileSidebar || censusFiltersUseFullTeamCatalog(user);
-  const salaBlock = showSalaFilter
-    ? '<label class="clinical-census-filter"><span>Sala</span>' +
-      '<select id="clinical-filter-sala" class="profile-input">' +
-      '<option value="__all__">Todas</option>' +
-      CLINICAL_SALA_VALUES.map((s) => `<option value="${s}">${s}</option>`).join('') +
-      '</select></label>'
-    : '';
-  return (
-    '<div id="clinical-census-filters-body" class="clinical-census-filters-body">' +
-    salaBlock +
-    '<label class="clinical-census-filter"><span>Equipo</span>' +
-    '<select id="clinical-filter-team" class="profile-input">' +
-    '<option value="">Todos los equipos</option>' +
-    '<option value="__unassigned__">Sin equipo asignado</option>' +
-    '</select></label>' +
-    '<label class="clinical-census-filter"><span>Servicio</span>' +
-    '<input type="search" id="clinical-filter-service" class="profile-input" placeholder="Filtrar…" autocomplete="off">' +
-    '</label></div>'
-  );
-}
-
 function syncPatientFiltersTriggerUi(bar, collapsed) {
   const triggerBtn = document.getElementById('btn-patient-filters');
   const mount = document.getElementById('clinical-census-filters-sidebar-mount');
@@ -213,7 +191,7 @@ export function createCensusFiltersBar(user, filtersMount, mobileSidebar) {
   bar.className =
     'clinical-census-filters clinical-census-filters--popover' +
     (mobileSidebar ? ' clinical-census-filters--mobile-sidebar' : '');
-  bar.innerHTML = buildCensusFiltersBodyHtml(user, mobileSidebar);
+  drawCensusFiltersBody(bar, !mobileSidebar || censusFiltersUseFullTeamCatalog(user), CLINICAL_SALA_VALUES);
   if (bar.parentElement && bar.parentElement !== filtersMount) {
     bar.remove();
   }
@@ -248,17 +226,14 @@ export function syncCensusTeamFilterSelect(user) {
   const teamSel = document.getElementById('clinical-filter-team');
   if (!teamSel) return;
   const { teamsForCatalog, teamFilterId } = resolveCensusTeamFilterState(user);
-  const unassignedOpt = censusFiltersUseFullTeamCatalog(user)
-    ? `<option value="${CENSUS_TEAM_FILTER_UNASSIGNED}">Sin equipo asignado</option>`
-    : '';
+  const fullCatalog = censusFiltersUseFullTeamCatalog(user);
   const salaFilter = String(elevatedPatientFilters.sala || '__all__');
-  const groupBySala =
-    censusFiltersUseFullTeamCatalog(user) &&
-    (!salaFilter || salaFilter === '__all__');
-  teamSel.innerHTML =
-    '<option value="">Todos los equipos</option>' +
-    unassignedOpt +
-    buildTeamSelectOptions(teamsForCatalog, teamFilterId, { groupBySala });
+  const groupBySala = fullCatalog && (!salaFilter || salaFilter === '__all__');
+  drawTeamSelectOptions(
+    teamSel,
+    teamSelectModel(teamsForCatalog, teamFilterId, { groupBySala }),
+    fullCatalog ? CENSUS_TEAM_FILTER_UNASSIGNED : ''
+  );
   teamSel.value = teamFilterId;
 }
 

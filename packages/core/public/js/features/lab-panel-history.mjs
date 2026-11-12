@@ -14,7 +14,7 @@ import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { groupLabHistoryByDay, findLabHistoryDayIndexForSet, stepLabHistoryDayIndex, latestSetIdInLabHistoryDay, labHistoryDayArrowDelta, canHandleLabHistoryDayArrow, findLabDaysWithStudy } from '../lab-history-day-nav.mjs';
 import { setLabSearchQuery } from './lab-results-card.mjs';
 import { buildDayOutputPayload, daySelectValue, findDayForHistoryRef, resolveSelectedDayKey, filterOutDaySets } from '../lab-history-day-view.mjs';
-import { drawLabHistoryDayOptions, drawLabMobileEmptyHint } from './lab-panel-history-view.jsx';
+import { drawLabHistoryDayOptions, drawLabMobileEmptyHint, clearLabHost } from './lab-panel-history-view.jsx';
 import { openConfirm } from './workbench/confirm.mjs';
 
 function buildSameDaySerumContext(patientId, targetSet) {
@@ -186,7 +186,7 @@ function handleLabHistoryNoPatientSelect_(selectEl, hintEl) {
   _labHistoryDateSelectCacheKey = '';
   setLabEmptyLabsVisible_(false);
   selectEl.hidden = true;
-  selectEl.innerHTML = '';
+  clearLabHost(selectEl);
   if (hintEl) {
     setLabOutputHistoryHint(
       hintEl,
@@ -203,7 +203,7 @@ function handleLabHistoryNoPatientSelect_(selectEl, hintEl) {
 function handleLabHistoryEmptySelect_(selectEl, hintEl, cacheKey) {
   _labHistoryDateSelectCacheKey = cacheKey;
   selectEl.hidden = true;
-  selectEl.innerHTML = '';
+  clearLabHost(selectEl);
   if (!shouldApplyMobileLabHistoryWindow()) {
     // Labs vacío R1 (2026-10-09): what happened + one next step.
     if (hintEl) hintEl.style.display = 'none';
@@ -479,7 +479,7 @@ export function clearLabOutputDom() {
   if (diagramsBtn) diagramsBtn.hidden = true;
   ['diagrams-grid', 'lab-output-box'].forEach(function (id) {
     var el = document.getElementById(id);
-    if (el) el.innerHTML = '';
+    if (el) clearLabHost(el);
   });
 }
 

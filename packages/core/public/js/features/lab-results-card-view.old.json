@@ -1,0 +1,14 @@
+{
+ "hours": {
+  "full": "<span class=\"lab-hour-time\">11:44</span><span class=\"lab-hour-label\">Toma de la mañana · 2 alterados</span>",
+  "one": "<span class=\"lab-hour-time\">06:05</span><span class=\"lab-hour-label\">Ingreso · 1 alterado</span>",
+  "none": "<span class=\"lab-hour-time\">11:44</span><span class=\"lab-hour-label\">Toma de la mañana</span>",
+  "hourOnly": "<span class=\"lab-hour-time\">9:30</span><span class=\"lab-hour-label\">9:30</span>",
+  "labelOnly": "<span class=\"lab-hour-label\">Sin hora &lt;x&gt; &amp; co · 3 alterados</span>"
+ },
+ "chips": {
+  "mixed": "<span class=\"lab-altered-chips-lbl\">Alterados</span><span class=\"lab-altered-chip lab-altered-chip--critical\" data-fit-chip title=\"Valor crítico\">K <strong>6.8 ↑</strong></span><span class=\"lab-altered-chip\" data-fit-chip>Na &lt;x&gt; <strong>128 ↓</strong></span><span class=\"lab-altered-chip\" data-fit-chip>Hb <strong>8.1</strong></span><span class=\"lab-altered-chip lab-altered-chip--more\" data-fit-chip-more hidden></span>",
+  "one": "<span class=\"lab-altered-chips-lbl\">Alterados</span><span class=\"lab-altered-chip\" data-fit-chip>Cr <strong>2.4</strong></span><span class=\"lab-altered-chip lab-altered-chip--more\" data-fit-chip-more hidden></span>",
+  "none": ""
+ }
+}

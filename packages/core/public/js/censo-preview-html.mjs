@@ -2,6 +2,7 @@ import {
   buildCensoPreviewBodyHtml,
   buildCensoPreviewDocumentHtml,
 } from './censo-preview-html-render.mjs';
+import { drawCensoPreviewModal, drawCensoColumnChips } from './censo-preview-html-view.jsx';
 import { CENSO_COL_WEIGHTS, applyCensoCellEdit, resolveCensoColWeights } from './censo-table-columns.mjs';
 
 /**
@@ -39,21 +40,6 @@ function saveCensoHiddenCols(hidden) {
   } catch {
     /* noop */
   }
-}
-
-/** Casillas "Columnas" (marcada = visible). Se leen con el listener de abajo. */
-function censoColumnChipsHtml() {
-  var hidden = loadCensoHiddenCols();
-  return CENSO_COL_WEIGHTS.filter(function (c) {
-    return c.key !== 'num';
-  })
-    .map(function (c) {
-      return (
-        '<label class="censo-col-chip"><input type="checkbox" data-censo-col="' + c.key + '"' +
-        (hidden.indexOf(c.key) < 0 ? ' checked' : '') + '>' + c.title + '</label>'
-      );
-    })
-    .join('');
 }
 
 /** @type {{ payload: any, onGenerate?: (payload: any, btn: HTMLElement | null) => void } | null} */
@@ -125,19 +111,7 @@ function ensureCensoPreviewModal() {
   backdrop.className = 'modal-backdrop censo-preview-backdrop';
   backdrop.id = 'censo-preview-backdrop';
   backdrop.setAttribute('aria-hidden', 'true');
-  backdrop.innerHTML =
-    '<div class="modal censo-preview-modal" role="dialog" aria-modal="true" aria-labelledby="censo-preview-title">' +
-    '<div class="censo-preview-modal-head">' +
-    '<h3 id="censo-preview-title" class="modal-title">Vista previa del censo</h3>' +
-    '<p class="profile-hint censo-preview-hint">Así se verá el PDF. Haz clic en una celda para editarla.</p>' +
-    '<div class="censo-col-chips" id="censo-preview-cols" role="group" aria-label="Columnas visibles"></div>' +
-    '</div>' +
-    '<iframe id="censo-preview-frame" class="censo-preview-frame" title="Vista previa del censo"></iframe>' +
-    '<div class="modal-actions">' +
-    '<button type="button" class="wb-btn wb-btn-secondary" id="censo-preview-close">Cerrar</button>' +
-    '<button type="button" class="wb-btn wb-btn-secondary" id="censo-preview-print">Imprimir</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="censo-preview-generate">Generar PDF</button>' +
-    '</div></div>';
+  drawCensoPreviewModal(backdrop);
   document.body.appendChild(backdrop);
 
   if (!ensureCensoPreviewModal._wired) {
@@ -191,7 +165,12 @@ export function openCensoPreviewInApp(payload, opts) {
   if (!previewFrame()) return false;
   current = { payload: payload, onGenerate: opts && opts.onGenerate };
   var cols = document.getElementById('censo-preview-cols');
-  if (cols) cols.innerHTML = censoColumnChipsHtml();
+  // Casillas "Columnas" (marcada = visible). Se leen con el listener de arriba.
+  if (cols) {
+    drawCensoColumnChips(cols, CENSO_COL_WEIGHTS.filter(function (c) {
+      return c.key !== 'num';
+    }), loadCensoHiddenCols());
+  }
   var gen = document.getElementById('censo-preview-generate');
   if (gen) gen.hidden = !current.onGenerate;
   renderPreviewFrame();
