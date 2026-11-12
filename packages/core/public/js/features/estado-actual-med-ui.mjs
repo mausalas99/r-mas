@@ -5,7 +5,7 @@ import { handleMedGridClick } from './estado-actual-med-grid-click.mjs';
 import {
   rewriteAbxDisplayText,
   classifyMedicationSoapCategory,
-  soapDestinationSelectOptionsHtml,
+  SOAP_DESTINATION_GROUPS,
   mapSoapDestKeyToEaField,
 } from '../med-receta-core.mjs';
 import { partitionNmMedLines } from '../nm-antidiabetic-detect.mjs';
@@ -31,7 +31,6 @@ export const EA_MED_FIELD_LABELS = {
   nm: 'NM',
 };
 
-import { escHtml, escAttr } from '../dom-escape.mjs';
 
 export function parseMedFieldItems(raw) {
   if (raw == null || !String(raw).trim()) return [];
@@ -130,7 +129,7 @@ function displayAbxLine(text, activeId, medRecetaByPatient, monitoreo, refDate) 
   return rewriteAbxDisplayText(text, fecha, block && block.items, refDate);
 }
 
-function prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient, refDate) {
+export function prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient, refDate) {
   var ec = monitoreo.estadoClinico || {};
   var pend = monitoreo.pendienteReceta || {};
   var items = parseMedFieldItems(ec[key]);
@@ -159,13 +158,9 @@ export function medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatie
 
 // Name first, dose/route/frequency muted: the eye scans drug names down the
 // column and reads the dose only when it needs it.
-function medItemTextHtml(item) {
+function splitMedItem(item) {
   var cut = item.search(/\s\d/);
-  if (cut <= 0) return escHtml(item);
-  return (
-    '<span class="ea-med-item-name">' + escHtml(item.slice(0, cut)) + '</span> ' +
-    '<span class="ea-med-item-dose">' + escHtml(item.slice(cut + 1)) + '</span>'
-  );
+  return cut <= 0 ? {} : { name: item.slice(0, cut), dose: item.slice(cut + 1) };
 }
 
 var NOREPI_LINE_RE = /^(\S*(?:NOREPINEFRINA|NORADRENALINA)\S*)(\s+\d+(?:[.,]\d+)?\s*(?:MCG|MG|G)(?:\/[A-Z]+)*)?/i;
@@ -185,119 +180,65 @@ export function setNorepiRateOnLine(line, rate) {
   });
 }
 
-function vasopRateBoxHtml(item, idx, src) {
-  if (!NOREPI_LINE_RE.test(item)) return '';
-  return (
-    '<label class="ea-vasop-rate">' +
-    '<input type="text" inputmode="decimal" class="ea-input ea-vasop-rate-input" data-ea-vasop-src="' +
-    src +
-    '" data-ea-vasop-rate="' +
-    idx +
-    '" value="' +
-    escAttr(norepiRateOfLine(item)) +
-    '" placeholder="0" aria-label="Velocidad de norepinefrina en mcg/min">' +
-    '<span class="ea-muted">mcg/min</span></label>'
-  );
-}
-
-function medChipHtml(item, key, idx, pending) {
-  var text = '<span class="ea-med-chip-text" title="' + escAttr(item) + '">' + medItemTextHtml(item) + '</span>';
-  var rate = key === 'vasop' ? vasopRateBoxHtml(item, idx, pending ? 'pending' : 'items') : '';
-  if (!pending) {
-    return (
-      '<span class="ea-med-chip ea-med-chip--confirmed">' +
-      '<button type="button" class="ea-med-chip-text" data-ea-med-remove="' + escAttr(key) +
-      '" data-ea-med-idx="' + idx + '" aria-label="Quitar ' + escAttr(item) + '" title="Quitar">' +
-      medItemTextHtml(item) + '</button>' + rate + '</span>'
-    );
-  }
-  var args = escAttr(JSON.stringify([key, idx]));
-  return (
-    '<span class="ea-med-chip ea-med-chip--pending">' + text + rate +
-    '<span class="ea-med-chip-tag">de receta</span>' +
-    '<button type="button" class="ea-med-chip-btn ea-med-chip-btn--ok" data-onclick="confirmEaMedProposalItem" data-onclick-args=\'' + args + '\' aria-label="Confirmar ' + escAttr(item) + '">✓</button>' +
-    '<button type="button" class="ea-med-chip-btn" data-onclick="discardEaMedProposalItem" data-onclick-args=\'' + args + '\' aria-label="Descartar ' + escAttr(item) + '">×</button>' +
-    '</span>'
-  );
-}
-
-function medRowHtml(key, label, chips) {
-  return (
-    '<div class="ea-med-row" data-ea-med-cat="' + escAttr(key) + '">' +
-    '<div class="ea-med-row-label">' + escHtml(label) + '</div>' +
-    '<div class="ea-med-chips">' +
-    (chips || '<span class="ea-muted">Sin medicamentos</span>') +
-    '</div></div>'
-  );
+function medChipModel(item, key, idx, pending) {
+  var split = splitMedItem(item);
+  return {
+    item: item,
+    key: key,
+    idx: idx,
+    pending: pending,
+    name: split.name,
+    dose: split.dose,
+    rate: key === 'vasop' && NOREPI_LINE_RE.test(item)
+      ? { src: pending ? 'pending' : 'items', value: norepiRateOfLine(item) }
+      : null,
+  };
 }
 
 // One row per category: confirmed chips first, then the pending ones.
-function medCategoryRowsHtml(key, block) {
+function medCategoryRowsModel(key, block) {
   var pending = parseMedFieldItems(block.pendingVal).map(function (item, idx) {
-    return medChipHtml(item, key, idx, true);
-  }).join('');
+    return medChipModel(item, key, idx, true);
+  });
   var label = EA_MED_FIELD_LABELS[key] || key;
+  var row = function (rowLabel, chips) { return { key: key, label: rowLabel, chips: chips }; };
   if (key === 'nm') {
     var part = partitionNmMedLines(block.items);
     var chipsOf = function (lines, indices) {
-      return lines.map(function (item, i) { return medChipHtml(item, key, indices[i], false); }).join('');
+      return lines.map(function (item, i) { return medChipModel(item, key, indices[i], false); });
     };
     if (part.antidiabeticos.length) {
-      return (
-        medRowHtml(key, 'Antidiabéticos', chipsOf(part.antidiabeticos, part.antidiabeticIndices)) +
-        medRowHtml(key, label, chipsOf(part.other, part.otherIndices) + pending)
-      );
+      return [
+        row('Antidiabéticos', chipsOf(part.antidiabeticos, part.antidiabeticIndices)),
+        row(label, chipsOf(part.other, part.otherIndices).concat(pending)),
+      ];
     }
-    return medRowHtml(key, label, chipsOf(part.other, part.otherIndices) + pending);
+    return [row(label, chipsOf(part.other, part.otherIndices).concat(pending))];
   }
-  var chips = block.items.map(function (item, idx) { return medChipHtml(item, key, idx, false); }).join('');
-  return medRowHtml(key, label, chips + pending);
+  var chips = block.items.map(function (item, idx) { return medChipModel(item, key, idx, false); });
+  return [row(label, chips.concat(pending))];
 }
 
-function medAddPanelHtml() {
-  var cats = MED_FIELD_KEYS.map(function (k) {
-    return '<option value="' + escAttr(k) + '"' + (k === 'nm' ? ' selected' : '') + '>' + escHtml(EA_MED_FIELD_LABELS[k] || k) + '</option>';
-  }).join('');
-  return (
-    '<div class="ea-med-add-panel" hidden data-ea-med-add-panel>' +
-    '<label for="ea-med-add-text">Fármaco y dosis</label>' +
-    '<input type="text" id="ea-med-add-text" class="ea-input" data-ea-med-add-text placeholder="Ondansetrón 8 mg IV c/8h">' +
-    '<label for="ea-med-add-cat">Categoría</label>' +
-    '<select id="ea-med-add-cat" class="ea-input" data-ea-med-add-cat>' + cats + '</select>' +
-    '<button type="button" class="ea-btn ea-btn--success" data-ea-med-add-save>Agregar</button>' +
-    '<button type="button" class="ea-btn ea-btn--ghost" data-ea-med-from-receta>Desde receta</button>' +
-    '<span data-ea-med-receta-slot></span>' +
-    '</div>'
-  );
+/** Receta drugs that fit one category (for the select the grid change handler already understands). */
+export function medRecetaOptions(key, activeId, medRecetaByPatient) {
+  return buildMedDropdownOptions(activeId, key, medRecetaByPatient, classifyMedicationSoapCategory);
 }
 
-/** Receta drugs that fit one category, as a select the grid change handler already understands. */
-export function medRecetaSelectHtml(key, activeId, medRecetaByPatient) {
-  var options = buildMedDropdownOptions(activeId, key, medRecetaByPatient, classifyMedicationSoapCategory);
-  if (!options.length) return '<span class="ea-muted">La receta no tiene fármacos para esta categoría</span>';
-  return (
-    '<select class="ea-input" data-ea-med-add-select="' + escAttr(key) + '" aria-label="Elegir de la receta">' +
-    '<option value="">Elegir de la receta…</option>' +
-    options.map(function (opt) {
-      return '<option value="' + escAttr(opt.value) + '">' + escHtml(opt.label) + '</option>';
-    }).join('') +
-    '</select>'
-  );
-}
-
-function renderMedCategoryPickOptions(keys) {
-  if (!keys.length) {
-    return '<option value="">Todas las categorías visibles</option>';
-  }
-  return (
-    '<option value="">+ Categoría</option>' +
-    soapDestinationSelectOptionsHtml(escHtml, {
-      omitEmpty: true,
-      includeKeys: keys,
-      mapKey: mapSoapDestKeyToEaField,
-      labels: EA_MED_FIELD_LABELS,
-    })
-  );
+/** «+ Categoría» select groups for the hidden categories (same groups and order as the Manejo destination select). */
+function medPickGroups(keys) {
+  var include = {};
+  keys.forEach(function (k) { include[k] = true; });
+  var groups = [];
+  SOAP_DESTINATION_GROUPS.forEach(function (g) {
+    var options = [];
+    g.keys.forEach(function (soapKey) {
+      var k = mapSoapDestKeyToEaField(soapKey);
+      if (!include[k]) return;
+      options.push({ value: k, label: EA_MED_FIELD_LABELS[k] || EA_MED_FIELD_LABELS[soapKey] || k });
+    });
+    if (options.length) groups.push({ label: g.label, options: options });
+  });
+  return groups;
 }
 
 function parseRevealedMedKeys(grid) {
@@ -312,7 +253,15 @@ function parseRevealedMedKeys(grid) {
   }
 }
 
-function medGridInnerHtml(monitoreo, activeId, medRecetaByPatient, revealedKeys, refDate) {
+/**
+ * Plain data for the medication grid (estado-actual-med-grid-view.jsx draws it).
+ * @param {ReturnType<typeof import('./estado-actual-data.mjs').emptyMonitoreo>} monitoreo
+ * @param {string | null} activeId
+ * @param {Record<string, { items?: unknown[] }>} medRecetaByPatient
+ * @param {string[]} [revealedKeys]
+ */
+export function medGridModel(monitoreo, activeId, medRecetaByPatient, revealedKeys, refDate) {
+  revealedKeys = Array.isArray(revealedKeys) ? revealedKeys : [];
   var blocks = {};
   var active = 0;
   var pendingTotal = 0;
@@ -328,45 +277,23 @@ function medGridInnerHtml(monitoreo, activeId, medRecetaByPatient, revealedKeys,
   var hidden = MED_FIELD_KEYS.filter(function (key) {
     return shown.indexOf(key) < 0;
   });
-  return (
-    '<div class="ea-med-head">' +
-    '<h3 class="ea-med-title">Medicamentos</h3>' +
-    '<span class="ea-muted">' + (active + pendingTotal) + ' activos</span>' +
-    (pendingTotal ? '<span class="ea-med-pending-count">' + pendingTotal + ' por confirmar</span>' : '') +
-    '<span class="ea-med-head-spacer"></span>' +
-    (pendingTotal ? '<button type="button" class="ea-btn ea-btn--ghost" data-onclick="confirmAllEaMedProposals">Aceptar todas</button>' : '') +
-    '<button type="button" class="ea-btn ea-btn--success" data-ea-med-add-toggle>+ Agregar</button>' +
-    '</div>' +
-    medAddPanelHtml() +
-    shown.map(function (key) { return medCategoryRowsHtml(key, blocks[key]); }).join('') +
-    '<div class="ea-med-add-category-row"' + (hidden.length ? '' : ' hidden') + '>' +
-    '<select class="ea-io-link ea-med-pick-category" data-ea-med-pick-category aria-label="Añadir categoría de medicamento">' +
-    renderMedCategoryPickOptions(hidden) +
-    '</select></div>'
-  );
-}
-
-/**
- * @param {ReturnType<typeof import('./estado-actual-data.mjs').emptyMonitoreo>} monitoreo
- * @param {string | null} activeId
- * @param {Record<string, { items?: unknown[] }>} medRecetaByPatient
- * @param {string[]} [revealedKeys]
- * @returns {string}
- */
-export function renderMedCategoryGrid(monitoreo, activeId, medRecetaByPatient, revealedKeys, refDate) {
-  revealedKeys = Array.isArray(revealedKeys) ? revealedKeys : [];
-  return (
-    '<div class="ea-clinico-med-grid" data-ea-med-revealed="' + escAttr(JSON.stringify(revealedKeys)) + '">' +
-    medGridInnerHtml(monitoreo, activeId, medRecetaByPatient, revealedKeys, refDate) +
-    '</div>'
-  );
+  return {
+    active: active,
+    pendingTotal: pendingTotal,
+    cats: MED_FIELD_KEYS.map(function (k) { return { value: k, label: EA_MED_FIELD_LABELS[k] || k, selected: k === 'nm' }; }),
+    rows: shown.reduce(function (acc, key) { return acc.concat(medCategoryRowsModel(key, blocks[key])); }, []),
+    hiddenCount: hidden.length,
+    pickGroups: medPickGroups(hidden),
+  };
 }
 
 // Any change re-renders the whole card: rows are cheap and the counts in the header stay true.
-export function refreshMedCategoryBlock(mount, _key, monitoreo, activeId, medRecetaByPatient) {
+// The model is read now; the view loads lazily and draws it (back-to-back calls draw in order).
+export async function refreshMedCategoryBlock(mount, _key, monitoreo, activeId, medRecetaByPatient) {
   var grid = mount && mount.querySelector('.ea-clinico-med-grid');
   if (!grid) return;
-  grid.innerHTML = medGridInnerHtml(monitoreo, activeId, medRecetaByPatient, parseRevealedMedKeys(grid));
+  var model = medGridModel(monitoreo, activeId, medRecetaByPatient, parseRevealedMedKeys(grid));
+  (await import('./estado-actual-med-grid-view.jsx')).drawMedGrid(grid, model);
 }
 
 function liveMonitoreoFromCtx(ctx) {

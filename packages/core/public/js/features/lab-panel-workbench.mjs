@@ -1,4 +1,3 @@
-import { esc } from '../dom-escape.mjs';
 // Lab panel — workbench: limpiar, enviar, bulk paste storage
 import { closeLabSomeTablesModal } from './lab-some-tables-modal.mjs';
 import { closeLabPasteModal } from './lab-paste-modal.mjs';
@@ -304,20 +303,12 @@ function insertLabsAsAnteriorThenRecent(_newLines) {
   rt.switchInnerTab('notas');
 }
 
-function showLabConflictModal(newLines, existingDate) {
+async function showLabConflictModal(newLines, existingDate) {
   var backdrop = document.createElement('div');
   backdrop.className = 'lab-conflict-backdrop';
   backdrop.id = 'lab-conflict-backdrop';
-  backdrop.innerHTML = (
-    '<div class="lab-conflict-modal">' +
-    '<h3>Los estudios ya tienen datos</h3>' +
-    '<p>El bloque reciente ya tiene labs del <strong>' + esc(existingDate) + '</strong>. ¿Qué hago con los nuevos labs?</p>' +
-    '<div class="lab-conflict-actions">' +
-    '<button class="wb-btn wb-btn-primary wb-btn-block" id="btn-conflict-move">📋 Mover anterior + agregar reciente<br><span class="conflict-hint">Los labs actuales pasan al bloque anterior y los nuevos quedan como recientes</span></button>' +
-    '<button class="wb-btn wb-btn-secondary wb-btn-block" id="btn-conflict-replace">🔄 Reemplazar fecha reciente<br><span class="conflict-hint">Los labs actuales se borran, se escriben los nuevos</span></button>' +
-    '<button class="wb-btn wb-btn-ghost" id="btn-conflict-cancel">Cancelar</button>' +
-    '</div></div>'
-  );
+  var { drawLabConflictModal } = await import('./lab-conflict-modal-view.jsx');
+  drawLabConflictModal(backdrop, existingDate);
   document.body.appendChild(backdrop);
   document.getElementById('btn-conflict-move').onclick = function() {
     document.body.removeChild(backdrop);

@@ -13,7 +13,6 @@ import { labLinesToClipboardPayload } from '../lab-clipboard.mjs';
  *   copyToClipboardSafe(text: string, html?: string): Promise<boolean>,
  * }} */
 
-import { esc } from '../dom-escape.mjs';
 let rt = {
   getActiveId() {
     return null;
@@ -94,70 +93,6 @@ function closeBatchCopyModal(backdrop) {
   if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
 }
 
-var WEEKDAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-
-/** dayKey is "YYYY-M-D" (dayKeyFromLabSet); anything else shows the raw label. */
-function dayRowParts(group) {
-  var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(group.dayKey);
-  if (!m) return { date: group.label, weekday: '' };
-  var d = new Date(+m[1], +m[2] - 1, +m[3]);
-  return {
-    date: ('0' + m[3]).slice(-2) + '/' + ('0' + m[2]).slice(-2),
-    weekday: WEEKDAYS[d.getDay()],
-  };
-}
-
-function buildBatchCopyListHtml(groups) {
-  return groups
-    .map(function (group) {
-      var parts = dayRowParts(group);
-      var n = group.sets.length;
-      return (
-        '<label class="lab-copydays-row">' +
-        '<input type="checkbox" class="lab-batch-copy-cb" data-day-key="' +
-        esc(group.dayKey) +
-        '" data-sends="' +
-        n +
-        '" />' +
-        '<span class="lab-copydays-box" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>' +
-        '<span class="lab-copydays-date">' +
-        esc(parts.date) +
-        '</span>' +
-        '<span class="lab-copydays-wd">' +
-        esc(parts.weekday) +
-        '</span>' +
-        '<span class="lab-copydays-sends">' +
-        (n > 1 ? n + ' envíos' : '') +
-        '</span></label>'
-      );
-    })
-    .join('');
-}
-
-function buildBatchCopyModalHtml(listHtml) {
-  return (
-    '<div class="lab-conflict-modal lab-copydays" role="dialog" aria-modal="true" aria-labelledby="lab-batch-copy-title">' +
-    '<div class="lab-copydays-head"><h3 id="lab-batch-copy-title">Copiar varios días</h3>' +
-    '<button type="button" id="lab-batch-copy-close" class="lab-copydays-close" aria-label="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>' +
-    '<p class="lab-copydays-sub">Marca los días. Se copia el bloque Estudios de cada día, con laboratorio y cultivos.</p>' +
-    '<div class="lab-copydays-chips">' +
-    '<button type="button" class="lab-copydays-chip" data-pick="3">Últimos 3</button>' +
-    '<button type="button" class="lab-copydays-chip" data-pick="7">Últimos 7</button>' +
-    '<button type="button" class="lab-copydays-chip" data-pick="all">Todos</button>' +
-    '<button type="button" class="lab-copydays-chip" data-pick="none">Ninguno</button>' +
-    '</div>' +
-    '<div class="lab-copydays-list">' +
-    listHtml +
-    '</div>' +
-    '<div class="lab-copydays-h">Vista previa</div>' +
-    '<textarea id="lab-batch-copy-preview" class="lab-copydays-preview" readonly rows="4" aria-label="Vista previa"></textarea>' +
-    '<div class="lab-copydays-foot">' +
-    '<span id="lab-batch-copy-count" class="lab-copydays-count" aria-live="polite"></span>' +
-    '<button type="button" id="lab-batch-copy-ok" class="wb-btn wb-btn-primary" disabled aria-disabled="true">Copiar al portapapeles</button>' +
-    '</div></div>'
-  );
-}
-
 /** @param {HTMLElement} backdrop @param {{ ordered: unknown[] }} loaded */
 function wireBatchCopyModal(backdrop, loaded) {
   function refreshPreview() {
@@ -212,7 +147,7 @@ function wireBatchCopyModal(backdrop, loaded) {
 /**
  * Modal para elegir varios días del historial y copiar el bloque de estudios al portapapeles.
  */
-export function openLabHistoryBatchCopyModal() {
+export async function openLabHistoryBatchCopyModal() {
   if (!rt.getActiveId()) {
     rt.showToast('Selecciona un paciente primero', 'error');
     return;
@@ -223,10 +158,11 @@ export function openLabHistoryBatchCopyModal() {
     return;
   }
 
+  var { drawBatchCopyModal } = await import('./lab-history-batch-copy-view.jsx');
   var backdrop = document.createElement('div');
   backdrop.className = 'lab-conflict-backdrop';
   backdrop.id = 'lab-batch-copy-backdrop';
-  backdrop.innerHTML = buildBatchCopyModalHtml(buildBatchCopyListHtml(loaded.groups));
+  drawBatchCopyModal(backdrop, loaded.groups);
   document.body.appendChild(backdrop);
   wireBatchCopyModal(backdrop, loaded);
 }

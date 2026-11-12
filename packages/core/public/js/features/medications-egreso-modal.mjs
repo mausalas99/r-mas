@@ -6,7 +6,6 @@
  */
 import { getMedRecetaByPatient } from '../app-state.mjs';
 import { buildMedRecetaCopyText, buildMedRecetaNameOnlyText } from '../med-receta-core.mjs';
-import { esc } from '../dom-escape.mjs';
 import { copyToClipboardSafe } from './soap-estado.mjs';
 import { manejoDiaOpts } from './medications-utils.mjs';
 import { buildMedEgresoListLines, buildMedEgresoDietSummaryLine } from './medications-egreso-text.mjs';
@@ -20,63 +19,7 @@ function closeMedEgresoModal() {
   if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
 }
 
-function buildEgresoListHtml(lines) {
-  if (!lines.length) {
-    return '<p class="med-empty-hint" style="margin:0;">No hay medicamentos activos para mostrar.</p>';
-  }
-  return (
-    '<ol id="med-egreso-modal-list" style="margin:0;padding-left:22px;max-width:68ch;display:flex;flex-direction:column;gap:6px;">' +
-    lines
-      .map(function (line) {
-        return '<li>' + esc(line) + '</li>';
-      })
-      .join('') +
-    '</ol>'
-  );
-}
-
-function buildSummaryHtml(dietLine) {
-  if (!dietLine) return '';
-  return '<p id="med-egreso-modal-summary" style="margin:12px 0 0;">' + esc(dietLine) + '</p>';
-}
-
-function buildEgresoModalHtml(lines, dietLine, mode) {
-  return (
-    '<div class="lab-conflict-modal med-egreso-modal" style="max-width:620px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;padding:0;gap:0;">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;flex-shrink:0;">' +
-    '<span style="font-size:16px;font-weight:700;color:var(--text);">Texto de egreso</span>' +
-    '<div style="display:flex;align-items:center;gap:8px;">' +
-    '<span class="med-output-tabs" id="med-egreso-modal-tabs-track" role="tablist" aria-label="Vista de texto de medicamentos" data-active="' +
-    (mode === 'simple' ? 'simple' : 'full') +
-    '">' +
-    '<span class="med-output-tab-pill" aria-hidden="true"></span>' +
-    '<button id="med-egreso-modal-tab-full" type="button" role="tab" aria-selected="' +
-    (mode === 'full' ? 'true' : 'false') +
-    '" class="med-output-tab' +
-    (mode === 'full' ? ' active' : '') +
-    '" data-onclick="setMedEgresoModalTab" data-onclick-args=\'["full"]\'>Completa</button>' +
-    '<button id="med-egreso-modal-tab-simple" type="button" role="tab" aria-selected="' +
-    (mode === 'simple' ? 'true' : 'false') +
-    '" class="med-output-tab' +
-    (mode === 'simple' ? ' active' : '') +
-    '" data-onclick="setMedEgresoModalTab" data-onclick-args=\'["simple"]\'>Nombre + Día</button>' +
-    '</span>' +
-    '<button type="button" class="wb-btn wb-btn-ghost wb-btn-icon" title="Cerrar" aria-label="Cerrar" data-onclick="closeMedEgresoModal">×</button>' +
-    '</div></div>' +
-    '<div style="flex:1;min-height:0;overflow-y:auto;padding:16px 20px 18px;font-size:14px;line-height:1.6;color:var(--text);">' +
-    buildEgresoListHtml(lines) +
-    buildSummaryHtml(dietLine) +
-    '</div>' +
-    '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px 12px 20px;flex-shrink:0;">' +
-    '<span style="flex:1;font-size:12px;color:var(--text-muted);">' +
-    esc(lines.length + (lines.length === 1 ? ' va' : ' van') + ' a la receta de egreso. Los excluidos no.') +
-    '</span>' +
-    '<button type="button" class="wb-btn wb-btn-primary" data-onclick="copiarMedEgresoModalTexto">Copiar</button>' +
-    '</div></div>'
-  );
-}
-
-function renderMedEgresoModalContent() {
+async function renderMedEgresoModalContent() {
   var backdrop = document.getElementById(MODAL_BACKDROP_ID);
   if (!backdrop) return;
   var activeId = rt.getActiveId();
@@ -86,7 +29,7 @@ function renderMedEgresoModalContent() {
   var mode = medOutputTab === 'simple' ? 'simple' : 'full';
   var lines = buildMedEgresoListLines(items, diaOpts, mode);
   var dietLine = buildMedEgresoDietSummaryLine(block);
-  backdrop.innerHTML = buildEgresoModalHtml(lines, dietLine, mode);
+  (await import('./medications-egreso-modal-view.jsx')).drawEgresoModal(backdrop, { lines: lines, dietLine: dietLine, mode: mode });
 }
 
 /** Switches the modal's own toggle (shared medOutputTab state with the inline card). */

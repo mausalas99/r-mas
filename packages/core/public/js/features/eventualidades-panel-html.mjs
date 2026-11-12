@@ -25,7 +25,10 @@ export function removeEventualidadCardEl(mountEl, entryId) {
     !timeline.querySelector('[data-entry-id]')
   ) {
     timeline.classList.add('ev-timeline--empty');
-    timeline.innerHTML = '<p class="ev-empty">Aún no hay eventualidades. Agrégalas abajo.</p>';
+    const empty = document.createElement('p');
+    empty.className = 'ev-empty';
+    empty.textContent = 'Aún no hay eventualidades. Agrégalas abajo.';
+    timeline.replaceChildren(empty);
   }
   return true;
 }
