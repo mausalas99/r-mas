@@ -1,62 +1,6 @@
-/** SOME table HTML rendering. */
+/** SOME table model: the rules (normalising, merging for the modal, labels, counts). labs-some-table-view.jsx draws it. */
 import { formatSomeResultado } from './labs-some-table-helpers.mjs';
 import { normalizeSomeGroup } from './labs-some-table-normalize.mjs';
-
-function renderSomeTableToolbarHtml(options, exportLabel, deptIndex, groupIndex) {
-  if (options.hideToolbar) return '';
-  var deptAttr = deptIndex != null ? ' data-dept-index="' + escHtml(String(deptIndex)) + '"' : '';
-  var groupAttr = groupIndex != null ? ' data-group-index="' + escHtml(String(groupIndex)) + '"' : '';
-  return (
-    '<div class="lab-some-table-toolbar">' +
-    '<button type="button" class="lab-some-export-btn" data-export="tsv"' +
-    deptAttr +
-    groupAttr +
-    ' data-label="' +
-    escHtml(exportLabel) +
-    '" title="Copiar tabla como texto">' +
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>' +
-    'TSV</button>' +
-    '<button type="button" class="lab-some-export-btn" data-export="png"' +
-    deptAttr +
-    groupAttr +
-    ' data-label="' +
-    escHtml(exportLabel) +
-    '" title="Copiar tabla como imagen">' +
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>' +
-    'PNG</button>' +
-    '</div>'
-  );
-}
-
-function renderSomeTableBodyRowsHtml(rows, isCito) {
-  var html = '';
-  rows.forEach(function (r) {
-    var resClass = r.abnormal ? ' lab-some-abnormal' : '';
-    var rowClass = r.abnormal ? ' class="lab-some-row--abnormal"' : '';
-    var flagHtml =
-      r.flag && r.flag !== '*'
-        ? '<span class="lab-some-flag" aria-label="Fuera de rango">' + escHtml(r.flag) + '</span>'
-        : '';
-    var resDisplay = formatSomeResultado(r);
-    html += '<tr' + rowClass + '>';
-    html += '<td class="lab-some-estudio">' + escHtml(r.estudio) + '</td>';
-    html +=
-      '<td class="lab-some-resultado' +
-      resClass +
-      '" data-unidades="' +
-      escHtml(r.unidades || '') +
-      '" data-ref="' +
-      escHtml(r.ref || '') +
-      '">' +
-      flagHtml +
-      '<span class="lab-some-resultado-val">' +
-      escHtml(resDisplay) +
-      '</span></td>';
-    if (!isCito) html += '<td class="lab-some-ref">' + escHtml(r.ref || '') + '</td>';
-    html += '</tr>';
-  });
-  return html;
-}
 
 /**
  * Modal: merge consecutive standard groups so one department → one thead
@@ -94,87 +38,6 @@ export function coalesceGroupsForModal(groups) {
   return out;
 }
 
-function renderSomeGroupOpenTag_(options, isCito, tableId, deptIndex, groupIndex) {
-  return (
-    '<div class="lab-some-group' +
-    (isCito ? ' lab-some-group--cito' : '') +
-    '"' +
-    (tableId ? ' data-table-id="' + escHtml(tableId) + '"' : '') +
-    (deptIndex != null ? ' data-dept-index="' + escHtml(String(deptIndex)) + '"' : '') +
-    (groupIndex != null ? ' data-group-index="' + escHtml(String(groupIndex)) + '"' : '') +
-    ' data-variant="' +
-    (isCito ? 'cito' : 'standard') +
-    '">'
-  );
-}
-
-function renderSomeGroupHeaderHtml_(g, options, title, isCito) {
-  var html = '';
-  if (title && !options.hideGroupTitles) {
-    html += '<div class="lab-some-group-title">' + escHtml(title) + '</div>';
-  }
-  if (isCito && g.fluidSource) {
-    html +=
-      '<div class="lab-some-fluid-source"><span class="lab-some-fluid-label">Origen del líquido:</span> ' +
-      escHtml(g.fluidSource) +
-      '</div>';
-  }
-  return html;
-}
-
-export function renderSomeTableGroupHtml(group, opts) {
-  var options = opts || {};
-  var g = normalizeSomeGroup(group || { rows: [] });
-  var rows = g.rows || [];
-  if (!rows.length) return '';
-
-  var isCito = g.tableVariant === 'cito';
-  var title = g.title ? String(g.title) : '';
-  var tableId = options.tableId || '';
-  var exportLabel = options.exportLabel || title || 'Tabla';
-  if (!options.exportLabel && isCito && g.fluidSource) {
-    exportLabel = (exportLabel + ' — ' + g.fluidSource).trim();
-  }
-
-  var deptIndex = options.deptIndex;
-  var groupIndex = options.groupIndex;
-  var html = renderSomeGroupOpenTag_(options, isCito, tableId, deptIndex, groupIndex);
-  html += renderSomeGroupHeaderHtml_(g, options, title, isCito);
-  html += renderSomeTableToolbarHtml(options, exportLabel, deptIndex, groupIndex);
-  var colCount = isCito ? '2' : '3';
-  html +=
-    '<div class="lab-some-table-wrap"><table class="lab-some-table lab-some-table--cols-' +
-    colCount +
-    '"><colgroup>' +
-    '<col class="lab-some-col-estudio" />' +
-    '<col class="lab-some-col-resultado" />' +
-    (isCito ? '' : '<col class="lab-some-col-ref" />') +
-    '</colgroup><thead><tr><th scope="col">Estudio</th><th scope="col">Resultado</th>' +
-    (isCito ? '' : '<th scope="col">Valor de referencia</th>') +
-    '</tr></thead><tbody>';
-  html += renderSomeTableBodyRowsHtml(rows, isCito);
-  html += '</tbody></table></div></div>';
-  return html;
-}
-
-function renderSomeDeptExportActions(deptLabel, deptIndex) {
-  var label = escHtml(deptLabel);
-  return (
-    '<span class="lab-some-dept-summary-actions">' +
-    '<button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="tsv" data-dept-index="' +
-    deptIndex +
-    '" data-label="' +
-    label +
-    '" title="Copiar sección como texto">Copiar TSV</button>' +
-    '<button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="png" data-dept-index="' +
-    deptIndex +
-    '" data-label="' +
-    label +
-    '" title="Copiar sección como imagen">Copiar PNG</button>' +
-    '</span>'
-  );
-}
-
 function someDeptRowCounts_(dept) {
   var total = 0;
   var abnormal = 0;
@@ -187,83 +50,63 @@ function someDeptRowCounts_(dept) {
   return { total: total, abnormal: abnormal };
 }
 
-function renderSomeTabsBarHtml_(departments) {
-  var html = '<div class="lab-some-tabs"><div class="lab-some-tablist" role="tablist" aria-label="Secciones del reporte">';
-  departments.forEach(function (dept, di) {
-    var n = someDeptRowCounts_(dept).abnormal;
-    html +=
-      '<button type="button" role="tab" class="lab-some-tab' +
-      (di === 0 ? ' is-active' : '') +
-      '" aria-selected="' +
-      (di === 0 ? 'true' : 'false') +
-      '" data-some-tab="' +
-      di +
-      '">' +
-      escHtml(dept.label) +
-      (n ? '<span class="lab-some-tab-count" aria-label="' + n + ' alterados">' + n + '</span>' : '') +
-      '</button>';
-  });
-  html +=
-    '</div><label class="lab-some-only-abn"><span>Solo alterados</span>' +
-    '<span class="rpc-switch"><input type="checkbox" class="rpc-switch-input lab-some-only-abn-input" role="switch" aria-checked="false" />' +
-    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></span></label>';
-  return html + '</div>';
+
+function someGroupModel_(group, dept, di, gi, options, modalLayout) {
+  var g = normalizeSomeGroup(group);
+  var rows = g.rows || [];
+  if (!rows.length) return null;
+  var isCito = g.tableVariant === 'cito';
+  var exportLabel = (dept.label + (g.title ? ' — ' + g.title : '')).trim();
+  if (isCito && g.fluidSource) exportLabel += ' — ' + g.fluidSource;
+  return {
+    tableId: 'some-' + di + '-' + gi,
+    deptIndex: di,
+    groupIndex: gi,
+    isCito: isCito,
+    title: g.title && !options.hideGroupTitles ? String(g.title) : '',
+    fluidSource: isCito && g.fluidSource ? g.fluidSource : '',
+    exportLabel: exportLabel,
+    toolbar: !modalLayout,
+    rows: rows.map(function (r) {
+      return {
+        abnormal: !!r.abnormal,
+        flag: r.flag && r.flag !== '*' ? r.flag : '',
+        estudio: r.estudio,
+        unidades: r.unidades || '',
+        ref: r.ref || '',
+        display: formatSomeResultado(r),
+      };
+    }),
+  };
 }
 
-export function renderSomeReportTablesHtml(parsed, opts) {
+/**
+ * @param {{ departments?: Array<object> }} parsed
+ * @param {{ hideGroupTitles?: boolean, modalLayout?: boolean }} [opts]
+ * @returns {{ modal: boolean, tabs: Array<{ label: string, abnormal: number }>, depts: Array<object> } | null}
+ */
+export function buildSomeTablesModel(parsed, opts) {
   var options = opts || {};
-  if (!parsed || !parsed.departments || !parsed.departments.length) return '';
-
+  if (!parsed || !parsed.departments || !parsed.departments.length) return null;
   var modalLayout = !!options.modalLayout;
-  var html = '<div class="lab-some-tables' + (modalLayout ? ' lab-some-tables--modal' : '') + '">';
-  if (modalLayout) html += renderSomeTabsBarHtml_(parsed.departments);
-  parsed.departments.forEach(function (dept, di) {
-    html +=
-      '<section class="lab-some-dept" data-dept="' +
-      escHtml(dept.key) +
-      '" data-dept-index="' +
-      di +
-      '"' +
-      (modalLayout && di > 0 ? ' hidden' : '') +
-      '>';
-    if (modalLayout) {
-      var total = someDeptRowCounts_(dept).total;
-      html +=
-        '<div class="lab-some-dept-summary">' +
-        '<span class="lab-some-dept-summary-label">' +
-        escHtml(dept.label) +
-        ' · ' +
-        total +
-        ' estudio' +
-        (total === 1 ? '' : 's') +
-        '</span>' +
-        renderSomeDeptExportActions(dept.label, di) +
-        '</div><div class="lab-some-dept-body">';
-    } else {
-      html += '<header class="lab-some-dept-header">' + escHtml(dept.label) + '</header>';
-    }
-    var groups = modalLayout ? coalesceGroupsForModal(dept.groups) : dept.groups;
-    groups.forEach(function (group, gi) {
-      var tableId = 'some-' + di + '-' + gi;
-      var g = normalizeSomeGroup(group);
-      var exportLabel = (dept.label + (g.title ? ' — ' + g.title : '')).trim();
-      if (g.tableVariant === 'cito' && g.fluidSource) {
-        exportLabel += ' — ' + g.fluidSource;
-      }
-      html += renderSomeTableGroupHtml(g, {
-        tableId: tableId,
-        exportLabel: exportLabel,
-        hideGroupTitles: !!options.hideGroupTitles,
-        hideToolbar: modalLayout,
-        deptIndex: di,
-        groupIndex: gi,
-      });
-    });
-    html += modalLayout ? '</div>' : '';
-    html += '</section>';
-  });
-  html += '</div>';
-  return html;
+  return {
+    modal: modalLayout,
+    tabs: parsed.departments.map(function (dept) {
+      return { label: dept.label, abnormal: someDeptRowCounts_(dept).abnormal };
+    }),
+    depts: parsed.departments.map(function (dept, di) {
+      var groups = modalLayout ? coalesceGroupsForModal(dept.groups) : dept.groups;
+      return {
+        key: dept.key,
+        label: dept.label,
+        index: di,
+        total: someDeptRowCounts_(dept).total,
+        groups: groups
+          .map(function (group, gi) {
+            return someGroupModel_(group || { rows: [] }, dept, di, gi, options, modalLayout);
+          })
+          .filter(Boolean),
+      };
+    }),
+  };
 }
-
-import { escHtml } from './dom-escape.mjs';

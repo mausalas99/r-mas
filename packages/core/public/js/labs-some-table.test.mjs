@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import { loadJsx } from './features/preact-view-test-helpers.mjs';
 import assert from 'node:assert/strict';
 import {
   parseSomeReportTables,
@@ -6,9 +7,16 @@ import {
   buildSomeGroupTsv,
   buildSomeGroupExportModel,
   formatSomeResultado,
-  renderSomeReportTablesHtml,
+  buildSomeTablesModel,
   coalesceGroupsForModal,
 } from './labs-some-table.mjs';
+
+const someView = await loadJsx(import.meta.url, `import { SomeReportTables } from './labs-some-table-view.jsx';
+  export const html = (model) => renderToString(<SomeReportTables model={model} />);`);
+const renderSomeReportTablesHtml = (parsed, opts) => {
+  const model = buildSomeTablesModel(parsed, opts);
+  return model ? someView.html(model) : '';
+};
 
 const MUESTRA_LUNA = `
 Expediente:	9000012-1	Solicitud:	9000000020

@@ -14,8 +14,7 @@ export {
   buildSomeDeptExportModel,
 } from './labs-some-table-export.mjs';
 export {
-  renderSomeTableGroupHtml,
-  renderSomeReportTablesHtml,
+  buildSomeTablesModel,
   coalesceGroupsForModal,
 } from './labs-some-table-render.mjs';
 export {

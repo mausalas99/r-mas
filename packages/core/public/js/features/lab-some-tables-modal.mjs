@@ -1,8 +1,11 @@
 import {
-  renderSomeReportTablesHtml,
+  buildSomeTablesModel,
   wireSomeTableExportButtons,
   wireSomeTablesTabs,
 } from '../labs-some-table.mjs';
+
+/** @type {typeof import('../labs-some-table-view.jsx') | null} */
+let viewMod = null;
 
 let rt = {
   showToast() {},
@@ -31,7 +34,7 @@ export function syncLabSomeTablesBtn(show) {
   }
 }
 
-export function openLabSomeTablesModal() {
+export async function openLabSomeTablesModal() {
   var parsed = rt.getParsed();
   if (!parsed || !parsed.departments || !parsed.departments.length) {
     rt.showToast('No hay tablas SOME para este día', 'info');
@@ -40,10 +43,12 @@ export function openLabSomeTablesModal() {
   var backdrop = document.getElementById('lab-some-tables-backdrop');
   var body = document.getElementById('lab-some-tables-modal-body');
   if (!backdrop || !body) return;
-  body.innerHTML = renderSomeReportTablesHtml(parsed, {
+  var model = buildSomeTablesModel(parsed, {
     hideGroupTitles: true,
     modalLayout: true,
   });
+  viewMod = viewMod || (await import('../labs-some-table-view.jsx'));
+  viewMod.drawSomeReportTables(body, model);
   wireSomeTablesTabs(body);
   wireSomeTableExportButtons(body, function (msg, kind) {
     rt.showToast(msg, kind);
@@ -76,6 +81,7 @@ export function closeLabSomeTablesModal() {
   backdrop.classList.remove('open');
   backdrop.setAttribute('aria-hidden', 'true');
   document.documentElement.classList.remove('lab-some-tables-modal-open');
-  if (body) body.innerHTML = '';
+  // The view module only loads once a modal has been opened; before that the body is empty.
+  if (body && viewMod) viewMod.clearSomeReportTables(body);
   if (wasOpen) rt.syncLabOutputChrome();
 }
