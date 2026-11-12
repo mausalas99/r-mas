@@ -1,0 +1,4 @@
+{
+ "sala": "<div class=\"med-nota-toolbar\"><div class=\"med-nota-actions\"><button type=\"button\" class=\"wb-btn wb-btn-primary wb-btn-lg\" data-onclick=\"mediAnadirATratamiento\">Añadir a Tratamiento</button><button type=\"button\" class=\"wb-btn wb-btn-secondary\" data-onclick=\"mediLlevarASOAP\">Enviar a Estado Actual</button><button type=\"button\" class=\"wb-btn wb-btn-secondary\" data-onclick=\"limpiarManejoActual\">Limpiar</button></div></div>",
+ "guardia": "<div class=\"med-nota-toolbar\"><div class=\"med-nota-actions\"><button type=\"button\" class=\"wb-btn wb-btn-primary wb-btn-lg\" data-onclick=\"mediLlevarASOAP\">Enviar a Estado Actual</button><button type=\"button\" class=\"wb-btn wb-btn-secondary\" data-onclick=\"limpiarManejoActual\">Limpiar</button></div></div>"
+}

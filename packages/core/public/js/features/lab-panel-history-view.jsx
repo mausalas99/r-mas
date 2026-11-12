@@ -38,3 +38,9 @@ export const drawLabHistoryDayOptions = (selectEl, days, selectedDayKey) =>
   redraw(selectEl, <LabHistoryDayOptions days={days} selectedDayKey={selectedDayKey} />);
 
 export const drawLabMobileEmptyHint = (hintEl, message) => redraw(hintEl, <LabMobileEmptyHint message={message} />);
+
+/** Empty a host (select or output box) the old `innerHTML = ''` way: drop any Preact tree, then the rest. */
+export function clearLabHost(host) {
+  render(null, host);
+  host.textContent = '';
+}
