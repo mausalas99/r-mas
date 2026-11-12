@@ -12,7 +12,7 @@ import {
   ensureClinicalDbUnlocked,
   getClinicalBootDelays,
 } from './db-unlock.mjs';
-import { buildTextSkeletonPanel } from '../ui-skeleton.mjs';
+import { drawPanelSkeleton, drawPanelError } from './clinical-panel-host-view.jsx';
 
 /** @type {HTMLElement | null} */
 let clinicalTeamsEmbedHost = null;
@@ -35,14 +35,11 @@ export function getClinicalTeamsPanelHost() {
 
 export function setClinicalTeamsPanelLoading() {
   const host = getClinicalTeamsPanelHost();
-  if (host) {
-    host.innerHTML = buildTextSkeletonPanel('clinical-teams-skeleton skel-panel', 3);
-  }
+  if (host) drawPanelSkeleton(host);
 }
 
 /** Open Mi rotación shell immediately; content loads additively. */
 
-import { escapeHtml } from '../dom-escape.mjs';
 export function showClinicalTeamsPanelShell() {
   const bd = document.getElementById('clinical-teams-backdrop');
   if (!bd) return false;
@@ -57,9 +54,7 @@ export function showClinicalTeamsPanelShell() {
 export function setClinicalTeamsPanelError(message) {
   const host = getClinicalTeamsPanelHost();
   if (!host) return;
-  host.innerHTML = `
-    <p class="clinical-registration-error">${escapeHtml(message)}</p>
-    <p class="clinical-teams-lead">Cierra este diálogo y vuelve a abrir <strong>Mi rotación</strong>. Si sigue vacío, reinicia R+ por completo (Cmd+Q).</p>`;
+  drawPanelError(host, message);
 }
 
 /**
