@@ -177,8 +177,8 @@ export function withActivePatient(state, nextId) {
   const mark = (c) => {
     const is = String(c.id) === String(nextId);
     if (c.active === is) return c;
-    const { key: _key, ...rest } = c;
-    const next = { ...rest, active: is };
+    const next = { ...c, active: is };
+    delete next.key;
     next.key = JSON.stringify(next);
     return next;
   };

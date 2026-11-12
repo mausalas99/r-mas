@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import { loadJsx } from './preact-view-test-helpers.mjs';
 import {
   buildPatientListZones, nextPatientListState, emptyPatientListState, messagePatientListState,
@@ -17,9 +16,8 @@ const view = await loadJsx(import.meta.url, `import { PatientListView, PatientCa
 
 // Markup the string builders made before the port. Variants: the old renderPatientCardHtml run in Node.
 // Lists: #patient-list.innerHTML read from the old code in an Electron window (synthetic DEMO patients).
-const read = (f) => JSON.parse(fs.readFileSync(new URL(f, import.meta.url), 'utf8'));
-const VARIANTS = read('./patients-card-variants.old.json');
-const LIST = read('./patients-list-view.old.json');
+const { default: VARIANTS } = await import('./patients-card-variants.old.json', { with: { type: 'json' } });
+const { default: LIST } = await import('./patients-list-view.old.json', { with: { type: 'json' } });
 
 // Both sides parse to the same DOM: compare tags with sorted, decoded attributes, and decoded text.
 const VOID = new Set(['br', 'hr', 'img', 'input']);
@@ -56,7 +54,7 @@ const svcHue = (p) => {
   const svc = INTERCONSULT_SERVICES.find((s) => s.name === name);
   return svc ? hueForRequestingService(svc) : null;
 };
-function variantEnv(e, p) {
+function variantEnv(e) {
   const appMode = e.appMode || 'sala';
   return {
     activeId: e.activeId || null,
@@ -74,7 +72,7 @@ function variantEnv(e, p) {
 
 for (const v of VARIANTS) {
   test(`patient card HTML equals the old builder: ${v.name}`, () => {
-    const c = view.buildCardModel(v.patient, variantEnv(v.env, v.patient));
+    const c = view.buildCardModel(v.patient, variantEnv(v.env));
     assert.equal(norm(view.cardHtml(c)), norm(v.html));
   });
 }
@@ -82,7 +80,7 @@ for (const v of VARIANTS) {
 // ── Lists ──────────────────────────────────────────────────────────────────
 const REG = /\d{7}-\d/;
 /** Patients the old window showed, rebuilt from its markup (a windowed list only holds the cards in view). */
-function patientsFrom(cap, total) {
+function patientsFrom(cap) {
   const ids = (cap.html.match(/data-active-ids="([^"]*)"/) || [])[1];
   const shown = cap.cards.map((c) => {
     const [nombre, ...rest] = c.title.split(' · ');

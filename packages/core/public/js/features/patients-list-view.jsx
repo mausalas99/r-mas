@@ -1,6 +1,6 @@
 /**
  * Sidebar patient list (#patient-list). Preact: same DOM, classes, ids and data-* hooks the string
- * builders in patients-card-html.mjs and the DOM patchers of patient-list-incremental.mjs made.
+ * builders and DOM patchers (card html, incremental patch, virtual scroll) made before the port.
  * Preact owns everything inside #patient-list: cards are keyed rows, so a changed patient redraws
  * one card; a long active zone draws only the cards in view (the old virtual scroll, now a state:
  * `state.win` = scroll position and box height, set by patients-list.mjs). Drag-to-reorder is

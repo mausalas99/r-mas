@@ -1,3 +1,6 @@
+// The sidebar's own cards are drawn by patients-list-view.jsx (Preact). The string builders below
+// stay because HF and Neumo still vendor / import them; requestingServiceHue and isInterconsultaModeUi
+// are shared with the Preact list (patients-card-env.mjs).
 import { isModeSala } from '../mode-features.mjs';
 import { escAttr } from '../dom-escape.mjs';
 import { renderPatientSidebarBodyHtml } from '../patient-sidebar-card.mjs';
@@ -43,7 +46,7 @@ function renderPatientBulkCheckHtml(p) {
 /** Same interconsulta-mode check as interconsulta-mode-chrome.mjs's isInterconsultaModeActive,
  * but off `rt.getSettings()` (patients-runtime-state) — the settings source this
  * module already reads elsewhere (patientSidebarCardOpts below). */
-function isInterconsultaModeUi() {
+export function isInterconsultaModeUi() {
   if (isModeSala(rt.getSettings())) return false;
   try {
     return !isGuardiaMode();
