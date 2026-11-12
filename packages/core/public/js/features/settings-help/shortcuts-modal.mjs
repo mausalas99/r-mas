@@ -1,5 +1,4 @@
 /** Shortcuts cheat sheet modal — header button + ⌘/ (Ctrl+/). */
-import { esc } from '../patients-html.mjs';
 import { SHORTCUT_GROUPS, modKeyLabel } from './shortcuts-data.mjs';
 import { openQuickHelp } from './help-content.mjs';
 
@@ -10,56 +9,13 @@ function modGlyph() {
   return modKeyLabel();
 }
 
-function formatKeyLabel(key) {
-  var mod = modGlyph();
-  return String(key).replace(/⌘/g, mod).replace(/Ctrl/g, mod);
-}
-
-function renderKeyGroup(keys) {
-  return (
-    '<span class="shortcuts-key-group">' +
-    keys
-      .map(function (k) {
-        return '<kbd class="shortcuts-key">' + esc(formatKeyLabel(k)) + '</kbd>';
-      })
-      .join('') +
-    '</span>'
-  );
-}
-
 function renderShortcutsBody() {
   var container = document.getElementById('shortcuts-modal-body');
   if (!container) return;
   var mod = modGlyph();
-  container.innerHTML = SHORTCUT_GROUPS.map(function (group) {
-    return (
-      '<section class="shortcuts-section">' +
-      '<h4 class="shortcuts-section-title">' +
-      esc(group.title) +
-      '</h4>' +
-      '<ul class="shortcuts-rows">' +
-      group.items
-        .map(function (item) {
-          var hint =
-            item.hint
-              ? '<span class="shortcuts-row-hint">' + esc(item.hint) + '</span>'
-              : '';
-          return (
-            '<li class="shortcuts-row">' +
-            '<div class="shortcuts-row-copy">' +
-            '<span class="shortcuts-row-label">' +
-            esc(item.label) +
-            '</span>' +
-            hint +
-            '</div>' +
-            renderKeyGroup(item.keys) +
-            '</li>'
-          );
-        })
-        .join('') +
-      '</ul></section>'
-    );
-  }).join('');
+  void import('./shortcuts-modal-view.jsx').then(function (view) {
+    view.drawShortcutsBody(container, { groups: SHORTCUT_GROUPS, mod: mod });
+  });
   var hintMod = document.getElementById('shortcuts-modal-hint-mod');
   if (hintMod) hintMod.textContent = mod;
   var hdrBtn = document.getElementById('btn-header-shortcuts');

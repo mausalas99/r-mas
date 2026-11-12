@@ -7,6 +7,7 @@ import {
 } from '../../presentation-mode.mjs';
 import { registerTourDemoPatientHooks } from '../../tour-demo-patient.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
+import { drawGuardiaBody } from './tour-flow-views.jsx';
 import { settingsHelpBridge } from './bridges.mjs';
 import { switchLabInner } from '../patient-dashboard/lab-inner.mjs';
 import {
@@ -129,7 +130,7 @@ function renderMiniTourStep() {
   if (badge) {
     badge.textContent = step.badge + ' · ' + (tourState.miniTourIdx + 1) + ' / ' + tourState.miniTourSteps.length;
   }
-  if (body) body.innerHTML = step.body;
+  if (body) drawGuardiaBody(body, step.body);
   if (nextBtn) {
     nextBtn.style.display = '';
     nextBtn.disabled = false;

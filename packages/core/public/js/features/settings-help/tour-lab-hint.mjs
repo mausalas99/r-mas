@@ -1,6 +1,7 @@
 /** Lab bulk paste tour hint modal. */
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../lab-bulk-paste.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
+import { drawGuardiaBody } from './tour-flow-views.jsx';
 import {
   ensureTourDemoLabInputBoth,
   getDemoTourLabPaste,
@@ -25,8 +26,10 @@ export function openLabBulkTourHintModal() {
       getTourDemoDateBundle().demoGarciaLabReport.trim();
   }
   if (leads[0]) {
-    leads[0].innerHTML =
-      'En el cuadro <strong>ya están cargados</strong> dos días de <strong>DEMO PÉREZ</strong> y, tras el separador, el reporte de <strong>DEMO GARCÍA</strong>. R+ los distingue por paciente y por fecha al procesar.';
+    drawGuardiaBody(
+      leads[0],
+      'En el cuadro <strong>ya están cargados</strong> dos días de <strong>DEMO PÉREZ</strong> y, tras el separador, el reporte de <strong>DEMO GARCÍA</strong>. R+ los distingue por paciente y por fecha al procesar.'
+    );
   }
   if (leads[1]) {
     leads[1].textContent =
