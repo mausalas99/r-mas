@@ -39,6 +39,7 @@ import {
   addBombaRow,
   buildGluRow,
   syncGluRowAltered,
+  loadGluView,
 } from './estado-actual-panel-glu.mjs';
 import {
   applyRegistroTabSkipAttributes,
@@ -295,9 +296,10 @@ var registroViewLoad = null;
 export function ensureRegistroView() {
   if (registroView) return Promise.resolve(registroView);
   if (!registroViewLoad) {
-    registroViewLoad = import('./estado-actual-panel-registro-view.jsx').then(function (m) {
-      registroView = m;
-      return m;
+    // Glucose rows (glu view) are built synchronously too, so wait for both views.
+    registroViewLoad = Promise.all([import('./estado-actual-panel-registro-view.jsx'), loadGluView()]).then(function (ms) {
+      registroView = ms[0];
+      return ms[0];
     });
   }
   return registroViewLoad;
