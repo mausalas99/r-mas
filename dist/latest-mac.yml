@@ -1,45 +1,35 @@
-version: 8.5.4
+version: 8.5.5
 files:
-  - url: R+-8.5.4-autoupdate-mac-arm64.zip
-    sha512: QxFaxphcj+JvSfBd/I04Ezy7thgGks6S1f0jj+dwFTpaUvDO1FCx19SlyOyf1YlaaHF8B64igISbIIZFtDT8ug==
-    size: 155730370
-  - url: R+-8.5.4-arm64.dmg
-    sha512: PVejcOlrN0GGEVn1BRXVhw0nKfunoKA1Cu+XET4O8N8QIziXrR3AnrEjByEhA1EnNBBdoIHTteaDGfpcCvHskA==
-    size: 156445346
-  - url: R+-8.5.4-autoupdate-mac-x64.zip
-    sha512: 0+x1pBEz7PE0951s1DgUT161nGvl9rzD9vvUBdnvdsBgswKuLcAKwFnvXJmOY/4YSwBVm9LCRACeFoUrk6es8w==
-    size: 166152873
-  - url: R+-8.5.4-x64.dmg
-    sha512: OyFfDFsAmjhPtaMfUrQNa/uPeh1qIo0pSM1hjdcKiBtKP0HImMKy8w1KcJeSuMTYDDMr9hwylCEPJcqzEwJqCg==
-    size: 166815848
-path: R+-8.5.4-autoupdate-mac-arm64.zip
-sha512: QxFaxphcj+JvSfBd/I04Ezy7thgGks6S1f0jj+dwFTpaUvDO1FCx19SlyOyf1YlaaHF8B64igISbIIZFtDT8ug==
-releaseDate: '2026-11-09T21:04:32.000Z'
+  - url: R+-8.5.5-autoupdate-mac-arm64.zip
+    sha512: otDeN6wne7rL+1uEUsBD/Lf4BLPztzSxgHkMrqB6Bt/rObbhp+R9q8oX5E8BtPSeI+3A8qVp8umsX2nTkAhKQg==
+    size: 155960371
+  - url: R+-8.5.5-arm64.dmg
+    sha512: fg5JkV8Wz2/uOMooEVJ26St1Pe63pC9SDAv+VDbo7xsrsagv5kBLOPu5MTdKvvWVpYuVi+t1nDrLFOiEtJF0Aw==
+    size: 156661900
+  - url: R+-8.5.5-autoupdate-mac-x64.zip
+    sha512: xs7TdNO2t6XNCvHc5fwsHLbh1bP6oiZAd8YWZ/PMjHm2kvQaTVWA4RTpZLkGbCXPA+A4hwgPzxljCnMNgp5evg==
+    size: 162631820
+  - url: R+-8.5.5-x64.dmg
+    sha512: rRCMQLU4krZiajSLFCR2Rfiu5DCZXjWhleuAwiPnETBnvB+trO/ASYqtUTXdnYifZg8RuhT1v6DnAvxA1weyyQ==
+    size: 163317549
+path: R+-8.5.5-autoupdate-mac-arm64.zip
+sha512: otDeN6wne7rL+1uEUsBD/Lf4BLPztzSxgHkMrqB6Bt/rObbhp+R9q8oX5E8BtPSeI+3A8qVp8umsX2nTkAhKQg==
+releaseDate: '2026-11-12T14:04:02.000Z'
 releaseNotes: |
-  El antibiograma interpreta la CMI con CLSI y avisa de posible BLEE/AmpC y de resistencia esperada. Los cultivos nuevos quedan «sin revisar» y ⌘⇧C copia los del equipo. El censo marca en negrita solo lo anormal. El registro manual de Estado actual va por pasos. También corrige la sincronización de labs pesados.
+  Añade los labs de 3 días al censo PDF y a la tabla de Guardia. Muestra NEGATIVO, POSITIVO y TRAZAS en vez de «---». En Estado actual confirmas o descartas un medicamento propuesto a la vez. Hay más cambios de diseño en Estado actual.
   
-  Nuevo (Cultivos): la CMI se interpreta con los puntos de corte de CLSI M100 (36.ª ed., 2026). Si hay duda, no se interpreta.
+  Nuevo (Censo): labs de 3 días en el PDF del censo y en la tabla de Guardia.
   
-  Nuevo (Cultivos): pista de mecanismo BLEE/AmpC en Enterobacterales (EUCAST). Es cribado, no diagnóstico.
+  Corrección (Labs): los valores NEGATIVO, POSITIVO y TRAZAS se leen y muestran bien.
   
-  Nuevo (Cultivos): se marca la resistencia esperada (EUCAST, CLSI y hongos). Un «S» en esa combinación se ve sospechoso.
+  Nuevo (Estado actual): confirmar o descartar un medicamento propuesto, uno a la vez.
   
-  Nuevo (Cultivos): un aislamiento o antibiograma nuevo queda «sin revisar» hasta que lo marcas como visto.
+  Cambio (Estado actual): rediseño visual de paneles y registro por pasos.
   
-  Nuevo (Cultivos): tras Actualizar labs, R+ busca en segundo plano el antibiograma que faltaba y avisa de lo nuevo.
+  Cambio (Tablero paciente): las zonas marcadas muestran solo su primera línea.
   
-  Nuevo (Cultivos): ⌘⇧C en Cultivos copia los cultivos (positivos y negativos) de los pacientes fijados.
+  Nuevo (Respaldos): «Datos para análisis» exporta los datos de los pacientes a Excel, una hoja por tipo.
   
-  Nuevo (Estado actual): el registro manual va por pasos: Signos, Glucosa, Balance y Revisar. Avanza solo y los números ruedan.
+  Cambio (Formularios): cuarto, cama y registro avanzan solos al completar el valor.
   
-  Nuevo (Labs): blastos o promielocitos en BH cuentan como valor crítico. Las células inmaduras se conservan al unir BH.
-  
-  Cambio (Censo): negrita solo para lo anormal en Labs y Signos, en vista previa y PDF.
-  
-  Cambio (Censo): cultivos en una línea por sitio, solo el último resultado si es positivo, sin ATB ni cuenta.
-  
-  Cambio (Censo): T°, FC y FR van en una línea. I, B y EVAC también.
-  
-  Corrección (Nube): un paciente con muchos labs ya no rompe el envío ni la descarga por el límite de 50 MB.
-  
-  Corrección (Admin): se puede recuperar un guardado anterior de una sala sin cortar sus operaciones.
+  Cambio (Registro manual): cada paso avanza solo al terminar de escribir. Un interruptor vuelve a la vista anterior.
