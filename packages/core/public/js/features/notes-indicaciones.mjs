@@ -1,5 +1,4 @@
 import { writeRpcSettings } from '../clinical-settings.mjs';
-import { esc, escAttr } from '../dom-escape.mjs';
 // Expediente · nota evolución, indicaciones, Word
 import { getPatients, getNotes, getIndicaciones, persistClinicalState } from "../app-state.mjs";
 import { setAsyncButtonLoading } from "../ui-motion.mjs";
@@ -11,8 +10,6 @@ import {
 } from "../profile-templates.mjs";
 import {
   getFormatsEditMode,
-  buildNoteDefaultsEditorHtml,
-  buildIndicaDefaultsEditorHtml,
   loadDraftFromSettings,
 } from "../profile-formats-editor.mjs";
 import {
@@ -28,7 +25,7 @@ import {
 import { openConfirm } from "./workbench/confirm.mjs";
 import { stampDocUpdatedAt, mergeAnteriores, liveAnteriores, editAnterior, deleteAnterior, anteriorKey } from "../patient-merge.mjs";
 import { scheduleCloudSyncPush } from "./cloud-sync/mutate-bridge.mjs";
-import { drawNoteForm, drawIndicaForm } from "./notes-indicaciones-view.jsx";
+import { drawNoteForm, drawIndicaForm, drawNoteDefaultsEditor, drawIndicaDefaultsEditor, drawPastDocsModal, drawPastNav, drawPastView } from "./notes-indicaciones-view.jsx";
 import { parseIcSugerencias, applyIcSugerenciasToIndica, indicaDocHasContent } from "../ic-sugerencias-parse.mjs";
 
 /** A saved edit: new edit clock (last write wins), then a debounced Nube push. */
@@ -83,7 +80,7 @@ function renderNoteForm() {
   if (getFormatsEditMode() === "nota") {
     var st = rt.getSettings() || {};
     loadDraftFromSettings(st);
-    document.getElementById("note-form").innerHTML = buildNoteDefaultsEditorHtml(st);
+    drawNoteDefaultsEditor(document.getElementById("note-form"), st);
     return;
   }
   var patient = getPatients().find(function (p) {
@@ -225,7 +222,7 @@ function renderIndicaForm() {
   if (getFormatsEditMode() === "indica") {
     var st = rt.getSettings() || {};
     loadDraftFromSettings(st);
-    document.getElementById("indica-form").innerHTML = buildIndicaDefaultsEditorHtml(st);
+    drawIndicaDefaultsEditor(document.getElementById("indica-form"), st);
     return;
   }
   if (!getPatients().some(function (p) { return p.id === aid(); })) return;
@@ -456,11 +453,6 @@ function previewIndicaciones() { previewDoc('indica'); }
 // ── Anteriores ────────────────────────────────────────────────────────
 // Each print or generation (PDF, .docx) keeps a read-only copy in `doc.anteriores`, one per
 // fecha (a second export the same day replaces that day's copy).
-var PAST_FIELDS = {
-  nota: [['interrogatorio', 'Interrogatorio, exploración y estado mental'], ['evolucion', 'Evolución'], ['vitales', 'Signos vitales'], ['estudios', 'Estudios auxiliares'], ['diagnosticos', 'Diagnósticos'], ['tratamiento', 'Tratamiento e indicaciones'], ['medico', 'Médico tratante'], ['profesor', 'Profesor responsable']],
-  indica: [['medicos', 'Médicos'], ['dieta', 'Dieta'], ['cuidados', 'Cuidados'], ['estudios', 'Estudios'], ['medicamentos', 'Medicamentos'], ['interconsultas', 'Interconsultas'], ['otros', 'Otros']],
-};
-
 function archiveCopy(doc) {
   if (!doc) return;
   var snap = JSON.parse(JSON.stringify(doc));
@@ -470,50 +462,7 @@ function archiveCopy(doc) {
   touchDoc(doc); // edit clock + Nube push: without it a pull of the same updatedAt wipes the copy
 }
 
-function pastFieldText(kind, key, snap) {
-  if (kind === 'nota' && key === 'vitales') {
-    return [['ta', 'T.A.'], ['fr', 'F.R.'], ['fc', 'F.C.'], ['temp', 'Temp'], ['peso', 'Peso']]
-      .filter(function (v) { return String(snap[v[0]] || '').trim(); })
-      .map(function (v) { return v[1] + ' ' + snap[v[0]]; }).join(' · ');
-  }
-  var val = snap[key];
-  if (key === 'otros') return (val || []).map(function (o) { return [o.titulo, o.contenido].filter(Boolean).join(': '); }).join('\n');
-  if (Array.isArray(val)) return val.filter(function (x) { return String(x).trim(); }).map(function (x, i) { return (i + 1) + '. ' + x; }).join('\n');
-  return String(val || '').trim();
-}
-
-function pastDocHtml(kind, snap) {
-  var rows = PAST_FIELDS[kind].map(function (f) {
-    var t = pastFieldText(kind, f[0], snap);
-    return t ? '<div class="past-doc-field"><h4>' + f[1] + '</h4><p>' + esc(t) + '</p></div>' : '';
-  }).join('');
-  return rows || '<p class="fit-empty">Copia vacía.</p>';
-}
-
 var PAST_ARRAY_KEYS = ['diagnosticos', 'tratamiento'];
-
-function pastEditHtml(kind, snap) {
-  var fields = PAST_FIELDS[kind].map(function (f) {
-    var key = f[0];
-    var head = '<h4>' + f[1] + '</h4>';
-    if (kind === 'nota' && key === 'vitales') {
-      return '<div class="past-doc-field">' + head + '<div class="past-doc-vitals">' +
-        [['ta', 'T.A.'], ['fr', 'F.R.'], ['fc', 'F.C.'], ['temp', 'Temp'], ['peso', 'Peso']].map(function (v) {
-          return '<label>' + v[1] + '<input type="text" data-past-f="' + v[0] + '" value="' + escAttr(snap[v[0]] || '') + '"></label>';
-        }).join('') + '</div></div>';
-    }
-    if (key === 'otros') {
-      return '<div class="past-doc-field">' + head + (snap.otros || []).map(function (o, i) {
-        return '<input type="text" data-past-otro-t="' + i + '" aria-label="Título" value="' + escAttr(o.titulo || '') + '" placeholder="Título">' +
-          '<textarea data-past-otro-c="' + i + '" aria-label="' + escAttr(f[1] + ' ' + (i + 1)) + '">' + esc(o.contenido || '') + '</textarea>';
-      }).join('') + '</div>';
-    }
-    var val = snap[key];
-    return '<div class="past-doc-field">' + head + '<textarea data-past-f="' + key + '" aria-label="' + escAttr(f[1]) + '">' + esc(Array.isArray(val) ? val.join('\n') : val || '') + '</textarea></div>';
-  }).join('');
-  return '<div class="past-doc-actions"><button type="button" class="wb-btn wb-btn-primary" data-past-save>Guardar cambios</button>' +
-    '<button type="button" class="wb-btn wb-btn-ghost" data-past-cancel>Cancelar</button></div>' + fields;
-}
 
 /** The edited fields of one past copy, read back from the edit form. */
 function pastEditPatch(view, snap) {
@@ -542,12 +491,7 @@ function openPastDocs(kind) {
   var bd = document.createElement('div');
   bd.id = 'past-docs-backdrop';
   bd.className = 'soap-modal-backdrop open';
-  bd.innerHTML =
-    '<div class="soap-modal wb-modal past-docs-modal" role="dialog" aria-modal="true" aria-labelledby="past-docs-title">' +
-    '<header class="wb-modal-head"><h3 class="wb-modal-title" id="past-docs-title">' + (kind === 'nota' ? 'Notas de evolución anteriores' : 'Indicaciones anteriores') + '</h3>' +
-    '<button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-past-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button></header>' +
-    '<div class="past-docs-layout"><nav class="past-docs-list"></nav><div class="past-docs-view wb-modal-body"></div></div>' +
-    '</div>';
+  drawPastDocsModal(bd, kind);
   document.body.appendChild(bd);
   var nav = bd.querySelector('.past-docs-list');
   var view = bd.querySelector('.past-docs-view');
@@ -557,15 +501,8 @@ function openPastDocs(kind) {
     list = liveAnteriores(doc);
     if (!list.length) return close();
     cur = Math.min(i, list.length - 1);
-    nav.innerHTML = list.map(function (a, n) {
-      var when = a.fecha || new Date(a.guardada).toLocaleDateString('es-MX');
-      return '<button type="button" class="past-docs-item" data-past-idx="' + n + '">' + esc(when) + (a.hora ? ' <span>' + esc(a.hora) + '</span>' : '') + '</button>';
-    }).join('');
-    nav.querySelectorAll('[data-past-idx]').forEach(function (b) { b.classList.toggle('active', Number(b.getAttribute('data-past-idx')) === cur); });
-    view.innerHTML = editing
-      ? pastEditHtml(kind, list[cur])
-      : '<div class="past-doc-actions"><button type="button" class="wb-btn wb-btn-secondary" data-past-edit>Editar</button>' +
-        '<button type="button" class="wb-btn wb-btn-ghost" data-past-del>Eliminar</button></div>' + pastDocHtml(kind, list[cur]);
+    drawPastNav(nav, list, cur);
+    drawPastView(view, kind, list[cur], editing);
   }
   function changed() {
     touchDoc(doc);

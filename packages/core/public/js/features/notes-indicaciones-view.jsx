@@ -148,7 +148,152 @@ function IndicaForm({ ind, templates, pastCount }) {
   );
 }
 
+// ── Formatos por defecto (editor dentro de las pestañas Nota / Indicaciones) ──
+const INDICA_DEFAULTS = [
+  { key: 'dieta', label: 'Dieta', ph: 'Escriba la dieta…', from: 'defaultDieta' },
+  { key: 'cuidados', label: 'Cuidados', ph: 'Signos vitales, balance…', from: 'defaultCuidados' },
+  { key: 'medicamentos', label: 'Medicamentos', ph: 'Fármaco, dosis, vía…', from: 'defaultMedicamentos' },
+  { key: 'estudios', label: 'Estudios', ph: 'BH, QS, EGO…', from: 'defaultIndicacionesEstudios' },
+  { key: 'interconsultas', label: 'Interconsultas', ph: 'Servicio y motivo…', from: 'defaultIndicacionesInterconsultas' },
+];
+
+function EditorBanner({ title, subtitle }) {
+  return (
+    <div class="formats-defaults-editor-banner" role="status">
+      <div class="formats-defaults-editor-banner-text"><strong>{title}</strong><p>{subtitle}</p></div>
+      <div class="formats-defaults-editor-actions"><button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-onclick="exitFormatsEditor">Volver al expediente</button></div>
+    </div>
+  );
+}
+
+function EditorFooter() {
+  return (
+    <div class="formats-defaults-editor-footer"><button type="button" class="wb-btn wb-btn-primary wb-btn-lg formats-defaults-save-btn" data-onclick="saveDefaultFormatsFromEditor">Guardar</button></div>
+  );
+}
+
+function NoteDefaultsEditor({ st }) {
+  return (
+    <div class="formats-defaults-editor">
+      <EditorBanner title="Formatos por defecto · Nota de evolución" subtitle="Misma vista que en el expediente. Estos textos se copian a pacientes nuevos o a secciones vacías." />
+      <div class="card"><div class="card-header card-header--tone-green card-header-row"><span>Evolución y actualización del cuadro clínico</span></div>
+        <div class="card-body"><div class="field-group">
+          <textarea id="fmt-default-nota-evolucion" rows="7" placeholder={'N: [Neurológico]\nV: [Ventilatorio]…'} data-oninput="updateDefaultFormatField" data-oninput-args={jsonArgs('notaEvolucion')} data-oninput-pass="value">{v(st.defaultNotaEvolucion)}</textarea>
+        </div></div></div>
+      <div class="card"><div class="card-header card-header--tone-indigo"><span>Resultados de estudios auxiliares</span></div>
+        <div class="card-body"><div class="field-group">
+          <textarea id="fmt-default-nota-estudios" rows="9" placeholder={'FECHA (DD/MM/AA)\nQS\nBH…'} data-oninput="updateDefaultFormatField" data-oninput-args={jsonArgs('notaEstudios')} data-oninput-pass="value">{v(st.defaultNotaEstudios)}</textarea>
+        </div></div></div>
+      <EditorFooter />
+    </div>
+  );
+}
+
+function IndicaDefaultsEditor({ st }) {
+  return (
+    <div class="formats-defaults-editor">
+      <EditorBanner title="Formatos por defecto · Indicaciones" subtitle="Misma vista que en el expediente. Se aplican al abrir indicaciones vacías de un paciente nuevo." />
+      {INDICA_DEFAULTS.map((s) => (
+        <div class="indica-section formats-defaults-indica-section">
+          <div class="indica-section-header">{s.label}</div>
+          <div class="indica-section-body">
+            <textarea id={`fmt-default-ind-${s.key}`} rows="3" placeholder={s.ph} data-oninput="updateDefaultFormatField" data-oninput-args={jsonArgs(s.key)} data-oninput-pass="value">{v(st[s.from])}</textarea>
+          </div>
+        </div>
+      ))}
+      <EditorFooter />
+    </div>
+  );
+}
+
+// ── Copias anteriores (modal) ──
+const PAST_FIELDS = {
+  nota: [['interrogatorio', 'Interrogatorio, exploración y estado mental'], ['evolucion', 'Evolución'], ['vitales', 'Signos vitales'], ['estudios', 'Estudios auxiliares'], ['diagnosticos', 'Diagnósticos'], ['tratamiento', 'Tratamiento e indicaciones'], ['medico', 'Médico tratante'], ['profesor', 'Profesor responsable']],
+  indica: [['medicos', 'Médicos'], ['dieta', 'Dieta'], ['cuidados', 'Cuidados'], ['estudios', 'Estudios'], ['medicamentos', 'Medicamentos'], ['interconsultas', 'Interconsultas'], ['otros', 'Otros']],
+};
+const PAST_VITALS = [['ta', 'T.A.'], ['fr', 'F.R.'], ['fc', 'F.C.'], ['temp', 'Temp'], ['peso', 'Peso']];
+
+function pastFieldText(kind, key, snap) {
+  if (kind === 'nota' && key === 'vitales') {
+    return PAST_VITALS.filter((x) => String(snap[x[0]] || '').trim()).map((x) => x[1] + ' ' + snap[x[0]]).join(' · ');
+  }
+  const val = snap[key];
+  if (key === 'otros') return (val || []).map((o) => [o.titulo, o.contenido].filter(Boolean).join(': ')).join('\n');
+  if (Array.isArray(val)) return val.filter((x) => String(x).trim()).map((x, i) => (i + 1) + '. ' + x).join('\n');
+  return String(val || '').trim();
+}
+
+function PastDocsModal({ kind }) {
+  return (
+    <div class="soap-modal wb-modal past-docs-modal" role="dialog" aria-modal="true" aria-labelledby="past-docs-title">
+      <header class="wb-modal-head"><h3 class="wb-modal-title" id="past-docs-title">{kind === 'nota' ? 'Notas de evolución anteriores' : 'Indicaciones anteriores'}</h3>
+        <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-past-close aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button></header>
+      <div class="past-docs-layout"><nav class="past-docs-list"></nav><div class="past-docs-view wb-modal-body"></div></div>
+    </div>
+  );
+}
+
+function PastNav({ list, cur }) {
+  return list.map((a, n) => {
+    const when = a.fecha || new Date(a.guardada).toLocaleDateString('es-MX');
+    return (
+      <button type="button" class={n === cur ? 'past-docs-item active' : 'past-docs-item'} data-past-idx={String(n)}>{when}{a.hora ? [' ', <span>{a.hora}</span>] : null}</button>
+    );
+  });
+}
+
+function PastShow({ kind, snap }) {
+  const rows = PAST_FIELDS[kind].map((f) => [f, pastFieldText(kind, f[0], snap)]).filter((r) => r[1]);
+  return (
+    <>
+      <div class="past-doc-actions"><button type="button" class="wb-btn wb-btn-secondary" data-past-edit>Editar</button><button type="button" class="wb-btn wb-btn-ghost" data-past-del>Eliminar</button></div>
+      {rows.length
+        ? rows.map((r) => <div class="past-doc-field"><h4>{r[0][1]}</h4><p>{r[1]}</p></div>)
+        : <p class="fit-empty">Copia vacía.</p>}
+    </>
+  );
+}
+
+function PastEditField({ kind, f, snap }) {
+  const key = f[0];
+  if (kind === 'nota' && key === 'vitales') {
+    return (
+      <div class="past-doc-field"><h4>{f[1]}</h4><div class="past-doc-vitals">
+        {PAST_VITALS.map((x) => <label>{x[1]}<input type="text" data-past-f={x[0]} value={v(snap[x[0]])} /></label>)}
+      </div></div>
+    );
+  }
+  if (key === 'otros') {
+    return (
+      <div class="past-doc-field"><h4>{f[1]}</h4>
+        {(snap.otros || []).map((o, i) => [
+          <input type="text" data-past-otro-t={String(i)} aria-label="Título" value={v(o.titulo)} placeholder="Título" />,
+          <textarea data-past-otro-c={String(i)} aria-label={`${f[1]} ${i + 1}`}>{v(o.contenido)}</textarea>,
+        ])}
+      </div>
+    );
+  }
+  const val = snap[key];
+  return <div class="past-doc-field"><h4>{f[1]}</h4><textarea data-past-f={key} aria-label={f[1]}>{Array.isArray(val) ? val.join('\n') : v(val)}</textarea></div>;
+}
+
+function PastEdit({ kind, snap }) {
+  return (
+    <>
+      <div class="past-doc-actions"><button type="button" class="wb-btn wb-btn-primary" data-past-save>Guardar cambios</button><button type="button" class="wb-btn wb-btn-ghost" data-past-cancel>Cancelar</button></div>
+      {PAST_FIELDS[kind].map((f) => <PastEditField kind={kind} f={f} snap={snap} />)}
+    </>
+  );
+}
+
 /** Fresh render each time (null first), like the old `innerHTML` swap. */
+const fresh = (host, node) => { render(null, host); render(node, host); };
+export const drawNoteDefaultsEditor = (host, st) => fresh(host, <NoteDefaultsEditor st={st} />);
+export const drawIndicaDefaultsEditor = (host, st) => fresh(host, <IndicaDefaultsEditor st={st} />);
+export const drawPastDocsModal = (host, kind) => fresh(host, <PastDocsModal kind={kind} />);
+export const drawPastNav = (host, list, cur) => fresh(host, <PastNav list={list} cur={cur} />);
+export const drawPastView = (host, kind, snap, editing) => fresh(host, editing ? <PastEdit kind={kind} snap={snap} /> : <PastShow kind={kind} snap={snap} />);
+
 export function drawNoteForm(host, props) {
   render(null, host);
   render(<NoteForm {...props} />, host);
@@ -157,4 +302,4 @@ export function drawIndicaForm(host, props) {
   render(null, host);
   render(<IndicaForm {...props} />, host);
 }
-export { NoteForm, IndicaForm };
+export { NoteForm, IndicaForm, NoteDefaultsEditor, IndicaDefaultsEditor, PastDocsModal, PastNav, PastShow, PastEdit };
