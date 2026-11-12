@@ -29,7 +29,7 @@ async function confirmDowngrade(version, entry) {
   }
 }
 
-function renderDowngradeFallback(payload) {
+async function renderDowngradeFallback(payload) {
   updaterState.updateModalMode = 'upgrade';
   updaterState.pendingDowngradeVersion = null;
   resetUpdateCheckButtons();
@@ -44,18 +44,14 @@ function renderDowngradeFallback(payload) {
   renderUpdateError(safe);
   var actions = document.getElementById('update-modal-actions-primary');
   if (actions && payload && (payload.manualUrl || payload.version)) {
-    var openBtn = document.createElement('button');
-    openBtn.className = 'btn-primary';
-    openBtn.textContent = 'Abrir instalador en GitHub';
-    openBtn.onclick = function () {
+    var view = await import('./update-actions-view.jsx');
+    view.drawDowngradePrimary(actions, { onOpen: function () {
       if (window.electronAPI && window.electronAPI.openDowngradeInstaller) {
         window.electronAPI.openDowngradeInstaller(payload.version);
       } else if (window.electronAPI && window.electronAPI.openExternal && payload.manualUrl) {
         window.electronAPI.openExternal(payload.manualUrl);
       }
-    };
-    actions.innerHTML = '';
-    actions.appendChild(openBtn);
+    } });
   }
   if (window.electronAPI && window.electronAPI.resetUpdateFeed) {
     window.electronAPI.resetUpdateFeed();

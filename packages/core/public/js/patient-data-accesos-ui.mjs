@@ -4,6 +4,7 @@ import { ensurePatientAccesos, syncLegacyAccesoFields, VIA_ACCESO_LABELS } from 
 import { getPatients, persistClinicalState } from './app-state.mjs';
 
 import { esc } from './dom-escape.mjs';
+import { drawAccesoRows } from './patient-data-accesos-view.jsx';
 function activePatient(patientId) {
   return getPatients().find(function (p) {
     return String(p.id) === String(patientId);
@@ -78,7 +79,11 @@ function refreshAccesosListDom(patientId) {
   var patient = activePatient(patientId);
   var listEl = document.getElementById('patient-accesos-list');
   if (!patient || !listEl) return;
-  listEl.innerHTML = renderAccesosListHtml(patient);
+  drawAccesoRows(listEl, {
+    rows: accesoRows(patient).map(function (row) { return { via: row.via, dateValue: accesoFechaToDateInputValue(row.fecha) }; }),
+    viaLabels: VIA_ACCESO_LABELS,
+    now: Date.now(),
+  });
   refreshRpcDateFields(listEl);
 }
 

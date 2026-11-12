@@ -45,6 +45,11 @@ export function RecoverySecondary({ onClose }) {
   return <button class="btn-secondary" onClick={onClose}>Continuar de todos modos</button>;
 }
 
+/** Downgrade fallback: open the installer on GitHub. */
+export function DowngradePrimary({ onOpen }) {
+  return <button class="btn-primary" onClick={onOpen}>Abrir instalador en GitHub</button>;
+}
+
 /** Empty the host (and any Preact tree in it); with a vnode, draw it fresh. */
 export function drawUpdateActions(host, vnode) {
   render(null, host);
@@ -58,3 +63,4 @@ export const drawErrorPrimary = (host, props) => drawUpdateActions(host, <ErrorP
 export const drawRecoveryPrimary = (host, props) => drawUpdateActions(host, <RecoveryPrimary {...props} />);
 export const drawRecoverySecondary = (host, props) => drawUpdateActions(host, <RecoverySecondary {...props} />);
 export const drawReadyPrimary = (host, props) => drawUpdateActions(host, <ReadyPrimary {...props} />);
+export const drawDowngradePrimary = (host, props) => drawUpdateActions(host, <DowngradePrimary {...props} />);

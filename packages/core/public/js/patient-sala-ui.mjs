@@ -1,6 +1,7 @@
 import { CLINICAL_SALA_VALUES } from '../../lib/clinical-salas.mjs';
 import { clinicalSessionContext } from './clinical-access-runtime.mjs';
 import { esc } from './dom-escape.mjs';
+import { drawSalaOptions } from './patient-sala-view.jsx';
 
 /** @param {object[]|null|undefined} teams @param {string} teamId */
 function findTeamById(teams, teamId) {
@@ -55,7 +56,7 @@ export function syncPatientRegistrationSalaSelect(teamId) {
     tid = teamSel instanceof HTMLSelectElement ? teamSel.value : '';
   }
   const defaultSala = resolveRegistrationSalaDefault(user, tid, teams);
-  select.innerHTML = buildSalaOptionsHtml(defaultSala);
+  drawSalaOptions(select, { selected: defaultSala, values: CLINICAL_SALA_VALUES });
   select.value = defaultSala;
 }
 

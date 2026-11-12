@@ -1,4 +1,4 @@
-import { esc } from './dom-escape.mjs';
+import { drawRegistroRows } from './patient-registro-modal-view.jsx';
 import { parseRegistrosFromBulkInput } from './patient-registro-parse.mjs';
 
 var registroModalRows = [''];
@@ -16,37 +16,10 @@ function registroRowsForRender() {
   return [registroModalRows[0] || ''];
 }
 
-function renderRegistroModalListHtml() {
-  var rows = registroRowsForRender();
-  return rows
-    .map(function (val, i) {
-      var canRemove = registroModalMultiMode && rows.length > 1;
-      var placeholder = registroModalMultiMode ? 'Registro ' + (i + 1) : '0000000-0';
-      return (
-        '<div class="vpo-dx-row list-row">' +
-        '<input type="text" class="ea-input m-registro-row-input" value="' +
-        esc(val) +
-        '" placeholder="' +
-        esc(placeholder) +
-        '" data-oninput="onRegistroModalInput" data-oninput-args="[' +
-        i +
-        ']" data-oninput-pass="value" data-onpaste="onRegistroModalRowPaste" data-onpaste-args="[' +
-        i +
-        ']" data-onpaste-pass="event">' +
-        '<button type="button" class="btn-remove" data-onclick="removeRegistroModalRow" data-onclick-args="[' +
-        i +
-        ']"' +
-        (canRemove ? '' : ' style="visibility:hidden"') +
-        ' aria-label="Eliminar">×</button></div>'
-      );
-    })
-    .join('');
-}
-
 function refreshRegistroModalListDom() {
   var listEl = document.getElementById('m-registro-list');
   if (!listEl) return;
-  listEl.innerHTML = renderRegistroModalListHtml();
+  drawRegistroRows(listEl, { rows: registroRowsForRender(), multi: registroModalMultiMode });
 }
 
 /** @param {string[]} [values] */
