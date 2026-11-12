@@ -1,7 +1,6 @@
 /**
  * Alta por registro: consulta repositorio (túnel Actualizar labs) y confirma antes de admitir.
  */
-import { escHtml } from './dom-escape.mjs';
 import {
   labRepoDefaultDateRange,
   labRepoToDateInputValue,
@@ -59,7 +58,7 @@ function removeConfirmBackdrop() {
  * @param {() => void} onOmit
  * @param {() => void} [onStopBatch]
  */
-function showRegistroTunnelConfirm(labPatient, studyCount, onConfirm, batch, onOmit, onStopBatch) {
+async function showRegistroTunnelConfirm(labPatient, studyCount, onConfirm, batch, onOmit, onStopBatch) {
   removeConfirmBackdrop();
   var nombre = String(labPatient.name || '').trim() || 'Sin nombre en repositorio';
   var reg = String(labPatient.expediente || '').trim();
@@ -68,33 +67,18 @@ function showRegistroTunnelConfirm(labPatient, studyCount, onConfirm, batch, onO
   var title =
     batchTotal > 1 ? '¿Es este paciente? (' + batchIndex + ' de ' + batchTotal + ')' : '¿Es este paciente?';
   var omitLabel = batchTotal > 1 ? 'Omitir' : 'Cancelar';
-  var stopBtn =
-    batchTotal > 1
-      ? '<button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" id="patient-registro-tunnel-stop">Detener cola</button>'
-      : '';
   var backdrop = document.createElement('div');
   backdrop.className = 'lab-conflict-backdrop';
   backdrop.id = 'patient-registro-tunnel-backdrop';
-  backdrop.innerHTML =
-    '<div class="lab-conflict-modal" role="dialog" aria-modal="true">' +
-    '<h3>' +
-    escHtml(title) +
-    '</h3>' +
-    '<p><strong>' +
-    escHtml(nombre) +
-    '</strong><br>Registro: ' +
-    escHtml(reg) +
-    (studyCount
-      ? '<br>' + studyCount + ' estudio' + (studyCount === 1 ? '' : 's') + ' en el rango'
-      : '') +
-    '</p>' +
-    '<div class="lab-conflict-actions" style="flex-direction:row;justify-content:flex-end;gap:8px;">' +
-    stopBtn +
-    '<button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" id="patient-registro-tunnel-cancel">' +
-    escHtml(omitLabel) +
-    '</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary wb-btn-block" id="patient-registro-tunnel-confirm">Agregar al censo</button>' +
-    '</div></div>';
+  var view = await import('./patient-registro-tunnel-view.jsx');
+  view.drawTunnelConfirm(backdrop, {
+    title: title,
+    nombre: nombre,
+    reg: reg,
+    studyCount: studyCount,
+    omitLabel: omitLabel,
+    showStop: batchTotal > 1,
+  });
   document.body.appendChild(backdrop);
   document.getElementById('patient-registro-tunnel-cancel').onclick = function () {
     removeConfirmBackdrop();
