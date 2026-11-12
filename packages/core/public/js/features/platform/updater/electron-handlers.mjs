@@ -28,36 +28,29 @@ function updateAvailableTitle(isDowngrade, isRepair) {
   return 'Nueva versión';
 }
 
-function wireUpdateAvailableActions(version, isDowngrade) {
+async function wireUpdateAvailableActions(version, isDowngrade) {
   var actions = document.getElementById('update-modal-actions-primary');
+  var sec = document.getElementById('update-modal-actions-secondary');
+  if (!actions && !sec) return;
+  var view = await import('./update-actions-view.jsx');
   if (actions) {
-    actions.innerHTML = '';
-    if (!isDowngrade) {
-      var later = document.createElement('button');
-      later.className = 'btn-secondary';
-      later.textContent = 'Más tarde';
-      later.onclick = function() {
+    view.drawAvailablePrimary(actions, {
+      isDowngrade: isDowngrade,
+      onLater: function() {
         markDismissedVersion(version);
         hideUpdateModal();
-      };
-      actions.appendChild(later);
-    }
+      },
+    });
   }
-  var sec = document.getElementById('update-modal-actions-secondary');
   if (sec) {
-    sec.innerHTML = '';
-    if (!isDowngrade) {
-      var link = document.createElement('button');
-      link.type = 'button';
-      link.className = 'btn-link';
-      link.textContent = 'Ver notas en GitHub';
-      link.onclick = function() {
+    view.drawAvailableSecondary(sec, {
+      isDowngrade: isDowngrade,
+      onNotes: function() {
         if (window.electronAPI && window.electronAPI.openExternal) {
           window.electronAPI.openExternal('https://github.com/mausalas99/r-mas/releases');
         }
-      };
-      sec.appendChild(link);
-    }
+      },
+    });
   }
 }
 
@@ -113,7 +106,7 @@ async function handleUpdateAvailable(payload) {
   if (shouldSkipUpdateAvailable(isDowngrade, isRepair, version)) return;
   resetUpdateModalPanels();
   populateUpdateAvailableDom(version, releaseNotes, isDowngrade, isRepair);
-  wireUpdateAvailableActions(version, isDowngrade);
+  await wireUpdateAvailableActions(version, isDowngrade);
   showUpdateModal();
 }
 
@@ -151,32 +144,26 @@ function handleUpdateProgress(payload) {
   showUpdateModal();
 }
 
-function wireUpdateReadyActions(isDowngrade) {
+async function wireUpdateReadyActions(isDowngrade) {
   var actions = document.getElementById('update-modal-actions-primary');
-  if (actions) {
-    actions.innerHTML = '';
-    var go = document.createElement('button');
-    go.className = 'btn-primary';
-    go.textContent = isDowngrade ? 'Restaurar y reiniciar' : 'Instalar y reiniciar';
-    go.onclick = function() {
-      updaterState.updateModalMode = 'upgrade';
-      updaterState.pendingDowngradeVersion = null;
-      installUpdate();
-    };
-    actions.appendChild(go);
-    if (!isDowngrade) {
-      var later = document.createElement('button');
-      later.className = 'btn-secondary';
-      later.textContent = 'Instalar al cerrar';
-      later.onclick = function() { hideUpdateModal(); };
-      actions.appendChild(later);
-    }
-  }
   var sec = document.getElementById('update-modal-actions-secondary');
-  if (sec) sec.innerHTML = '';
+  if (!actions && !sec) return;
+  var view = await import('./update-actions-view.jsx');
+  if (actions) {
+    view.drawReadyPrimary(actions, {
+      isDowngrade: isDowngrade,
+      onInstall: function() {
+        updaterState.updateModalMode = 'upgrade';
+        updaterState.pendingDowngradeVersion = null;
+        installUpdate();
+      },
+      onLater: function() { hideUpdateModal(); },
+    });
+  }
+  if (sec) view.drawUpdateActions(sec, null);
 }
 
-function handleUpdateReady(payload) {
+async function handleUpdateReady(payload) {
   var version = (payload && payload.version) ? payload.version : String(payload || '');
   var isDowngrade = updaterState.updateModalMode === 'downgrade';
   updaterState.updateReadyToInstall = !isDowngrade;
@@ -194,7 +181,7 @@ function handleUpdateReady(payload) {
   if (fill) fill.style.width = '100%';
   var label = document.getElementById('update-modal-progress-label');
   if (label) label.textContent = 'Descarga completa.';
-  wireUpdateReadyActions(isDowngrade);
+  await wireUpdateReadyActions(isDowngrade);
   showUpdateModal();
 }
 

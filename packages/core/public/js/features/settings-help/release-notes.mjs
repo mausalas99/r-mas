@@ -30,17 +30,11 @@ function stripHtmlFromReleaseBody(html) {
   var raw = html == null ? '' : String(html);
   if (!raw.trim()) return '';
   try {
-    var el = document.createElement('div');
-    el.innerHTML = raw;
-    return (el.textContent || '').replace(/\s+/g, ' ').trim();
+    var doc = new DOMParser().parseFromString(raw, 'text/html');
+    return (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
   } catch {
     return raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   }
-}
-
-/** HTML del cuerpo de novedades (solo contenido curado en RELEASE_NOTES_HIGHLIGHTS). */
-function releaseNoteBodyHtml(raw) {
-  return raw == null ? '' : String(raw);
 }
 
 function formatHighlightsPlain(notes) {
@@ -170,19 +164,8 @@ function showReleaseNotesModal(version) {
   var list = document.getElementById('release-notes-list');
   if (list) {
     var notes = getCuratedReleaseNotes(version);
-    list.innerHTML = '';
-    notes.forEach(function (n) {
-      var li = document.createElement('li');
-      li.className = 'release-notes-item';
-      var titleEl = document.createElement('p');
-      titleEl.className = 'release-notes-item-title';
-      titleEl.textContent = n.title || '';
-      li.appendChild(titleEl);
-      var bodyEl = document.createElement('p');
-      bodyEl.className = 'release-notes-item-body';
-      bodyEl.innerHTML = releaseNoteBodyHtml(n.body);
-      li.appendChild(bodyEl);
-      list.appendChild(li);
+    void import('./release-notes-view.jsx').then(function (view) {
+      view.drawReleaseNotes(list, notes);
     });
   }
   syncReleaseNotesGuardiaCta();
