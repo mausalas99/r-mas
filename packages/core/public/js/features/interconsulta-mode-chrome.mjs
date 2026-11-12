@@ -20,7 +20,6 @@
  * overflow menu item here, per the 10b spec ("existe pero no ocupa lugar
  * visual").
  */
-import { escHtml } from '../dom-escape.mjs';
 import { isModeSala } from '../mode-features.mjs';
 import { isGuardiaMode } from './chrome.mjs';
 import { settingsRef } from './profile-runtime.mjs';
