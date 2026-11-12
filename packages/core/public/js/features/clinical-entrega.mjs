@@ -1,7 +1,7 @@
 /**
  * Entrega (handoff) modal — assign active_guardias with rank-based eligibility (façade).
  */
-import { resolveEntregaActorRole as resolveEntregaActorRoleImpl } from './entrega-modal-ui.mjs';
+import { resolveEntregaActorRole as resolveEntregaActorRoleImpl } from './entrega-modal-state.mjs';
 import {
   ensureEntregaTargetUser,
   collectEntregaScopeUsers,

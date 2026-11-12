@@ -1,4 +1,5 @@
-// Entrega modal open/close + form wiring
+// Entrega modal open/close + data loading. The form itself is the Preact view (../entrega-modal-view.jsx),
+// loaded on first open; this file feeds it a model and saves what it hands back.
 import {
   clinicalSessionContext,
   fetchClinicalScopeContextFromDb,
@@ -7,12 +8,13 @@ import {
 } from '../../clinical-access-runtime.mjs';
 import { computeSalaAbcdefDeficitWrite } from '../../clinico-access.mjs';
 import { effectiveClinicalRank } from '../../clinical-privileges.mjs';
-import { closeModalAnimated } from '../../ui-motion.mjs';
+import { normalizePendientesJson } from '../../../../lib/entrega/entrega-pendientes.mjs';
 import {
-  mountEntregaPendientesUi,
-  resetEntregaModalUi,
+  handoffFieldsFromContext,
+  initialVitalsPlan,
   resolveEntregaActorRole,
-} from '../entrega-modal-ui.mjs';
+  vitalsUiFromPlan,
+} from '../entrega-modal-state.mjs';
 import { teamLabelById } from '../../patient-team-assign-ui.mjs';
 import {
   dbApi,
@@ -40,74 +42,75 @@ import {
   resolveEntregaPhaseCovering,
   resolveUserSalaForEntrega,
 } from './clinical-entrega-phase.mjs';
+import { closeEntregaModal, setEntregaOnClosed } from './clinical-entrega-close.mjs';
 
-let entregaFormWired = false;
+export { closeEntregaModal };
+
+/** The patient the open modal is editing; the view's fields come from `draftRef`. */
+let session = null;
+const draftRef = { current: null };
+let backdropWired = false;
 let entregaNavBusy = false;
+let viewPromise = null;
+let modelSeq = 0;
 
-function wireEntregaFormOnce() {
-  if (entregaFormWired) return;
-  entregaFormWired = true;
+const loadView = () => (viewPromise ||= import('../entrega-modal-view.jsx'));
 
-  const form = document.getElementById('entrega-form');
-  const cancelBtn = document.getElementById('btn-entrega-cancel');
-  const bd = entregaModalEl();
+const rosterMode = () => !!session?.rosterIds?.length;
 
-  if (cancelBtn) cancelBtn.addEventListener('click', () => closeEntregaModal());
-  if (bd) {
-    bd.addEventListener('click', (ev) => {
-      if (ev.target === bd) closeEntregaModal();
-    });
-  }
+function wireBackdropOnce(bd) {
+  if (backdropWired) return;
+  backdropWired = true;
+  bd.addEventListener('click', (ev) => {
+    if (ev.target === bd) closeEntregaModal();
+  });
+  setEntregaOnClosed(() => {
+    session = null;
+    draftRef.current = null;
+    void loadView().then((v) => v.clearEntregaModal(bd));
+  });
+}
 
-  const navPrev = document.getElementById('entrega-nav-prev');
-  const navNext = document.getElementById('entrega-nav-next');
-  const navigateRosterPatient = async (delta) => {
-    if (entregaNavBusy) return;
-    const entregaForm = document.getElementById('entrega-form');
-    const ids = entregaForm?._entregaRosterIds;
-    const idx = entregaForm?._entregaPatientIndex;
-    if (!ids?.length || !Number.isFinite(idx)) return;
-    const nextIdx = idx + delta;
-    if (nextIdx < 0 || nextIdx >= ids.length) return;
+async function navigateRosterPatient(delta) {
+  if (entregaNavBusy || !session) return;
+  const ids = session.rosterIds;
+  const idx = session.patientIndex;
+  if (!ids?.length || !Number.isFinite(idx)) return;
+  const nextIdx = idx + delta;
+  if (nextIdx < 0 || nextIdx >= ids.length) return;
 
-    entregaNavBusy = true;
-    try {
-      const saved = await persistEntregaFormState(entregaForm, { silent: true });
-      if (!saved.ok) {
-        toast(saved.error || 'Completa R1 y equipo antes de cambiar de paciente.', 'error');
-        return;
-      }
-      openEntregaModal({
-        patientId: String(ids[nextIdx]),
-        patientIndex: nextIdx,
-        patientTotal: ids.length,
-        rosterPatientIds: ids,
-        onConfirm: entregaForm._entregaOnConfirm,
-      });
-    } finally {
-      entregaNavBusy = false;
-    }
-  };
-  navPrev?.addEventListener('click', () => void navigateRosterPatient(-1));
-  navNext?.addEventListener('click', () => void navigateRosterPatient(1));
-
-  if (!form) return;
-
-  form.addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-    const rosterMode = Array.isArray(form._entregaRosterIds) && form._entregaRosterIds.length > 0;
-    const saved = await persistEntregaFormState(form, { silent: rosterMode });
-    if (!saved.ok) return;
-
-    if (rosterMode) {
-      toast('Paciente guardado.', 'success');
+  entregaNavBusy = true;
+  try {
+    const saved = await persistEntregaFormState(session, draftRef.current?.(), { silent: true });
+    if (!saved.ok) {
+      toast(saved.error || 'Completa R1 y equipo antes de cambiar de paciente.', 'error');
       return;
     }
+    openEntregaModal({
+      patientId: String(ids[nextIdx]),
+      patientIndex: nextIdx,
+      patientTotal: ids.length,
+      rosterPatientIds: ids,
+      onConfirm: session.onConfirm,
+    });
+  } finally {
+    entregaNavBusy = false;
+  }
+}
 
-    const onConfirm = form._entregaOnConfirm;
-    closeEntregaModal();
-    if (typeof onConfirm === 'function') onConfirm();
-  });
+async function submitEntregaForm() {
+  const roster = rosterMode();
+  const saved = await persistEntregaFormState(session, draftRef.current?.(), { silent: roster });
+  if (!saved.ok) return;
+
+  if (roster) {
+    toast('Paciente guardado.', 'success');
+    return;
+  }
+
+  const onConfirm = session?.onConfirm;
+  closeEntregaModal();
+  if (typeof onConfirm === 'function') onConfirm();
 }
 
 /**
@@ -124,46 +127,20 @@ export function openEntregaModal(opts) {
   void openEntregaModalAsync(opts);
 }
 
-function populateEntregaNavNameDx_(opts, patient) {
-  const navName = document.getElementById('entrega-modal-nav-name');
-  const navDx = document.getElementById('entrega-modal-nav-dx');
-  if (navName) {
-    const bed = patient?.bed_label || patient?.bed || '—';
-    const name = String(patient?.name || '').trim();
-    const navNameText = name ? `${name} · Cama ${bed}` : '—';
-    navName.textContent = navNameText;
-    navName.title = navNameText;
-  }
-  if (navDx) {
-    navDx.textContent = patient
-      ? String(patient.diagnosticosText || patient.service || '').toUpperCase()
-      : '';
-  }
-}
-
-function populateEntregaNavRoster_(opts) {
-  const navCounter = document.getElementById('entrega-modal-nav-counter');
-  const activeBadge = document.getElementById('entrega-modal-active-badge');
-  const navPrev = document.getElementById('entrega-nav-prev');
-  const navNext = document.getElementById('entrega-nav-next');
-  if (navCounter) {
-    const idx = opts?.patientIndex;
-    const total = opts?.patientTotal;
-    navCounter.textContent =
-      Number.isFinite(idx) && Number.isFinite(total) && total > 0
-        ? `${idx + 1} de ${total}`
-        : '';
-  }
-  if (activeBadge) activeBadge.classList.add('hidden');
-  const rosterIdx = Number.isFinite(opts?.patientIndex) ? opts.patientIndex : -1;
+function entregaNavModel_(opts, patient) {
+  const bed = patient?.bed_label || patient?.bed || '—';
+  const name = String(patient?.name || '').trim();
+  const idx = opts?.patientIndex;
+  const total = opts?.patientTotal;
+  const rosterIdx = Number.isFinite(idx) ? idx : -1;
   const rosterTotal = Array.isArray(opts?.rosterPatientIds) ? opts.rosterPatientIds.length : 0;
-  if (navPrev) navPrev.disabled = rosterIdx <= 0;
-  if (navNext) navNext.disabled = rosterIdx < 0 || rosterIdx >= rosterTotal - 1;
-}
-
-function populateEntregaNavChrome_(opts, patient) {
-  populateEntregaNavNameDx_(opts, patient);
-  populateEntregaNavRoster_(opts);
+  return {
+    name: name ? `${name} · Cama ${bed}` : '—',
+    dx: patient ? String(patient.diagnosticosText || patient.service || '').toUpperCase() : '',
+    counter: Number.isFinite(idx) && Number.isFinite(total) && total > 0 ? `${idx + 1} de ${total}` : '',
+    prevDisabled: rosterIdx <= 0,
+    nextDisabled: rosterIdx < 0 || rosterIdx >= rosterTotal - 1,
+  };
 }
 
 function resolvePreferredEntregaCovering_(params) {
@@ -212,28 +189,8 @@ function buildEntregaCoveringState_(params) {
   return { targetList, flow, preferred: resolvedPreferred };
 }
 
-function populateEntregaCoveringSelect_(params) {
-  const { targetList, preferred } = params;
-  const select = document.getElementById('entrega-covering-user');
-  const coverHint = document.getElementById('entrega-covering-hint');
-  if (!select) return;
-  select.innerHTML = targetList
-    .map((u) => `<option value="${u.user_id}">${userOptionLabel(u)}</option>`)
-    .join('');
-  if (preferred) select.value = preferred;
-  select.disabled = false;
-  select.setAttribute('required', '');
-  if (coverHint) {
-    coverHint.textContent = 'Residente de guardia que asumirá la cobertura nocturna de este paciente.';
-  }
-}
-
-async function populateEntregaSourceTeam_(params) {
+async function entregaTeamModel_(params) {
   const { patientId, patientRow, teams, existing, userId } = params;
-  const teamSelect = document.getElementById('entrega-source-team');
-  const srcTeamHint = document.getElementById('entrega-source-team-hint');
-  if (!teamSelect) return '';
-
   const scopeCtx = getClinicalScopeContextForEvaluate();
   const ctx = clinicalSessionContext.scopeContext || {};
   const assignments = scopeCtx.assignments || ctx.assignments || [];
@@ -245,16 +202,11 @@ async function populateEntregaSourceTeam_(params) {
     scopeCtx.now || new Date()
   );
   const hasCensusAssignment = !!censusTeamId;
-  const hasExistingSourceTeam = !!existing?.source_team_id;
-  const srcTeamId = resolveEntregaSourceTeamId(
-    patientId,
-    patientRow,
-    teams,
-    assignments,
-    existing,
-    userId
-  );
-  const teamHintText = entregaSourceTeamHint({ hasCensusAssignment, hasExistingSourceTeam });
+  const srcTeamId = resolveEntregaSourceTeamId(patientId, patientRow, teams, assignments, existing, userId);
+  const hint = entregaSourceTeamHint({
+    hasCensusAssignment,
+    hasExistingSourceTeam: !!existing?.source_team_id,
+  });
   const srcTeam = findEntregaTeamById(srcTeamId, teams);
   const censusLabel = srcTeam
     ? entregaTeamOptionLabel(srcTeam)
@@ -263,109 +215,41 @@ async function populateEntregaSourceTeam_(params) {
       : '';
 
   if (hasCensusAssignment && srcTeamId && censusLabel) {
-    teamSelect.innerHTML = `<option value="${srcTeamId}">${censusLabel}</option>`;
-    teamSelect.value = String(srcTeamId);
-    teamSelect.disabled = true;
-    teamSelect.removeAttribute('required');
-  } else {
-    const teamOptions = entregaSourceTeamSelectOptions(
-      srcTeamId,
-      teams,
-      userId,
-      clinicalSessionContext.user
-    );
-    teamSelect.innerHTML = teamOptions
-      .map((t) => `<option value="${t.team_id}">${entregaTeamOptionLabel(t)}</option>`)
-      .join('');
-    teamSelect.disabled = false;
-    teamSelect.setAttribute('required', '');
-    if (srcTeamId) teamSelect.value = srcTeamId;
+    return { options: [{ value: String(srcTeamId), label: censusLabel }], value: String(srcTeamId), disabled: true, hint, srcTeamId };
   }
-  if (srcTeamHint) {
-    srcTeamHint.textContent = teamHintText;
-    srcTeamHint.classList.remove('hidden');
-  }
-  return srcTeamId;
+  const options = entregaSourceTeamSelectOptions(srcTeamId, teams, userId, clinicalSessionContext.user).map((t) => ({
+    value: String(t.team_id),
+    label: entregaTeamOptionLabel(t),
+  }));
+  return { options, value: String(srcTeamId || options[0]?.value || ''), disabled: false, hint, srcTeamId };
 }
 
-function populateEntregaFlowHint_(flow) {
-  const hint = document.getElementById('entrega-flow-hint');
-  if (!hint) return;
-  const flowLabels = {
-    r2: 'R2: mismo servicio, R4, o cubridores Sala en déficit.',
-    r2_handoff: 'R2: selecciona R4 de Sala y R2 de guardia (dos entregas separadas).',
-    r3_suggest: 'R3: sugeridos por día de guardia del equipo (confirma).',
-    generic: 'Cualquier usuario registrado.',
-  };
-  if (flow === 'r1') {
-    hint.textContent = '';
-    hint.hidden = true;
-    return;
-  }
-  hint.textContent = flowLabels[flow] || flowLabels.generic;
-  hint.hidden = false;
-}
+const FLOW_LABELS = {
+  r2: 'R2: mismo servicio, R4, o cubridores Sala en déficit.',
+  r2_handoff: 'R2: selecciona R4 de Sala y R2 de guardia (dos entregas separadas).',
+  r3_suggest: 'R3: sugeridos por día de guardia del equipo (confirma).',
+  generic: 'Cualquier usuario registrado.',
+};
 
-function setEntregaModalTitle_(existing, guardiaId, actor) {
-  const title = document.getElementById('entrega-modal-title');
-  if (!title) return;
+function entregaTitle_(existing, guardiaId, actor) {
   if (guardiaId || existing?.guardia_id) {
-    title.textContent = actor.role === 'guardia' ? 'Pendientes de guardia' : 'Actualizar entrega';
-  } else if (clinicalSessionContext.guardiaMode) {
-    title.textContent = 'Entrega / pendientes';
-  } else {
-    title.textContent = 'Nueva entrega';
+    return actor.role === 'guardia' ? 'Pendientes de guardia' : 'Actualizar entrega';
   }
+  return clinicalSessionContext.guardiaMode ? 'Entrega / pendientes' : 'Nueva entrega';
 }
 
-function showEntregaModal_(bd, select) {
-  const coverHint = document.getElementById('entrega-covering-hint');
-  if (coverHint) coverHint.classList.toggle('hidden', !coverHint.textContent?.trim());
-  bd.classList.add('open');
-  document.body.classList.add('entrega-modal-open');
-  bd.setAttribute('aria-hidden', 'false');
-  select?.focus();
-}
-
-async function finalizeEntregaModalOpen_(params) {
-  const { bd, existing, guardiaId, patientRow, srcTeamId, select } = params;
-  const actor = resolveEntregaActorRole(clinicalSessionContext.user, existing);
-  await mountEntregaPendientesUi({
-    actor,
-    pendientesJson: existing?.pendientes_json,
-    sourceTeamId: srcTeamId,
-    vitalsFrequency: existing?.vitals_frequency,
-    isCritical: !!(existing?.is_critical),
-    signedRefusal: !!Number(patientRow?.negativa_maniobras_firmada),
-    patientId: patientRow?.id ? String(patientRow.id) : '',
-  });
-  setEntregaModalTitle_(existing, guardiaId, actor);
-  showEntregaModal_(bd, select);
-}
-
-async function guardEntregaPatientSwitch_(bd, form, patientId) {
-  const priorPatientId = String(form.dataset.patientId || '');
+async function guardEntregaPatientSwitch_(bd, patientId) {
   const switchingPatient =
     bd.classList.contains('open') &&
-    priorPatientId &&
+    session?.patientId &&
     patientId &&
-    priorPatientId !== patientId &&
-    Array.isArray(form._entregaRosterIds) &&
-    form._entregaRosterIds.length > 0;
+    session.patientId !== patientId &&
+    rosterMode();
   if (!switchingPatient) return true;
-  const saved = await persistEntregaFormState(form, { silent: true });
+  const saved = await persistEntregaFormState(session, draftRef.current?.(), { silent: true });
   if (saved.ok) return true;
   toast(saved.error || 'Completa R1 y equipo antes de cambiar de paciente.', 'error');
   return false;
-}
-
-function bindEntregaFormDataset_(form, opts, patientId, guardiaId) {
-  form.dataset.patientId = patientId;
-  if (guardiaId) form.dataset.guardiaId = guardiaId;
-  else delete form.dataset.guardiaId;
-  form._entregaOnConfirm = typeof opts?.onConfirm === 'function' ? opts.onConfirm : null;
-  form._entregaRosterIds = Array.isArray(opts?.rosterPatientIds) ? opts.rosterPatientIds.slice() : null;
-  form._entregaPatientIndex = Number.isFinite(opts?.patientIndex) ? opts.patientIndex : null;
 }
 
 async function findExistingGuardia_(opts, patientId) {
@@ -413,50 +297,70 @@ async function loadEntregaModalContext_(opts) {
 }
 
 async function openEntregaModalAsync(opts) {
-  wireEntregaFormOnce();
-
   const bd = entregaModalEl();
-  const form = document.getElementById('entrega-form');
-  if (!bd || !form) return;
+  if (!bd) return;
+  wireBackdropOnce(bd);
+  const viewReady = loadView();
 
   const patientId = String(opts?.patientId || '');
-  if (!(await guardEntregaPatientSwitch_(bd, form, patientId))) return;
+  if (!(await guardEntregaPatientSwitch_(bd, patientId))) return;
 
   const modalCtx = await loadEntregaModalContext_(opts);
-  bindEntregaFormDataset_(form, opts, modalCtx.patientId, modalCtx.guardiaId);
-  populateEntregaNavChrome_(opts, modalCtx.patient);
-
-  const { targetList, flow, preferred } = modalCtx.coveringState;
-  populateEntregaCoveringSelect_({ targetList, preferred });
-
+  const { existing } = modalCtx;
   const patientRow = modalCtx.patient || resolveEntregaPatientRow(modalCtx.patientId);
-  const srcTeamId = await populateEntregaSourceTeam_({
+  const { targetList, flow, preferred } = modalCtx.coveringState;
+  const team = await entregaTeamModel_({
     patientId: modalCtx.patientId,
     patientRow,
     teams: modalCtx.teams,
-    existing: modalCtx.existing,
+    existing,
     userId: modalCtx.userId,
   });
-  populateEntregaFlowHint_(flow);
+  const actor = resolveEntregaActorRole(clinicalSessionContext.user, existing);
+  const doc = normalizePendientesJson(existing?.pendientes_json);
+  const view = await viewReady;
 
-  await finalizeEntregaModalOpen_({
-    bd,
-    form,
-    existing: modalCtx.existing,
-    guardiaId: modalCtx.guardiaId,
-    patientRow,
-    srcTeamId,
-    select: document.getElementById('entrega-covering-user'),
+  session = {
+    patientId: modalCtx.patientId,
+    guardiaId: modalCtx.guardiaId || undefined,
+    onConfirm: typeof opts?.onConfirm === 'function' ? opts.onConfirm : null,
+    rosterIds: Array.isArray(opts?.rosterPatientIds) ? opts.rosterPatientIds.slice() : null,
+    patientIndex: Number.isFinite(opts?.patientIndex) ? opts.patientIndex : null,
+  };
+  const options = targetList.map((u) => ({ value: String(u.user_id), label: userOptionLabel(u) }));
+  const model = {
+    key: ++modelSeq,
+    nav: entregaNavModel_(opts, modalCtx.patient),
+    title: entregaTitle_(existing, modalCtx.guardiaId, actor),
+    covering: {
+      options,
+      value: String(preferred || options[0]?.value || ''),
+      hint: 'Residente de guardia que asumirá la cobertura nocturna de este paciente.',
+    },
+    team,
+    flowHint: flow === 'r1' ? '' : FLOW_LABELS[flow] || FLOW_LABELS.generic,
+    actor,
+    markPatientId: patientRow?.id ? String(patientRow.id) : '',
+    initial: {
+      handoff: handoffFieldsFromContext(doc.handoffContext, {
+        signedRefusal: !!Number(patientRow?.negativa_maniobras_firmada),
+      }),
+      isCritical: !!existing?.is_critical,
+      vitalsUi: vitalsUiFromPlan(
+        initialVitalsPlan({ vitalsPlan: doc.vitalsPlan, vitalsFrequency: existing?.vitals_frequency })
+      ),
+      items: doc.items.slice(),
+    },
+  };
+  view.drawEntregaModal(bd, {
+    model,
+    draftRef,
+    onCancel: closeEntregaModal,
+    onSubmit: () => void submitEntregaForm(),
+    onNav: (delta) => void navigateRosterPatient(delta),
   });
-}
-
-export function closeEntregaModal() {
-  document.body.classList.remove('entrega-modal-open');
-  const bd = entregaModalEl();
-  if (!bd) return;
-  closeModalAnimated(bd, function () {
-    resetEntregaModalUi();
-    const form = document.getElementById('entrega-form');
-    if (form) form._entregaOnConfirm = null;
-  });
+  bd.classList.add('open');
+  document.body.classList.add('entrega-modal-open');
+  bd.setAttribute('aria-hidden', 'false');
+  bd.querySelector('#entrega-covering-user')?.focus();
 }

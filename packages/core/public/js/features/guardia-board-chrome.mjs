@@ -25,7 +25,6 @@ import {
 } from '../../../lib/entrega/entrega-pendientes.mjs';
 import { vitalsStructuredMonitoringEnabled } from '../../../lib/entrega/entrega-vitals-plan.mjs';
 import { isGuardiaChipCritical } from '../../../lib/entrega/guardia-chip-critical.mjs';
-import { wireGuardiaPatientActionSheetDismiss } from './guardia-patient-action-sheet.mjs';
 import {
   alteradosForPatient,
   patientPendientes,
@@ -83,7 +82,6 @@ export async function bootstrapGuardiaCensusData(settings) {
 export function installGuardiaAppShell() {
   if (isAppShellInstalled() || typeof window === 'undefined') return;
   markAppShellInstalled();
-  wireGuardiaPatientActionSheetDismiss();
   window.appShell = window.appShell || {};
   window.appShell.openEntregaModal = openEntregaModal;
   document.addEventListener('click', (ev) => {

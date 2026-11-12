@@ -58,19 +58,20 @@ export async function submitEntregaAssignment(payload) {
 }
 
 /**
- * @param {HTMLFormElement|null|undefined} form
+ * @param {{ patientId: string, guardiaId?: string }|null|undefined} session the open modal's patient
+ * @param {object|null|undefined} draft the view's current fields (see buildEntregaSubmitPayload)
  * @returns {{ ok: true, payload: object } | { ok: false, error: string }}
  */
-export function collectEntregaFormPayload(form) {
-  if (!form) return { ok: false, error: 'Formulario de entrega no disponible' };
-  const patientId = String(form.dataset.patientId || '');
+export function collectEntregaFormPayload(session, draft) {
+  if (!session || !draft) return { ok: false, error: 'Formulario de entrega no disponible' };
+  const patientId = String(session.patientId || '');
   if (!patientId) return { ok: false, error: 'Paciente no seleccionado' };
 
-  const guardiaId = form.dataset.guardiaId ? String(form.dataset.guardiaId) : undefined;
+  const guardiaId = session.guardiaId ? String(session.guardiaId) : undefined;
   const existingGuardia = guardiaId
     ? clinicalSessionContext.guardias.find((g) => String(g.guardia_id) === guardiaId)
     : clinicalSessionContext.guardiasMap.get(patientId);
-  const payload = buildEntregaSubmitPayload(patientId, guardiaId, existingGuardia);
+  const payload = buildEntregaSubmitPayload(patientId, guardiaId, existingGuardia, draft);
 
   if (!payload.coveringUserId || !payload.sourceTeamId) {
     return { ok: false, error: 'Selecciona R1 de guardia y equipo del paciente.' };
@@ -80,18 +81,18 @@ export function collectEntregaFormPayload(form) {
 }
 
 /**
- * @param {HTMLFormElement|null|undefined} form
+ * Saves the draft; on success `session.guardiaId` becomes the saved row's id.
+ * @param {{ patientId: string, guardiaId?: string }|null|undefined} session
+ * @param {object|null|undefined} draft
  * @param {{ silent?: boolean }} [opts]
  */
-export async function persistEntregaFormState(form, opts = {}) {
-  const collected = collectEntregaFormPayload(form);
+export async function persistEntregaFormState(session, draft, opts = {}) {
+  const collected = collectEntregaFormPayload(session, draft);
   if (!collected.ok) return collected;
 
   try {
     const guardia = await submitEntregaAssignment(collected.payload);
-    if (guardia?.guardia_id && form) {
-      form.dataset.guardiaId = String(guardia.guardia_id);
-    }
+    if (guardia?.guardia_id && session) session.guardiaId = String(guardia.guardia_id);
     await refreshGuardiaCensusFromDb(null);
     if (!opts.silent) toast('Entrega registrada.', 'success');
     return { ok: true, guardia };

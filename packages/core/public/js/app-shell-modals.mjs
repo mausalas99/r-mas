@@ -36,7 +36,7 @@ import {
   closeModal,
   confirmCloseAddPatientModal,
 } from './features/patients.mjs';
-import { closeEntregaModal } from './features/clinical-entrega/clinical-entrega-modal.mjs';
+import { closeEntregaModal } from './features/clinical-entrega/clinical-entrega-close.mjs';
 
 const DYNAMIC_BACKDROP_IDS = [
   'lab-dedupe-backdrop',

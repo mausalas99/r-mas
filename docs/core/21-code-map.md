@@ -76,7 +76,7 @@ docs/
 | Roles / privileges | `lib/clinical-scope/` (pure evaluate + sala/team/guardia/cycle), thin `public/js/clinico-access.mjs` + unlock; `lib/db/clinical-privileges.mjs`, `lib/db/clinical-access-*.mjs`; `public/js/clinical-privileges.mjs`; `patient-delete-auth.mjs` (Admin/R4 any chart; others team-only); session bootstrap in `clinical-access-runtime/` (scope-ops = I/O adapter) |
 | LAN LiveSync (retired) | Removed in 8.0.5; P3 fossils cleared (`lan-blob-retire`, `ci:forbid-lan`). Ward server (`server.js`) removed 2026-09-02. |
 | Clinical teams / guardia | `public/js/features/clinical-teams/` (`teams-roster-{panel,manage,create,directory,submit,shell}`, `teams-roster-users-*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
-| Modo entrega | `lib/entrega/` (+ `entrega-prep-checklist.mjs`), `clinical-entrega.mjs`, `entrega-prep-panel.mjs`, `entrega-modal-ui.mjs` |
+| Modo entrega | `lib/entrega/` (+ `entrega-prep-checklist.mjs`), `clinical-entrega.mjs`, `entrega-prep-panel.mjs`, `entrega-modal-view.jsx` |
 | Interno mobile | `public/interno/` (Nube origin only) + `cloud/sync-worker/src/interno/` |
 | Cloud sync (Nube) | `cloud/sync-worker/`, `public/js/features/cloud-sync/` (`autostart`, `mutate-bridge`, `cloud-ops-events`, `pull-apply` + `remote-patient-delete-confirm`, `sync-apply` via `features/sync-apply/`), `clinical-ops-sync.mjs`, `cloud-mobile/` | all clinical wards |
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, `features/equipos-{board,qr-panel}.mjs` | Cloudflare Worker queue |

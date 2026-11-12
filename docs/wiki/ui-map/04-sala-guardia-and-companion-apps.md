@@ -97,7 +97,7 @@ Short map of the four work modes in the header: `Sala`, `Interconsulta`, `Guardi
 - ✘ fixed: rotation: `btn-rotation-config-open` is not in the DOM for this profile (R2, no admin); the rotation modal ids exist but stay hidden. Not reachable for non-admin.
 - Cloud-download icon appears in the top bar after some actions (update/sync hint); not documented.
 
-**Patient action sheet (unreachable — ✔ confirmed).** Grep of `public/js` finds `openGuardiaPatientActionSheet` only in its own file; row click opens Entrega live. Original note: `openGuardiaPatientActionSheet` (`guardia-patient-action-sheet.mjs:359`) offers `Abrir expediente` and `Registrar eventualidad` (`:261-265`), a note field `Nota de guardia` and `Esfuerzo terapéutico` / `Pronóstico` marks (`:142-146`). No caller was found in `js/` (grep of `.mjs`), and the row click goes to Entrega instead. Treat as dead code until a caller is shown.
+**Patient action sheet (removed).** It had no caller (row click opens Entrega), so `guardia-patient-action-sheet.mjs`, its markup in `root.html` and its CSS were deleted. The marks buttons live on in the Entrega modal (`guardia-marks.mjs`, `entrega-modal-view.jsx`).
 
 **Live refresh.** The event `rpc-interno-vitals-synced` reloads the census (`js/features/guardia-board.mjs:21-26`).
 
@@ -236,7 +236,7 @@ Cites: row click `guardia-board-render.mjs:149-165`; save and reload `:160-162`;
 
 **Imports.** Drive import mode `Solo eventualidades` (`index.html:275`); merge skips duplicates and returns added/skipped counts (`eventualidades-drive.mjs:9-22`).
 
-**Links.** Guardia action sheet has a second entry (`Registrar eventualidad`, `Nota breve visible para equipo mañana`, `guardia-patient-action-sheet.mjs:264-266`) but that sheet has no caller (section 2). Saves persist and push to Nube when sync is active (`eventualidades-drive.mjs:18-20`).
+**Links.** The second entry for eventualidades was the removed action sheet. Saves persist and push to Nube when sync is active (`eventualidades-drive.mjs:18-20`).
 
 ---
 
@@ -458,7 +458,6 @@ Note: the test window started in IC mode, not Sala; switched to Sala via the mod
 ## Gaps (not found or unclear)
 
 - Phase bar, `Finalizar turno`, roster: removed in code, still in Help text (`help-content.mjs:26-35`; `guardia-v7-upgrade-card.mjs:70`).
-- `guardia-patient-action-sheet.mjs` has no caller found.
 - `mobile/join.html` loads `/js/lan-join-boot.mjs`, which does not exist in `js/` (✔ confirmed live 2026-10-05: 404, page stuck on `Conectando a R+…`).
 - Mobile CSS (`styles/mobile.css`, `mobile-surfaces.css`) and Equipos push internals (`equipos-push*.mjs`, service workers) were not read in depth.
 - No offline queue/banner text was found for Guardia, Eventualidades, VPO, Sala cards.

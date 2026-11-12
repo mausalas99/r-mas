@@ -2035,77 +2035,7 @@ html.dark .tend-gaso-tip {
   overflow: hidden;
 }
 
-/* Guardia patient chip action sheet */
-.guardia-patient-action-backdrop.open {
-  z-index: 206;
-}
-
-.guardia-patient-action-modal {
-  width: min(96vw, 420px);
-  padding-bottom: 0;
-}
-
-.guardia-patient-action-body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.guardia-patient-action-lead {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-
-.guardia-patient-action-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.guardia-patient-action-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  cursor: pointer;
-  font-family: inherit;
-  text-align: left;
-  transition: border-color var(--dur-fast), background var(--dur-fast);
-}
-
-.guardia-patient-action-item:hover,
-.guardia-patient-action-item:focus-visible {
-  border-color: var(--color-accent);
-  background: var(--surface-elevated, var(--surface));
-  outline: none;
-}
-
-.guardia-patient-action-item__title {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.guardia-patient-action-item__hint {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  line-height: 1.35;
-}
-
-.guardia-patient-action-textarea {
-  min-height: 5.5rem;
-  resize: vertical;
-}
-
-.guardia-patient-action-dx { margin: 0; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; }
+/* Guardia marks (Entrega modal) */
 .guardia-marks-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .guardia-marks-group__label { flex-basis: 100%; font-size: 0.78rem; color: var(--text-muted); }
 .guardia-marks-btn {
@@ -2118,18 +2048,6 @@ html.dark .tend-gaso-tip {
   font-weight: 600;
 }
 .guardia-marks-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
-
-.guardia-patient-action-actions {
-  margin-top: 4px;
-  justify-content: flex-end;
-}
-
-.guardia-patient-action-footer {
-  margin-top: 0;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-  justify-content: flex-end;
-}
 
 .tend-event-compose-backdrop {
   position: fixed;

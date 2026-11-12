@@ -356,8 +356,7 @@ Use this before changing a domain. **Where you see it** links to the [UI map](./
 
 | To | Kind | What flows | Where |
 |---|---|---|---|
-| Eventualidades | data | the action sheet saves an eventualidad | `guardia-patient-action-sheet.mjs` |
-| Censo & pacientes | data | guardia marks on the patient; entrega markers on grid chips | `guardia-patient-action-sheet.mjs · lib/entrega/entrega-chip-markers.mjs` |
+| Censo & pacientes | data | guardia marks on the patient; entrega markers on grid chips | `guardia-marks.mjs · lib/entrega/entrega-chip-markers.mjs` |
 | Equipos & acceso | data | entrega vitals plan drives background vitals alerts | `session-manager.mjs BackgroundVitalsMonitorLoop` |
 | Interno & equipos | data | entrega pendientes shown on the intern board | `lib/interno/interno-board.mjs → lib/entrega/*` |
 | Nube sync | sync | entrega → active_guardias → clinicalOps | `clinical-entrega-submit.mjs pushCloudClinicalOpsNow` |
