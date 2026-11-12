@@ -86,13 +86,12 @@ export function isNubePopoverOpen() {
 }
 
 async function readPopoverState() {
-  const [snap, diag, runtimeMod, html, settings, human] = await Promise.all([
+  const [snap, diag, runtimeMod, html, settings] = await Promise.all([
     import('./cloud-sync-status-snapshot.mjs'),
     import('./cloud-sync-diagnostics.mjs'),
     import('./panel-conexion-runtime.mjs'),
     import('./panel-conexion-html.mjs'),
     import('./settings.mjs'),
-    import('./cloud-sync-diagnostics-human-format.mjs'),
   ]);
   const live = snap.resolveCloudConexionChipStatus();
   return {
@@ -102,7 +101,7 @@ async function readPopoverState() {
     lastPushAt: diag.getLastCloudPushAt(),
     lastPullAt: diag.getLastCloudPullAt(),
     formatMonth: html.formatTurnMonth,
-    formatWhen: human.formatCloudDiagWhen,
+    formatWhen: html.formatCloudDiagWhen,
     runtime: runtimeMod.getSharedNubeRuntime(),
   };
 }

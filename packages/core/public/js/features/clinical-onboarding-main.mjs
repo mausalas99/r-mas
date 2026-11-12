@@ -6,7 +6,6 @@ import { ensureClinicalDbUnlocked, isSqlcipherNativeReady } from './db-unlock.mj
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../clinical-settings.mjs';
 import {
-  needsClinicalOnboarding,
   needsClinicalSyncModeChoice,
   needsOnboardingShell,
   needsProfileOnboarding,

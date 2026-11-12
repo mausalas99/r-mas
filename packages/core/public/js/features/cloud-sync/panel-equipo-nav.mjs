@@ -28,7 +28,7 @@ async function navigateEquipoView(section, opts) {
   if (!host) {
     const body = section.querySelector('[data-cloud-view="equipo"] .cloud-sync-view-body');
     if (body) {
-      (await import('./panel-conexion-bootstrap-view.jsx')).prependEquipoHost(body);
+      (await import('./connection-panel-view.jsx')).prependEquipoHost(body);
       host = body.querySelector('[data-cloud-equipo-host]');
     }
   }

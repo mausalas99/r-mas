@@ -1,7 +1,7 @@
 import test from 'node:test';
 import { loadJsx } from '../preact-view-test-helpers.mjs';
 import { sameHtml } from '../preact-html-compare.mjs';
-import { DASH_SCENARIOS } from './panel-cloud-diagnostics-scenarios.mjs';
+import { DASH_SCENARIOS } from './panel-overlays-scenarios.mjs';
 import OLD from './panel-cloud-diagnostics-view.old.json' with { type: 'json' };
 
 const view = await loadJsx(import.meta.url, `import { NubeDashboard } from './panel-cloud-diagnostics-view.jsx';

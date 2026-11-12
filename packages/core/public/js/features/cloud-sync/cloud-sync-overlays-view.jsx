@@ -4,7 +4,6 @@
  * their own .mjs; the popover's buttons by data-nube-pop in cloud-sync-header-chrome.mjs. Lazy-loaded.
  */
 import { render } from 'preact';
-import { clinicalUserActivityHistoryEntries } from '../../../../lib/clinical-user-activity.mjs';
 import { STACKED_BACKDROP_CLASS } from './stacked-overlay.mjs';
 
 /**
@@ -47,8 +46,9 @@ export const CloudNubeFixModal = ({ guide }) => (
   </div>
 );
 
-function HistoryList({ history }) {
-  const { entries, more } = clinicalUserActivityHistoryEntries(history, 999);
+/** `activity` is clinicalUserActivityHistoryEntries(history, 999), computed by the caller (that module is eager; importing it here would split it into its own startup chunk). */
+function HistoryList({ activity }) {
+  const { entries, more } = activity;
   if (!entries.length) return <p class="cloud-sync-equipos-history-empty">Sin actividad registrada.</p>;
   return (
     <ul class="cloud-sync-admin-equipos-history-list cloud-sync-equipos-history-modal-list">
@@ -74,7 +74,7 @@ export function EquiposHistoryModal({ opts }) {
           <h3 id="equipos-activity-history-title">Historial de actividad</h3>
           <p class="cloud-sync-equipos-history-modal-sub">{subtitle}</p>
         </div>
-        <HistoryList history={opts?.history} />
+        <HistoryList activity={opts.activity} />
         <div class="cloud-sync-equipos-history-modal-foot">
           <button type="button" class="cloud-sync-btn" data-equipos-history-close="">Cerrar</button>
         </div>

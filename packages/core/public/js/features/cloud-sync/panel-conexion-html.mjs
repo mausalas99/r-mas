@@ -8,6 +8,8 @@ import { appendMemberCount } from './room-label.mjs';
 import { getLastCloudPushAt } from './cloud-sync-diagnostics.mjs';
 import { formatCloudDiagWhen } from './cloud-sync-diagnostics-human-format.mjs';
 import { humanizeCloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
+
+export { formatCloudDiagWhen };
 /** @typedef {'idle' | 'syncing' | 'pending' | 'offline' | 'error'} CloudSyncStatus */
 
 export const STATUS_LABELS = {

@@ -12,7 +12,7 @@
   function readSettings() {
     try {
       return JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-    } catch (_e) {
+    } catch {
       return {};
     }
   }
@@ -34,7 +34,7 @@
         return !!(snap && String(snap.token || '').trim());
       }
       return false;
-    } catch (_e) {
+    } catch {
       return false;
     }
   }

@@ -188,7 +188,7 @@ async function refreshDisconnectedNextStep(section, getToken) {
   else if (!userHasJoinedTeam() && !next) {
     const anchor = section.querySelector('.cloud-sync-account');
     if (anchor && getToken()) {
-      const view = await import('./panel-conexion-bootstrap-view.jsx');
+      const view = await import('./connection-panel-view.jsx');
       if (anchor.isConnected && !section.querySelector('.cloud-sync-next-step') && !userHasJoinedTeam()) view.insertNextStepAfter(anchor);
     }
   }

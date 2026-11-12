@@ -4,7 +4,7 @@ import { sameHtml } from '../preact-html-compare.mjs';
 import OLD from './connection-panel-view.old.json' with { type: 'json' };
 
 const view = await loadJsx(import.meta.url, `import { ConnectionFallback } from './connection-panel-view.jsx';
-  import { NextStep, EquipoEmbedHost } from './panel-conexion-bootstrap-view.jsx';
+  import { NextStep, EquipoEmbedHost } from './connection-panel-view.jsx';
   export const fallback = (kind) => renderToString(<ConnectionFallback kind={kind} />);
   export const next = () => renderToString(<NextStep />);
   export const host = () => renderToString(<EquipoEmbedHost />);`);

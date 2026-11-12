@@ -1,6 +1,7 @@
 import test from 'node:test';
 import { loadJsx } from '../preact-view-test-helpers.mjs';
 import { sameHtml } from '../preact-html-compare.mjs';
+import { clinicalUserActivityHistoryEntries } from '../../../../lib/clinical-user-activity.mjs';
 import * as S from './panel-overlays-scenarios.mjs';
 import OLD from './cloud-sync-overlays-view.old.json' with { type: 'json' };
 
@@ -31,7 +32,7 @@ test('fix modal equals the old markup', () => {
 });
 
 test('activity history modal equals the old markup', () => {
-  for (const [k, c] of Object.entries(S.HISTORY_CASES)) sameHtml(view.history(c), OLD.history[k], k);
+  for (const [k, c] of Object.entries(S.HISTORY_CASES)) sameHtml(view.history({ ...c, activity: clinicalUserActivityHistoryEntries(c.history, 999) }), OLD.history[k], k);
 });
 
 test('nube popover equals the old markup', () => {

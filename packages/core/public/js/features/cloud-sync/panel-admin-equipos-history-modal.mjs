@@ -5,7 +5,7 @@ import { clinicalUserActivityHistoryEntries } from '../../../../lib/clinical-use
  */
 export async function showEquiposActivityHistoryModal(opts) {
   const { drawEquiposHistoryModal } = await import('./cloud-sync-overlays-view.jsx');
-  const overlay = drawEquiposHistoryModal(opts);
+  const overlay = drawEquiposHistoryModal({ ...opts, activity: clinicalUserActivityHistoryEntries(opts.history, 999) });
   if (!overlay) return;
   document.body.appendChild(overlay);
   wireEquiposActivityHistoryModal(overlay);
