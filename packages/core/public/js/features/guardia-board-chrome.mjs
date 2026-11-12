@@ -248,7 +248,7 @@ export function computeGuardiaSummary(censusPatients, guardiasMap) {
 export function renderGuardiaCensusHead(state) {
   void state;
   const host = document.getElementById('guardia-census-head');
-  if (host) host.innerHTML = '';
+  if (host) host.replaceChildren();
 }
 
 /**

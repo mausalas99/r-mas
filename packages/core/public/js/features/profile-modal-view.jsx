@@ -123,3 +123,15 @@ export function mountProfileModal() {
   const host = document.getElementById('profile-modal');
   if (host && !host.firstElementChild) render(<ProfileModal />, host);
 }
+
+/** <option>s for the Médico tratante pick; `options` comes from doctorOptionList in profile-modal.mjs. */
+export function DoctorOptions({ options }) {
+  return options.map((o) => <option value={o.value}>{o.label}</option>);
+}
+
+/** Replace the pick's options (fresh nodes, like the old `innerHTML =`). */
+export function drawDoctorOptions(select, options) {
+  render(null, select);
+  select.textContent = '';
+  render(<DoctorOptions options={options} />, select);
+}

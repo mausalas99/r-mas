@@ -61,29 +61,27 @@ export function perfilTeamPeople(teams, user) {
   });
 }
 
-/** <option>s for Médico tratante: the team, the saved name if it is not on it, and «Otro…». */
-export function doctorOptionsHtml(people, current) {
-  var esc = function (v) {
-    return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
-  };
+/** Options for Médico tratante: the team, the saved name if it is not on it, and «Otro…». @returns {Array<{ value: string, label: string }>} */
+export function doctorOptionList(people, current) {
   var names = people.map(function (p) { return p.name; });
   var opts = people.map(function (p) {
-    return '<option value="' + esc(p.name) + '">' + esc(p.name + (p.rank ? " · " + p.rank : "")) + "</option>";
+    return { value: p.name, label: p.name + (p.rank ? " · " + p.rank : "") };
   });
-  if (current && names.indexOf(current) === -1) opts.unshift('<option value="' + esc(current) + '">' + esc(current) + "</option>");
+  if (current && names.indexOf(current) === -1) opts.unshift({ value: current, label: current });
   // Nothing saved: show an empty pick, never a team member that is not stored.
-  if (!current) opts.unshift('<option value="">' + (people.length ? "Elige tu nombre" : "Sin equipo en Nube") + "</option>");
-  opts.push('<option value="' + OTHER + '">Otro…</option>');
-  return opts.join("");
+  if (!current) opts.unshift({ value: "", label: people.length ? "Elige tu nombre" : "Sin equipo en Nube" });
+  opts.push({ value: OTHER, label: "Otro…" });
+  return opts;
 }
 
-function syncDoctorPicker(root) {
+async function syncDoctorPicker(root) {
   var pick = root.querySelector("[data-perfil-doctor-pick]");
   var input = document.getElementById("profile-doctor");
   if (!(pick instanceof HTMLSelectElement) || !(input instanceof HTMLInputElement)) return;
   var people = perfilTeamPeople(clinicalSessionContext.teams, clinicalSessionContext.user);
-  pick.innerHTML = doctorOptionsHtml(people, input.value.trim());
-  pick.value = input.value.trim();
+  var current = input.value.trim();
+  (await import("./profile-modal-view.jsx")).drawDoctorOptions(pick, doctorOptionList(people, current));
+  pick.value = current;
   input.hidden = pick.value !== OTHER;
 }
 
@@ -222,7 +220,7 @@ export function initPerfilPanel() {
     });
   }
   void mountPerfilClinicalForm(root);
-  syncDoctorPicker(root);
+  void syncDoctorPicker(root);
   renderPerfilIdentity(root);
   var chip = root.querySelector("[data-perfil-saved]");
   if (chip) chip.textContent = "Se guarda solo";
