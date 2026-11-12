@@ -59,13 +59,3 @@ export function buildCountersBandHtml(cells) {
   }
   return `<div class="wb-counters-band">${list.map(buildCounterCellHtml).join('')}</div>`;
 }
-
-/**
- * @param {HTMLElement|null|undefined} container
- * @param {CounterCell[]} cells
- */
-export function mountCountersBand(container, cells) {
-  if (!container) return undefined;
-  container.innerHTML = buildCountersBandHtml(cells);
-  return container;
-}

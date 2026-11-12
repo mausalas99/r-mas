@@ -90,27 +90,3 @@ export function buildTableCardHtml({ title, actionsHtml, columns, gridTemplate, 
     '</div>'
   );
 }
-
-/**
- * @param {HTMLElement|null|undefined} container
- * @param {Parameters<typeof buildTableCardHtml>[0] & { onRowClick?: (id: string) => void }} opts
- */
-export function mountTableCard(container, opts) {
-  if (!container) return undefined;
-  container.innerHTML = buildTableCardHtml(opts);
-  const { onRowClick } = opts || {};
-  if (typeof onRowClick !== 'function') return container;
-
-  container.querySelectorAll('.wb-row[data-wb-row-id]').forEach((row) => {
-    const id = row.getAttribute('data-wb-row-id');
-    const open = () => onRowClick(id);
-    row.addEventListener('click', open);
-    // In-row buttons (other than the row's own .wb-row-open) never bubble to
-    // the row's open-patient handler.
-    row.querySelectorAll('button:not(.wb-row-open)').forEach((btn) => {
-      btn.addEventListener('click', (ev) => ev.stopPropagation());
-    });
-  });
-
-  return container;
-}

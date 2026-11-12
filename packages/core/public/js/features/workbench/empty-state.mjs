@@ -29,20 +29,3 @@ export function buildEmptyStateHtml({ label, missing, whenArrives, exitLabel, ex
     '</div>'
   );
 }
-
-/**
- * @param {HTMLElement|null|undefined} container
- * @param {Parameters<typeof buildEmptyStateHtml>[0] & { onExit?: () => void }} opts
- */
-export function mountEmptyState(container, opts = {}) {
-  if (!container) return undefined;
-  container.innerHTML = buildEmptyStateHtml(opts);
-  const exit = container.querySelector('[data-wb-empty-exit]');
-  if (exit && typeof opts.onExit === 'function') {
-    exit.addEventListener('click', (ev) => {
-      ev.preventDefault();
-      opts.onExit();
-    });
-  }
-  return container;
-}
