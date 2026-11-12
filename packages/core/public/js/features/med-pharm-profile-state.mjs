@@ -59,7 +59,7 @@ export function monthLabel(year, monthIndex) {
   return MONTH_NAMES[monthIndex] + ' ' + year;
 }
 
-function todayParts() {
+export function todayParts() {
   var t = new Date();
   return { year: t.getFullYear(), monthIndex: t.getMonth(), day: t.getDate() };
 }

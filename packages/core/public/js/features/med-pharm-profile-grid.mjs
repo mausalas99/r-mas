@@ -13,94 +13,57 @@ import {
   mp,
   getProfile,
   getViewWindow,
-  isToday,
+  todayParts,
   MONTH_ABBR,
   displayRowsForWindow,
   notAdminAtColumn,
 } from './med-pharm-profile-state.mjs';
 import {
-  buildMedCellInner,
+  buildAdhTriggerModel,
   wireMedPharmAdhHoverPanels,
   adherenceStatsForWindow,
 } from './med-pharm-profile-adh.mjs';
+import { drawSomeGrid } from './med-pharm-profile-view.jsx';
 
-function padDayCells(tr, count, target, tag, padClass) {
-  while (count < target) {
-    var cell = document.createElement(tag);
-    cell.className = padClass;
-    if (tag === 'th') cell.innerHTML = '&nbsp;';
-    tr.appendChild(cell);
-    count += 1;
-  }
+function isTodayCol(today, col) {
+  return today.year === col.year && today.monthIndex === col.monthIndex && today.day === col.day;
 }
 
-function appendDayHeader(tr, columns, from, to) {
+function dayHeaderCells(columns, from, to, today) {
+  var cells = [];
   var prevMonthKey = from > 0 ? columns[from - 1].monthKey : '';
   for (var i = from; i < to; i += 1) {
     var col = columns[i];
-    var th = document.createElement('th');
-    th.className = 'day-hdr' + (isToday(col.year, col.monthIndex, col.day) ? ' today-col' : '');
+    var cls = 'day-hdr' + (isTodayCol(today, col) ? ' today-col' : '');
+    var label = '';
     if (col.monthKey !== prevMonthKey) {
-      th.classList.add('day-hdr-month');
-      if (i > 0) th.classList.add('day-hdr-month-boundary');
-      var abbr = document.createElement('span');
-      abbr.className = 'day-hdr-month-label';
-      abbr.textContent = MONTH_ABBR[col.monthIndex];
-      th.appendChild(abbr);
+      cls += ' day-hdr-month' + (i > 0 ? ' day-hdr-month-boundary' : '');
+      label = MONTH_ABBR[col.monthIndex];
       prevMonthKey = col.monthKey;
     }
-    th.appendChild(document.createTextNode(String(col.day).padStart(2, '0')));
-    tr.appendChild(th);
+    cells.push({ cls: cls, label: label, day: String(col.day).padStart(2, '0') });
   }
+  return cells;
 }
 
-function appendDayCell(tr, profile, row, column, monthBoundary) {
-  var td = document.createElement('td');
-  td.className = 'day-pad' + (isToday(column.year, column.monthIndex, column.day) ? ' today-col' : '');
-  if (monthBoundary) td.classList.add('day-pad-month-boundary');
+function dayCellModel(profile, row, column, monthBoundary, today) {
+  var cls = 'day-pad' + (isTodayCol(today, column) ? ' today-col' : '');
+  if (monthBoundary) cls += ' day-pad-month-boundary';
   var v = cellValueAtColumn(profile, row.rowKey, column);
-  if (!(v > 0)) {
-    tr.appendChild(td);
-    return;
-  }
-  td.classList.add('indicated');
-  if (notAdminAtColumn(profile, row.rowKey, column)) {
-    td.classList.add('not-admin');
-  }
-  if (v > 1) {
-    var span = document.createElement('span');
-    span.className = 'x2';
-    span.textContent = '×2';
-    td.appendChild(span);
-  }
-  td.dataset.rowKey = row.rowKey;
-  td.dataset.year = String(column.year);
-  td.dataset.month = String(column.monthIndex);
-  td.dataset.day = String(column.day);
-  td.title =
-    'Día ' +
-    column.day +
-    ' ' +
-    MONTH_ABBR[column.monthIndex] +
-    ' — clic para marcar no administrado';
-  tr.appendChild(td);
-}
-
-function wireGridDayClicks(root) {
-  if (!root || root._medPharmDayClickWired) return;
-  root._medPharmDayClickWired = true;
-  root.addEventListener('click', function (e) {
-    var dayCell = e.target.closest('td.day-pad.indicated[data-row-key]');
-    if (!dayCell || !root.contains(dayCell)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    onGridDayClick(
-      dayCell.dataset.rowKey,
-      parseInt(dayCell.dataset.year, 10),
-      parseInt(dayCell.dataset.month, 10),
-      parseInt(dayCell.dataset.day, 10)
-    );
-  });
+  if (!(v > 0)) return { cls: cls, attrs: null, x2: false };
+  cls += ' indicated';
+  if (notAdminAtColumn(profile, row.rowKey, column)) cls += ' not-admin';
+  return {
+    cls: cls,
+    x2: v > 1,
+    attrs: {
+      'data-row-key': row.rowKey,
+      'data-year': String(column.year),
+      'data-month': String(column.monthIndex),
+      'data-day': String(column.day),
+      title: 'Día ' + column.day + ' ' + MONTH_ABBR[column.monthIndex] + ' — clic para marcar no administrado',
+    },
+  };
 }
 
 function onGridDayClick(rowKey, year, monthIndex, day) {
@@ -143,119 +106,58 @@ function refreshOpenMedPharmGrids() {
 
 export function mountSomeGrid(window, rows, profile, container) {
   if (!container) return;
-  container.innerHTML = '';
-  var wrap = document.createElement('div');
-  wrap.className = 'med-pharm-grid-scope some-grid-wrap med-pharm-scroll';
-  wrap.appendChild(buildSomeGridTable(window, rows, profile));
-  container.appendChild(wrap);
-  wireGridDayClicks(wrap);
-  wireMedPharmAdhHoverPanels(wrap);
+  drawSomeGrid(container, {
+    model: buildSomeGridModel(window, rows, profile, todayParts()),
+    onDayClick: onGridDayClick,
+  });
+  wireMedPharmAdhHoverPanels(container);
 }
 
-function appendDayCellsForSlice(tr, profile, row, columns, from, to) {
+function dayCellsForSlice(profile, row, columns, from, to, today) {
+  var cells = [];
   var prevMonthKey = from > 0 ? columns[from - 1].monthKey : '';
   for (var i = from; i < to; i += 1) {
     var col = columns[i];
     var boundary = col.monthKey !== prevMonthKey && i > 0;
-    appendDayCell(tr, profile, row, col, boundary);
+    cells.push(dayCellModel(profile, row, col, boundary, today));
     prevMonthKey = col.monthKey;
   }
+  return cells;
 }
 
-function appendSomeGridMetaCols(cg) {
-  ['col-med', 'col-dosis', 'col-freq', 'col-via'].forEach(function (cls) {
-    var col = document.createElement('col');
-    col.className = cls;
-    cg.appendChild(col);
-  });
-}
-
-function buildSomeGridTable(window, rows, profile) {
+/** Plain model of the SOME grid; `today` is {year, monthIndex, day} (the caller reads the clock). */
+export function buildSomeGridModel(window, rows, profile, today) {
   var columns = window.columns;
   var total = columns.length;
   var splitAt = window.splitAt;
-  var table = document.createElement('table');
-  table.className = 'some-grid-unified';
-
-  var cg = document.createElement('colgroup');
-  appendSomeGridMetaCols(cg);
-  for (var ci = 0; ci < splitAt; ci += 1) {
-    var dayCol = document.createElement('col');
-    dayCol.className = 'col-day';
-    cg.appendChild(dayCol);
-  }
-  table.appendChild(cg);
-
-  var thead = document.createElement('thead');
-  var hdr1 = document.createElement('tr');
-  hdr1.className = 'hdr-row-1';
-  ['Medicamento', 'Dosis', 'Freq', 'Vía'].forEach(function (label, i) {
-    var th = document.createElement('th');
-    th.className = 'col-meta-hdr col-' + ['med', 'dosis', 'freq', 'via'][i];
-    th.rowSpan = 2;
-    th.textContent = label;
-    hdr1.appendChild(th);
-  });
-  appendDayHeader(hdr1, columns, 0, Math.min(splitAt, total));
-  padDayCells(hdr1, hdr1.querySelectorAll('th.day-hdr').length, splitAt, 'th', 'day-hdr day-hdr-empty');
-  thead.appendChild(hdr1);
-
-  var hdr2 = document.createElement('tr');
-  hdr2.className = 'hdr-row-2';
-  if (total > splitAt) {
-    appendDayHeader(hdr2, columns, splitAt, total);
-  }
-  padDayCells(hdr2, hdr2.querySelectorAll('th.day-hdr').length, splitAt, 'th', 'day-hdr day-hdr-empty');
-  thead.appendChild(hdr2);
-  table.appendChild(thead);
-
-  var tbody = document.createElement('tbody');
-  rows.forEach(function (row, rowIndex) {
-    var stats = adherenceStatsForWindow(profile, row.rowKey, columns);
-    var missCls = stats.missed > 0 ? ' has-misses' : '';
-    var blockStartCls = rowIndex > 0 ? ' med-row-block-start' : '';
-    var blockToneCls = rowIndex % 2 === 1 ? ' med-block-b' : ' med-block-a';
-
-    var tr1 = document.createElement('tr');
-    tr1.className = 'day-band' + missCls + blockStartCls + blockToneCls;
-    var medTd = document.createElement('td');
-    medTd.rowSpan = 2;
-    medTd.className = 'col-med';
-    medTd.innerHTML = buildMedCellInner(row, stats, columns, profile, window.label);
-    tr1.appendChild(medTd);
-
-    var dosisTd = document.createElement('td');
-    dosisTd.rowSpan = 2;
-    dosisTd.className = 'col-dosis';
-    dosisTd.textContent = row.dosis || '';
-    tr1.appendChild(dosisTd);
-
-    var freqTd = document.createElement('td');
-    freqTd.rowSpan = 2;
-    freqTd.className = 'col-freq';
-    freqTd.textContent = formatFreqShort(row.freq);
-    tr1.appendChild(freqTd);
-
-    var viaTd = document.createElement('td');
-    viaTd.rowSpan = 2;
-    viaTd.className = 'col-via';
-    viaTd.textContent = formatViaShort(row.via);
-    tr1.appendChild(viaTd);
-
-    appendDayCellsForSlice(tr1, profile, row, columns, 0, Math.min(splitAt, total));
-    padDayCells(tr1, tr1.querySelectorAll('td.day-pad').length, splitAt, 'td', 'day-pad day-pad-empty');
-    tbody.appendChild(tr1);
-
-    var tr2 = document.createElement('tr');
-    tr2.className = 'day-band med-row-block-end' + missCls + blockToneCls;
-    if (total > splitAt) {
-      appendDayCellsForSlice(tr2, profile, row, columns, splitAt, total);
-    }
-    padDayCells(tr2, tr2.querySelectorAll('td.day-pad').length, splitAt, 'td', 'day-pad day-pad-empty');
-    tbody.appendChild(tr2);
-  });
-  table.appendChild(tbody);
-  return table;
+  var first = Math.min(splitAt, total);
+  var hdr1 = dayHeaderCells(columns, 0, first, today);
+  var hdr2 = total > splitAt ? dayHeaderCells(columns, splitAt, total, today) : [];
+  return {
+    splitAt: splitAt,
+    hdr1: { cells: hdr1, pad: Math.max(0, splitAt - hdr1.length) },
+    hdr2: { cells: hdr2, pad: Math.max(0, splitAt - hdr2.length) },
+    rows: rows.map(function (row, rowIndex) {
+      var stats = adherenceStatsForWindow(profile, row.rowKey, columns);
+      var missCls = stats.missed > 0 ? ' has-misses' : '';
+      var toneCls = rowIndex % 2 === 1 ? ' med-block-b' : ' med-block-a';
+      var cells1 = dayCellsForSlice(profile, row, columns, 0, first, today);
+      var cells2 = total > splitAt ? dayCellsForSlice(profile, row, columns, splitAt, total, today) : [];
+      return {
+        cls1: 'day-band' + missCls + (rowIndex > 0 ? ' med-row-block-start' : '') + toneCls,
+        cls2: 'day-band med-row-block-end' + missCls + toneCls,
+        med: row.med,
+        adh: buildAdhTriggerModel(row, stats, columns, profile, window.label),
+        dosis: row.dosis || '',
+        freq: formatFreqShort(row.freq),
+        via: formatViaShort(row.via),
+        cells1: cells1,
+        pad1: Math.max(0, splitAt - cells1.length),
+        cells2: cells2,
+        pad2: Math.max(0, splitAt - cells2.length),
+      };
+    }),
+  };
 }
 
 export function buildMedGroupModalSubtitle(profile, window, variantRows) {
