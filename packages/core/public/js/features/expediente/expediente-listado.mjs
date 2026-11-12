@@ -16,8 +16,8 @@ import {
 } from '../../listado-problemas-core.mjs';
 import { LISTADO_PROBLEMAS_AI_PROMPT } from '../../listado-problemas-ai-prompt.mjs';
 import { isHideListadoProblemasAiPromptEnabled } from '../profile.mjs';
-import { rt, aid, esc } from './expediente-runtime.mjs';
-import { escAttr } from '../../dom-escape.mjs';
+import { rt, aid } from './expediente-runtime.mjs';
+import { drawListadoForm } from './expediente-listado-view.jsx';
 
 var _listadoSortables = [];
 
@@ -87,31 +87,6 @@ function bindListadoTextareaPointerIsolation(root) {
       _autoGrowTextarea(ta);
     });
   });
-}
-function _renderListadoRow(seccion, p, idx) {
-  return (
-    '<div class="listado-row" data-id="' + esc(p.id) + '" data-seccion="' + seccion + '">' +
-      '<div class="listado-num listado-drag-handle" title="Arrastra para reordenar" aria-label="Arrastrar para reordenar">' + (idx + 1) + '</div>' +
-      '<input type="date" class="rpc-date-input" value="' + esc(p.fecha || '') + '" data-oninput="updateProblemaField" data-oninput-args=\'' + escAttr(JSON.stringify([seccion, String(p.id), 'fecha'])) + '\' data-oninput-pass="value" aria-label="Fecha del problema">' +
-      '<textarea rows="1" placeholder="Descripción del problema" data-oninput="updateProblemaField" data-oninput-args=\'' + escAttr(JSON.stringify([seccion, String(p.id), 'descripcion'])) + '\' data-oninput-pass="value" aria-label="Descripción">' + esc(p.descripcion || '') + '</textarea>' +
-      '<button class="btn-remove-listado" data-onclick="removeProblemaUI" data-onclick-args=\'' + escAttr(JSON.stringify([seccion, String(p.id)])) + '\' aria-label="Quitar problema" title="Quitar">×</button>' +
-    '</div>'
-  );
-}
-function _renderListadoSeccion(seccion, label, lst) {
-  var arr = lst[seccion] || [];
-  var rows = arr.length
-    ? arr.map(function(p, i){ return _renderListadoRow(seccion, p, i); }).join('')
-    : '<div class="listado-empty">Sin problemas ' + label.toLowerCase() + '.</div>';
-  return (
-    '<div class="listado-group" data-seccion-group="' + seccion + '">' +
-      '<div class="listado-group-title">' + label + ' (' + arr.length + ')</div>' +
-      '<div class="listado-group-body listado-sort-zone" data-seccion-rows="' + seccion + '">' +
-        rows +
-      '</div>' +
-      '<button type="button" class="listado-add-row listado-link" data-onclick="addProblemaUI" data-onclick-args=\'' + escAttr(JSON.stringify([seccion])) + '\'>+ Agregar problema ' + label.toLowerCase().replace(/s$/, '') + '</button>' +
-    '</div>'
-  );
 }
 function destroyListadoSortables() {
   _listadoSortables.forEach(function (s) {
@@ -195,42 +170,16 @@ function renderListadoForm() {
   var c = document.getElementById('listado-form');
   if (!c) return;
   destroyListadoSortables();
-  if (!aid()) { c.innerHTML = ''; return; }
+  if (!aid()) { drawListadoForm(c, null); return; }
   var patient = getPatients().find(function(p){ return p.id === aid(); });
-  if (!patient) { c.innerHTML = ''; return; }
+  if (!patient) { drawListadoForm(c, null); return; }
   var lst = ensureListadoForActive();
-  var patientLine = [
-    patient.nombre,
-    patient.registro ? ('Reg. ' + patient.registro) : '',
-    [patient.edad, patient.sexo].filter(Boolean).join('/'),
-    (patient.cuarto || patient.cama) ? ('Cto ' + [patient.cuarto, patient.cama].filter(Boolean).join('-')) : '',
-  ].filter(Boolean).map(esc).join(' · ');
-  c.innerHTML = (
-    '<div class="listado-layout">' +
-      '<div class="listado-main">' +
-        _renderListadoSeccion('activos', 'Activos', lst) +
-        _renderListadoSeccion('inactivos', 'Inactivos', lst) +
-      '</div>' +
-      '<div class="listado-side">' +
-        '<div class="listado-patient-line">' + patientLine + '</div>' +
-        '<div class="listado-meta">' +
-          '<div class="listado-meta-title">Fecha y hora</div>' +
-          '<div class="listado-meta-grid-2">' +
-            '<input type="text" class="listado-input" value="' + esc(lst.fecha) + '" placeholder="DD/MM/AAAA" data-oninput="updateListadoMeta" data-oninput-args=\'["fecha"]\' data-oninput-pass="value" aria-label="Fecha del listado">' +
-            '<input type="text" class="listado-input" value="' + esc(lst.hora) + '" placeholder="HH:MM" data-oninput="updateListadoMeta" data-oninput-args=\'["hora"]\' data-oninput-pass="value" aria-label="Hora del listado">' +
-          '</div>' +
-        '</div>' +
-        _renderListadoMedicosCard(lst) +
-        '<div class="listado-actions">' +
-          '<button type="button" class="listado-link rpc-doc-export" data-onclick="quickExportCurrentPatient" id="btn-quick-export-listado">Salida rápida</button>' +
-          (isHideListadoProblemasAiPromptEnabled()
-            ? ''
-            : '<button type="button" class="listado-link" data-onclick="copyListadoProblemasAiPrompt" title="Copia el prompt para usar en un chat de IA">Copiar prompt IA</button>') +
-          '<button type="button" class="wb-btn wb-btn-primary wb-btn-block rpc-doc-export" data-onclick="previewListado" id="btn-gen-listado">Generar Listado</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>'
-  );
+  drawListadoForm(c, {
+    patient: patient,
+    lst: lst,
+    medicos: getMedicosForListado(lst),
+    hideAiPrompt: isHideListadoProblemasAiPromptEnabled(),
+  });
   refreshRpcDateFields(c);
   c.querySelectorAll('.listado-row textarea').forEach(_autoGrowTextarea);
   bindListadoTextareaPointerIsolation(c);
@@ -265,30 +214,6 @@ function removeProblemaUI(seccion, id) {
   saveListado();
   renderListadoForm();
 }
-function _renderListadoMedicosCard(lst) {
-  var meds = getMedicosForListado(lst);
-  function row(key, label, full) {
-    return (
-      '<label class="listado-field-group' + (full ? ' listado-field-group--full' : '') + '">' + label +
-      '<input type="text" class="listado-input" value="' + esc(meds[key] || '') + '" data-oninput="updateListadoMedico" data-oninput-args=\'' + escAttr(JSON.stringify([key])) + '\' data-oninput-pass="value">' +
-      '</label>'
-    );
-  }
-  return (
-    '<div class="listado-meta">' +
-      '<div class="listado-meta-title">Médicos (firma)</div>' +
-      '<div class="listado-meta-hint">Pre-llena desde Mi Perfil</div>' +
-      '<div class="listado-medicos-grid">' +
-        row('profesor', 'Profesor', true) +
-        row('r4',       'R4') +
-        row('r2',       'R2') +
-        row('r1a',      'R1 (1)') +
-        row('r1b',      'R1 (2)') +
-      '</div>' +
-    '</div>'
-  );
-}
-
 async function copyListadoProblemasAiPrompt() {
   var ok = await rt.copyToClipboardSafe(LISTADO_PROBLEMAS_AI_PROMPT);
   rt.showToast(ok ? 'Prompt copiado al portapapeles ✓' : 'No se pudo copiar el prompt', ok ? 'success' : 'error');
