@@ -89,53 +89,22 @@ function patientsForCensoExport() {
   return getPatients();
 }
 
-function ensureCensoModal() {
+async function ensureCensoModal() {
   var existing = document.getElementById('censo-export-modal');
   if (existing) return existing;
-  var backdrop = document.createElement('div');
-  backdrop.className = 'modal-backdrop';
-  backdrop.id = 'censo-export-modal';
-  backdrop.setAttribute('aria-hidden', 'true');
-  backdrop.innerHTML =
-    '<div class="modal lab-display-prefs-modal censo-export-dialog" role="dialog" aria-modal="true" aria-labelledby="censo-export-title">' +
-    '<h3 id="censo-export-title" class="modal-title">Censo</h3>' +
-    '<p class="censo-export-date"><span id="censo-export-fecha-label"></span> · <span id="censo-export-mes-label"></span></p>' +
-    '<div class="lab-display-prefs-fields censo-export-options">' +
-    '<div class="lab-pref-row">' +
-    '<span class="lab-pref-row-label" id="censo-export-archived-lbl">Incluir archivados</span>' +
-    '<label class="rpc-switch"><input type="checkbox" id="censo-export-archived" class="rpc-switch-input" role="switch" aria-labelledby="censo-export-archived-lbl">' +
-    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div>' +
-    '<div class="lab-pref-row">' +
-    '<div class="lab-pref-row-copy"><span class="lab-pref-row-label" id="censo-export-pancenso-lbl">Pancenso</span>' +
-    '<span class="lab-pref-row-hint">Todos los equipos de la rotación.</span></div>' +
-    '<label class="rpc-switch"><input type="checkbox" id="censo-export-pancenso" class="rpc-switch-input" role="switch" aria-labelledby="censo-export-pancenso-lbl">' +
-    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div>' +
-    '<div class="lab-pref-row">' +
-    '<span class="lab-pref-row-label" id="censo-export-diagramas-lbl">Labs como diagramas</span>' +
-    '<label class="rpc-switch"><input type="checkbox" id="censo-export-diagramas" class="rpc-switch-input" role="switch" aria-labelledby="censo-export-diagramas-lbl">' +
-    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div>' +
-    '<div class="lab-pref-row">' +
-    '<span class="lab-pref-row-label" id="censo-export-tres-dias-lbl">Labs 3 días</span>' +
-    '<label class="rpc-switch"><input type="checkbox" id="censo-export-tres-dias" class="rpc-switch-input" role="switch" aria-labelledby="censo-export-tres-dias-lbl">' +
-    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div>' +
-    '<div class="lab-pref-row">' +
-    '<span class="lab-pref-row-label" id="censo-export-bh-ext-lbl">BH extendida</span>' +
-    '<label class="rpc-switch"><input type="checkbox" id="censo-export-bh-ext" class="rpc-switch-input" role="switch" aria-labelledby="censo-export-bh-ext-lbl">' +
-    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div>' +
-    '</div>' +
-    '<p class="censo-export-note">En la vista previa eliges columnas, editas celdas y generas el PDF.</p>' +
-    '<div class="modal-actions">' +
-    '<button type="button" class="wb-btn wb-btn-secondary" id="censo-export-cancel">Cancelar</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="censo-export-preview">Vista previa</button>' +
-    '</div></div>';
+  var view = await import('./censo-export-view.jsx');
+  // Two quick opens both loaded the view: the second finds the first's modal.
+  existing = document.getElementById('censo-export-modal');
+  if (existing) return existing;
+  var backdrop = view.buildCensoModalElement();
   document.body.appendChild(backdrop);
   return backdrop;
 }
 
-export function openCensoExportDialog() {
+export async function openCensoExportDialog() {
   if (!isModeSala(rt.getSettings())) return;
   if (rt.guardMobileDocExport()) return;
-  var modal = ensureCensoModal();
+  var modal = await ensureCensoModal();
   var now = new Date();
   var fechaEl = document.getElementById('censo-export-fecha-label');
   var mesEl = document.getElementById('censo-export-mes-label');

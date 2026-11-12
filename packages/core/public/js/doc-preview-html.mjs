@@ -235,24 +235,14 @@ export function closeDocPreview() {
   current = null;
 }
 
-function ensureModal() {
+async function ensureModal() {
   var existing = document.getElementById('doc-preview-backdrop');
   if (existing) return existing;
-  var backdrop = document.createElement('div');
-  backdrop.className = 'modal-backdrop censo-preview-backdrop';
-  backdrop.id = 'doc-preview-backdrop';
-  backdrop.setAttribute('aria-hidden', 'true');
-  backdrop.innerHTML =
-    '<div class="modal censo-preview-modal" role="dialog" aria-modal="true" aria-labelledby="doc-preview-title">' +
-    '<div class="censo-preview-modal-head"><h3 id="doc-preview-title" class="modal-title"></h3>' +
-    '<p class="profile-hint censo-preview-hint">Así se verá el documento. Para cambiar algo, cierra y edítalo.</p></div>' +
-    '<iframe id="doc-preview-frame" class="censo-preview-frame" title="Vista previa"></iframe>' +
-    '<div class="modal-actions">' +
-    '<button type="button" class="wb-btn wb-btn-secondary" id="doc-preview-close">Cerrar</button>' +
-    '<button type="button" class="wb-btn wb-btn-secondary" id="doc-preview-print">Imprimir</button>' +
-    '<button type="button" class="wb-btn wb-btn-secondary rpc-doc-export" id="doc-preview-docx">Generar .docx</button>' +
-    '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg rpc-doc-export" id="doc-preview-pdf">Generar PDF</button>' +
-    '</div></div>';
+  var view = await import('./doc-preview-view.jsx');
+  // Two quick opens both loaded the view: the second finds the first's modal.
+  existing = document.getElementById('doc-preview-backdrop');
+  if (existing) return existing;
+  var backdrop = view.buildDocPreviewElement();
   document.body.appendChild(backdrop);
   backdrop.addEventListener('click', function (e) {
     if (e.target === backdrop) closeDocPreview();
@@ -283,8 +273,8 @@ function ensureModal() {
 /**
  * @param {{ title: string, html: string, onDocx: () => void, onPrint?: () => void, onPdf: (btn: HTMLElement) => void }} opts
  */
-export function openDocPreview(opts) {
-  var backdrop = ensureModal();
+export async function openDocPreview(opts) {
+  var backdrop = await ensureModal();
   current = opts;
   var title = document.getElementById('doc-preview-title');
   if (title) title.textContent = opts.title;

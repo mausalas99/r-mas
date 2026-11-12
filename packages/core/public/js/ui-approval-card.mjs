@@ -135,60 +135,6 @@ export function wrapApprovalInConflictModal(innerHtml) {
   return '<div class="lab-conflict-modal ui-approval-modal">' + innerHtml + '</div>';
 }
 
-export function wrapConfirmInConflictModal(innerHtml) {
-  return (
-    '<div class="lab-conflict-modal material-glass ui-overlay-dialog ui-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="ui-confirm-title">' +
-    innerHtml +
-    '</div>'
-  );
-}
-
-/**
- * Destructive confirm (title + lead + optional list). No quiz chrome, no ×.
- * @param {{
- *   title?: string,
- *   question?: string,
- *   items?: string[],
- *   confirmLabel?: string,
- *   cancelLabel?: string,
- * }} opts
- */
-export function buildConfirmCardHtml(opts) {
-  opts = opts || {};
-  var title = String(opts.title || '').trim();
-  var lead = String(opts.question || '').trim();
-  if (!title && lead) {
-    title = lead;
-    lead = '';
-  }
-  var items = Array.isArray(opts.items) ? opts.items.filter(Boolean) : [];
-  var itemsHtml = items.length
-    ? '<ul class="ui-confirm-list">' +
-      items
-        .map(function (item) {
-          return '<li>' + escHtml(item) + '</li>';
-        })
-        .join('') +
-      '</ul>'
-    : '';
-  var leadHtml = lead ? '<p class="ui-confirm-lead" id="ui-confirm-lead">' + escHtml(lead) + '</p>' : '';
-  return (
-    '<div class="ui-confirm ui-approval-card ui-approval-card--confirm">' +
-    '<h3 class="ui-confirm-title" id="ui-confirm-title">' +
-    escHtml(title) +
-    '</h3>' +
-    leadHtml +
-    itemsHtml +
-    '<div class="ui-confirm-actions">' +
-    '<button type="button" class="wb-btn wb-btn-secondary ui-pressable" data-approval-cancel>' +
-    escHtml(opts.cancelLabel || 'Cancelar') +
-    '</button>' +
-    '<button type="button" class="wb-btn wb-btn-danger ui-pressable" data-approval-confirm>' +
-    escHtml(opts.confirmLabel || 'Eliminar') +
-    '</button></div></div>'
-  );
-}
-
 /**
  * @param {{
  *   id?: string,
@@ -202,18 +148,16 @@ export function buildConfirmCardHtml(opts) {
  *   (e.g. Conexión/Administración, at --z-modal-nested) — see stacked-overlay.mjs.
  * @returns {Promise<boolean>}
  */
-export function showConfirmDialog(opts) {
+export async function showConfirmDialog(opts) {
+  if (typeof document === 'undefined') return false;
+  var view = await import('./ui-approval-card-view.jsx');
   return new Promise(function (resolve) {
-    if (typeof document === 'undefined') {
-      resolve(false);
-      return;
-    }
     var backdrop = document.createElement('div');
     backdrop.className = opts && opts.stacked
       ? 'lab-conflict-backdrop lab-conflict-backdrop--stacked'
       : 'lab-conflict-backdrop';
     if (opts && opts.id) backdrop.id = String(opts.id);
-    backdrop.innerHTML = wrapConfirmInConflictModal(buildConfirmCardHtml(opts));
+    view.drawConfirmDialog(backdrop, opts);
     var done = false;
     function finish(ok) {
       if (done) return;
