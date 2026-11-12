@@ -1,6 +1,14 @@
 // labs.js — lab parsing barrel (god-file split into labs-*.mjs modules)
 
-export { escTxt, renderToken, renderEntry, isLabSectionHeaderHtml } from './labs-display.mjs';
+export {
+  escTxt,
+  renderToken,
+  renderEntry,
+  renderEntryNodes,
+  isLabSectionHeaderHtml,
+  isLabSectionHeaderNodes,
+  nodesToHtml,
+} from './labs-display.mjs';
 export { parseEGO_ } from './labs-ego-parse.mjs';
 export { parseElectrolitosOrina_, parseDepuracionCreatinina_ } from './labs-fluidos.mjs';
 
@@ -43,6 +51,7 @@ export {
   buildAtbChipsHtml,
   extractMicSortKey,
   buildAtbRisSummaryHtml,
+  buildAtbRisSummaryNodes,
   extractSensCrudasForGermFromSource,
   isParsedCultivoHeaderLine,
   parseCultivo_,

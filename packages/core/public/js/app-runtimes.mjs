@@ -182,7 +182,7 @@ import {
   renderListadoForm,
   removeAtbRisPanelsFromBody,
   wireAtbRisHoverPanels,
-  buildCultivoOutputHtmlFragments,
+  buildCultivoOutputNodes,
   isResLabChunkPureCultivo,
 } from './features/expediente.mjs';
 import {
@@ -354,7 +354,7 @@ function buildRuntimeContextFeatureDeps() {
     removeAtbRisPanelsFromBody,
     wireAtbRisHoverPanels,
     isResLabChunkPureCultivo,
-    buildCultivoOutputHtmlFragments,
+    buildCultivoOutputNodes,
     rebuildBulkLabPreviewBlocks: function (text) {
       return buildBulkLabPreview(text, { findPatientByRegistro });
     },

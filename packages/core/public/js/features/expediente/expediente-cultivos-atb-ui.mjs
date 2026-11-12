@@ -1,12 +1,11 @@
 // Cultivos antibiogram hover panels + cell HTML
 import { getLabHistory } from '../../app-state.mjs';
 import {
-  buildAtbRisSummaryHtml,
+  buildAtbRisSummaryNodes,
   classifyAtbInterp,
   extractSensCrudasForGermFromSource,
 } from '../../labs.js';
-import { esc } from './expediente-runtime.mjs';
-import { escAttr } from '../../dom-escape.mjs';
+import { hn } from '../../labs-display.mjs';
 import { intrinsicMatchesIn, isAmpcOrganism } from '../../cultivo-intrinsic-resistance.mjs';
 import { mechanismHintFor } from '../../cultivo-mechanism.mjs';
 // Puntos de corte CLSI: módulo pesado (~40 KB de datos), carga diferida para no inflar el arranque.
@@ -121,22 +120,22 @@ function cultivoAtbExt(r, sens) {
 }
 
 /** Panel «Por qué el cribado de BLEE sale positivo»: details nativo, abierto. */
-function mechHintHtml_(h) {
-  var tiles = h.evidencia
-    .map(function (e) {
-      return (
-        '<div class="cult-mech-tile"><span class="cult-mech-drug">' + esc(atbNameCap_(e.row.med)) +
-        ' <span class="atb-chip atb-chip--' + e.k + '">' + e.k.toUpperCase() + '</span></span>' +
-        '<span class="cult-mech-note">' + esc(e.nota) + '</span></div>'
-      );
-    })
-    .join('');
-  return (
-    '<details class="cult-mech" open><summary class="cult-mech-title">' + esc(h.titulo) + '</summary>' +
-    '<div class="cult-mech-tiles">' + tiles + '</div>' +
-    '<p class="cult-mech-text">' + esc(h.texto) + '</p>' +
-    '<p class="cult-mech-src">Fuente: ' + esc(h.fuente) + '.</p></details>'
-  );
+function mechHintNode_(h) {
+  var tiles = h.evidencia.map(function (e) {
+    return hn('div', { class: 'cult-mech-tile' }, [
+      hn('span', { class: 'cult-mech-drug' }, [
+        atbNameCap_(e.row.med) + ' ',
+        hn('span', { class: 'atb-chip atb-chip--' + e.k }, [e.k.toUpperCase()]),
+      ]),
+      hn('span', { class: 'cult-mech-note' }, [e.nota]),
+    ]);
+  });
+  return hn('details', { class: 'cult-mech', open: true }, [
+    hn('summary', { class: 'cult-mech-title' }, [h.titulo]),
+    hn('div', { class: 'cult-mech-tiles' }, tiles),
+    hn('p', { class: 'cult-mech-text' }, [h.texto]),
+    hn('p', { class: 'cult-mech-src' }, ['Fuente: ' + h.fuente + '.']),
+  ]);
 }
 
 function cultivoSetAndSens(r, patientId) {
@@ -160,31 +159,43 @@ export function cultivoAtbSignature(r, patientId) {
     .join('|');
 }
 
-export function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
-  if (!patientId) return '<pre class="cultivos-atb-fallback">—</pre>';
+/** Celda de antibiograma de una fila de Cultivos, como nodos (la vista Preact los dibuja). */
+export function buildCultivoAntibiogramCellNodes(r, patientId) {
+  if (!patientId) return [hn('pre', { class: 'cultivos-atb-fallback' }, ['—'])];
   var found = cultivoSetAndSens(r, patientId);
   var set = found.set;
   var sens = found.sens;
   var copyBtn =
     set && r.labSetId != null && String(r.labSetId) !== ''
-      ? '<button type="button" class="cultivos-copy-full-btn" data-onclick="copyCultivoCondensado" data-onclick-args=\'' +
-        escAttr(JSON.stringify([String(r.labSetId), String(r.organismo || '')])) +
-        '\' title="Copiar informe completo">Copiar</button>'
-      : '';
+      ? hn(
+          'button',
+          {
+            type: 'button',
+            class: 'cultivos-copy-full-btn',
+            'data-onclick': 'copyCultivoCondensado',
+            'data-onclick-args': JSON.stringify([String(r.labSetId), String(r.organismo || '')]),
+            title: 'Copiar informe completo',
+          },
+          ['Copiar']
+        )
+      : null;
   if (sens && sens.length) {
     var ext = cultivoAtbExt(r, sens);
-    return (
-      '<div class="cultivos-atb-wrap">' +
-      '<div class="cultivos-atb-chips">' +
-      (ext && ext.hint ? mechHintHtml_(ext.hint) : '') +
-      buildAtbRisSummaryHtml(sens, ext) +
-      (ext && ext.info ? '<div class="cult-atb-note cult-atb-note--info">' + esc(ext.info) + '</div>' : '') +
-      (ext && ext.notes.length ? '<div class="cult-atb-note">' + esc(ext.notes.join(' ')) + '</div>' : '') +
-      (ext && ext.noteSource ? '<div class="cult-atb-note cult-atb-note--info">Fuente: ' + esc(ext.noteSource) + '.</div>' : '') +
-      '</div>' +
-      copyBtn +
-      '</div>'
-    );
+    var note = function (cls, text) {
+      return hn('div', { class: cls }, [text]);
+    };
+    return [
+      hn('div', { class: 'cultivos-atb-wrap' }, [
+        hn('div', { class: 'cultivos-atb-chips' }, [
+          ext && ext.hint ? mechHintNode_(ext.hint) : null,
+          ...buildAtbRisSummaryNodes(sens, ext),
+          ext && ext.info ? note('cult-atb-note cult-atb-note--info', ext.info) : null,
+          ext && ext.notes.length ? note('cult-atb-note', ext.notes.join(' ')) : null,
+          ext && ext.noteSource ? note('cult-atb-note cult-atb-note--info', 'Fuente: ' + ext.noteSource + '.') : null,
+        ]),
+        copyBtn,
+      ]),
+    ];
   }
   var fallback = r.resistencias || r.risSummary || '';
   var hasFallback = fallback && fallback !== '—';
@@ -192,13 +203,13 @@ export function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
   var missingAtb =
     !hasFallback && !r.negativo && !/CONTAMINAD|MICROBIOTA|NEGATIV/i.test(r.organismo || '') &&
     !/^(gram|myco|fungi)$/.test(r.tipoKey || '');
-  return (
-    '<div class="cultivos-atb-wrap">' +
-    (hasFallback ? '<pre class="cultivos-atb-fallback">' + esc(fallback) + '</pre>' : '') +
-    (missingAtb ? '<span class="cult-atb-missing">Antibiograma pendiente</span>' : '') +
-    copyBtn +
-    '</div>'
-  );
+  return [
+    hn('div', { class: 'cultivos-atb-wrap' }, [
+      hasFallback ? hn('pre', { class: 'cultivos-atb-fallback' }, [fallback]) : null,
+      missingAtb ? hn('span', { class: 'cult-atb-missing' }, ['Antibiograma pendiente']) : null,
+      copyBtn,
+    ]),
+  ];
 }
 
 var _atbRisScrollRootsWired = new WeakSet();

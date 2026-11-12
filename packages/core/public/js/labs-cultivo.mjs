@@ -110,6 +110,7 @@ export {
   buildAtbChipsHtml,
   extractMicSortKey,
   buildAtbRisSummaryHtml,
+  buildAtbRisSummaryNodes,
   extractSensCrudasForGermFromSource,
   isParsedCultivoHeaderLine,
 } from './labs-cultivo-atb.mjs';

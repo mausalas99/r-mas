@@ -1,7 +1,7 @@
 // Lab panel — renderOutput helpers
 import {
-  renderEntry,
-  isLabSectionHeaderHtml,
+  renderEntryNodes,
+  isLabSectionHeaderNodes,
 } from '../labs.js';
 import { parseSomeTablesFromSources } from '../labs-some-table.mjs';
 import { normalizeFechaLabHistory, parseFechaLabToMs } from '../tend-core.mjs';
@@ -21,6 +21,8 @@ import {
   citoquimicoTipoValueFromLine_,
   setCitoquimicoTipoOverride,
 } from '../labs-citoquimico-tipo-override.mjs';
+
+import * as nodesView from './expediente/expediente-cultivos-table-view.jsx';
 
 export function resolveLabOutputFechaBanner(patient) {
   if (!patient || !patient.fecha) return '';
@@ -63,10 +65,10 @@ function appendBhExtendedLines(box, text, result, labDisp, rt) {
   if (!labDisp.showBhExtendedLine || !result.bhExtras || !rt.isBhMainResLabChunk(text)) return;
   var extTab = rt.formatBhExtendedTabLine(result.bhExtras, result.sourceText);
   if (!extTab) return;
-  renderEntry(extTab).forEach(function (html, idx) {
+  renderEntryNodes(extTab).forEach(function (nodes, idx) {
     var divEx = document.createElement('div');
     divEx.className = (idx === 0 ? 'out-line' : 'out-indent') + ' lab-bh-extended-line';
-    divEx.innerHTML = html;
+    nodesView.drawNodes(divEx, nodes);
     box.appendChild(divEx);
   });
 }
@@ -84,7 +86,7 @@ function appendCitoquimInterpretacionChunk(box, text, rt) {
 function appendCultivoChunk(box, text, src, rt) {
   var wrap = document.createElement('div');
   wrap.className = 'lab-out-cultivo-chunk';
-  wrap.innerHTML = rt.buildCultivoOutputHtmlFragments(text, src);
+  nodesView.drawNodes(wrap, rt.buildCultivoOutputNodes(text, src));
   box.appendChild(wrap);
 }
 
@@ -186,10 +188,10 @@ function appendLabLineRemoveControl_(div, text) {
 }
 
 function appendStandardResLabChunk(box, text, trendLookup) {
-  renderEntry(text, trendLookup).forEach(function (html, idx) {
+  renderEntryNodes(text, trendLookup).forEach(function (nodes, idx) {
     var div = document.createElement('div');
-    div.className = idx === 0 || isLabSectionHeaderHtml(html) ? 'out-line' : 'out-indent';
-    div.innerHTML = html;
+    div.className = idx === 0 || isLabSectionHeaderNodes(nodes) ? 'out-line' : 'out-indent';
+    nodesView.drawNodes(div, nodes);
     box.appendChild(div);
     if (idx === 0 && isCitoquimicoTipoLine_(text)) appendCitoquimicoTipoEditControl_(div, text);
     if (idx === 0) appendLabLineRemoveControl_(div, text);

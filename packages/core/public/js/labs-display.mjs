@@ -17,6 +17,46 @@ export function escTxt(s) {
     .replace(/>/g, '&gt;');
 }
 
+/**
+ * Tiny HTML tree: `{ tag, attrs, kids }` or a string (text). Builders return nodes; the Preact view
+ * (HNodes in features/expediente/expediente-cultivos-table-view.jsx) draws them and `nodesToHtml` writes the same markup as a string
+ * for the consumers that still want one (censo preview, tests).
+ */
+export function hn(tag, attrs, kids) {
+  return { tag: tag, attrs: attrs || null, kids: (kids || []).filter(function (k) { return k !== '' && k != null && k !== false; }) };
+}
+
+/** Lists of nodes joined by a plain space, as `Array.join(' ')` did on the strings. */
+function joinNodes_(lists) {
+  var out = [];
+  lists.forEach(function (l, i) {
+    if (i) out.push(' ');
+    Array.prototype.push.apply(out, l);
+  });
+  return out;
+}
+
+export function nodesToHtml(nodes) {
+  return nodes
+    .map(function (n) {
+      if (typeof n === 'string') return escTxt(n);
+      var attrs = '';
+      Object.keys(n.attrs || {}).forEach(function (k) {
+        var v = n.attrs[k];
+        attrs += v === true ? ' ' + k : ' ' + k + '="' + escTxt(v) + '"';
+      });
+      return '<' + n.tag + attrs + '>' + nodesToHtml(n.kids) + '</' + n.tag + '>';
+    })
+    .join('');
+}
+
+/** True when some element in the tree has exactly this class attribute. */
+export function nodesHaveClass(nodes, cls) {
+  return nodes.some(function (n) {
+    return typeof n !== 'string' && ((n.attrs && n.attrs.class === cls) || nodesHaveClass(n.kids, cls));
+  });
+}
+
 function formatLabSectionLabel(label, lineIndex) {
   var t = String(label || '').trim().replace(/:$/, '');
   if (/^Coag\.?$/i.test(t)) return 'COAG';
@@ -35,6 +75,10 @@ function isLabSectionLabel(label, lineIndex) {
 
 export function isLabSectionHeaderHtml(html) {
   return /<span class="section-lbl">/.test(String(html || ''));
+}
+
+export function isLabSectionHeaderNodes(nodes) {
+  return nodesHaveClass(nodes, 'section-lbl');
 }
 
 /** Cabecera de sección (primer token de la primera línea, sin ':' final). Coag → BH (misma familia). */
@@ -70,27 +114,29 @@ function fieldLabelsByValueIndex_(tokens) {
   return map;
 }
 
-function trendArrowHtml_(info) {
-  if (!info || !info.trend) return '';
+function trendArrowNodes_(info) {
+  if (!info || !info.trend) return [];
   var cls = info.trend === 'up' ? 'lab-trend-up' : 'lab-trend-down';
   var label = info.trend === 'up' ? 'en aumento' : 'en descenso';
-  return (
-    '<span class="lab-trend-arrow ' + cls + '" role="img" aria-label="' + label + '" title="' + label + ' vs. toma previa"></span>'
-  );
+  return [
+    hn('span', { class: 'lab-trend-arrow ' + cls, role: 'img', 'aria-label': label, title: label + ' vs. toma previa' }),
+  ];
+}
+
+export function renderTokenNodes(tok, trendInfo) {
+  if (!tok) return [];
+  if (tok.endsWith('*')) {
+    return [
+      hn('strong', { class: 'lab-value-altered', title: 'Fuera de rango de referencia' }, [tok.slice(0, -1)].concat(trendArrowNodes_(trendInfo))),
+      hn('span', { class: 'lab-value-star', 'aria-hidden': 'true' }, ['*']),
+    ];
+  }
+  return [tok];
 }
 
 export function renderToken(tok, trendInfo) {
   if (!tok) return tok;
-  if (tok.endsWith('*')) {
-    var inner = escTxt(tok.slice(0, -1));
-    return (
-      '<strong class="lab-value-altered" title="Fuera de rango de referencia">' +
-      inner +
-      trendArrowHtml_(trendInfo) +
-      '</strong><span class="lab-value-star" aria-hidden="true">*</span>'
-    );
-  }
-  return escTxt(tok);
+  return nodesToHtml(renderTokenNodes(tok, trendInfo));
 }
 
 /**
@@ -106,7 +152,7 @@ export function renderToken(tok, trendInfo) {
  * Líneas "estructuradas" (clave numérica, ej. BH/QS/ESC) envuelven cada valor en
  * `.lab-row-value` para el gap tipo chip; líneas de prosa (ej. Frotis) no.
  */
-export function renderEntry(text, trendLookup) {
+export function renderEntryNodes(text, trendLookup) {
   text = flattenBhHemOnlyVisible(normalizeGasometryInterpretationLine_(text));
   var sectionKey = trendLookup ? entryTrendSectionKey_(text) : '';
   var isBhFamily = sectionKey === 'BH';
@@ -117,61 +163,62 @@ export function renderEntry(text, trendLookup) {
       var label = line.substring(0, tabIdx);
       var rest = line.substring(tabIdx + 1);
       var lh = isLabSectionLabel(label, li)
-        ? '<span class="section-lbl">' + escTxt(formatLabSectionLabel(label, li)) + '</span>'
-        : escTxt(label);
+        ? [hn('span', { class: 'section-lbl' }, [formatLabSectionLabel(label, li)])]
+        : [label];
       var restTokens = rest.split(' ');
       var labelByValueIdx = fieldLabelsByValueIndex_(restTokens);
       var isStructured = Object.keys(labelByValueIdx).length > 0;
       var rh;
       if (isStructured) {
-        rh = restTokens
-          .map(function (tok, ti) {
-            if (!tok) return '';
-            if (tok === '-') return '<span class="lab-row-value lab-row-value-muted">-</span>';
-            var trendInfo = null;
-            if (trendLookup && labelByValueIdx[ti] && tok.endsWith('*')) {
-              var fieldKey = isBhFamily
-                ? bhFieldKeyFromOutputLabel(labelByValueIdx[ti])
-                : labelByValueIdx[ti];
-              trendInfo = trendLookup(sectionKey, fieldKey);
-            }
-            return '<span class="lab-row-value">' + renderToken(tok, trendInfo) + '</span>';
-          })
-          .filter(Boolean)
-          .join(' ');
+        rh = joinNodes_(
+          restTokens
+            .map(function (tok, ti) {
+              if (!tok) return null;
+              if (tok === '-') return [hn('span', { class: 'lab-row-value lab-row-value-muted' }, ['-'])];
+              var trendInfo = null;
+              if (trendLookup && labelByValueIdx[ti] && tok.endsWith('*')) {
+                var fieldKey = isBhFamily
+                  ? bhFieldKeyFromOutputLabel(labelByValueIdx[ti])
+                  : labelByValueIdx[ti];
+                trendInfo = trendLookup(sectionKey, fieldKey);
+              }
+              return [hn('span', { class: 'lab-row-value' }, renderTokenNodes(tok, trendInfo))];
+            })
+            .filter(Boolean)
+        );
       } else {
-        rh = restTokens
-          .map(function (tok) {
-            if (!tok) return tok;
-            if (tok === '-') return '<span class="text-gray-500">-</span>';
-            return renderToken(tok);
+        rh = joinNodes_(
+          restTokens.map(function (tok) {
+            if (!tok) return [];
+            if (tok === '-') return [hn('span', { class: 'text-gray-500' }, ['-'])];
+            return renderTokenNodes(tok);
           })
-          .join(' ');
+        );
       }
-      return (
-        '<span class="lab-row-label">' +
-        lh +
-        '</span> <span class="lab-row-values' +
-        (isStructured ? ' lab-row-values-chips' : '') +
-        '">' +
-        rh +
-        '</span>'
-      );
+      return [
+        hn('span', { class: 'lab-row-label' }, lh),
+        ' ',
+        hn('span', { class: 'lab-row-values' + (isStructured ? ' lab-row-values-chips' : '') }, rh),
+      ];
     }
-    var plain = line
-      .split(' ')
-      .map(function (tok, ti) {
-        if (!tok) return tok;
-        if (li === 0 && ti === 0) return '<span class="section-lbl">' + escTxt(tok) + '</span>';
-        if (tok === '-') return '<span class="text-gray-500">-</span>';
-        return renderToken(tok);
+    var plain = joinNodes_(
+      line.split(' ').map(function (tok, ti) {
+        if (!tok) return [];
+        if (li === 0 && ti === 0) return [hn('span', { class: 'section-lbl' }, [tok])];
+        if (tok === '-') return [hn('span', { class: 'text-gray-500' }, ['-'])];
+        return renderTokenNodes(tok);
       })
-      .join(' ');
+    );
     // Líneas sin tab que no son la cabecera (li > 0, ej. EGO): sin este wrapper cada
     // <strong>/span queda como hijo directo de `.out-indent`, que en #lab-output-box es
     // `display: grid` (grilla 64px + 1fr para las filas con .lab-row-label/.lab-row-values).
     // La grilla "blockifica" cada hijo suelto y lo auto-coloca en su propia celda, partiendo
     // la línea en un campo por renglón. Un solo span que ocupe las dos columnas la mantiene junta.
-    return li === 0 ? plain : '<span class="lab-row-values lab-row-values-full">' + plain + '</span>';
+    return li === 0 ? plain : [hn('span', { class: 'lab-row-values lab-row-values-full' }, plain)];
   });
+}
+
+/** Same lines as renderEntryNodes, as HTML strings (censo preview, tests). */
+export function renderEntry(text, trendLookup) {
+  return renderEntryNodes(text, trendLookup).map(nodesToHtml);
 }

@@ -1,4 +1,4 @@
-import { escTxt } from './labs-display.mjs';
+import { escTxt, hn, nodesToHtml } from './labs-display.mjs';
 import { findCultivoGermenRuns, parseSensCrudasAntibiogramaLines } from './labs-cultivo-scan.mjs';
 
 function isCultivoChromeBodyLine_(line) {
@@ -140,66 +140,57 @@ function sortSensByGradeInBucket(items, bucket) {
   return arr;
 }
 
-function formatAtbDetailRowHtml(s) {
+function formatAtbDetailRowNode(s) {
   var med = String(s.med || '').trim();
   var mic = String(s.mic || '').trim();
   var itTrim = String(s.interp || '').trim();
-  var medEl = '<span class="atb-ris-drug">' + escTxt(med || '—') + '</span>';
   var chunks = [];
   if (mic) {
-    chunks.push(
-      '<span class="atb-ris-mic"><span class="atb-ris-mic-lbl">CMI</span> ' + escTxt(mic) + '</span>'
-    );
+    chunks.push(hn('span', { class: 'atb-ris-mic' }, [hn('span', { class: 'atb-ris-mic-lbl' }, ['CMI']), ' ' + mic]));
   }
   if (itTrim) {
-    chunks.push(
-      '<span class="atb-ris-int atb-ris-int--' +
-        escTxt(classifyAtbInterp(itTrim)) +
-        '">' +
-        escTxt(itTrim) +
-        '</span>'
-    );
+    chunks.push(hn('span', { class: 'atb-ris-int atb-ris-int--' + classifyAtbInterp(itTrim) }, [itTrim]));
   }
-  var meta =
-    chunks.length > 0
-      ? '<span class="atb-ris-meta">' +
-        chunks.join('<span class="atb-ris-meta-sep" aria-hidden="true">·</span>') +
-        '</span>'
-      : '';
-  return (
-    '<li class="atb-ris-detail-item">' +
-    '<div class="atb-ris-detail-line">' +
-    medEl +
-    (meta ? meta : '') +
-    '</div></li>'
-  );
+  var meta = [];
+  if (chunks.length > 0) {
+    var inner = [];
+    chunks.forEach(function (c, i) {
+      if (i) inner.push(hn('span', { class: 'atb-ris-meta-sep', 'aria-hidden': 'true' }, ['·']));
+      inner.push(c);
+    });
+    meta = [hn('span', { class: 'atb-ris-meta' }, inner)];
+  }
+  return hn('li', { class: 'atb-ris-detail-item' }, [
+    hn('div', { class: 'atb-ris-detail-line' }, [hn('span', { class: 'atb-ris-drug' }, [med || '—'])].concat(meta)),
+  ]);
 }
 
 /** Nombres con su CMI junto a la letra (solo en las tarjetas de Cultivos, de menor a mayor CMI). */
-function atbNamesHtml(sorted, key, marks) {
-  var items = sorted.map(function (s) {
+function atbNamesNode(sorted, key, marks) {
+  var items = [];
+  sorted.forEach(function (s, i) {
     var m = String(s.med || '').trim().toLowerCase();
     // «<=» y «>=» se ven como ≤ y ≥ (el signo importa: ≤0.5 no es 0.5).
     var mic = String(s.mic || '').trim().replace(/<=/g, '\u2264').replace(/>=/g, '\u2265');
     var mk = marks && marks.get(s);
-    return (
-      '<span class="cult-atb-item"><span class="cult-atb-name">' +
-      escTxt(m.charAt(0).toUpperCase() + m.slice(1)) +
-      '</span>' +
-      (mic ? '<span class="cult-atb-mic">' + escTxt(mic) + '</span>' : '') +
-      (mk ? '<span class="cult-atb-mk">' + escTxt(mk) + '</span>' : '') +
-      '</span>'
+    if (i) items.push(' ');
+    items.push(
+      hn('span', { class: 'cult-atb-item' }, [
+        hn('span', { class: 'cult-atb-name' }, [m.charAt(0).toUpperCase() + m.slice(1)]),
+        mic && hn('span', { class: 'cult-atb-mic' }, [mic]),
+        mk && hn('span', { class: 'cult-atb-mk' }, [mk]),
+      ])
     );
   });
-  return '<span class="cult-atb-ris-names">' + items.join(' ') + '</span>';
+  return hn('span', { class: 'cult-atb-ris-names' }, items);
 }
 
 /**
  * Resumen antibiograma: como mucho tres letras (R, I, S), cada una una sola vez.
- * Hover / foco en cada letra abre solo el bloque correspondiente.
+ * Hover / foco en cada letra abre solo el bloque correspondiente. Devuelve nodos ([] sin filas).
  */
-export function buildAtbRisSummaryHtml(sensCrudas, ext) {
-  if (!sensCrudas || !sensCrudas.length) return '';
+export function buildAtbRisSummaryNodes(sensCrudas, ext) {
+  if (!sensCrudas || !sensCrudas.length) return [];
   // ext (opcional, solo Cultivos): { intr: Set de filas R por especie, marks: Map fila → etiqueta }.
   var intr = ext && ext.intr;
   var marks = ext && ext.marks;
@@ -219,40 +210,34 @@ export function buildAtbRisSummaryHtml(sensCrudas, ext) {
     var list = buckets[o.key];
     if (!list.length) return;
     var sorted = sortSensByGradeInBucket(list, ext ? 's' : o.key === 'x' ? 'r' : o.key);
-    var items = sorted.map(formatAtbDetailRowHtml).join('');
     // Tarjetas de Cultivos (ext): nombres visibles junto a la letra, sin panel al pasar el cursor.
-    var panelHtml = ext
-      ? ''
-      : '<div class="atb-ris-hover-panel atb-ris-hover-panel--' +
-        o.key +
-        '" role="region" aria-label="' +
-        escTxt(o.panelTitle) +
-        '"><div class="atb-ris-panel-head">' +
-        escTxt(o.panelTitle) +
-        '</div><ul class="atb-ris-detail-list">' +
-        items +
-        '</ul></div>';
+    var panel = ext
+      ? null
+      : hn('div', {
+          class: 'atb-ris-hover-panel atb-ris-hover-panel--' + o.key,
+          role: 'region',
+          'aria-label': o.panelTitle,
+        }, [
+          hn('div', { class: 'atb-ris-panel-head' }, [o.panelTitle]),
+          hn('ul', { class: 'atb-ris-detail-list' }, sorted.map(formatAtbDetailRowNode)),
+        ]);
     wraps.push(
-      '<span class="cult-atb-ris-chip-wrap">' +
-        '<span class="atb-chip atb-chip--' +
-        o.key +
-        '"' +
-        (ext ? ' tabindex="0"' : ' tabindex="0" role="button"') +
-        '>' +
-        escTxt(o.label + ' ' + list.length) +
-        '</span>' +
-        atbNamesHtml(sorted, o.key, marks) +
-        panelHtml +
-        '</span>'
+      hn('span', { class: 'cult-atb-ris-chip-wrap' }, [
+        hn('span', ext ? { class: 'atb-chip atb-chip--' + o.key, tabindex: '0' } : { class: 'atb-chip atb-chip--' + o.key, tabindex: '0', role: 'button' }, [o.label + ' ' + list.length]),
+        atbNamesNode(sorted, o.key, marks),
+        panel,
+      ])
     );
   });
-  return (
-    '<div class="cult-atb-ris-summary">' +
-    '<div class="cult-atb-ris-chips" role="group" aria-label="Antibiograma (R / I / S)">' +
-    wraps.join('') +
-    '</div>' +
-    '</div>'
-  );
+  return [
+    hn('div', { class: 'cult-atb-ris-summary' }, [
+      hn('div', { class: 'cult-atb-ris-chips', role: 'group', 'aria-label': 'Antibiograma (R / I / S)' }, wraps),
+    ]),
+  ];
+}
+
+export function buildAtbRisSummaryHtml(sensCrudas, ext) {
+  return nodesToHtml(buildAtbRisSummaryNodes(sensCrudas, ext));
 }
 
 /** Recupera pares antibiótico–resultado desde el informe pegado para un germen. */

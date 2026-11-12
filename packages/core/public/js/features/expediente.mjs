@@ -4,10 +4,10 @@ import { patientTeamAssignWindowHandlers } from '../patient-team-assign-ui.mjs';
 import { patientDatosModalWindowHandlers } from '../patient-datos-modal.mjs';
 import { patientDataCensoWindowHandlers } from '../patient-data-censo-ui.mjs';
 import { registerExpedienteRuntime } from './expediente/expediente-runtime.mjs';
-import { buildCultivoAntibiogramCellHtmlForPatient } from './expediente/expediente-cultivos-atb-ui.mjs';
+import { buildCultivoAntibiogramCellNodes } from './expediente/expediente-cultivos-atb-ui.mjs';
 import {
   copyCultivoCondensado,
-  buildCultivoOutputHtmlFragments,
+  buildCultivoOutputNodes,
   isResLabChunkPureCultivo,
 } from './expediente/expediente-cultivos-parse.mjs';
 import {
@@ -35,7 +35,7 @@ import {
   renderPatientDataPane,
 } from './expediente/expediente-datos.mjs';
 
-export { registerExpedienteRuntime, buildCultivoAntibiogramCellHtmlForPatient, invalidateCultivosTableCache };
+export { registerExpedienteRuntime, buildCultivoAntibiogramCellNodes, invalidateCultivosTableCache };
 
 export {
   refreshTendenciasOrCultivosPanel,
@@ -43,7 +43,7 @@ export {
   renderListadoForm,
   removeAtbRisPanelsFromBody,
   wireAtbRisHoverPanels,
-  buildCultivoOutputHtmlFragments,
+  buildCultivoOutputNodes,
   isResLabChunkPureCultivo,
   extractCultivoTableRowsFromHistory,
   filterCultivoRowsSignificantFlip,
