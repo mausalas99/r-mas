@@ -433,23 +433,17 @@ function renderCultivosHtml(labs) {
         labs.cultivosSinRevisar +
         ' sin revisar</button>'
       : '') +
-    '<button type="button" class="card-h-count" data-dash-action="cultivos" data-fit-more data-fit-base="' +
-    more +
-    '" data-fit-idle="' +
-    (more > 0 ? '+' + more + ' más' : '') +
-    '"' +
-    (more > 0 ? '' : ' hidden') +
-    '>' +
-    (more > 0 ? '+' + more + ' más' : '') +
-    '</button>' +
-    '</div><div class="cult-grid" data-fit-zone>' +
+    (more > 0
+      ? '<button type="button" class="card-h-count" data-dash-action="cultivos">+' + more + ' más</button>'
+      : '') +
+    '</div><div class="cult-grid">' +
     list
       .map(function (c) {
         var fecha = String(c.fecha || '').replace(/\/\d{4}$/, '');
         return (
           '<button type="button" class="cult' +
           (c.atbPendiente ? ' is-pending' : '') +
-          '" data-dash-action="cultivos" data-fit-item><span class="cult-row"><b class="cult-sitio">' +
+          '" data-dash-action="cultivos"><span class="cult-row"><b class="cult-sitio">' +
           escHtml(c.sitio) +
           '</b><span class="cult-date">' +
           escHtml(fecha + (c.preliminar ? ' · prelim.' : '')) +
@@ -712,7 +706,7 @@ function renderBalanceHtml(model) {
 function renderCultivosCardHtml(model) {
   var labs = (model && model.labs) || {};
   var body = labs.pending ? '' : renderCultivosHtml(labs);
-  return body ? '<div class="card cultivos-card"><div class="card-b" data-fit>' + body + '</div></div>' : '';
+  return body ? '<div class="card cultivos-card"><div class="card-b">' + body + '</div></div>' : '';
 }
 
 /**
