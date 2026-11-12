@@ -1,0 +1,1049 @@
+{
+ "so_empty": {
+  "inputs": {
+   "kind": "out",
+   "displaySala": "",
+   "status": "offline",
+   "remember": false,
+   "online": true,
+   "url": "https://nube.example.test",
+   "tokenPresent": false
+  },
+  "props": {
+   "displaySala": "",
+   "status": "offline",
+   "statusLabel": "Sin conexión Nube",
+   "chipClass": "is-pending",
+   "detail": "",
+   "hero": {
+    "hero": {
+     "signedOut": true
+    },
+    "steps": [
+     {
+      "label": "Internet",
+      "state": "ok",
+      "detail": "Conectado"
+     },
+     {
+      "label": "Sesión",
+      "state": "warn",
+      "detail": "Entra abajo"
+     },
+     {
+      "label": "Sala",
+      "state": "off",
+      "detail": "—"
+     },
+     {
+      "label": "En vivo",
+      "state": "off",
+      "detail": "En espera"
+     }
+    ]
+   },
+   "body": {
+    "kind": "signedOut",
+    "url": "https://nube.example.test",
+    "sala": "",
+    "remember": false
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-hero-block\" data-cloud-hero-block><div class=\"cloud-sync-hero\" data-cloud-hero data-signed-out><div class=\"cloud-sync-hero-icon\" data-state=\"warn\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 9v4\"/><path d=\"M12 16.5h.01\"/><path d=\"M10.3 4.5 2.6 18a2 2 0 0 0 1.8 3h15.2a2 2 0 0 0 1.8-3L13.7 4.5a2 2 0 0 0-3.4 0Z\"/></svg></div><div class=\"cloud-sync-hero-text\"><p class=\"cloud-sync-hero-title\">Sin sesión</p><p class=\"cloud-sync-hero-sub\">Tus cambios se guardan en este equipo, pero no llegan a tu sala.</p></div></div><div class=\"cloud-sync-chain\" data-cloud-chain aria-label=\"Estado de conexión\"><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18\"/></svg></div><div class=\"cloud-sync-chain-label\">Internet</div><div class=\"cloud-sync-chain-detail\">Conectado</div></div><span class=\"cloud-sync-chain-link is-broken\"></span><div class=\"cloud-sync-chain-step\" data-state=\"warn\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M17 6l3 3\"/></svg></div><div class=\"cloud-sync-chain-label\">Sesión</div><div class=\"cloud-sync-chain-detail\">Entra abajo</div></div><span class=\"cloud-sync-chain-link is-broken is-waiting\"></span><div class=\"cloud-sync-chain-step\" data-state=\"off\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16\"/><path d=\"M2 21h20\"/><path d=\"M14 12h.01\"/></svg></div><div class=\"cloud-sync-chain-label\">Sala</div><div class=\"cloud-sync-chain-detail\">—</div></div><span class=\"cloud-sync-chain-link is-broken is-waiting\"></span><div class=\"cloud-sync-chain-step\" data-state=\"off\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/></svg></div><div class=\"cloud-sync-chain-label\">En vivo</div><div class=\"cloud-sync-chain-detail\">En espera</div></div></div></div></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden></p><div class=\"cloud-sync-status-sheet cloud-sync-signed-out\" data-cloud-signed-out><div class=\"cloud-sync-inset-group cloud-sync-auth-card\" aria-label=\"Cuenta Nube\"><div class=\"cloud-sync-tab-panel\" data-cloud-tab-panel=\"login\" role=\"tabpanel\"><div class=\"cloud-sync-auth-head\"><span class=\"cloud-sync-avatar cloud-sync-avatar--empty\" aria-hidden=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/></svg></span><h4 class=\"cloud-sync-auth-title\">Entra a tu cuenta</h4></div><div class=\"cloud-sync-auth-grid\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-login-user\">Usuario</label><input id=\"cloud-sync-login-user\" type=\"text\" class=\"profile-input\" data-cloud-login-user autocomplete=\"username\" placeholder=\"drdemo\" spellcheck=\"false\" /></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-login-pass\">Contraseña</label><input id=\"cloud-sync-login-pass\" type=\"password\" class=\"profile-input\" data-cloud-login-pass autocomplete=\"current-password\" /></div></div><div class=\"cloud-sync-auth-foot\"><div class=\"cloud-sync-auth-remember\"><label class=\"rpc-switch\"><input type=\"checkbox\" id=\"cloud-sync-login-remember\" class=\"rpc-switch-input\" role=\"switch\" data-cloud-login-remember aria-labelledby=\"cloud-sync-login-remember-lbl\" /><span class=\"rpc-switch-track\" aria-hidden=\"true\"><span class=\"rpc-switch-thumb\"></span></span></label><span id=\"cloud-sync-login-remember-lbl\">Recuérdame en este dispositivo <span class=\"cloud-sync-auth-hint\">· no en una Mac compartida</span></span></div><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--primary ui-pressable\" data-cloud-action=\"login\">Entrar</button></div><div class=\"cloud-sync-auth-links\"><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-tab=\"register\">Crear cuenta</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-tab=\"recover\">¿Olvidaste tu contraseña?</button></div></div><div class=\"cloud-sync-tab-panel\" data-cloud-tab-panel=\"register\" role=\"tabpanel\" hidden><div class=\"cloud-sync-auth-head\"><span class=\"cloud-sync-avatar cloud-sync-avatar--empty\" aria-hidden=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/></svg></span><h4 class=\"cloud-sync-auth-title\">Crea tu cuenta</h4><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-auth-back\" data-cloud-tab=\"login\">‹ Entrar</button></div><div class=\"cloud-sync-auth-grid\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-reg-user\">Usuario</label><input id=\"cloud-sync-reg-user\" type=\"text\" class=\"profile-input\" data-cloud-reg-user autocomplete=\"username\" placeholder=\"drdemo\" spellcheck=\"false\" /><p class=\"cloud-sync-auth-hint\">Minúsculas, sin espacios ni acentos. Sin «Dr.».</p></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-reg-display\">Nombre en guardia</label><input id=\"cloud-sync-reg-display\" type=\"text\" class=\"profile-input\" data-cloud-reg-display autocomplete=\"name\" placeholder=\"Dr. Demo\" /><p class=\"cloud-sync-auth-hint\">Así te ven en el censo y las entregas.</p></div></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-reg-pass\">Contraseña</label><input id=\"cloud-sync-reg-pass\" type=\"password\" class=\"profile-input\" data-cloud-reg-pass autocomplete=\"new-password\" /></div><div class=\"cloud-sync-auth-remember\"><label class=\"rpc-switch\"><input type=\"checkbox\" id=\"cloud-sync-reg-remember\" class=\"rpc-switch-input\" role=\"switch\" data-cloud-reg-remember aria-labelledby=\"cloud-sync-reg-remember-lbl\" /><span class=\"rpc-switch-track\" aria-hidden=\"true\"><span class=\"rpc-switch-thumb\"></span></span></label><span id=\"cloud-sync-reg-remember-lbl\">Recuérdame en este dispositivo <span class=\"cloud-sync-auth-hint\">· no en una Mac compartida</span></span></div><div class=\"cloud-sync-auth-foot\"><span class=\"cloud-sync-auth-hint\">Luego te damos un código de recuperación. Guárdalo.</span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--primary ui-pressable\" data-cloud-action=\"register\">Crear cuenta</button></div></div><div class=\"cloud-sync-tab-panel\" data-cloud-tab-panel=\"recover\" role=\"tabpanel\" hidden><div class=\"cloud-sync-auth-head\"><span class=\"cloud-sync-avatar cloud-sync-avatar--empty\" aria-hidden=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/></svg></span><h4 class=\"cloud-sync-auth-title\">Recupera tu cuenta</h4><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-auth-back\" data-cloud-tab=\"login\">‹ Entrar</button></div><div class=\"cloud-sync-auth-grid\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-recover-user\">Usuario</label><input id=\"cloud-sync-recover-user\" type=\"text\" class=\"profile-input\" data-cloud-recover-user autocomplete=\"username\" placeholder=\"drdemo\" spellcheck=\"false\" /></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-recover-code\">Código de recuperación</label><input id=\"cloud-sync-recover-code\" type=\"text\" class=\"profile-input\" data-cloud-recover-code autocomplete=\"off\" placeholder=\"R+XXXX-XXXX-XXXX\" spellcheck=\"false\" /></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-recover-pass\">Nueva contraseña</label><input id=\"cloud-sync-recover-pass\" type=\"password\" class=\"profile-input\" data-cloud-recover-pass autocomplete=\"new-password\" /></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-recover-pass2\">Confírmala</label><input id=\"cloud-sync-recover-pass2\" type=\"password\" class=\"profile-input\" data-cloud-recover-pass2 autocomplete=\"new-password\" /></div></div><div class=\"cloud-sync-auth-foot\"><span class=\"cloud-sync-auth-hint\">Te damos un código nuevo; el anterior deja de servir.</span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--primary ui-pressable\" data-cloud-action=\"recover\">Recuperar cuenta</button></div></div></div><details class=\"cloud-sync-inset-group cloud-sync-advanced cloud-sync-advanced--row\"><summary><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-options-entry-title\">Avanzado</span><span class=\"cloud-sync-options-entry-meta\">URL del servicio</span></span></summary><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url\">URL del servicio</label><input id=\"cloud-sync-url\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div></details></div>"
+ },
+ "so_sala": {
+  "inputs": {
+   "kind": "out",
+   "displaySala": "Sala 1",
+   "status": "offline",
+   "remember": true,
+   "online": true,
+   "url": "https://x.test/\"a\"&b",
+   "tokenPresent": false
+  },
+  "props": {
+   "displaySala": "Sala 1",
+   "status": "offline",
+   "statusLabel": "Sin conexión Nube",
+   "chipClass": "is-pending",
+   "detail": "",
+   "hero": {
+    "hero": {
+     "signedOut": true
+    },
+    "steps": [
+     {
+      "label": "Internet",
+      "state": "ok",
+      "detail": "Conectado"
+     },
+     {
+      "label": "Sesión",
+      "state": "warn",
+      "detail": "Entra abajo"
+     },
+     {
+      "label": "Sala",
+      "state": "off",
+      "detail": "Sala 1"
+     },
+     {
+      "label": "En vivo",
+      "state": "off",
+      "detail": "En espera"
+     }
+    ]
+   },
+   "body": {
+    "kind": "signedOut",
+    "url": "https://x.test/\"a\"&b",
+    "sala": "Sala 1",
+    "remember": true
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-hero-block\" data-cloud-hero-block><div class=\"cloud-sync-hero\" data-cloud-hero data-signed-out><div class=\"cloud-sync-hero-icon\" data-state=\"warn\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 9v4\"/><path d=\"M12 16.5h.01\"/><path d=\"M10.3 4.5 2.6 18a2 2 0 0 0 1.8 3h15.2a2 2 0 0 0 1.8-3L13.7 4.5a2 2 0 0 0-3.4 0Z\"/></svg></div><div class=\"cloud-sync-hero-text\"><p class=\"cloud-sync-hero-title\">Sin sesión</p><p class=\"cloud-sync-hero-sub\">Tus cambios se guardan en este equipo, pero no llegan a tu sala.</p></div></div><div class=\"cloud-sync-chain\" data-cloud-chain aria-label=\"Estado de conexión\"><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18\"/></svg></div><div class=\"cloud-sync-chain-label\">Internet</div><div class=\"cloud-sync-chain-detail\">Conectado</div></div><span class=\"cloud-sync-chain-link is-broken\"></span><div class=\"cloud-sync-chain-step\" data-state=\"warn\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M17 6l3 3\"/></svg></div><div class=\"cloud-sync-chain-label\">Sesión</div><div class=\"cloud-sync-chain-detail\">Entra abajo</div></div><span class=\"cloud-sync-chain-link is-broken is-waiting\"></span><div class=\"cloud-sync-chain-step\" data-state=\"off\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16\"/><path d=\"M2 21h20\"/><path d=\"M14 12h.01\"/></svg></div><div class=\"cloud-sync-chain-label\">Sala</div><div class=\"cloud-sync-chain-detail\">Sala 1</div></div><span class=\"cloud-sync-chain-link is-broken is-waiting\"></span><div class=\"cloud-sync-chain-step\" data-state=\"off\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/></svg></div><div class=\"cloud-sync-chain-label\">En vivo</div><div class=\"cloud-sync-chain-detail\">En espera</div></div></div></div></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden></p><div class=\"cloud-sync-status-sheet cloud-sync-signed-out\" data-cloud-signed-out><div class=\"cloud-sync-inset-group cloud-sync-auth-card\" aria-label=\"Cuenta Nube\"><div class=\"cloud-sync-tab-panel\" data-cloud-tab-panel=\"login\" role=\"tabpanel\"><div class=\"cloud-sync-auth-head\"><span class=\"cloud-sync-avatar cloud-sync-avatar--empty\" aria-hidden=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/></svg></span><h4 class=\"cloud-sync-auth-title\">Entra a tu cuenta</h4></div><div class=\"cloud-sync-auth-grid\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-login-user\">Usuario</label><input id=\"cloud-sync-login-user\" type=\"text\" class=\"profile-input\" data-cloud-login-user autocomplete=\"username\" placeholder=\"drdemo\" spellcheck=\"false\" /></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-login-pass\">Contraseña</label><input id=\"cloud-sync-login-pass\" type=\"password\" class=\"profile-input\" data-cloud-login-pass autocomplete=\"current-password\" /></div></div><div class=\"cloud-sync-auth-foot\"><div class=\"cloud-sync-auth-remember\"><label class=\"rpc-switch\"><input type=\"checkbox\" id=\"cloud-sync-login-remember\" class=\"rpc-switch-input\" role=\"switch\" data-cloud-login-remember checked aria-labelledby=\"cloud-sync-login-remember-lbl\" /><span class=\"rpc-switch-track\" aria-hidden=\"true\"><span class=\"rpc-switch-thumb\"></span></span></label><span id=\"cloud-sync-login-remember-lbl\">Recuérdame en este dispositivo <span class=\"cloud-sync-auth-hint\">· no en una Mac compartida</span></span></div><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--primary ui-pressable\" data-cloud-action=\"login\">Entrar</button></div><div class=\"cloud-sync-auth-links\"><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-tab=\"register\">Crear cuenta</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-tab=\"recover\">¿Olvidaste tu contraseña?</button></div></div><div class=\"cloud-sync-tab-panel\" data-cloud-tab-panel=\"register\" role=\"tabpanel\" hidden><div class=\"cloud-sync-auth-head\"><span class=\"cloud-sync-avatar cloud-sync-avatar--empty\" aria-hidden=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/></svg></span><h4 class=\"cloud-sync-auth-title\">Crea tu cuenta</h4><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-auth-back\" data-cloud-tab=\"login\">‹ Entrar</button></div><div class=\"cloud-sync-auth-grid\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-reg-user\">Usuario</label><input id=\"cloud-sync-reg-user\" type=\"text\" class=\"profile-input\" data-cloud-reg-user autocomplete=\"username\" placeholder=\"drdemo\" spellcheck=\"false\" /><p class=\"cloud-sync-auth-hint\">Minúsculas, sin espacios ni acentos. Sin «Dr.».</p></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-reg-display\">Nombre en guardia</label><input id=\"cloud-sync-reg-display\" type=\"text\" class=\"profile-input\" data-cloud-reg-display autocomplete=\"name\" placeholder=\"Dr. Demo\" /><p class=\"cloud-sync-auth-hint\">Así te ven en el censo y las entregas.</p></div></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-reg-pass\">Contraseña</label><input id=\"cloud-sync-reg-pass\" type=\"password\" class=\"profile-input\" data-cloud-reg-pass autocomplete=\"new-password\" /></div><div class=\"cloud-sync-auth-remember\"><label class=\"rpc-switch\"><input type=\"checkbox\" id=\"cloud-sync-reg-remember\" class=\"rpc-switch-input\" role=\"switch\" data-cloud-reg-remember checked aria-labelledby=\"cloud-sync-reg-remember-lbl\" /><span class=\"rpc-switch-track\" aria-hidden=\"true\"><span class=\"rpc-switch-thumb\"></span></span></label><span id=\"cloud-sync-reg-remember-lbl\">Recuérdame en este dispositivo <span class=\"cloud-sync-auth-hint\">· no en una Mac compartida</span></span></div><div class=\"cloud-sync-auth-foot\"><span class=\"cloud-sync-auth-hint\">Luego te damos un código de recuperación. Guárdalo.</span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--primary ui-pressable\" data-cloud-action=\"register\">Crear cuenta</button></div></div><div class=\"cloud-sync-tab-panel\" data-cloud-tab-panel=\"recover\" role=\"tabpanel\" hidden><div class=\"cloud-sync-auth-head\"><span class=\"cloud-sync-avatar cloud-sync-avatar--empty\" aria-hidden=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/></svg></span><h4 class=\"cloud-sync-auth-title\">Recupera tu cuenta</h4><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-auth-back\" data-cloud-tab=\"login\">‹ Entrar</button></div><div class=\"cloud-sync-auth-grid\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-recover-user\">Usuario</label><input id=\"cloud-sync-recover-user\" type=\"text\" class=\"profile-input\" data-cloud-recover-user autocomplete=\"username\" placeholder=\"drdemo\" spellcheck=\"false\" /></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-recover-code\">Código de recuperación</label><input id=\"cloud-sync-recover-code\" type=\"text\" class=\"profile-input\" data-cloud-recover-code autocomplete=\"off\" placeholder=\"R+XXXX-XXXX-XXXX\" spellcheck=\"false\" /></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-recover-pass\">Nueva contraseña</label><input id=\"cloud-sync-recover-pass\" type=\"password\" class=\"profile-input\" data-cloud-recover-pass autocomplete=\"new-password\" /></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-recover-pass2\">Confírmala</label><input id=\"cloud-sync-recover-pass2\" type=\"password\" class=\"profile-input\" data-cloud-recover-pass2 autocomplete=\"new-password\" /></div></div><div class=\"cloud-sync-auth-foot\"><span class=\"cloud-sync-auth-hint\">Te damos un código nuevo; el anterior deja de servir.</span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--primary ui-pressable\" data-cloud-action=\"recover\">Recuperar cuenta</button></div></div></div><div class=\"cloud-sync-room cloud-sync-room--waiting\"><p class=\"cloud-sync-options-label\">Tu sala</p><div class=\"cloud-sync-inset-group\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity\"><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-room-name\">Sala 1</span><span class=\"cloud-sync-status-display\">Se conecta al entrar</span></span></div></div></div><details class=\"cloud-sync-inset-group cloud-sync-advanced cloud-sync-advanced--row\"><summary><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-options-entry-title\">Avanzado</span><span class=\"cloud-sync-options-entry-meta\">URL del servicio</span></span></summary><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url\">URL del servicio</label><input id=\"cloud-sync-url\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://x.test/&quot;a&quot;&amp;b\" placeholder=\"https://…workers.dev\" /></div></details></div>"
+ },
+ "so_nonet": {
+  "inputs": {
+   "kind": "out",
+   "displaySala": "Torre HU",
+   "status": "offline",
+   "remember": false,
+   "online": false,
+   "url": "https://nube.example.test",
+   "tokenPresent": false
+  },
+  "props": {
+   "displaySala": "Torre HU",
+   "status": "offline",
+   "statusLabel": "Sin conexión Nube",
+   "chipClass": "is-pending",
+   "detail": "",
+   "hero": {
+    "hero": {
+     "signedOut": true
+    },
+    "steps": [
+     {
+      "label": "Internet",
+      "state": "error",
+      "detail": "Sin conexión"
+     },
+     {
+      "label": "Sesión",
+      "state": "warn",
+      "detail": "Entra abajo"
+     },
+     {
+      "label": "Sala",
+      "state": "off",
+      "detail": "Torre HU"
+     },
+     {
+      "label": "En vivo",
+      "state": "off",
+      "detail": "En espera"
+     }
+    ]
+   },
+   "body": {
+    "kind": "signedOut",
+    "url": "https://nube.example.test",
+    "sala": "Torre HU",
+    "remember": false
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-hero-block\" data-cloud-hero-block><div class=\"cloud-sync-hero\" data-cloud-hero data-signed-out><div class=\"cloud-sync-hero-icon\" data-state=\"warn\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 9v4\"/><path d=\"M12 16.5h.01\"/><path d=\"M10.3 4.5 2.6 18a2 2 0 0 0 1.8 3h15.2a2 2 0 0 0 1.8-3L13.7 4.5a2 2 0 0 0-3.4 0Z\"/></svg></div><div class=\"cloud-sync-hero-text\"><p class=\"cloud-sync-hero-title\">Sin sesión</p><p class=\"cloud-sync-hero-sub\">Tus cambios se guardan en este equipo, pero no llegan a tu sala.</p></div></div><div class=\"cloud-sync-chain\" data-cloud-chain aria-label=\"Estado de conexión\"><div class=\"cloud-sync-chain-step\" data-state=\"error\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18\"/></svg></div><div class=\"cloud-sync-chain-label\">Internet</div><div class=\"cloud-sync-chain-detail\">Sin conexión</div></div><span class=\"cloud-sync-chain-link is-broken\"></span><div class=\"cloud-sync-chain-step\" data-state=\"warn\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M17 6l3 3\"/></svg></div><div class=\"cloud-sync-chain-label\">Sesión</div><div class=\"cloud-sync-chain-detail\">Entra abajo</div></div><span class=\"cloud-sync-chain-link is-broken is-waiting\"></span><div class=\"cloud-sync-chain-step\" data-state=\"off\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16\"/><path d=\"M2 21h20\"/><path d=\"M14 12h.01\"/></svg></div><div class=\"cloud-sync-chain-label\">Sala</div><div class=\"cloud-sync-chain-detail\">Torre HU</div></div><span class=\"cloud-sync-chain-link is-broken is-waiting\"></span><div class=\"cloud-sync-chain-step\" data-state=\"off\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/></svg></div><div class=\"cloud-sync-chain-label\">En vivo</div><div class=\"cloud-sync-chain-detail\">En espera</div></div></div></div></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden></p><div class=\"cloud-sync-status-sheet cloud-sync-signed-out\" data-cloud-signed-out><div class=\"cloud-sync-inset-group cloud-sync-auth-card\" aria-label=\"Cuenta Nube\"><div class=\"cloud-sync-tab-panel\" data-cloud-tab-panel=\"login\" role=\"tabpanel\"><div class=\"cloud-sync-auth-head\"><span class=\"cloud-sync-avatar cloud-sync-avatar--empty\" aria-hidden=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/></svg></span><h4 class=\"cloud-sync-auth-title\">Entra a tu cuenta</h4></div><div class=\"cloud-sync-auth-grid\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-login-user\">Usuario</label><input id=\"cloud-sync-login-user\" type=\"text\" class=\"profile-input\" data-cloud-login-user autocomplete=\"username\" placeholder=\"drdemo\" spellcheck=\"false\" /></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-login-pass\">Contraseña</label><input id=\"cloud-sync-login-pass\" type=\"password\" class=\"profile-input\" data-cloud-login-pass autocomplete=\"current-password\" /></div></div><div class=\"cloud-sync-auth-foot\"><div class=\"cloud-sync-auth-remember\"><label class=\"rpc-switch\"><input type=\"checkbox\" id=\"cloud-sync-login-remember\" class=\"rpc-switch-input\" role=\"switch\" data-cloud-login-remember aria-labelledby=\"cloud-sync-login-remember-lbl\" /><span class=\"rpc-switch-track\" aria-hidden=\"true\"><span class=\"rpc-switch-thumb\"></span></span></label><span id=\"cloud-sync-login-remember-lbl\">Recuérdame en este dispositivo <span class=\"cloud-sync-auth-hint\">· no en una Mac compartida</span></span></div><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--primary ui-pressable\" data-cloud-action=\"login\">Entrar</button></div><div class=\"cloud-sync-auth-links\"><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-tab=\"register\">Crear cuenta</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-tab=\"recover\">¿Olvidaste tu contraseña?</button></div></div><div class=\"cloud-sync-tab-panel\" data-cloud-tab-panel=\"register\" role=\"tabpanel\" hidden><div class=\"cloud-sync-auth-head\"><span class=\"cloud-sync-avatar cloud-sync-avatar--empty\" aria-hidden=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/></svg></span><h4 class=\"cloud-sync-auth-title\">Crea tu cuenta</h4><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-auth-back\" data-cloud-tab=\"login\">‹ Entrar</button></div><div class=\"cloud-sync-auth-grid\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-reg-user\">Usuario</label><input id=\"cloud-sync-reg-user\" type=\"text\" class=\"profile-input\" data-cloud-reg-user autocomplete=\"username\" placeholder=\"drdemo\" spellcheck=\"false\" /><p class=\"cloud-sync-auth-hint\">Minúsculas, sin espacios ni acentos. Sin «Dr.».</p></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-reg-display\">Nombre en guardia</label><input id=\"cloud-sync-reg-display\" type=\"text\" class=\"profile-input\" data-cloud-reg-display autocomplete=\"name\" placeholder=\"Dr. Demo\" /><p class=\"cloud-sync-auth-hint\">Así te ven en el censo y las entregas.</p></div></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-reg-pass\">Contraseña</label><input id=\"cloud-sync-reg-pass\" type=\"password\" class=\"profile-input\" data-cloud-reg-pass autocomplete=\"new-password\" /></div><div class=\"cloud-sync-auth-remember\"><label class=\"rpc-switch\"><input type=\"checkbox\" id=\"cloud-sync-reg-remember\" class=\"rpc-switch-input\" role=\"switch\" data-cloud-reg-remember aria-labelledby=\"cloud-sync-reg-remember-lbl\" /><span class=\"rpc-switch-track\" aria-hidden=\"true\"><span class=\"rpc-switch-thumb\"></span></span></label><span id=\"cloud-sync-reg-remember-lbl\">Recuérdame en este dispositivo <span class=\"cloud-sync-auth-hint\">· no en una Mac compartida</span></span></div><div class=\"cloud-sync-auth-foot\"><span class=\"cloud-sync-auth-hint\">Luego te damos un código de recuperación. Guárdalo.</span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--primary ui-pressable\" data-cloud-action=\"register\">Crear cuenta</button></div></div><div class=\"cloud-sync-tab-panel\" data-cloud-tab-panel=\"recover\" role=\"tabpanel\" hidden><div class=\"cloud-sync-auth-head\"><span class=\"cloud-sync-avatar cloud-sync-avatar--empty\" aria-hidden=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/></svg></span><h4 class=\"cloud-sync-auth-title\">Recupera tu cuenta</h4><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-auth-back\" data-cloud-tab=\"login\">‹ Entrar</button></div><div class=\"cloud-sync-auth-grid\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-recover-user\">Usuario</label><input id=\"cloud-sync-recover-user\" type=\"text\" class=\"profile-input\" data-cloud-recover-user autocomplete=\"username\" placeholder=\"drdemo\" spellcheck=\"false\" /></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-recover-code\">Código de recuperación</label><input id=\"cloud-sync-recover-code\" type=\"text\" class=\"profile-input\" data-cloud-recover-code autocomplete=\"off\" placeholder=\"R+XXXX-XXXX-XXXX\" spellcheck=\"false\" /></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-recover-pass\">Nueva contraseña</label><input id=\"cloud-sync-recover-pass\" type=\"password\" class=\"profile-input\" data-cloud-recover-pass autocomplete=\"new-password\" /></div><div class=\"cloud-sync-field\"><label for=\"cloud-sync-recover-pass2\">Confírmala</label><input id=\"cloud-sync-recover-pass2\" type=\"password\" class=\"profile-input\" data-cloud-recover-pass2 autocomplete=\"new-password\" /></div></div><div class=\"cloud-sync-auth-foot\"><span class=\"cloud-sync-auth-hint\">Te damos un código nuevo; el anterior deja de servir.</span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--primary ui-pressable\" data-cloud-action=\"recover\">Recuperar cuenta</button></div></div></div><div class=\"cloud-sync-room cloud-sync-room--waiting\"><p class=\"cloud-sync-options-label\">Tu sala</p><div class=\"cloud-sync-inset-group\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity\"><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-room-name\">Torre HU</span><span class=\"cloud-sync-status-display\">Se conecta al entrar</span></span></div></div></div><details class=\"cloud-sync-inset-group cloud-sync-advanced cloud-sync-advanced--row\"><summary><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-options-entry-title\">Avanzado</span><span class=\"cloud-sync-options-entry-meta\">URL del servicio</span></span></summary><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url\">URL del servicio</label><input id=\"cloud-sync-url\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div></details></div>"
+ },
+ "idle_admin": {
+  "inputs": {
+   "kind": "in",
+   "displaySala": "Sala 1",
+   "status": "idle",
+   "transport": "ws",
+   "push": true,
+   "room": {
+    "id": "room-1",
+    "sala": "Sala 1",
+    "turnKey": "2026-09",
+    "code": "AB12CD",
+    "memberCount": 7
+   },
+   "user": {
+    "rank": "R4",
+    "username": "dr_sesion",
+    "clinical_name": "Dr. Sesión"
+   },
+   "cloudUser": {
+    "username": "dr_prueba",
+    "displayName": "Dra. Ana Ríos"
+   },
+   "has": true,
+   "tech": "Cola 0 · Rev. 12 · 3 pacientes locales",
+   "online": true,
+   "url": "https://nube.example.test",
+   "tokenPresent": true
+  },
+  "props": {
+   "displaySala": "Sala 1",
+   "status": "idle",
+   "statusLabel": "Nube al día",
+   "chipClass": "is-idle",
+   "detail": "",
+   "hero": {
+    "hero": {
+     "iconState": "ok",
+     "title": "Todo al día",
+     "subline": "Sala 1 · septiembre 2026 · último envío hace 5 min"
+    },
+    "steps": [
+     {
+      "label": "Internet",
+      "state": "ok",
+      "detail": "Conectado"
+     },
+     {
+      "label": "Sesión",
+      "state": "ok",
+      "detail": "Activa"
+     },
+     {
+      "label": "Sala",
+      "state": "ok",
+      "detail": "Sala 1"
+     },
+     {
+      "label": "En vivo",
+      "state": "ok",
+      "detail": "Conectado"
+     }
+    ]
+   },
+   "body": {
+    "kind": "connected",
+    "identity": {
+     "handle": "dr_prueba",
+     "display": "Dra. Ana Ríos",
+     "initials": "AR"
+    },
+    "room": {
+     "name": "Sala 1",
+     "meta": "Septiembre 2026 · 7 miembros",
+     "code": "AB12CD"
+    },
+    "salaForActions": "Sala 1",
+    "showAdmin": true,
+    "showInternoQr": true,
+    "url": "https://nube.example.test",
+    "techSummary": "Cola 0 · Rev. 12 · 3 pacientes locales"
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-hero-block\" data-cloud-hero-block><div class=\"cloud-sync-hero\" data-cloud-hero data-state=\"ok\"><p class=\"cloud-sync-hero-title\">Todo al día</p><p class=\"cloud-sync-hero-sub\">Sala 1 · septiembre 2026 · último envío hace 5 min</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-hero-sync\" data-cloud-action=\"sync-now\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 12a8 8 0 1 1-2.3-5.6\"/><path d=\"M20 4v5h-5\"/></svg>Sincronizar ahora</button></div><div class=\"cloud-sync-chain\" data-cloud-chain aria-label=\"Estado de conexión\"><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18\"/></svg></div><div class=\"cloud-sync-chain-label\">Internet</div><div class=\"cloud-sync-chain-detail\">Conectado</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M17 6l3 3\"/></svg></div><div class=\"cloud-sync-chain-label\">Sesión</div><div class=\"cloud-sync-chain-detail\">Activa</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16\"/><path d=\"M2 21h20\"/><path d=\"M14 12h.01\"/></svg></div><div class=\"cloud-sync-chain-label\">Sala</div><div class=\"cloud-sync-chain-detail\">Sala 1</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/></svg></div><div class=\"cloud-sync-chain-label\">En vivo</div><div class=\"cloud-sync-chain-detail\">Conectado</div></div></div></div></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden></p><div class=\"cloud-sync-views\" data-cloud-views><div class=\"cloud-sync-view\" data-cloud-view=\"status\" data-cloud-view-title=\"Conexión\"><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-status-sheet\"><div class=\"cloud-sync-inset-group cloud-sync-status-identity\" aria-label=\"Cuenta\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row\"><span class=\"cloud-sync-avatar\" aria-hidden=\"true\">AR</span><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-account-name\">Dra. Ana Ríos</span><span class=\"cloud-sync-status-handle\">@dr_prueba</span></span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger\" data-cloud-action=\"logout\">Cerrar sesión</button></div></div><div class=\"cloud-sync-room cloud-sync-room--connected\"><p class=\"cloud-sync-options-label\">Tu sala</p><div class=\"cloud-sync-inset-group\" role=\"group\" aria-label=\"Sala nube\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity\"><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-room-name\">Sala 1</span><span class=\"cloud-sync-status-display\">Septiembre 2026 · 7 miembros</span></span></div><dl class=\"cloud-sync-inset-row cloud-sync-inset-row--kv\"><dt>Código para invitar</dt><dd><span class=\"cloud-sync-room-code-group\"><code class=\"cloud-sync-room-code\" data-cloud-room-code>AB12CD</code><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy\" data-cloud-action=\"copy-room-code\">Copiar</button></span></dd></dl><button type=\"button\" class=\"cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger\" data-cloud-action=\"leave-room\">Salir de la sala</button></div></div><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-options\" data-cloud-view=\"options\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo y administración</span><span class=\"cloud-sync-options-row-meta\">Equipo, cuenta y administración</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Detalles técnicos</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Cola 0 · Rev. 12 · 3 pacientes locales</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"options\" data-cloud-view-title=\"Opciones\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-options-list\"><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Guardia</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"mobile\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">iPad / R+ Móvil</span><span class=\"cloud-sync-options-row-meta\">QR y enlace permanente</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"equipo\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo</span><span class=\"cloud-sync-options-row-meta\">@usuario, equipos y sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"interno-qr\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">QR Internos</span><span class=\"cloud-sync-options-row-meta\">Vitales desde el celular por sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Cuenta</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"cuenta\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Cuenta</span><span class=\"cloud-sync-options-row-meta\">Recuperación y sesión</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"admin\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Administración</span><span class=\"cloud-sync-options-row-meta\">Usuarios, salas y clave admin</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Sistema</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Diagnóstico Nube</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Dashboard de estado y alertas</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"advanced\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Avanzado</span><span class=\"cloud-sync-options-row-meta\">URL del servicio</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"equipo\" data-cloud-view-title=\"Equipo\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"mobile\" data-cloud-view-title=\"iPad / R+ Móvil\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-mobile-invite-host\" data-cloud-mobile-invite-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"interno-qr\" data-cloud-view-title=\"QR Internos\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-interno-qr-host\" data-cloud-interno-qr-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"cuenta\" data-cloud-view-title=\"Cuenta\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-cuenta\"><p class=\"cloud-sync-status-handle\">@dr_prueba</p><p class=\"cloud-sync-status-display\">Dra. Ana Ríos</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost ui-pressable\" data-cloud-action=\"regenerate-recovery\">Código de recuperación</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-action=\"logout\">Cerrar sesión Nube</button></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"admin\" data-cloud-view-title=\"Administración\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-admin-host\" data-cloud-admin-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"nube\" data-cloud-view-title=\"Diagnóstico Nube\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-nube-diagnostics-host\" data-cloud-nube-diagnostics-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"advanced\" data-cloud-view-title=\"Avanzado\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url-connected\">URL del servicio</label><input id=\"cloud-sync-url-connected\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"save-url\">Guardar</button></div></div></div>"
+ },
+ "idle_poll": {
+  "inputs": {
+   "kind": "in",
+   "displaySala": "Sala 1",
+   "status": "idle",
+   "transport": "poll",
+   "push": false,
+   "room": {
+    "id": "room-1",
+    "sala": "Sala 1",
+    "turnKey": "2026-09",
+    "code": "AB12CD",
+    "memberCount": 7
+   },
+   "user": {
+    "rank": "R1",
+    "username": "dr_r1",
+    "clinical_name": "R1 García"
+   },
+   "cloudUser": {
+    "username": "dr_prueba",
+    "displayName": "Ana"
+   },
+   "has": true,
+   "tech": "",
+   "online": true,
+   "url": "https://nube.example.test",
+   "tokenPresent": true
+  },
+  "props": {
+   "displaySala": "Sala 1",
+   "status": "idle",
+   "statusLabel": "Nube al día",
+   "chipClass": "is-idle",
+   "detail": "",
+   "hero": {
+    "hero": {
+     "iconState": "ok",
+     "title": "Todo al día",
+     "subline": "Sala 1 · septiembre 2026"
+    },
+    "steps": [
+     {
+      "label": "Internet",
+      "state": "ok",
+      "detail": "Conectado"
+     },
+     {
+      "label": "Sesión",
+      "state": "ok",
+      "detail": "Activa"
+     },
+     {
+      "label": "Sala",
+      "state": "ok",
+      "detail": "Sala 1"
+     },
+     {
+      "label": "En vivo",
+      "state": "warn",
+      "detail": "Reconectando"
+     }
+    ]
+   },
+   "body": {
+    "kind": "connected",
+    "identity": {
+     "handle": "dr_prueba",
+     "display": "Ana",
+     "initials": "A"
+    },
+    "room": {
+     "name": "Sala 1",
+     "meta": "Septiembre 2026 · 7 miembros",
+     "code": "AB12CD"
+    },
+    "salaForActions": "Sala 1",
+    "showAdmin": true,
+    "showInternoQr": false,
+    "url": "https://nube.example.test",
+    "techSummary": ""
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-hero-block\" data-cloud-hero-block><div class=\"cloud-sync-hero\" data-cloud-hero data-state=\"ok\"><p class=\"cloud-sync-hero-title\">Todo al día</p><p class=\"cloud-sync-hero-sub\">Sala 1 · septiembre 2026</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-hero-sync\" data-cloud-action=\"sync-now\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 12a8 8 0 1 1-2.3-5.6\"/><path d=\"M20 4v5h-5\"/></svg>Sincronizar ahora</button></div><div class=\"cloud-sync-chain\" data-cloud-chain aria-label=\"Estado de conexión\"><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18\"/></svg></div><div class=\"cloud-sync-chain-label\">Internet</div><div class=\"cloud-sync-chain-detail\">Conectado</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M17 6l3 3\"/></svg></div><div class=\"cloud-sync-chain-label\">Sesión</div><div class=\"cloud-sync-chain-detail\">Activa</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16\"/><path d=\"M2 21h20\"/><path d=\"M14 12h.01\"/></svg></div><div class=\"cloud-sync-chain-label\">Sala</div><div class=\"cloud-sync-chain-detail\">Sala 1</div></div><span class=\"cloud-sync-chain-link is-broken\"></span><div class=\"cloud-sync-chain-step\" data-state=\"warn\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/></svg></div><div class=\"cloud-sync-chain-label\">En vivo</div><div class=\"cloud-sync-chain-detail\">Reconectando</div></div></div></div></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden></p><div class=\"cloud-sync-views\" data-cloud-views><div class=\"cloud-sync-view\" data-cloud-view=\"status\" data-cloud-view-title=\"Conexión\"><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-status-sheet\"><div class=\"cloud-sync-inset-group cloud-sync-status-identity\" aria-label=\"Cuenta\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row\"><span class=\"cloud-sync-avatar\" aria-hidden=\"true\">A</span><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-account-name\">Ana</span><span class=\"cloud-sync-status-handle\">@dr_prueba</span></span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger\" data-cloud-action=\"logout\">Cerrar sesión</button></div></div><div class=\"cloud-sync-room cloud-sync-room--connected\"><p class=\"cloud-sync-options-label\">Tu sala</p><div class=\"cloud-sync-inset-group\" role=\"group\" aria-label=\"Sala nube\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity\"><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-room-name\">Sala 1</span><span class=\"cloud-sync-status-display\">Septiembre 2026 · 7 miembros</span></span></div><dl class=\"cloud-sync-inset-row cloud-sync-inset-row--kv\"><dt>Código para invitar</dt><dd><span class=\"cloud-sync-room-code-group\"><code class=\"cloud-sync-room-code\" data-cloud-room-code>AB12CD</code><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy\" data-cloud-action=\"copy-room-code\">Copiar</button></span></dd></dl><button type=\"button\" class=\"cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger\" data-cloud-action=\"leave-room\">Salir de la sala</button></div></div><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-options\" data-cloud-view=\"options\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo y administración</span><span class=\"cloud-sync-options-row-meta\">Equipo, cuenta y administración</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Detalles técnicos</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>—</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"options\" data-cloud-view-title=\"Opciones\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-options-list\"><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Guardia</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"mobile\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">iPad / R+ Móvil</span><span class=\"cloud-sync-options-row-meta\">QR y enlace permanente</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"equipo\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo</span><span class=\"cloud-sync-options-row-meta\">@usuario, equipos y sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Cuenta</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"cuenta\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Cuenta</span><span class=\"cloud-sync-options-row-meta\">Recuperación y sesión</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"admin\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Administración</span><span class=\"cloud-sync-options-row-meta\">Usuarios, salas y clave admin</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Sistema</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Diagnóstico Nube</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Dashboard de estado y alertas</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"advanced\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Avanzado</span><span class=\"cloud-sync-options-row-meta\">URL del servicio</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"equipo\" data-cloud-view-title=\"Equipo\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"mobile\" data-cloud-view-title=\"iPad / R+ Móvil\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-mobile-invite-host\" data-cloud-mobile-invite-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"cuenta\" data-cloud-view-title=\"Cuenta\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-cuenta\"><p class=\"cloud-sync-status-handle\">@dr_prueba</p><p class=\"cloud-sync-status-display\">Ana</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost ui-pressable\" data-cloud-action=\"regenerate-recovery\">Código de recuperación</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-action=\"logout\">Cerrar sesión Nube</button></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"admin\" data-cloud-view-title=\"Administración\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-admin-host\" data-cloud-admin-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"nube\" data-cloud-view-title=\"Diagnóstico Nube\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-nube-diagnostics-host\" data-cloud-nube-diagnostics-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"advanced\" data-cloud-view-title=\"Avanzado\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url-connected\">URL del servicio</label><input id=\"cloud-sync-url-connected\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"save-url\">Guardar</button></div></div></div>"
+ },
+ "syncing_noadmin": {
+  "inputs": {
+   "kind": "in",
+   "displaySala": "Sala 2",
+   "status": "syncing",
+   "detail": "2 op",
+   "transport": "ws",
+   "push": true,
+   "room": {
+    "id": "room-1",
+    "sala": "Sala 2",
+    "turnKey": "",
+    "code": ""
+   },
+   "user": {
+    "rank": "R1",
+    "username": "dr_r1",
+    "clinical_name": "R1 García"
+   },
+   "cloudUser": null,
+   "has": false,
+   "tech": "Cola 2 · Rev. 4 · 0 pacientes locales",
+   "online": true,
+   "url": "https://nube.example.test",
+   "tokenPresent": true
+  },
+  "props": {
+   "displaySala": "Sala 2",
+   "status": "syncing",
+   "statusLabel": "Sincronizando…",
+   "chipClass": "is-syncing",
+   "detail": "2 op",
+   "hero": {
+    "hero": {
+     "iconState": "info",
+     "title": "Sincronizando…",
+     "subline": "Sala 2 · último envío hace 5 min"
+    },
+    "steps": [
+     {
+      "label": "Internet",
+      "state": "ok",
+      "detail": "Conectado"
+     },
+     {
+      "label": "Sesión",
+      "state": "ok",
+      "detail": "Activa"
+     },
+     {
+      "label": "Sala",
+      "state": "ok",
+      "detail": "Sala 2"
+     },
+     {
+      "label": "En vivo",
+      "state": "ok",
+      "detail": "Conectado"
+     }
+    ]
+   },
+   "body": {
+    "kind": "connected",
+    "identity": {
+     "handle": "dr_r1",
+     "display": "R1 García",
+     "initials": "RG"
+    },
+    "room": {
+     "name": "Sala 2",
+     "meta": "",
+     "code": ""
+    },
+    "salaForActions": "Sala 2",
+    "showAdmin": false,
+    "showInternoQr": false,
+    "url": "https://nube.example.test",
+    "techSummary": "Cola 2 · Rev. 4 · 0 pacientes locales"
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-hero-block\" data-cloud-hero-block><div class=\"cloud-sync-hero\" data-cloud-hero data-state=\"info\"><p class=\"cloud-sync-hero-title\">Sincronizando…</p><p class=\"cloud-sync-hero-sub\">Sala 2 · último envío hace 5 min</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-hero-sync\" data-cloud-action=\"sync-now\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 12a8 8 0 1 1-2.3-5.6\"/><path d=\"M20 4v5h-5\"/></svg>Sincronizar ahora</button></div><div class=\"cloud-sync-chain\" data-cloud-chain aria-label=\"Estado de conexión\"><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18\"/></svg></div><div class=\"cloud-sync-chain-label\">Internet</div><div class=\"cloud-sync-chain-detail\">Conectado</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M17 6l3 3\"/></svg></div><div class=\"cloud-sync-chain-label\">Sesión</div><div class=\"cloud-sync-chain-detail\">Activa</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16\"/><path d=\"M2 21h20\"/><path d=\"M14 12h.01\"/></svg></div><div class=\"cloud-sync-chain-label\">Sala</div><div class=\"cloud-sync-chain-detail\">Sala 2</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/></svg></div><div class=\"cloud-sync-chain-label\">En vivo</div><div class=\"cloud-sync-chain-detail\">Conectado</div></div></div></div></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden>2 op</p><div class=\"cloud-sync-views\" data-cloud-views><div class=\"cloud-sync-view\" data-cloud-view=\"status\" data-cloud-view-title=\"Conexión\"><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-status-sheet\"><div class=\"cloud-sync-inset-group cloud-sync-status-identity\" aria-label=\"Cuenta\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row\"><span class=\"cloud-sync-avatar\" aria-hidden=\"true\">RG</span><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-account-name\">R1 García</span><span class=\"cloud-sync-status-handle\">@dr_r1</span></span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger\" data-cloud-action=\"logout\">Cerrar sesión</button></div></div><div class=\"cloud-sync-room cloud-sync-room--connected\"><p class=\"cloud-sync-options-label\">Tu sala</p><div class=\"cloud-sync-inset-group\" role=\"group\" aria-label=\"Sala nube\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity\"><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-room-name\">Sala 2</span></span></div><dl class=\"cloud-sync-inset-row cloud-sync-inset-row--kv\"><dt>Código para invitar<span class=\"cloud-sync-room-code-missing\" data-cloud-room-code-missing>Se descarga al conectar con la Nube.</span></dt><dd><span class=\"cloud-sync-room-code-group\"><code class=\"cloud-sync-room-code\" data-cloud-room-code>—</code><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy\" data-cloud-action=\"copy-room-code\" disabled>Copiar</button></span></dd></dl><button type=\"button\" class=\"cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger\" data-cloud-action=\"leave-room\">Salir de la sala</button></div></div><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-options\" data-cloud-view=\"options\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo y cuenta</span><span class=\"cloud-sync-options-row-meta\">Equipo, cuenta e iPad</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Detalles técnicos</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Cola 2 · Rev. 4 · 0 pacientes locales</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"options\" data-cloud-view-title=\"Opciones\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-options-list\"><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Guardia</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"mobile\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">iPad / R+ Móvil</span><span class=\"cloud-sync-options-row-meta\">QR y enlace permanente</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"equipo\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo</span><span class=\"cloud-sync-options-row-meta\">@usuario, equipos y sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Cuenta</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"cuenta\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Cuenta</span><span class=\"cloud-sync-options-row-meta\">Recuperación y sesión</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Sistema</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Diagnóstico Nube</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Dashboard de estado y alertas</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"advanced\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Avanzado</span><span class=\"cloud-sync-options-row-meta\">URL del servicio</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"equipo\" data-cloud-view-title=\"Equipo\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"mobile\" data-cloud-view-title=\"iPad / R+ Móvil\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-mobile-invite-host\" data-cloud-mobile-invite-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"cuenta\" data-cloud-view-title=\"Cuenta\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-cuenta\"><p class=\"cloud-sync-status-handle\">@dr_r1</p><p class=\"cloud-sync-status-display\">R1 García</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost ui-pressable\" data-cloud-action=\"regenerate-recovery\">Código de recuperación</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-action=\"logout\">Cerrar sesión Nube</button></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"nube\" data-cloud-view-title=\"Diagnóstico Nube\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-nube-diagnostics-host\" data-cloud-nube-diagnostics-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"advanced\" data-cloud-view-title=\"Avanzado\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url-connected\">URL del servicio</label><input id=\"cloud-sync-url-connected\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"save-url\">Guardar</button></div></div></div>"
+ },
+ "pending_reason": {
+  "inputs": {
+   "kind": "in",
+   "displaySala": "Sala 1",
+   "status": "pending",
+   "detail": "El servidor está ocupado <reintentando>",
+   "transport": "poll",
+   "push": true,
+   "room": {
+    "id": "room-1",
+    "sala": "Sala 1",
+    "turnKey": "2026-09",
+    "code": "AB12CD",
+    "memberCount": 7
+   },
+   "user": {
+    "rank": "R1",
+    "username": "dr_r1",
+    "clinical_name": "R1 García"
+   },
+   "cloudUser": {
+    "username": "dr_prueba"
+   },
+   "has": true,
+   "tech": "Cola 9 · Rev. 1 · 1 pacientes locales",
+   "online": true,
+   "url": "https://nube.example.test",
+   "tokenPresent": true
+  },
+  "props": {
+   "displaySala": "Sala 1",
+   "status": "pending",
+   "statusLabel": "Pendiente",
+   "chipClass": "is-pending",
+   "detail": "El servidor está ocupado <reintentando>",
+   "hero": {
+    "hero": {
+     "iconState": "warn",
+     "title": "Pendiente",
+     "subline": "El servidor está ocupado <reintentando>"
+    },
+    "steps": [
+     {
+      "label": "Internet",
+      "state": "ok",
+      "detail": "Conectado"
+     },
+     {
+      "label": "Sesión",
+      "state": "ok",
+      "detail": "Activa"
+     },
+     {
+      "label": "Sala",
+      "state": "ok",
+      "detail": "Sala 1"
+     },
+     {
+      "label": "En vivo",
+      "state": "warn",
+      "detail": "Reconectando"
+     }
+    ]
+   },
+   "body": {
+    "kind": "connected",
+    "identity": {
+     "handle": "dr_prueba",
+     "display": "R1 García",
+     "initials": "RG"
+    },
+    "room": {
+     "name": "Sala 1",
+     "meta": "Septiembre 2026 · 7 miembros",
+     "code": "AB12CD"
+    },
+    "salaForActions": "Sala 1",
+    "showAdmin": true,
+    "showInternoQr": false,
+    "url": "https://nube.example.test",
+    "techSummary": "Cola 9 · Rev. 1 · 1 pacientes locales"
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-hero-block\" data-cloud-hero-block><div class=\"cloud-sync-hero\" data-cloud-hero data-state=\"warn\"><p class=\"cloud-sync-hero-title\">Pendiente</p><p class=\"cloud-sync-hero-sub\">El servidor está ocupado &lt;reintentando&gt;</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-hero-sync\" data-cloud-action=\"sync-now\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 12a8 8 0 1 1-2.3-5.6\"/><path d=\"M20 4v5h-5\"/></svg>Sincronizar ahora</button></div><div class=\"cloud-sync-chain\" data-cloud-chain aria-label=\"Estado de conexión\"><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18\"/></svg></div><div class=\"cloud-sync-chain-label\">Internet</div><div class=\"cloud-sync-chain-detail\">Conectado</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M17 6l3 3\"/></svg></div><div class=\"cloud-sync-chain-label\">Sesión</div><div class=\"cloud-sync-chain-detail\">Activa</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16\"/><path d=\"M2 21h20\"/><path d=\"M14 12h.01\"/></svg></div><div class=\"cloud-sync-chain-label\">Sala</div><div class=\"cloud-sync-chain-detail\">Sala 1</div></div><span class=\"cloud-sync-chain-link is-broken\"></span><div class=\"cloud-sync-chain-step\" data-state=\"warn\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/></svg></div><div class=\"cloud-sync-chain-label\">En vivo</div><div class=\"cloud-sync-chain-detail\">Reconectando</div></div></div></div></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden>El servidor está ocupado &lt;reintentando&gt;</p><div class=\"cloud-sync-views\" data-cloud-views><div class=\"cloud-sync-view\" data-cloud-view=\"status\" data-cloud-view-title=\"Conexión\"><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-status-sheet\"><div class=\"cloud-sync-inset-group cloud-sync-status-identity\" aria-label=\"Cuenta\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row\"><span class=\"cloud-sync-avatar\" aria-hidden=\"true\">RG</span><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-account-name\">R1 García</span><span class=\"cloud-sync-status-handle\">@dr_prueba</span></span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger\" data-cloud-action=\"logout\">Cerrar sesión</button></div></div><div class=\"cloud-sync-room cloud-sync-room--connected\"><p class=\"cloud-sync-options-label\">Tu sala</p><div class=\"cloud-sync-inset-group\" role=\"group\" aria-label=\"Sala nube\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity\"><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-room-name\">Sala 1</span><span class=\"cloud-sync-status-display\">Septiembre 2026 · 7 miembros</span></span></div><dl class=\"cloud-sync-inset-row cloud-sync-inset-row--kv\"><dt>Código para invitar</dt><dd><span class=\"cloud-sync-room-code-group\"><code class=\"cloud-sync-room-code\" data-cloud-room-code>AB12CD</code><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy\" data-cloud-action=\"copy-room-code\">Copiar</button></span></dd></dl><button type=\"button\" class=\"cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger\" data-cloud-action=\"leave-room\">Salir de la sala</button></div></div><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-options\" data-cloud-view=\"options\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo y administración</span><span class=\"cloud-sync-options-row-meta\">Equipo, cuenta y administración</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Detalles técnicos</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Cola 9 · Rev. 1 · 1 pacientes locales</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"options\" data-cloud-view-title=\"Opciones\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-options-list\"><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Guardia</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"mobile\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">iPad / R+ Móvil</span><span class=\"cloud-sync-options-row-meta\">QR y enlace permanente</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"equipo\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo</span><span class=\"cloud-sync-options-row-meta\">@usuario, equipos y sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Cuenta</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"cuenta\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Cuenta</span><span class=\"cloud-sync-options-row-meta\">Recuperación y sesión</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"admin\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Administración</span><span class=\"cloud-sync-options-row-meta\">Usuarios, salas y clave admin</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Sistema</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Diagnóstico Nube</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Dashboard de estado y alertas</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"advanced\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Avanzado</span><span class=\"cloud-sync-options-row-meta\">URL del servicio</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"equipo\" data-cloud-view-title=\"Equipo\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"mobile\" data-cloud-view-title=\"iPad / R+ Móvil\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-mobile-invite-host\" data-cloud-mobile-invite-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"cuenta\" data-cloud-view-title=\"Cuenta\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-cuenta\"><p class=\"cloud-sync-status-handle\">@dr_prueba</p><p class=\"cloud-sync-status-display\">R1 García</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost ui-pressable\" data-cloud-action=\"regenerate-recovery\">Código de recuperación</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-action=\"logout\">Cerrar sesión Nube</button></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"admin\" data-cloud-view-title=\"Administración\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-admin-host\" data-cloud-admin-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"nube\" data-cloud-view-title=\"Diagnóstico Nube\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-nube-diagnostics-host\" data-cloud-nube-diagnostics-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"advanced\" data-cloud-view-title=\"Avanzado\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url-connected\">URL del servicio</label><input id=\"cloud-sync-url-connected\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"save-url\">Guardar</button></div></div></div>"
+ },
+ "pending_plain": {
+  "inputs": {
+   "kind": "in",
+   "displaySala": "Sala 1",
+   "status": "pending",
+   "detail": "",
+   "transport": "poll",
+   "push": false,
+   "room": {
+    "id": "room-1",
+    "sala": "Sala 1",
+    "turnKey": "2026-09",
+    "code": "AB12CD",
+    "memberCount": 7
+   },
+   "user": {
+    "rank": "R4",
+    "username": "dr_sesion",
+    "clinical_name": "Dr. Sesión"
+   },
+   "cloudUser": {
+    "username": "dr_prueba",
+    "displayName": "Dr. X"
+   },
+   "has": true,
+   "tech": "",
+   "online": true,
+   "url": "https://nube.example.test",
+   "tokenPresent": true
+  },
+  "props": {
+   "displaySala": "Sala 1",
+   "status": "pending",
+   "statusLabel": "Pendiente",
+   "chipClass": "is-pending",
+   "detail": "",
+   "hero": {
+    "hero": {
+     "iconState": "warn",
+     "title": "Pendiente",
+     "subline": "Sala 1 · septiembre 2026"
+    },
+    "steps": [
+     {
+      "label": "Internet",
+      "state": "ok",
+      "detail": "Conectado"
+     },
+     {
+      "label": "Sesión",
+      "state": "ok",
+      "detail": "Activa"
+     },
+     {
+      "label": "Sala",
+      "state": "ok",
+      "detail": "Sala 1"
+     },
+     {
+      "label": "En vivo",
+      "state": "warn",
+      "detail": "Reconectando"
+     }
+    ]
+   },
+   "body": {
+    "kind": "connected",
+    "identity": {
+     "handle": "dr_prueba",
+     "display": "Dr. X",
+     "initials": "X"
+    },
+    "room": {
+     "name": "Sala 1",
+     "meta": "Septiembre 2026 · 7 miembros",
+     "code": "AB12CD"
+    },
+    "salaForActions": "Sala 1",
+    "showAdmin": true,
+    "showInternoQr": true,
+    "url": "https://nube.example.test",
+    "techSummary": ""
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-hero-block\" data-cloud-hero-block><div class=\"cloud-sync-hero\" data-cloud-hero data-state=\"warn\"><p class=\"cloud-sync-hero-title\">Pendiente</p><p class=\"cloud-sync-hero-sub\">Sala 1 · septiembre 2026</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-hero-sync\" data-cloud-action=\"sync-now\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 12a8 8 0 1 1-2.3-5.6\"/><path d=\"M20 4v5h-5\"/></svg>Sincronizar ahora</button></div><div class=\"cloud-sync-chain\" data-cloud-chain aria-label=\"Estado de conexión\"><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18\"/></svg></div><div class=\"cloud-sync-chain-label\">Internet</div><div class=\"cloud-sync-chain-detail\">Conectado</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M17 6l3 3\"/></svg></div><div class=\"cloud-sync-chain-label\">Sesión</div><div class=\"cloud-sync-chain-detail\">Activa</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16\"/><path d=\"M2 21h20\"/><path d=\"M14 12h.01\"/></svg></div><div class=\"cloud-sync-chain-label\">Sala</div><div class=\"cloud-sync-chain-detail\">Sala 1</div></div><span class=\"cloud-sync-chain-link is-broken\"></span><div class=\"cloud-sync-chain-step\" data-state=\"warn\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/></svg></div><div class=\"cloud-sync-chain-label\">En vivo</div><div class=\"cloud-sync-chain-detail\">Reconectando</div></div></div></div></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden></p><div class=\"cloud-sync-views\" data-cloud-views><div class=\"cloud-sync-view\" data-cloud-view=\"status\" data-cloud-view-title=\"Conexión\"><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-status-sheet\"><div class=\"cloud-sync-inset-group cloud-sync-status-identity\" aria-label=\"Cuenta\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row\"><span class=\"cloud-sync-avatar\" aria-hidden=\"true\">X</span><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-account-name\">Dr. X</span><span class=\"cloud-sync-status-handle\">@dr_prueba</span></span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger\" data-cloud-action=\"logout\">Cerrar sesión</button></div></div><div class=\"cloud-sync-room cloud-sync-room--connected\"><p class=\"cloud-sync-options-label\">Tu sala</p><div class=\"cloud-sync-inset-group\" role=\"group\" aria-label=\"Sala nube\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity\"><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-room-name\">Sala 1</span><span class=\"cloud-sync-status-display\">Septiembre 2026 · 7 miembros</span></span></div><dl class=\"cloud-sync-inset-row cloud-sync-inset-row--kv\"><dt>Código para invitar</dt><dd><span class=\"cloud-sync-room-code-group\"><code class=\"cloud-sync-room-code\" data-cloud-room-code>AB12CD</code><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy\" data-cloud-action=\"copy-room-code\">Copiar</button></span></dd></dl><button type=\"button\" class=\"cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger\" data-cloud-action=\"leave-room\">Salir de la sala</button></div></div><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-options\" data-cloud-view=\"options\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo y administración</span><span class=\"cloud-sync-options-row-meta\">Equipo, cuenta y administración</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Detalles técnicos</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>—</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"options\" data-cloud-view-title=\"Opciones\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-options-list\"><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Guardia</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"mobile\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">iPad / R+ Móvil</span><span class=\"cloud-sync-options-row-meta\">QR y enlace permanente</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"equipo\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo</span><span class=\"cloud-sync-options-row-meta\">@usuario, equipos y sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"interno-qr\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">QR Internos</span><span class=\"cloud-sync-options-row-meta\">Vitales desde el celular por sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Cuenta</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"cuenta\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Cuenta</span><span class=\"cloud-sync-options-row-meta\">Recuperación y sesión</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"admin\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Administración</span><span class=\"cloud-sync-options-row-meta\">Usuarios, salas y clave admin</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Sistema</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Diagnóstico Nube</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Dashboard de estado y alertas</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"advanced\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Avanzado</span><span class=\"cloud-sync-options-row-meta\">URL del servicio</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"equipo\" data-cloud-view-title=\"Equipo\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"mobile\" data-cloud-view-title=\"iPad / R+ Móvil\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-mobile-invite-host\" data-cloud-mobile-invite-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"interno-qr\" data-cloud-view-title=\"QR Internos\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-interno-qr-host\" data-cloud-interno-qr-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"cuenta\" data-cloud-view-title=\"Cuenta\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-cuenta\"><p class=\"cloud-sync-status-handle\">@dr_prueba</p><p class=\"cloud-sync-status-display\">Dr. X</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost ui-pressable\" data-cloud-action=\"regenerate-recovery\">Código de recuperación</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-action=\"logout\">Cerrar sesión Nube</button></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"admin\" data-cloud-view-title=\"Administración\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-admin-host\" data-cloud-admin-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"nube\" data-cloud-view-title=\"Diagnóstico Nube\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-nube-diagnostics-host\" data-cloud-nube-diagnostics-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"advanced\" data-cloud-view-title=\"Avanzado\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url-connected\">URL del servicio</label><input id=\"cloud-sync-url-connected\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"save-url\">Guardar</button></div></div></div>"
+ },
+ "offline": {
+  "inputs": {
+   "kind": "in",
+   "displaySala": "Sala 1",
+   "status": "offline",
+   "transport": "offline",
+   "push": true,
+   "room": {
+    "id": "room-1",
+    "sala": "Sala 1",
+    "turnKey": "2026-09",
+    "code": "AB12CD",
+    "memberCount": 7
+   },
+   "user": {
+    "rank": "R4",
+    "username": "dr_sesion",
+    "clinical_name": "Dr. Sesión"
+   },
+   "cloudUser": {
+    "username": "dr_prueba",
+    "displayName": "Dr. X"
+   },
+   "has": true,
+   "tech": "",
+   "online": false,
+   "url": "https://nube.example.test",
+   "tokenPresent": true
+  },
+  "props": {
+   "displaySala": "Sala 1",
+   "status": "offline",
+   "statusLabel": "Sin conexión Nube",
+   "chipClass": "is-pending",
+   "detail": "",
+   "hero": {
+    "hero": {
+     "iconState": "warn",
+     "title": "Sin conexión Nube",
+     "subline": "Sala 1 · septiembre 2026 · último envío hace 5 min"
+    },
+    "steps": [
+     {
+      "label": "Internet",
+      "state": "error",
+      "detail": "Sin conexión"
+     },
+     {
+      "label": "Sesión",
+      "state": "ok",
+      "detail": "Activa"
+     },
+     {
+      "label": "Sala",
+      "state": "ok",
+      "detail": "Sala 1"
+     },
+     {
+      "label": "En vivo",
+      "state": "error",
+      "detail": "Sin conexión"
+     }
+    ]
+   },
+   "body": {
+    "kind": "connected",
+    "identity": {
+     "handle": "dr_prueba",
+     "display": "Dr. X",
+     "initials": "X"
+    },
+    "room": {
+     "name": "Sala 1",
+     "meta": "Septiembre 2026 · 7 miembros",
+     "code": "AB12CD"
+    },
+    "salaForActions": "Sala 1",
+    "showAdmin": true,
+    "showInternoQr": true,
+    "url": "https://nube.example.test",
+    "techSummary": ""
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-hero-block\" data-cloud-hero-block><div class=\"cloud-sync-hero\" data-cloud-hero data-state=\"warn\"><p class=\"cloud-sync-hero-title\">Sin conexión Nube</p><p class=\"cloud-sync-hero-sub\">Sala 1 · septiembre 2026 · último envío hace 5 min</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-hero-sync\" data-cloud-action=\"sync-now\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 12a8 8 0 1 1-2.3-5.6\"/><path d=\"M20 4v5h-5\"/></svg>Sincronizar ahora</button></div><div class=\"cloud-sync-chain\" data-cloud-chain aria-label=\"Estado de conexión\"><div class=\"cloud-sync-chain-step\" data-state=\"error\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18\"/></svg></div><div class=\"cloud-sync-chain-label\">Internet</div><div class=\"cloud-sync-chain-detail\">Sin conexión</div></div><span class=\"cloud-sync-chain-link is-broken\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M17 6l3 3\"/></svg></div><div class=\"cloud-sync-chain-label\">Sesión</div><div class=\"cloud-sync-chain-detail\">Activa</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16\"/><path d=\"M2 21h20\"/><path d=\"M14 12h.01\"/></svg></div><div class=\"cloud-sync-chain-label\">Sala</div><div class=\"cloud-sync-chain-detail\">Sala 1</div></div><span class=\"cloud-sync-chain-link is-broken\"></span><div class=\"cloud-sync-chain-step\" data-state=\"error\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/></svg></div><div class=\"cloud-sync-chain-label\">En vivo</div><div class=\"cloud-sync-chain-detail\">Sin conexión</div></div></div></div></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden></p><div class=\"cloud-sync-views\" data-cloud-views><div class=\"cloud-sync-view\" data-cloud-view=\"status\" data-cloud-view-title=\"Conexión\"><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-status-sheet\"><div class=\"cloud-sync-inset-group cloud-sync-status-identity\" aria-label=\"Cuenta\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row\"><span class=\"cloud-sync-avatar\" aria-hidden=\"true\">X</span><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-account-name\">Dr. X</span><span class=\"cloud-sync-status-handle\">@dr_prueba</span></span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger\" data-cloud-action=\"logout\">Cerrar sesión</button></div></div><div class=\"cloud-sync-room cloud-sync-room--connected\"><p class=\"cloud-sync-options-label\">Tu sala</p><div class=\"cloud-sync-inset-group\" role=\"group\" aria-label=\"Sala nube\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity\"><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-room-name\">Sala 1</span><span class=\"cloud-sync-status-display\">Septiembre 2026 · 7 miembros</span></span></div><dl class=\"cloud-sync-inset-row cloud-sync-inset-row--kv\"><dt>Código para invitar</dt><dd><span class=\"cloud-sync-room-code-group\"><code class=\"cloud-sync-room-code\" data-cloud-room-code>AB12CD</code><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy\" data-cloud-action=\"copy-room-code\">Copiar</button></span></dd></dl><button type=\"button\" class=\"cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger\" data-cloud-action=\"leave-room\">Salir de la sala</button></div></div><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-options\" data-cloud-view=\"options\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo y administración</span><span class=\"cloud-sync-options-row-meta\">Equipo, cuenta y administración</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Detalles técnicos</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>—</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"options\" data-cloud-view-title=\"Opciones\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-options-list\"><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Guardia</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"mobile\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">iPad / R+ Móvil</span><span class=\"cloud-sync-options-row-meta\">QR y enlace permanente</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"equipo\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo</span><span class=\"cloud-sync-options-row-meta\">@usuario, equipos y sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"interno-qr\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">QR Internos</span><span class=\"cloud-sync-options-row-meta\">Vitales desde el celular por sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Cuenta</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"cuenta\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Cuenta</span><span class=\"cloud-sync-options-row-meta\">Recuperación y sesión</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"admin\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Administración</span><span class=\"cloud-sync-options-row-meta\">Usuarios, salas y clave admin</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Sistema</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Diagnóstico Nube</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Dashboard de estado y alertas</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"advanced\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Avanzado</span><span class=\"cloud-sync-options-row-meta\">URL del servicio</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"equipo\" data-cloud-view-title=\"Equipo\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"mobile\" data-cloud-view-title=\"iPad / R+ Móvil\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-mobile-invite-host\" data-cloud-mobile-invite-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"interno-qr\" data-cloud-view-title=\"QR Internos\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-interno-qr-host\" data-cloud-interno-qr-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"cuenta\" data-cloud-view-title=\"Cuenta\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-cuenta\"><p class=\"cloud-sync-status-handle\">@dr_prueba</p><p class=\"cloud-sync-status-display\">Dr. X</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost ui-pressable\" data-cloud-action=\"regenerate-recovery\">Código de recuperación</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-action=\"logout\">Cerrar sesión Nube</button></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"admin\" data-cloud-view-title=\"Administración\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-admin-host\" data-cloud-admin-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"nube\" data-cloud-view-title=\"Diagnóstico Nube\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-nube-diagnostics-host\" data-cloud-nube-diagnostics-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"advanced\" data-cloud-view-title=\"Avanzado\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url-connected\">URL del servicio</label><input id=\"cloud-sync-url-connected\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"save-url\">Guardar</button></div></div></div>"
+ },
+ "reconnecting": {
+  "inputs": {
+   "kind": "in",
+   "displaySala": "Sala 1",
+   "status": "reconnecting",
+   "transport": "poll",
+   "push": true,
+   "room": {
+    "id": "room-1",
+    "sala": "Sala 1",
+    "turnKey": "2026-13",
+    "code": "AB12CD",
+    "memberCount": 7,
+    "name": "Turno"
+   },
+   "user": {
+    "rank": "R4",
+    "username": "dr_sesion",
+    "clinical_name": "Dr. Sesión"
+   },
+   "cloudUser": {
+    "username": "dr_prueba",
+    "displayName": "Dr. X"
+   },
+   "has": true,
+   "tech": "",
+   "online": true,
+   "url": "https://nube.example.test",
+   "tokenPresent": true
+  },
+  "props": {
+   "displaySala": "Sala 1",
+   "status": "reconnecting",
+   "statusLabel": "Reconectando",
+   "chipClass": "is-pending",
+   "detail": "",
+   "hero": {
+    "hero": {
+     "iconState": "warn",
+     "title": "Reconectando",
+     "subline": "Sala 1 · 2026-13 · último envío hace 5 min"
+    },
+    "steps": [
+     {
+      "label": "Internet",
+      "state": "ok",
+      "detail": "Conectado"
+     },
+     {
+      "label": "Sesión",
+      "state": "ok",
+      "detail": "Activa"
+     },
+     {
+      "label": "Sala",
+      "state": "ok",
+      "detail": "Sala 1"
+     },
+     {
+      "label": "En vivo",
+      "state": "warn",
+      "detail": "Reconectando"
+     }
+    ]
+   },
+   "body": {
+    "kind": "connected",
+    "identity": {
+     "handle": "dr_prueba",
+     "display": "Dr. X",
+     "initials": "X"
+    },
+    "room": {
+     "name": "Sala 1",
+     "meta": "2026-13 · 7 miembros",
+     "code": "AB12CD"
+    },
+    "salaForActions": "Sala 1",
+    "showAdmin": true,
+    "showInternoQr": true,
+    "url": "https://nube.example.test",
+    "techSummary": ""
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-hero-block\" data-cloud-hero-block><div class=\"cloud-sync-hero\" data-cloud-hero data-state=\"warn\"><p class=\"cloud-sync-hero-title\">Reconectando</p><p class=\"cloud-sync-hero-sub\">Sala 1 · 2026-13 · último envío hace 5 min</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-hero-sync\" data-cloud-action=\"sync-now\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 12a8 8 0 1 1-2.3-5.6\"/><path d=\"M20 4v5h-5\"/></svg>Sincronizar ahora</button></div><div class=\"cloud-sync-chain\" data-cloud-chain aria-label=\"Estado de conexión\"><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18\"/></svg></div><div class=\"cloud-sync-chain-label\">Internet</div><div class=\"cloud-sync-chain-detail\">Conectado</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M17 6l3 3\"/></svg></div><div class=\"cloud-sync-chain-label\">Sesión</div><div class=\"cloud-sync-chain-detail\">Activa</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16\"/><path d=\"M2 21h20\"/><path d=\"M14 12h.01\"/></svg></div><div class=\"cloud-sync-chain-label\">Sala</div><div class=\"cloud-sync-chain-detail\">Sala 1</div></div><span class=\"cloud-sync-chain-link is-broken\"></span><div class=\"cloud-sync-chain-step\" data-state=\"warn\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/></svg></div><div class=\"cloud-sync-chain-label\">En vivo</div><div class=\"cloud-sync-chain-detail\">Reconectando</div></div></div></div></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden></p><div class=\"cloud-sync-views\" data-cloud-views><div class=\"cloud-sync-view\" data-cloud-view=\"status\" data-cloud-view-title=\"Conexión\"><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-status-sheet\"><div class=\"cloud-sync-inset-group cloud-sync-status-identity\" aria-label=\"Cuenta\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row\"><span class=\"cloud-sync-avatar\" aria-hidden=\"true\">X</span><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-account-name\">Dr. X</span><span class=\"cloud-sync-status-handle\">@dr_prueba</span></span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger\" data-cloud-action=\"logout\">Cerrar sesión</button></div></div><div class=\"cloud-sync-room cloud-sync-room--connected\"><p class=\"cloud-sync-options-label\">Tu sala</p><div class=\"cloud-sync-inset-group\" role=\"group\" aria-label=\"Sala nube\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity\"><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-room-name\">Sala 1</span><span class=\"cloud-sync-status-display\">2026-13 · 7 miembros</span></span></div><dl class=\"cloud-sync-inset-row cloud-sync-inset-row--kv\"><dt>Código para invitar</dt><dd><span class=\"cloud-sync-room-code-group\"><code class=\"cloud-sync-room-code\" data-cloud-room-code>AB12CD</code><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy\" data-cloud-action=\"copy-room-code\">Copiar</button></span></dd></dl><button type=\"button\" class=\"cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger\" data-cloud-action=\"leave-room\">Salir de la sala</button></div></div><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-options\" data-cloud-view=\"options\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo y administración</span><span class=\"cloud-sync-options-row-meta\">Equipo, cuenta y administración</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Detalles técnicos</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>—</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"options\" data-cloud-view-title=\"Opciones\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-options-list\"><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Guardia</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"mobile\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">iPad / R+ Móvil</span><span class=\"cloud-sync-options-row-meta\">QR y enlace permanente</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"equipo\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo</span><span class=\"cloud-sync-options-row-meta\">@usuario, equipos y sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"interno-qr\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">QR Internos</span><span class=\"cloud-sync-options-row-meta\">Vitales desde el celular por sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Cuenta</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"cuenta\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Cuenta</span><span class=\"cloud-sync-options-row-meta\">Recuperación y sesión</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"admin\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Administración</span><span class=\"cloud-sync-options-row-meta\">Usuarios, salas y clave admin</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Sistema</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Diagnóstico Nube</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Dashboard de estado y alertas</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"advanced\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Avanzado</span><span class=\"cloud-sync-options-row-meta\">URL del servicio</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"equipo\" data-cloud-view-title=\"Equipo\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"mobile\" data-cloud-view-title=\"iPad / R+ Móvil\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-mobile-invite-host\" data-cloud-mobile-invite-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"interno-qr\" data-cloud-view-title=\"QR Internos\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-interno-qr-host\" data-cloud-interno-qr-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"cuenta\" data-cloud-view-title=\"Cuenta\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-cuenta\"><p class=\"cloud-sync-status-handle\">@dr_prueba</p><p class=\"cloud-sync-status-display\">Dr. X</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost ui-pressable\" data-cloud-action=\"regenerate-recovery\">Código de recuperación</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-action=\"logout\">Cerrar sesión Nube</button></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"admin\" data-cloud-view-title=\"Administración\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-admin-host\" data-cloud-admin-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"nube\" data-cloud-view-title=\"Diagnóstico Nube\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-nube-diagnostics-host\" data-cloud-nube-diagnostics-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"advanced\" data-cloud-view-title=\"Avanzado\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url-connected\">URL del servicio</label><input id=\"cloud-sync-url-connected\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"save-url\">Guardar</button></div></div></div>"
+ },
+ "error_reason": {
+  "inputs": {
+   "kind": "in",
+   "displaySala": "Sala 1",
+   "status": "error",
+   "detail": "Failed to fetch",
+   "transport": "poll",
+   "push": true,
+   "room": {
+    "id": "room-1",
+    "sala": "Sala 1",
+    "turnKey": "2026-09",
+    "code": "AB12CD",
+    "memberCount": 7
+   },
+   "user": {
+    "rank": "R4",
+    "username": "dr_sesion",
+    "clinical_name": "Dr. Sesión"
+   },
+   "cloudUser": {
+    "username": "dr_prueba",
+    "displayName": "Dr. X"
+   },
+   "has": true,
+   "tech": "",
+   "online": true,
+   "url": "https://nube.example.test",
+   "tokenPresent": true
+  },
+  "props": {
+   "displaySala": "Sala 1",
+   "status": "error",
+   "statusLabel": "Error",
+   "chipClass": "is-error",
+   "detail": "Failed to fetch",
+   "hero": {
+    "hero": {
+     "iconState": "error",
+     "title": "Hay un problema con Nube",
+     "subline": "Sin red hacia Nube. Revisa Wi‑Fi / VPN e inténtalo de nuevo."
+    },
+    "steps": [
+     {
+      "label": "Internet",
+      "state": "ok",
+      "detail": "Conectado"
+     },
+     {
+      "label": "Sesión",
+      "state": "ok",
+      "detail": "Activa"
+     },
+     {
+      "label": "Sala",
+      "state": "ok",
+      "detail": "Sala 1"
+     },
+     {
+      "label": "En vivo",
+      "state": "warn",
+      "detail": "Reconectando"
+     }
+    ]
+   },
+   "body": {
+    "kind": "connected",
+    "identity": {
+     "handle": "dr_prueba",
+     "display": "Dr. X",
+     "initials": "X"
+    },
+    "room": {
+     "name": "Sala 1",
+     "meta": "Septiembre 2026 · 7 miembros",
+     "code": "AB12CD"
+    },
+    "salaForActions": "Sala 1",
+    "showAdmin": true,
+    "showInternoQr": true,
+    "url": "https://nube.example.test",
+    "techSummary": ""
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-hero-block\" data-cloud-hero-block><div class=\"cloud-sync-hero\" data-cloud-hero data-state=\"error\"><p class=\"cloud-sync-hero-title\">Hay un problema con Nube</p><p class=\"cloud-sync-hero-sub\">Sin red hacia Nube. Revisa Wi‑Fi / VPN e inténtalo de nuevo.</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-hero-sync\" data-cloud-action=\"sync-now\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 12a8 8 0 1 1-2.3-5.6\"/><path d=\"M20 4v5h-5\"/></svg>Sincronizar ahora</button></div><div class=\"cloud-sync-chain\" data-cloud-chain aria-label=\"Estado de conexión\"><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18\"/></svg></div><div class=\"cloud-sync-chain-label\">Internet</div><div class=\"cloud-sync-chain-detail\">Conectado</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M17 6l3 3\"/></svg></div><div class=\"cloud-sync-chain-label\">Sesión</div><div class=\"cloud-sync-chain-detail\">Activa</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16\"/><path d=\"M2 21h20\"/><path d=\"M14 12h.01\"/></svg></div><div class=\"cloud-sync-chain-label\">Sala</div><div class=\"cloud-sync-chain-detail\">Sala 1</div></div><span class=\"cloud-sync-chain-link is-broken\"></span><div class=\"cloud-sync-chain-step\" data-state=\"warn\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/></svg></div><div class=\"cloud-sync-chain-label\">En vivo</div><div class=\"cloud-sync-chain-detail\">Reconectando</div></div></div></div></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden>Failed to fetch</p><div class=\"cloud-sync-views\" data-cloud-views><div class=\"cloud-sync-view\" data-cloud-view=\"status\" data-cloud-view-title=\"Conexión\"><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-status-sheet\"><div class=\"cloud-sync-inset-group cloud-sync-status-identity\" aria-label=\"Cuenta\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row\"><span class=\"cloud-sync-avatar\" aria-hidden=\"true\">X</span><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-account-name\">Dr. X</span><span class=\"cloud-sync-status-handle\">@dr_prueba</span></span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger\" data-cloud-action=\"logout\">Cerrar sesión</button></div></div><div class=\"cloud-sync-room cloud-sync-room--connected\"><p class=\"cloud-sync-options-label\">Tu sala</p><div class=\"cloud-sync-inset-group\" role=\"group\" aria-label=\"Sala nube\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity\"><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-room-name\">Sala 1</span><span class=\"cloud-sync-status-display\">Septiembre 2026 · 7 miembros</span></span></div><dl class=\"cloud-sync-inset-row cloud-sync-inset-row--kv\"><dt>Código para invitar</dt><dd><span class=\"cloud-sync-room-code-group\"><code class=\"cloud-sync-room-code\" data-cloud-room-code>AB12CD</code><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy\" data-cloud-action=\"copy-room-code\">Copiar</button></span></dd></dl><button type=\"button\" class=\"cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger\" data-cloud-action=\"leave-room\">Salir de la sala</button></div></div><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-options\" data-cloud-view=\"options\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo y administración</span><span class=\"cloud-sync-options-row-meta\">Equipo, cuenta y administración</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Detalles técnicos</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>—</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"options\" data-cloud-view-title=\"Opciones\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-options-list\"><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Guardia</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"mobile\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">iPad / R+ Móvil</span><span class=\"cloud-sync-options-row-meta\">QR y enlace permanente</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"equipo\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo</span><span class=\"cloud-sync-options-row-meta\">@usuario, equipos y sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"interno-qr\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">QR Internos</span><span class=\"cloud-sync-options-row-meta\">Vitales desde el celular por sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Cuenta</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"cuenta\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Cuenta</span><span class=\"cloud-sync-options-row-meta\">Recuperación y sesión</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"admin\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Administración</span><span class=\"cloud-sync-options-row-meta\">Usuarios, salas y clave admin</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Sistema</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Diagnóstico Nube</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Dashboard de estado y alertas</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"advanced\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Avanzado</span><span class=\"cloud-sync-options-row-meta\">URL del servicio</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"equipo\" data-cloud-view-title=\"Equipo\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"mobile\" data-cloud-view-title=\"iPad / R+ Móvil\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-mobile-invite-host\" data-cloud-mobile-invite-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"interno-qr\" data-cloud-view-title=\"QR Internos\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-interno-qr-host\" data-cloud-interno-qr-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"cuenta\" data-cloud-view-title=\"Cuenta\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-cuenta\"><p class=\"cloud-sync-status-handle\">@dr_prueba</p><p class=\"cloud-sync-status-display\">Dr. X</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost ui-pressable\" data-cloud-action=\"regenerate-recovery\">Código de recuperación</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-action=\"logout\">Cerrar sesión Nube</button></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"admin\" data-cloud-view-title=\"Administración\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-admin-host\" data-cloud-admin-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"nube\" data-cloud-view-title=\"Diagnóstico Nube\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-nube-diagnostics-host\" data-cloud-nube-diagnostics-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"advanced\" data-cloud-view-title=\"Avanzado\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url-connected\">URL del servicio</label><input id=\"cloud-sync-url-connected\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"save-url\">Guardar</button></div></div></div>"
+ },
+ "error_plain": {
+  "inputs": {
+   "kind": "in",
+   "displaySala": "Sala 1",
+   "status": "error",
+   "detail": "",
+   "transport": "poll",
+   "push": false,
+   "room": {
+    "id": "room-1",
+    "sala": "Sala 1",
+    "turnKey": "2026-09",
+    "code": "AB12CD",
+    "memberCount": 7
+   },
+   "user": {
+    "rank": "R4",
+    "username": "dr_sesion",
+    "clinical_name": "Dr. Sesión"
+   },
+   "cloudUser": null,
+   "has": true,
+   "tech": "",
+   "online": true,
+   "url": "https://nube.example.test",
+   "tokenPresent": true
+  },
+  "props": {
+   "displaySala": "Sala 1",
+   "status": "error",
+   "statusLabel": "Error",
+   "chipClass": "is-error",
+   "detail": "",
+   "hero": {
+    "hero": {
+     "iconState": "error",
+     "title": "Hay un problema con Nube",
+     "subline": "Tus cambios están a salvo aquí."
+    },
+    "steps": [
+     {
+      "label": "Internet",
+      "state": "ok",
+      "detail": "Conectado"
+     },
+     {
+      "label": "Sesión",
+      "state": "ok",
+      "detail": "Activa"
+     },
+     {
+      "label": "Sala",
+      "state": "ok",
+      "detail": "Sala 1"
+     },
+     {
+      "label": "En vivo",
+      "state": "warn",
+      "detail": "Reconectando"
+     }
+    ]
+   },
+   "body": {
+    "kind": "connected",
+    "identity": {
+     "handle": "dr_sesion",
+     "display": "Dr. Sesión",
+     "initials": "S"
+    },
+    "room": {
+     "name": "Sala 1",
+     "meta": "Septiembre 2026 · 7 miembros",
+     "code": "AB12CD"
+    },
+    "salaForActions": "Sala 1",
+    "showAdmin": true,
+    "showInternoQr": true,
+    "url": "https://nube.example.test",
+    "techSummary": ""
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-hero-block\" data-cloud-hero-block><div class=\"cloud-sync-hero\" data-cloud-hero data-state=\"error\"><p class=\"cloud-sync-hero-title\">Hay un problema con Nube</p><p class=\"cloud-sync-hero-sub\">Tus cambios están a salvo aquí.</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-hero-sync\" data-cloud-action=\"sync-now\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 12a8 8 0 1 1-2.3-5.6\"/><path d=\"M20 4v5h-5\"/></svg>Sincronizar ahora</button></div><div class=\"cloud-sync-chain\" data-cloud-chain aria-label=\"Estado de conexión\"><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18\"/></svg></div><div class=\"cloud-sync-chain-label\">Internet</div><div class=\"cloud-sync-chain-detail\">Conectado</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"7.5\" cy=\"15.5\" r=\"4.5\"/><path d=\"m10.7 12.3 9.3-9.3M17 6l3 3\"/></svg></div><div class=\"cloud-sync-chain-label\">Sesión</div><div class=\"cloud-sync-chain-detail\">Activa</div></div><span class=\"cloud-sync-chain-link\"></span><div class=\"cloud-sync-chain-step\" data-state=\"ok\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 21V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v16\"/><path d=\"M2 21h20\"/><path d=\"M14 12h.01\"/></svg></div><div class=\"cloud-sync-chain-label\">Sala</div><div class=\"cloud-sync-chain-detail\">Sala 1</div></div><span class=\"cloud-sync-chain-link is-broken\"></span><div class=\"cloud-sync-chain-step\" data-state=\"warn\"><div class=\"cloud-sync-chain-bubble\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/></svg></div><div class=\"cloud-sync-chain-label\">En vivo</div><div class=\"cloud-sync-chain-detail\">Reconectando</div></div></div></div></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden></p><div class=\"cloud-sync-views\" data-cloud-views><div class=\"cloud-sync-view\" data-cloud-view=\"status\" data-cloud-view-title=\"Conexión\"><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-status-sheet\"><div class=\"cloud-sync-inset-group cloud-sync-status-identity\" aria-label=\"Cuenta\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row\"><span class=\"cloud-sync-avatar\" aria-hidden=\"true\">S</span><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-account-name\">Dr. Sesión</span><span class=\"cloud-sync-status-handle\">@dr_sesion</span></span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger\" data-cloud-action=\"logout\">Cerrar sesión</button></div></div><div class=\"cloud-sync-room cloud-sync-room--connected\"><p class=\"cloud-sync-options-label\">Tu sala</p><div class=\"cloud-sync-inset-group\" role=\"group\" aria-label=\"Sala nube\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity\"><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-room-name\">Sala 1</span><span class=\"cloud-sync-status-display\">Septiembre 2026 · 7 miembros</span></span></div><dl class=\"cloud-sync-inset-row cloud-sync-inset-row--kv\"><dt>Código para invitar</dt><dd><span class=\"cloud-sync-room-code-group\"><code class=\"cloud-sync-room-code\" data-cloud-room-code>AB12CD</code><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy\" data-cloud-action=\"copy-room-code\">Copiar</button></span></dd></dl><button type=\"button\" class=\"cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger\" data-cloud-action=\"leave-room\">Salir de la sala</button></div></div><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-options\" data-cloud-view=\"options\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo y administración</span><span class=\"cloud-sync-options-row-meta\">Equipo, cuenta y administración</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Detalles técnicos</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>—</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"options\" data-cloud-view-title=\"Opciones\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-options-list\"><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Guardia</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"mobile\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">iPad / R+ Móvil</span><span class=\"cloud-sync-options-row-meta\">QR y enlace permanente</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"equipo\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo</span><span class=\"cloud-sync-options-row-meta\">@usuario, equipos y sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"interno-qr\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">QR Internos</span><span class=\"cloud-sync-options-row-meta\">Vitales desde el celular por sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Cuenta</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"cuenta\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Cuenta</span><span class=\"cloud-sync-options-row-meta\">Recuperación y sesión</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"admin\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Administración</span><span class=\"cloud-sync-options-row-meta\">Usuarios, salas y clave admin</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Sistema</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Diagnóstico Nube</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Dashboard de estado y alertas</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"advanced\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Avanzado</span><span class=\"cloud-sync-options-row-meta\">URL del servicio</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"equipo\" data-cloud-view-title=\"Equipo\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"mobile\" data-cloud-view-title=\"iPad / R+ Móvil\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-mobile-invite-host\" data-cloud-mobile-invite-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"interno-qr\" data-cloud-view-title=\"QR Internos\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-interno-qr-host\" data-cloud-interno-qr-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"cuenta\" data-cloud-view-title=\"Cuenta\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-cuenta\"><p class=\"cloud-sync-status-handle\">@dr_sesion</p><p class=\"cloud-sync-status-display\">Dr. Sesión</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost ui-pressable\" data-cloud-action=\"regenerate-recovery\">Código de recuperación</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-action=\"logout\">Cerrar sesión Nube</button></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"admin\" data-cloud-view-title=\"Administración\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-admin-host\" data-cloud-admin-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"nube\" data-cloud-view-title=\"Diagnóstico Nube\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-nube-diagnostics-host\" data-cloud-nube-diagnostics-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"advanced\" data-cloud-view-title=\"Avanzado\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url-connected\">URL del servicio</label><input id=\"cloud-sync-url-connected\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"save-url\">Guardar</button></div></div></div>"
+ },
+ "noroom_error": {
+  "inputs": {
+   "kind": "noroom",
+   "displaySala": "Sala E",
+   "status": "error",
+   "detail": "Failed to fetch",
+   "user": {
+    "rank": "R4",
+    "username": "dr_sesion",
+    "clinical_name": "Dr. Sesión"
+   },
+   "cloudUser": {
+    "username": "dr_prueba"
+   },
+   "has": true,
+   "online": true,
+   "url": "https://nube.example.test",
+   "tokenPresent": true
+  },
+  "props": {
+   "displaySala": "Sala E",
+   "status": "error",
+   "statusLabel": "Error",
+   "chipClass": "is-error",
+   "detail": "Failed to fetch",
+   "hero": null,
+   "body": {
+    "kind": "connected",
+    "identity": {
+     "handle": "dr_prueba",
+     "display": "Dr. Sesión",
+     "initials": "S"
+    },
+    "room": null,
+    "salaForActions": "Sala E",
+    "showAdmin": true,
+    "showInternoQr": true,
+    "url": "https://nube.example.test",
+    "techSummary": ""
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-conexion-head-text\"><h4 class=\"cloud-sync-conexion-title\">Conexión</h4><p class=\"cloud-sync-conexion-sub\">Sala E</p></div><span class=\"cloud-sync-status-chip is-error\" data-cloud-status-chip data-status=\"error\">Error</span></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail>Failed to fetch</p><div class=\"cloud-sync-views\" data-cloud-views><div class=\"cloud-sync-view\" data-cloud-view=\"status\" data-cloud-view-title=\"Conexión\"><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-status-sheet\"><div class=\"cloud-sync-inset-group cloud-sync-status-identity\" aria-label=\"Cuenta\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row\"><span class=\"cloud-sync-avatar\" aria-hidden=\"true\">S</span><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-account-name\">Dr. Sesión</span><span class=\"cloud-sync-status-handle\">@dr_prueba</span></span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger\" data-cloud-action=\"logout\">Cerrar sesión</button></div></div><div class=\"cloud-sync-room cloud-sync-room--actions\"><p class=\"cloud-sync-room-title\">Unirse a una sala del turno</p><div class=\"cloud-sync-field\"><label>Nombre de la sala (opcional)</label><input type=\"text\" class=\"profile-input\" data-cloud-room-name placeholder=\"Turno Sala E\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"create-room\">Crear sala</button><div class=\"cloud-sync-field\"><label>Código de sala</label><input type=\"text\" class=\"profile-input\" data-cloud-join-code placeholder=\"ABC123\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"join-room\">Unirse con código</button></div><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-options\" data-cloud-view=\"options\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo y administración</span><span class=\"cloud-sync-options-row-meta\">Equipo, cuenta y administración</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Detalles técnicos</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>—</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"options\" data-cloud-view-title=\"Opciones\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-options-list\"><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Guardia</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"mobile\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">iPad / R+ Móvil</span><span class=\"cloud-sync-options-row-meta\">QR y enlace permanente</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"equipo\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo</span><span class=\"cloud-sync-options-row-meta\">@usuario, equipos y sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"interno-qr\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">QR Internos</span><span class=\"cloud-sync-options-row-meta\">Vitales desde el celular por sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Cuenta</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"cuenta\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Cuenta</span><span class=\"cloud-sync-options-row-meta\">Recuperación y sesión</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"admin\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Administración</span><span class=\"cloud-sync-options-row-meta\">Usuarios, salas y clave admin</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Sistema</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Diagnóstico Nube</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Dashboard de estado y alertas</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"advanced\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Avanzado</span><span class=\"cloud-sync-options-row-meta\">URL del servicio</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"equipo\" data-cloud-view-title=\"Equipo\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"mobile\" data-cloud-view-title=\"iPad / R+ Móvil\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-mobile-invite-host\" data-cloud-mobile-invite-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"interno-qr\" data-cloud-view-title=\"QR Internos\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-interno-qr-host\" data-cloud-interno-qr-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"cuenta\" data-cloud-view-title=\"Cuenta\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-cuenta\"><p class=\"cloud-sync-status-handle\">@dr_prueba</p><p class=\"cloud-sync-status-display\">Dr. Sesión</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost ui-pressable\" data-cloud-action=\"regenerate-recovery\">Código de recuperación</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-action=\"logout\">Cerrar sesión Nube</button></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"admin\" data-cloud-view-title=\"Administración\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-admin-host\" data-cloud-admin-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"nube\" data-cloud-view-title=\"Diagnóstico Nube\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-nube-diagnostics-host\" data-cloud-nube-diagnostics-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"advanced\" data-cloud-view-title=\"Avanzado\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url-connected\">URL del servicio</label><input id=\"cloud-sync-url-connected\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"save-url\">Guardar</button></div></div></div>"
+ },
+ "noroom_idle": {
+  "inputs": {
+   "kind": "noroom",
+   "displaySala": "Sala <E>",
+   "status": "idle",
+   "detail": "",
+   "user": {
+    "rank": "R1",
+    "username": "dr_r1",
+    "clinical_name": "R1 García"
+   },
+   "cloudUser": {
+    "username": "dr_prueba",
+    "displayName": "Dr. X"
+   },
+   "has": true,
+   "online": true,
+   "url": "https://nube.example.test",
+   "tokenPresent": true
+  },
+  "props": {
+   "displaySala": "Sala <E>",
+   "status": "idle",
+   "statusLabel": "Nube al día",
+   "chipClass": "is-idle",
+   "detail": "",
+   "hero": null,
+   "body": {
+    "kind": "connected",
+    "identity": {
+     "handle": "dr_prueba",
+     "display": "Dr. X",
+     "initials": "X"
+    },
+    "room": null,
+    "salaForActions": "Sala <E>",
+    "showAdmin": true,
+    "showInternoQr": false,
+    "url": "https://nube.example.test",
+    "techSummary": ""
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-conexion-head-text\"><h4 class=\"cloud-sync-conexion-title\">Conexión</h4><p class=\"cloud-sync-conexion-sub\">Sala &lt;E&gt;</p></div><span class=\"cloud-sync-status-chip is-idle\" data-cloud-status-chip data-status=\"idle\">Nube al día</span></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden></p><div class=\"cloud-sync-views\" data-cloud-views><div class=\"cloud-sync-view\" data-cloud-view=\"status\" data-cloud-view-title=\"Conexión\"><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-status-sheet\"><div class=\"cloud-sync-inset-group cloud-sync-status-identity\" aria-label=\"Cuenta\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row\"><span class=\"cloud-sync-avatar\" aria-hidden=\"true\">X</span><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-account-name\">Dr. X</span><span class=\"cloud-sync-status-handle\">@dr_prueba</span></span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger\" data-cloud-action=\"logout\">Cerrar sesión</button></div></div><div class=\"cloud-sync-room cloud-sync-room--actions\"><p class=\"cloud-sync-room-title\">Unirse a una sala del turno</p><div class=\"cloud-sync-field\"><label>Nombre de la sala (opcional)</label><input type=\"text\" class=\"profile-input\" data-cloud-room-name placeholder=\"Turno Sala &lt;E&gt;\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"create-room\">Crear sala</button><div class=\"cloud-sync-field\"><label>Código de sala</label><input type=\"text\" class=\"profile-input\" data-cloud-join-code placeholder=\"ABC123\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"join-room\">Unirse con código</button></div><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-options\" data-cloud-view=\"options\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo y administración</span><span class=\"cloud-sync-options-row-meta\">Equipo, cuenta y administración</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Detalles técnicos</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>—</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"options\" data-cloud-view-title=\"Opciones\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-options-list\"><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Guardia</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"mobile\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">iPad / R+ Móvil</span><span class=\"cloud-sync-options-row-meta\">QR y enlace permanente</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"equipo\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo</span><span class=\"cloud-sync-options-row-meta\">@usuario, equipos y sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Cuenta</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"cuenta\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Cuenta</span><span class=\"cloud-sync-options-row-meta\">Recuperación y sesión</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"admin\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Administración</span><span class=\"cloud-sync-options-row-meta\">Usuarios, salas y clave admin</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Sistema</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Diagnóstico Nube</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Dashboard de estado y alertas</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"advanced\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Avanzado</span><span class=\"cloud-sync-options-row-meta\">URL del servicio</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"equipo\" data-cloud-view-title=\"Equipo\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"mobile\" data-cloud-view-title=\"iPad / R+ Móvil\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-mobile-invite-host\" data-cloud-mobile-invite-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"cuenta\" data-cloud-view-title=\"Cuenta\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-cuenta\"><p class=\"cloud-sync-status-handle\">@dr_prueba</p><p class=\"cloud-sync-status-display\">Dr. X</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost ui-pressable\" data-cloud-action=\"regenerate-recovery\">Código de recuperación</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-action=\"logout\">Cerrar sesión Nube</button></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"admin\" data-cloud-view-title=\"Administración\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-admin-host\" data-cloud-admin-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"nube\" data-cloud-view-title=\"Diagnóstico Nube\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-nube-diagnostics-host\" data-cloud-nube-diagnostics-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"advanced\" data-cloud-view-title=\"Avanzado\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url-connected\">URL del servicio</label><input id=\"cloud-sync-url-connected\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"save-url\">Guardar</button></div></div></div>"
+ },
+ "noroom_pending": {
+  "inputs": {
+   "kind": "noroom",
+   "displaySala": "Sala 1",
+   "status": "pending",
+   "detail": "x",
+   "user": {
+    "rank": "R1",
+    "username": "dr_r1",
+    "clinical_name": "R1 García"
+   },
+   "cloudUser": null,
+   "has": false,
+   "online": true,
+   "url": "https://nube.example.test",
+   "tokenPresent": true
+  },
+  "props": {
+   "displaySala": "Sala 1",
+   "status": "pending",
+   "statusLabel": "Pendiente",
+   "chipClass": "is-pending",
+   "detail": "x",
+   "hero": null,
+   "body": {
+    "kind": "connected",
+    "identity": {
+     "handle": "dr_r1",
+     "display": "R1 García",
+     "initials": "RG"
+    },
+    "room": null,
+    "salaForActions": "Sala 1",
+    "showAdmin": false,
+    "showInternoQr": false,
+    "url": "https://nube.example.test",
+    "techSummary": ""
+   }
+  },
+  "html": "<header class=\"cloud-sync-conexion-head\"><div class=\"cloud-sync-conexion-head-text\"><h4 class=\"cloud-sync-conexion-title\">Conexión</h4><p class=\"cloud-sync-conexion-sub\">Sala 1</p></div><span class=\"cloud-sync-status-chip is-pending\" data-cloud-status-chip data-status=\"pending\">Pendiente</span></header><p class=\"cloud-sync-status-detail\" data-cloud-status-detail hidden>x</p><div class=\"cloud-sync-views\" data-cloud-views><div class=\"cloud-sync-view\" data-cloud-view=\"status\" data-cloud-view-title=\"Conexión\"><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-status-sheet\"><div class=\"cloud-sync-inset-group cloud-sync-status-identity\" aria-label=\"Cuenta\"><div class=\"cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row\"><span class=\"cloud-sync-avatar\" aria-hidden=\"true\">RG</span><span class=\"cloud-sync-options-entry-text\"><span class=\"cloud-sync-account-name\">R1 García</span><span class=\"cloud-sync-status-handle\">@dr_r1</span></span><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger\" data-cloud-action=\"logout\">Cerrar sesión</button></div></div><div class=\"cloud-sync-room cloud-sync-room--actions\"><p class=\"cloud-sync-room-title\">Unirse a una sala del turno</p><div class=\"cloud-sync-field\"><label>Nombre de la sala (opcional)</label><input type=\"text\" class=\"profile-input\" data-cloud-room-name placeholder=\"Turno Sala 1\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"create-room\">Crear sala</button><div class=\"cloud-sync-field\"><label>Código de sala</label><input type=\"text\" class=\"profile-input\" data-cloud-join-code placeholder=\"ABC123\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"join-room\">Unirse con código</button></div><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-options\" data-cloud-view=\"options\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo y cuenta</span><span class=\"cloud-sync-options-row-meta\">Equipo, cuenta e iPad</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Detalles técnicos</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>—</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"options\" data-cloud-view-title=\"Opciones\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-options-list\"><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Guardia</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"mobile\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">iPad / R+ Móvil</span><span class=\"cloud-sync-options-row-meta\">QR y enlace permanente</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"equipo\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Equipo</span><span class=\"cloud-sync-options-row-meta\">@usuario, equipos y sala</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Cuenta</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"cuenta\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Cuenta</span><span class=\"cloud-sync-options-row-meta\">Recuperación y sesión</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section><section class=\"cloud-sync-options-group\"><h5 class=\"cloud-sync-options-label\">Sistema</h5><div class=\"cloud-sync-options-card\"><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"nube\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Diagnóstico Nube</span><span class=\"cloud-sync-options-row-meta\" data-cloud-tech-summary>Dashboard de estado y alertas</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button><button type=\"button\" class=\"cloud-sync-options-row\" data-cloud-action=\"nav-view\" data-cloud-view=\"advanced\"><span class=\"cloud-sync-options-row-text\"><span class=\"cloud-sync-options-row-title\">Avanzado</span><span class=\"cloud-sync-options-row-meta\">URL del servicio</span></span><span class=\"cloud-sync-options-row-chevron\" aria-hidden=\"true\">›</span></button></div></section></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"equipo\" data-cloud-view-title=\"Equipo\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"mobile\" data-cloud-view-title=\"iPad / R+ Móvil\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-mobile-invite-host\" data-cloud-mobile-invite-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"cuenta\" data-cloud-view-title=\"Cuenta\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-cuenta\"><p class=\"cloud-sync-status-handle\">@dr_r1</p><p class=\"cloud-sync-status-display\">R1 García</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost ui-pressable\" data-cloud-action=\"regenerate-recovery\">Código de recuperación</button><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--ghost\" data-cloud-action=\"logout\">Cerrar sesión Nube</button></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"nube\" data-cloud-view-title=\"Diagnóstico Nube\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-nube-diagnostics-host\" data-cloud-nube-diagnostics-host></div></div></div><div class=\"cloud-sync-view\" data-cloud-view=\"advanced\" data-cloud-view-title=\"Avanzado\" hidden><div class=\"cloud-sync-view-body\"><div class=\"cloud-sync-field\"><label for=\"cloud-sync-url-connected\">URL del servicio</label><input id=\"cloud-sync-url-connected\" type=\"url\" class=\"profile-input\" data-cloud-sync-url value=\"https://nube.example.test\" placeholder=\"https://…workers.dev\" /></div><button type=\"button\" class=\"cloud-sync-btn\" data-cloud-action=\"save-url\">Guardar</button></div></div></div>"
+ }
+}

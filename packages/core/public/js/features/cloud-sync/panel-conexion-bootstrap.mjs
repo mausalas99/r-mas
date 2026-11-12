@@ -1,5 +1,3 @@
-import { clinicalSessionContext } from '../../clinical-session-context.mjs';
-import { canAccessCloudAdmin } from './panel-admin.mjs';
 import { userHasJoinedTeam } from './panel-conexion-html.mjs';
 import { applyConexionView } from './panel-conexion-views.mjs';
 import { mountEquipoTeamsPanel } from './panel-equipo-embed.mjs';
@@ -51,12 +49,6 @@ async function copyRoomCode(section, ui) {
   if (!code || code === '—') return;
   const ok = await copyToClipboardSafe(code);
   ui.toast?.(ok ? 'Código copiado.' : 'No se pudo copiar el código.', ok ? 'success' : 'error');
-}
-
-/** @param {boolean} [hasCloudSession] @returns {string} */
-export function adminShellHtml(hasCloudSession = false) {
-  if (!canAccessCloudAdmin(clinicalSessionContext.user, { hasCloudSession })) return '';
-  return '<div class="cloud-sync-admin-host" data-cloud-admin-host></div>';
 }
 
 /** @param {HTMLElement} section @param {object} deps @param {object} ui */

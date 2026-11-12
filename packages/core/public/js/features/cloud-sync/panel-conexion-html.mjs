@@ -3,7 +3,6 @@ import { readRpcSettings } from '../../clinical-settings.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { filterJoinedTeams } from '../clinical-teams/shared.mjs';
-import { connectStepHtml } from './panel-steps-html.mjs';
 import { appendMemberCount } from './room-label.mjs';
 import { getLastCloudPushAt } from './cloud-sync-diagnostics.mjs';
 import { formatCloudDiagWhen } from './cloud-sync-diagnostics-human-format.mjs';
@@ -80,11 +79,6 @@ export function accountSummaryHtml(cloudUser) {
   );
 }
 
-/** @param {string} url @param {string} [displaySala] */
-export function authFormsHtml(url, displaySala) {
-  return connectStepHtml(url, displaySala);
-}
-
 /** @param {() => string} getToken */
 export function nextStepHtml(getToken) {
   if (!getToken() || userHasJoinedTeam()) return '';
@@ -113,43 +107,20 @@ export function formatTurnMonth(turnKey) {
 }
 
 /**
- * "Tu sala" card — sala, month · members, invite code (+ Copiar), leave.
- * Revisión lives in Detalles técnicos: it needs the live `getRevision()`
- * getter, never `room.revision` (a join-time snapshot that goes stale the
- * moment a push advances the counter).
+ * "Tu sala" card data — sala, month · members, invite code. Revisión lives in Detalles técnicos: it needs
+ * the live `getRevision()` getter, never `room.revision` (a join-time snapshot that goes stale the moment
+ * a push advances the counter).
  * @param {object} room
+ * @returns {{ name: string, meta: string, code: string }}
  */
-export function roomConnectedHtml(room) {
-  const code = String(room?.code || '').trim();
-  const name = String(room?.sala || room?.name || '').trim() || 'Sala';
+export function roomConnectedModel(room) {
   const month = formatTurnMonth(room?.turnKey);
-  const meta = appendMemberCount(month ? month.charAt(0).toUpperCase() + month.slice(1) : '', room?.memberCount)
-    .replace(/^ · /, '');
-  return (
-    '<div class="cloud-sync-room cloud-sync-room--connected">' +
-    '<p class="cloud-sync-options-label">Tu sala</p>' +
-    '<div class="cloud-sync-inset-group" role="group" aria-label="Sala nube">' +
-    '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity">' +
-    '<span class="cloud-sync-options-entry-text">' +
-    '<span class="cloud-sync-room-name">' +
-    esc(name) +
-    '</span>' +
-    (meta ? '<span class="cloud-sync-status-display">' + esc(meta) + '</span>' : '') +
-    '</span></div>' +
-    '<dl class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Código para invitar' +
-    (code ? '' : '<span class="cloud-sync-room-code-missing" data-cloud-room-code-missing>Se descarga al conectar con la Nube.</span>') +
-    '</dt><dd>' +
-    '<span class="cloud-sync-room-code-group">' +
-    '<code class="cloud-sync-room-code" data-cloud-room-code>' +
-    esc(code || '—') +
-    '</code>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-room-copy" data-cloud-action="copy-room-code"' +
-    (code ? '' : ' disabled') +
-    '>Copiar</button>' +
-    '</span></dd></dl>' +
-    '<button type="button" class="cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger" data-cloud-action="leave-room">Salir de la sala</button>' +
-    '</div></div>'
-  );
+  return {
+    name: String(room?.sala || room?.name || '').trim() || 'Sala',
+    meta: appendMemberCount(month ? month.charAt(0).toUpperCase() + month.slice(1) : '', room?.memberCount)
+      .replace(/^ · /, ''),
+    code: String(room?.code || '').trim(),
+  };
 }
 
 /** @param {number|string} queueCount @param {number|string} revision @param {number|string} patientCount */
@@ -159,30 +130,6 @@ export function techSummaryLine(queueCount, revision, patientCount) {
   const p = Number(patientCount) || 0;
   return 'Cola ' + q + ' · Rev. ' + rev + ' · ' + p + ' pacientes locales';
 }
-
-const HERO_ICON_PATHS = {
-  ok: '<path d="m5 12 5 5 9-10"/>',
-  info: '<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/>',
-  warn:
-    '<path d="M12 9v4"/><path d="M12 16.5h.01"/>' +
-    '<path d="M10.3 4.5 2.6 18a2 2 0 0 0 1.8 3h15.2a2 2 0 0 0 1.8-3L13.7 4.5a2 2 0 0 0-3.4 0Z"/>',
-  error: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5h.01"/>',
-};
-
-/** @param {'ok'|'info'|'warn'|'error'} state */
-function heroIconSvg(state) {
-  return (
-    '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
-    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    (HERO_ICON_PATHS[state] || HERO_ICON_PATHS.ok) +
-    '</svg>'
-  );
-}
-
-const SYNC_ICON_SVG =
-  '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
-  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/>' +
-  '<path d="M20 4v5h-5"/></svg>';
 
 /** @type {Record<CloudSyncStatus, 'ok'|'info'|'warn'|'error'>} */
 const HERO_ICON_STATE_BY_STATUS = {
@@ -203,24 +150,15 @@ const HERO_TITLE_BY_STATUS = {
   reconnecting: STATUS_LABELS.reconnecting,
 };
 
-/** Signed out: same spot as the status hero, no main button (the form is below). */
-function signedOutHeroHtml() {
-  return (
-    '<div class="cloud-sync-hero" data-cloud-hero data-signed-out>' +
-    '<div class="cloud-sync-hero-icon" data-state="warn">' + heroIconSvg('warn') + '</div>' +
-    '<div class="cloud-sync-hero-text"><p class="cloud-sync-hero-title">Sin sesión</p>' +
-    '<p class="cloud-sync-hero-sub">Tus cambios se guardan en este equipo, pero no llegan a tu sala.</p></div></div>'
-  );
-}
-
 /**
- * Status hero — big round icon, title, "Sala · mes · último envío hace X",
- * and the "Sincronizar ahora" pill (reuses the shared Nube runtime's syncCycle
- * via data-cloud-action="sync-now", wired in panel-conexion-bootstrap.mjs).
- * @param {{ status: CloudSyncStatus, detail?: string, transport?: string, displaySala?: string, room?: object | null }} ctx
+ * Status hero data — icon state, title, and the «Sala · mes · último envío hace X» line (or the plain-words
+ * reason). `now` is passed in so the relative time is testable. Signed out: no main button, the form is below.
+ * @param {{ status: CloudSyncStatus, detail?: string, displaySala?: string, room?: object | null, tokenPresent?: boolean }} ctx
+ * @param {number} [now]
+ * @returns {{ signedOut: true } | { iconState: string, title: string, subline: string }}
  */
-export function statusHeroHtml({ status, detail, displaySala, room, tokenPresent }) {
-  if (tokenPresent === false) return signedOutHeroHtml();
+export function statusHeroState({ status, detail, displaySala, room, tokenPresent }, now = Date.now()) {
+  if (tokenPresent === false) return { signedOut: true };
   const iconState = HERO_ICON_STATE_BY_STATUS[status] || 'ok';
   const title = status === 'error' ? 'Hay un problema con Nube' : HERO_TITLE_BY_STATUS[status] || STATUS_LABELS[status] || status;
   const lastPush = getLastCloudPushAt();
@@ -235,21 +173,9 @@ export function statusHeroHtml({ status, detail, displaySala, room, tokenPresent
         ? reason
         : [String(displaySala || '').trim(), formatTurnMonth(room?.turnKey)]
           .filter(Boolean)
-          .concat(lastPush ? ['último envío ' + formatCloudDiagWhen(lastPush, Date.now())] : [])
+          .concat(lastPush ? ['último envío ' + formatCloudDiagWhen(lastPush, now)] : [])
           .join(' · ');
-  return (
-    '<div class="cloud-sync-hero" data-cloud-hero data-state="' +
-    esc(iconState) +
-    '">' +
-    '<p class="cloud-sync-hero-title">' +
-    esc(title) +
-    '</p>' +
-    (subline ? '<p class="cloud-sync-hero-sub">' + esc(subline) + '</p>' : '') +
-    '<button type="button" class="cloud-sync-btn cloud-sync-hero-sync" data-cloud-action="sync-now">' +
-    SYNC_ICON_SVG +
-    'Sincronizar ahora</button>' +
-    '</div>'
-  );
+  return { iconState, title, subline };
 }
 
 const CHAIN_ICON_PATHS = {
@@ -299,93 +225,6 @@ export function pipelineChainHtml(steps) {
   });
   html += '</div>';
   return html;
-}
-
-/** @param {string} normalizedSala */
-export function roomActionsHtml(normalizedSala) {
-  return (
-    '<div class="cloud-sync-room cloud-sync-room--actions">' +
-    '<p class="cloud-sync-room-title">Unirse a una sala del turno</p>' +
-    '<div class="cloud-sync-field"><label>Nombre de la sala (opcional)</label>' +
-    '<input type="text" class="profile-input" data-cloud-room-name placeholder="Turno ' + esc(normalizedSala) + '" /></div>' +
-    '<button type="button" class="cloud-sync-btn" data-cloud-action="create-room">Crear sala</button>' +
-    '<div class="cloud-sync-field"><label>Código de sala</label>' +
-    '<input type="text" class="profile-input" data-cloud-join-code placeholder="ABC123" /></div>' +
-    '<button type="button" class="cloud-sync-btn" data-cloud-action="join-room">Unirse con código</button></div>'
-  );
-}
-
-/** @param {string} url */
-export function advancedUrlFieldsHtml(url) {
-  return (
-    '<div class="cloud-sync-field"><label for="cloud-sync-url-connected">URL del servicio</label>' +
-    '<input id="cloud-sync-url-connected" type="url" class="profile-input" data-cloud-sync-url value="' +
-    esc(url) +
-    '" placeholder="https://…workers.dev" /></div>' +
-    '<button type="button" class="cloud-sync-btn" data-cloud-action="save-url">Guardar</button>'
-  );
-}
-
-/** @param {string} url */
-export function advancedUrlHtml(url) {
-  return (
-    '<details class="cloud-sync-advanced"><summary>Avanzado</summary>' +
-    advancedUrlFieldsHtml(url) +
-    '</details>'
-  );
-}
-
-/**
- * @param {string} normalizedSala
- * @param {string} bodyHtml
- * @param {CloudSyncStatus} status
- * @param {string} [detail]
- * @param {string} [heroBlockHtml] Pre-built hero + 4-step chain (see
- *   conexionHeroBlockHtml in panel-conexion-views.mjs) for the connected
- *   status page. Omitted on the pre-login auth-forms screen, which keeps
- *   the compact title/chip header below.
- */
-export function conexionShellHtml(normalizedSala, bodyHtml, status, detail = '', heroBlockHtml = '') {
-  const detailText = String(detail || '').trim();
-  const showDetail = status === 'error' && !!detailText && !heroBlockHtml;
-  const headContent =
-    heroBlockHtml ||
-    '<div class="cloud-sync-conexion-head-text">' +
-      '<h4 class="cloud-sync-conexion-title">Conexión</h4>' +
-      '<p class="cloud-sync-conexion-sub">' +
-      esc(normalizedSala) +
-      '</p></div>' +
-      '<span class="cloud-sync-status-chip ' +
-      statusChipModifier(status) +
-      '" data-cloud-status-chip data-status="' +
-      esc(status) +
-      '">' +
-      esc(STATUS_LABELS[status] || status) +
-      '</span>';
-  return (
-    '<header class="cloud-sync-conexion-head">' +
-    headContent +
-    '</header>' +
-    '<p class="cloud-sync-status-detail" data-cloud-status-detail' +
-    (showDetail ? '' : ' hidden') +
-    '>' +
-    esc(detailText) +
-    '</p>' +
-    bodyHtml
-  );
-}
-
-/** Inline Mi rotación host for ⇄ Opciones → Equipo. */
-export function equipoEmbedHostHtml() {
-  return (
-    '<div class="cloud-sync-equipo-embed" data-cloud-equipo-host>' +
-    '<div class="clinical-teams-panel-body clinical-teams-panel-body--embed"></div></div>'
-  );
-}
-
-/** @deprecated Use equipoEmbedHostHtml — kept for imports that passed getToken. */
-export function equipoStepHtml(_getToken) {
-  return equipoEmbedHostHtml();
 }
 
 /**

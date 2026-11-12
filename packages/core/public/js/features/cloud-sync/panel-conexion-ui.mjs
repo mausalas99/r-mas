@@ -1,17 +1,14 @@
 import {
-  authFormsHtml,
-  roomConnectedHtml,
-  roomActionsHtml,
-  conexionShellHtml,
-  equipoEmbedHostHtml,
+  STATUS_LABELS,
+  statusChipModifier,
   techSummaryLine,
 } from './panel-conexion-html.mjs';
-import { connectedViewsHtml, applyConexionView, conexionHeroBlockHtml } from './panel-conexion-views.mjs';
+import { applyConexionView, conexionHeroModel, connectedBodyModel } from './panel-conexion-views.mjs';
 import { getSyncablePatients } from '../../app-state.mjs';
 import { getSharedNubeOutbox } from './panel-conexion-runtime.mjs';
-import { adminShellHtml } from './panel-conexion-bootstrap.mjs';
-import { wireCloudAuthTabs } from './panel-steps-html.mjs';
+import { signedOutBodyModel, wireCloudAuthTabs } from './panel-steps-html.mjs';
 import { resolveCloudConexionChipStatus } from './cloud-sync-status-snapshot.mjs';
+import { drawConexionShell, replaceHeroBlock } from './panel-conexion-view.jsx';
 
 // ── Nube status home (board «Nube A»): hero + chain in the panel head and
 // the «Detalles técnicos» one-liner, refreshed in place on every status tick.
@@ -36,13 +33,14 @@ export function nubeTechSummary(deps) {
 }
 
 /**
+ * Hero + chain data for the panel head.
  * @param {object} deps
  * @param {string} displaySala
  * @param {object | null} [room] defaults to the stored room snapshot
  */
-export function nubeHeroBlockHtml(deps, displaySala, room) {
+export function nubeHeroModel(deps, displaySala, room) {
   const live = resolveCloudConexionChipStatus();
-  return conexionHeroBlockHtml({
+  return conexionHeroModel({
     status: live.status,
     detail: live.detail,
     transport: live.transport || 'poll',
@@ -53,19 +51,19 @@ export function nubeHeroBlockHtml(deps, displaySala, room) {
 }
 
 /**
- * Re-render the hero and the tech line in place. No-op when the panel shows
+ * Redraw the hero and the tech line in place. No-op when the panel shows
  * the pre-room / login head instead of the hero.
  * @param {HTMLElement} section @param {object} deps @param {string} displaySala
  */
 export function refreshNubeStatusHome(section, deps, displaySala) {
   const block = section.querySelector('[data-cloud-hero-block]');
   if (block) {
-    const html = nubeHeroBlockHtml(deps, displaySala);
-    // Same markup → leave the DOM alone (keeps focus on «Sincronizar ahora»).
-    // Compare with what we last wrote: the browser re-serializes outerHTML.
-    if (section._nubeHeroHtml !== html) {
-      block.outerHTML = html;
-      section._nubeHeroHtml = html;
+    const model = nubeHeroModel(deps, displaySala);
+    // Same data → leave the DOM alone (keeps focus on «Sincronizar ahora»).
+    const key = JSON.stringify(model);
+    if (section._nubeHeroKey !== key) {
+      replaceHeroBlock(block, model);
+      section._nubeHeroKey = key;
     }
   }
   const tech = section.querySelector('[data-cloud-tech-summary]');
@@ -81,31 +79,39 @@ export function refreshNubeStatusHome(section, deps, displaySala) {
 export function createConexionRenderers(section, normalizedSala, deps, ctx) {
   const displaySala = String(ctx.displaySala || normalizedSala || '').trim() || normalizedSala;
 
-  function renderShell(bodyHtml, status, detail, heroBlockHtml = '') {
-    section.innerHTML = conexionShellHtml(displaySala, bodyHtml, status, detail, heroBlockHtml);
-    section._nubeHeroHtml = heroBlockHtml;
+  /** @param {object} body @param {string} status @param {string} detail @param {object | null} hero */
+  function renderShell(body, status, detail, hero = null) {
+    drawConexionShell(section, {
+      displaySala,
+      status,
+      statusLabel: STATUS_LABELS[status] || status,
+      chipClass: statusChipModifier(status),
+      detail,
+      hero,
+      body,
+    });
+    section._nubeHeroKey = hero ? JSON.stringify(hero) : '';
   }
 
-  /** @param {string} roomHtml @param {object | null} [room] joined room → status hero */
-  function renderConnectedBody(roomHtml, room = null) {
+  /** @param {object | null} [room] joined room → status hero + «Tu sala»; null → create / join actions */
+  function renderConnectedBody(room = null) {
     // Stay in Administración when a room switch re-renders from inside it
     // («Abrir expediente» in Pacientes); every other view returns home.
     const stayInAdmin = section.dataset.cloudView === 'admin';
     const hasCloudSession = !!deps.getCloudSyncToken();
     const chip = resolveCloudConexionChipStatus();
     renderShell(
-      connectedViewsHtml({
+      connectedBodyModel({
         cloudUser: ctx.cloudUser,
-        roomHtml,
-        equipoHtml: equipoEmbedHostHtml(),
-        adminHtml: adminShellHtml(hasCloudSession),
+        room,
+        displaySala,
         url: deps.getCloudSyncUrl(),
         hasCloudSession,
         techSummary: room ? nubeTechSummary(deps) : '',
       }),
       chip.status,
       chip.detail,
-      room ? nubeHeroBlockHtml(deps, displaySala, room) : ''
+      room ? nubeHeroModel(deps, displaySala, room) : null
     );
     applyConexionView(section, stayInAdmin ? 'admin' : 'status', { onAdmin: ctx.ensureAdminOpen });
   }
@@ -115,18 +121,18 @@ export function createConexionRenderers(section, normalizedSala, deps, ctx) {
    * @param {{ startRuntime?: boolean }} [opts]
    */
   function renderConnected(room, opts) {
-    renderConnectedBody(roomConnectedHtml(room), room);
+    renderConnectedBody(room);
     if (opts?.startRuntime !== false) ctx.startRuntime();
   }
 
   function renderDisconnected() {
     const hasToken = !!deps.getCloudSyncToken();
     if (!hasToken) {
-      renderShell(authFormsHtml(deps.getCloudSyncUrl(), displaySala), 'offline', '', nubeHeroBlockHtml(deps, displaySala, null));
+      renderShell(signedOutBodyModel(deps.getCloudSyncUrl(), displaySala), 'offline', '', nubeHeroModel(deps, displaySala, null));
       wireCloudAuthTabs(section);
       return;
     }
-    renderConnectedBody(roomActionsHtml(displaySala));
+    renderConnectedBody();
   }
 
   return { renderConnected, renderDisconnected };

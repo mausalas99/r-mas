@@ -1,8 +1,7 @@
-import { esc } from '../../dom-escape.mjs';
 import { readRpcSettings } from '../../clinical-settings.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
-import { advancedUrlFieldsHtml, statusHeroHtml, pipelineChainHtml } from './panel-conexion-html.mjs';
+import { roomConnectedModel, statusHeroState } from './panel-conexion-html.mjs';
 import { canAccessCloudAdmin } from './panel-admin.mjs';
 import { canManageInternoQr } from '../../clinical-privileges.mjs';
 import { setClinicalTeamsEmbedHost } from '../clinical-panel-host.mjs';
@@ -24,69 +23,6 @@ function resolveIdentity(cloudUser) {
     settings.clinicalDisplayName ||
     '';
   return { handle, display };
-}
-
-/**
- * @param {string} id
- * @param {string} title
- * @param {string} body
- * @param {{ hidden?: boolean, backLabel?: string } | boolean} [opts]
- */
-function viewBlock(id, title, body, opts) {
-  const hidden =
-    typeof opts === 'boolean' ? opts : !opts || opts.hidden !== false;
-  // Navigation chrome lives in the modal header (back + title + close).
-  // Body is content only — no second «‹ Conexión / Opciones» strip.
-  return (
-    '<div class="cloud-sync-view" data-cloud-view="' +
-    esc(id) +
-    '" data-cloud-view-title="' +
-    esc(title) +
-    '"' +
-    (hidden ? ' hidden' : '') +
-    '>' +
-    '<div class="cloud-sync-view-body">' +
-    body +
-    '</div></div>'
-  );
-}
-
-/**
- * @param {string} title @param {string} meta @param {string} view
- * @param {string} [action] defaults to the generic nav-view
- */
-function optionsRow(title, meta, view, action = 'nav-view') {
-  return (
-    '<button type="button" class="cloud-sync-options-row" data-cloud-action="' +
-    esc(action) +
-    '" data-cloud-view="' +
-    esc(view) +
-    '">' +
-    '<span class="cloud-sync-options-row-text">' +
-    '<span class="cloud-sync-options-row-title">' +
-    esc(title) +
-    '</span>' +
-    '<span class="cloud-sync-options-row-meta"' +
-    (view === 'nube' ? ' data-cloud-tech-summary' : '') +
-    '>' +
-    esc(meta) +
-    '</span></span>' +
-    '<span class="cloud-sync-options-row-chevron" aria-hidden="true">›</span></button>'
-  );
-}
-
-/** @param {string} label @param {string} rowsHtml */
-function optionsGroup(label, rowsHtml) {
-  if (!rowsHtml) return '';
-  return (
-    '<section class="cloud-sync-options-group">' +
-    '<h5 class="cloud-sync-options-label">' +
-    esc(label) +
-    '</h5>' +
-    '<div class="cloud-sync-options-card">' +
-    rowsHtml +
-    '</div></section>'
-  );
 }
 
 /**
@@ -122,19 +58,13 @@ function heroPipelineSteps({ status, transport, room, tokenPresent, displaySala 
 }
 
 /**
- * Status hero + 4-step chain, wrapped for live in-place refresh (see
- * renderStatusChip in panel-conexion.mjs, which re-renders this whole block
- * on every status tick — cheap, and it never touches the mounted Equipo/
- * Admin subviews sitting elsewhere in the section).
+ * Status hero + 4-step chain data, redrawn in place on every status tick (see renderStatusChip in
+ * panel-conexion.mjs); it never touches the mounted Equipo/Admin subviews sitting elsewhere in the section.
  * @param {{ status: string, detail?: string, transport?: string, displaySala?: string, room?: object | null, tokenPresent?: boolean }} ctx
+ * @param {number} [now]
  */
-export function conexionHeroBlockHtml(ctx) {
-  return (
-    '<div class="cloud-sync-hero-block" data-cloud-hero-block>' +
-    statusHeroHtml(ctx) +
-    pipelineChainHtml(heroPipelineSteps(ctx)) +
-    '</div>'
-  );
+export function conexionHeroModel(ctx, now = Date.now()) {
+  return { hero: statusHeroState(ctx, now), steps: heroPipelineSteps(ctx) };
 }
 
 /** «Dra. Ana Ríos» → «AR»; falls back to the @usuario. @param {string} display @param {string} handle */
@@ -150,157 +80,23 @@ function initialsFor(display, handle) {
 }
 
 /**
- * @param {{ username?: string, displayName?: string } | null} cloudUser
+ * Everything the signed-in body draws, as plain data (Nube A: «Tu sala», your account, option rows, sub-views).
+ * `room` is the joined room (→ «Tu sala» card) or null (→ create / join actions for `displaySala`).
+ * @param {{ cloudUser: { username?: string, displayName?: string } | null, room: object | null, displaySala: string,
+ *   url: string, hasCloudSession?: boolean, techSummary?: string }} opts
  */
-function statusIdentityHtml(cloudUser) {
+export function connectedBodyModel({ cloudUser, room, displaySala, url, hasCloudSession = false, techSummary = '' }) {
   const { handle, display } = resolveIdentity(cloudUser);
-  return (
-    '<div class="cloud-sync-inset-group cloud-sync-status-identity" aria-label="Cuenta">' +
-    '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-account-row">' +
-    '<span class="cloud-sync-avatar" aria-hidden="true">' +
-    esc(initialsFor(display, handle)) +
-    '</span>' +
-    '<span class="cloud-sync-options-entry-text">' +
-    (display ? '<span class="cloud-sync-account-name">' + esc(display) + '</span>' : '') +
-    '<span class="cloud-sync-status-handle">@' +
-    esc(handle || '—') +
-    '</span></span>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger" data-cloud-action="logout">Cerrar sesión</button>' +
-    '</div></div>'
-  );
-}
-
-/**
- * @param {{ username?: string, displayName?: string } | null} cloudUser
- */
-function cuentaBodyHtml(cloudUser) {
-  const { handle, display } = resolveIdentity(cloudUser);
-  return (
-    '<div class="cloud-sync-cuenta">' +
-    '<p class="cloud-sync-status-handle">@' +
-    esc(handle || '—') +
-    '</p>' +
-    (display
-      ? '<p class="cloud-sync-status-display">' + esc(display) + '</p>'
-      : '') +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost ui-pressable" data-cloud-action="regenerate-recovery">Código de recuperación</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-action="logout">Cerrar sesión Nube</button></div>'
-  );
-}
-
-/**
- * Board «Nube A» body under the hero: Tu sala, your account, then two rows.
- * nav-options opens the Opciones list; nav-view 'nube' opens Diagnóstico
- * (see onCloudActionClick in panel-conexion-bootstrap.mjs).
- * @param {{ cloudUser: { username?: string, displayName?: string } | null, roomHtml: string, showAdmin: boolean, techSummary: string }} opts
- */
-function statusSheetHtml({ cloudUser, roomHtml, showAdmin, techSummary }) {
-  const navRows =
-    optionsRow(
-      showAdmin ? 'Equipo y administración' : 'Equipo y cuenta',
-      showAdmin ? 'Equipo, cuenta y administración' : 'Equipo, cuenta e iPad',
-      'options',
-      'nav-options'
-    ) + optionsRow('Detalles técnicos', techSummary || '—', 'nube');
-  return (
-    '<div class="cloud-sync-status-sheet">' +
-    statusIdentityHtml(cloudUser) +
-    roomHtml +
-    '<div class="cloud-sync-options-card">' +
-    navRows +
-    '</div></div>'
-  );
-}
-
-/**
- * @param {{
- *   cloudUser: { username?: string, displayName?: string } | null,
- *   roomHtml: string,
- *   equipoHtml: string,
- *   adminHtml?: string,
- *   url: string,
- *   hasCloudSession?: boolean,
- *   techSummary?: string,
- * }} opts
- */
-export function connectedViewsHtml({
-  cloudUser,
-  roomHtml,
-  equipoHtml,
-  adminHtml = '',
-  url,
-  hasCloudSession = false,
-  techSummary = '',
-}) {
-  const showAdmin =
-    !!String(adminHtml || '').trim() ||
-    canAccessCloudAdmin(clinicalSessionContext.user, { hasCloudSession });
-  const adminHost = showAdmin
-    ? String(adminHtml || '').trim() ||
-      '<div class="cloud-sync-admin-host" data-cloud-admin-host></div>'
-    : '';
-  const statusBody = statusSheetHtml({ cloudUser, roomHtml, showAdmin, techSummary });
-
-  const showInternoQr = canManageInternoQr(clinicalSessionContext.user);
-  let guardiaRows =
-    optionsRow('iPad / R+ Móvil', 'QR y enlace permanente', 'mobile') +
-    optionsRow('Equipo', '@usuario, equipos y sala', 'equipo') +
-    (showInternoQr
-      ? optionsRow('QR Internos', 'Vitales desde el celular por sala', 'interno-qr')
-      : '');
-  let cuentaRows = optionsRow('Cuenta', 'Recuperación y sesión', 'cuenta');
-  if (showAdmin) {
-    cuentaRows += optionsRow('Administración', 'Usuarios, salas y clave admin', 'admin');
-  }
-  const sistemaRows =
-    optionsRow('Diagnóstico Nube', 'Dashboard de estado y alertas', 'nube') +
-    optionsRow('Avanzado', 'URL del servicio', 'advanced');
-
-  const optionsBody =
-    optionsGroup('Guardia', guardiaRows) +
-    optionsGroup('Cuenta', cuentaRows) +
-    optionsGroup('Sistema', sistemaRows);
-
-  return (
-    '<div class="cloud-sync-views" data-cloud-views>' +
-    viewBlock('status', 'Conexión', statusBody, false) +
-    viewBlock('options', 'Opciones', '<div class="cloud-sync-options-list">' + optionsBody + '</div>') +
-    viewBlock('equipo', 'Equipo', equipoHtml) +
-    viewBlock(
-      'mobile',
-      'iPad / R+ Móvil',
-      '<div class="cloud-sync-mobile-invite-host" data-cloud-mobile-invite-host></div>'
-    ) +
-    (showInternoQr
-      ? viewBlock(
-          'interno-qr',
-          'QR Internos',
-          '<div class="cloud-sync-interno-qr-host" data-cloud-interno-qr-host></div>'
-        )
-      : '') +
-    viewBlock('cuenta', 'Cuenta', cuentaBodyHtml(cloudUser)) +
-    (showAdmin ? viewBlock('admin', 'Administración', adminHost) : '') +
-    viewBlock(
-      'nube',
-      'Diagnóstico Nube',
-      '<div class="cloud-sync-nube-diagnostics-host" data-cloud-nube-diagnostics-host></div>'
-    ) +
-    viewBlock('advanced', 'Avanzado', advancedUrlFieldsHtml(url)) +
-    '</div>'
-  );
-}
-
-/** @deprecated Prefer connectedViewsHtml — kept for existing imports. */
-export function connectedStepsHtml(opts) {
-  return connectedViewsHtml({
-    cloudUser: opts.cloudUser,
-    roomHtml: opts.roomHtml,
-    equipoHtml: opts.equipoHtml,
-    adminHtml: opts.masBodyHtml || opts.adminHtml || '',
-    url: opts.url || '',
-    hasCloudSession: opts.hasCloudSession,
-    techSummary: opts.techSummary || '',
-  });
+  return {
+    kind: 'connected',
+    identity: { handle, display, initials: initialsFor(display, handle) },
+    room: room ? roomConnectedModel(room) : null,
+    salaForActions: displaySala,
+    showAdmin: canAccessCloudAdmin(clinicalSessionContext.user, { hasCloudSession }),
+    showInternoQr: canManageInternoQr(clinicalSessionContext.user),
+    url,
+    techSummary,
+  };
 }
 
 /**
