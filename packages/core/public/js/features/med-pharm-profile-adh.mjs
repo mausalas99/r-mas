@@ -1,6 +1,5 @@
 import { cellValueAtColumn } from '../med-pharm-view-window.mjs';
 import {
-  esc,
   monthLabel,
   mp,
   notAdminAtColumn,
@@ -65,128 +64,47 @@ function adherenceStatsForWindow(profile, rowKey, columns) {
   };
 }
 
-function buildAdhPanelHtmlForGroup(group, columns, profile, windowLabel) {
+function adhPanelModel(detail, columns, windowLabel, regimenCount) {
+  var multiMonth = windowHasMultipleMonths(columns);
+  return {
+    regimens: regimenCount > 1 ? regimenCount + ' regímenes (dosis distintas) en esta ventana' : '',
+    head: windowLabel || monthLabel(mp.viewYear, mp.viewMonthIndex),
+    ok: formatAdhDayList(detail.administered, multiMonth),
+    missed: formatAdhDayList(detail.missed, multiMonth),
+    foot:
+      detail.administered.length +
+      ' administrados · ' +
+      detail.missed.length +
+      ' no · ' +
+      detail.indicated.length +
+      ' indicados',
+  };
+}
+
+function adhTriggerModel(stats, keyAttr, keyValue, panel) {
+  if (!stats.indicated) return { empty: true };
+  return {
+    label:
+      stats.missed > 0
+        ? stats.effective + ' efect. · ' + stats.missed + ' no'
+        : stats.effective + ' d efectivos',
+    miss: stats.missed > 0,
+    keyAttr: keyAttr,
+    keyValue: keyValue,
+    panel: panel,
+  };
+}
+
+/** Plain model for one row's adherence trigger + hover panel (drawn by med-pharm-profile-view.jsx). */
+function buildAdhTriggerModel(row, stats, columns, profile, windowLabel) {
+  var panel = adhPanelModel(adherenceDayDetail(row, columns, profile), columns, windowLabel, 0);
+  return adhTriggerModel(stats, 'data-row-key', row.rowKey, panel);
+}
+
+function buildAdhTriggerModelForGroup(group, stats, columns, profile, windowLabel) {
   var detail = adherenceDayDetailForRowKeys(profile, group.rowKeys, columns);
-  var multiMonth = windowHasMultipleMonths(columns);
-  var monthTitle = windowLabel || monthLabel(mp.viewYear, mp.viewMonthIndex);
-  var regimenNote =
-    group.variants.length > 1
-      ? '<p class="med-pharm-adh-panel-regimens">' +
-        esc(String(group.variants.length)) +
-        ' regímenes (dosis distintas) en esta ventana</p>'
-      : '';
-  return (
-    regimenNote +
-    '<p class="med-pharm-adh-panel-head">' +
-    esc(monthTitle) +
-    '</p>' +
-    '<div class="med-pharm-adh-panel-section">' +
-    '<span class="med-pharm-adh-panel-label med-pharm-adh-panel-label--ok">Administrados (por defecto)</span>' +
-    '<p class="med-pharm-adh-panel-days">' +
-    esc(formatAdhDayList(detail.administered, multiMonth)) +
-    '</p>' +
-    '</div>' +
-    '<div class="med-pharm-adh-panel-section">' +
-    '<span class="med-pharm-adh-panel-label med-pharm-adh-panel-label--miss">No administrados</span>' +
-    '<p class="med-pharm-adh-panel-days">' +
-    esc(formatAdhDayList(detail.missed, multiMonth)) +
-    '</p>' +
-    '</div>' +
-    '<p class="med-pharm-adh-panel-foot">' +
-    esc(String(detail.administered.length)) +
-    ' administrados · ' +
-    esc(String(detail.missed.length)) +
-    ' no · ' +
-    esc(String(detail.indicated.length)) +
-    ' indicados</p>'
-  );
-}
-
-function buildAdhPanelHtml(row, columns, profile, windowLabel) {
-  var detail = adherenceDayDetail(row, columns, profile);
-  var multiMonth = windowHasMultipleMonths(columns);
-  var monthTitle = windowLabel || monthLabel(mp.viewYear, mp.viewMonthIndex);
-  return (
-    '<p class="med-pharm-adh-panel-head">' +
-    esc(monthTitle) +
-    '</p>' +
-    '<div class="med-pharm-adh-panel-section">' +
-    '<span class="med-pharm-adh-panel-label med-pharm-adh-panel-label--ok">Administrados (por defecto)</span>' +
-    '<p class="med-pharm-adh-panel-days">' +
-    esc(formatAdhDayList(detail.administered, multiMonth)) +
-    '</p>' +
-    '</div>' +
-    '<div class="med-pharm-adh-panel-section">' +
-    '<span class="med-pharm-adh-panel-label med-pharm-adh-panel-label--miss">No administrados</span>' +
-    '<p class="med-pharm-adh-panel-days">' +
-    esc(formatAdhDayList(detail.missed, multiMonth)) +
-    '</p>' +
-    '</div>' +
-    '<p class="med-pharm-adh-panel-foot">' +
-    esc(String(detail.administered.length)) +
-    ' administrados · ' +
-    esc(String(detail.missed.length)) +
-    ' no · ' +
-    esc(String(detail.indicated.length)) +
-    ' indicados</p>'
-  );
-}
-
-function buildAdhTriggerHtml(row, stats, columns, profile, windowLabel) {
-  if (!stats.indicated) {
-    return '<span class="med-pharm-adh-trigger med-pharm-adh-trigger--empty">—</span>';
-  }
-  var label =
-    stats.missed > 0
-      ? stats.effective + ' efect. · ' + stats.missed + ' no'
-      : stats.effective + ' d efectivos';
-  return (
-    '<span class="med-pharm-adh-wrap">' +
-    '<button type="button" class="med-pharm-adh-trigger' +
-    (stats.missed > 0 ? ' med-pharm-adh-trigger--miss' : '') +
-    '" data-row-key="' +
-    esc(row.rowKey) +
-    '" aria-haspopup="dialog">' +
-    esc(label) +
-    '</button>' +
-    '<div class="med-pharm-adh-panel" role="dialog" aria-hidden="true">' +
-    buildAdhPanelHtml(row, columns, profile, windowLabel) +
-    '</div></span>'
-  );
-}
-
-function buildAdhTriggerHtmlForGroup(group, stats, columns, profile, windowLabel) {
-  if (!stats.indicated) {
-    return '<span class="med-pharm-adh-trigger med-pharm-adh-trigger--empty">—</span>';
-  }
-  var label =
-    stats.missed > 0
-      ? stats.effective + ' efect. · ' + stats.missed + ' no'
-      : stats.effective + ' d efectivos';
-  return (
-    '<span class="med-pharm-adh-wrap">' +
-    '<button type="button" class="med-pharm-adh-trigger' +
-    (stats.missed > 0 ? ' med-pharm-adh-trigger--miss' : '') +
-    '" data-med-group-key="' +
-    esc(group.medGroupKey) +
-    '" aria-haspopup="dialog">' +
-    esc(label) +
-    '</button>' +
-    '<div class="med-pharm-adh-panel" role="dialog" aria-hidden="true">' +
-    buildAdhPanelHtmlForGroup(group, columns, profile, windowLabel) +
-    '</div></span>'
-  );
-}
-
-function buildMedCellInner(row, stats, columns, profile, windowLabel) {
-  return (
-    '<div class="med-cell-name">' +
-    esc(row.med) +
-    '</div>' +
-    '<div class="med-cell-adh">' +
-    buildAdhTriggerHtml(row, stats, columns, profile, windowLabel) +
-    '</div>'
-  );
+  var panel = adhPanelModel(detail, columns, windowLabel, group.variants.length);
+  return adhTriggerModel(stats, 'data-med-group-key', group.medGroupKey, panel);
 }
 
 var _medPharmAdhHoverWired = false;
@@ -330,9 +248,8 @@ function wireMedPharmAdhHoverOnce() {
 }
 
 export {
-  buildAdhTriggerHtml,
-  buildAdhTriggerHtmlForGroup,
-  buildMedCellInner,
+  buildAdhTriggerModel,
+  buildAdhTriggerModelForGroup,
   wireMedPharmAdhHoverPanels,
   wireMedPharmAdhHoverOnce,
   adherenceStatsForWindow,
