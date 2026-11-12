@@ -4,10 +4,12 @@ import { createRequire } from 'node:module';
 import { loadJsx } from './preact-view-test-helpers.mjs';
 import { sameHtml } from './preact-html-compare.mjs';
 
-const view = await loadJsx(import.meta.url, `import { BootLoading, SessionBlock, LocalOnlyConfirm, LoadError } from './clinical-onboarding-view.jsx';
+const view = await loadJsx(import.meta.url, `import { BootLoading, SessionBlock, LocalOnlyConfirm, LoadError, SyncModeChoice, TeamStep } from './clinical-onboarding-view.jsx';
   export const boot = (p) => renderToString(<BootLoading {...p} />);
   export const session = (p) => renderToString(<SessionBlock {...p} />);
   export const local = () => renderToString(<LocalOnlyConfirm />);
+  export const syncMode = () => renderToString(<SyncModeChoice />);
+  export const team = (p) => renderToString(<TeamStep {...p} />);
   export const error = (message) => renderToString(<LoadError message={message} />);`);
 
 // Markup of buildOnboardingBootLoadingHtml, buildOnboardingSessionBlockHtml, renderLocalOnlyConfirmPanel and the
@@ -37,4 +39,18 @@ test('local-only confirm equals the old HTML and keeps the ids the handlers use'
 test('load error equals the old HTML', () => {
   sameHtml(view.error('Fallo <x> & "y" \'z\''), OLD.error, 'error');
   sameHtml(view.error('Error al cargar.'), OLD.errorDefault, 'default');
+});
+
+const STAGE = createRequire(import.meta.url)('./clinical-onboarding-stage-old-html.json');
+
+test('sync-mode choice equals the old HTML', () => {
+  // The old string self-closed SVG shapes (`<path/>`); the parser reads both the same.
+  sameHtml(view.syncMode(), STAGE.sync.replace(/<(path|polyline|line|rect)([^>]*?)\/>/g, '<$1$2></$1>'), 'sync');
+});
+
+test('team step equals the old HTML (who, cloud sala, no who, searching)', () => {
+  sameHtml(view.team({ who: '@dr_prueba · R2 · Medicina Interna', cloudSala: false, skipCloudSync: true }), STAGE.teamWho, 'who');
+  sameHtml(view.team({ who: '@dr_prueba · R1 · Sala 1', cloudSala: true, skipCloudSync: true }), STAGE.teamCloud, 'cloud');
+  sameHtml(view.team({ who: '@dr_prueba · R2 · Medicina Interna', cloudSala: false, skipCloudSync: false }), STAGE.teamWhoSync, 'searching');
+  sameHtml(view.team({ who: 'R1', cloudSala: false, skipCloudSync: true }), STAGE.teamNoWho, 'rank only');
 });
