@@ -1,6 +1,5 @@
 import { CLINICAL_SALA_VALUES } from '../../lib/clinical-salas.mjs';
 import { clinicalSessionContext } from './clinical-access-runtime.mjs';
-import { esc } from './dom-escape.mjs';
 import { lazyView } from './deferred-work.mjs';
 
 const salaView = lazyView(() => import('./patient-sala-view.jsx'));
@@ -23,26 +22,6 @@ export function resolveRegistrationSalaDefault(user, teamId, teams) {
   const teamSala = String(team?.sala || '').trim();
   if (teamSala) return teamSala;
   return String(user?.sala || '').trim();
-}
-
-function buildSalaOptionsHtml(selected) {
-  const sel = String(selected || '').trim();
-  return (
-    '<option value="">— Seleccionar —</option>' +
-    CLINICAL_SALA_VALUES.map(
-      (s) => `<option value="${esc(s)}"${s === sel ? ' selected' : ''}>${esc(s)}</option>`
-    ).join('')
-  );
-}
-
-/** Sala dropdown for Expediente → Datos; the caller supplies the label. */
-export function buildPatientSalaFieldHtml(patient) {
-  const sala = String(patient?.sala || '').trim();
-  return (
-    '<select id="patient-sala-select" class="exp-datos-q" title="Ubicación clínica para censo y ⇄" data-onchange="updatePatient" data-onchange-args=\'["sala"]\' data-onchange-pass="value">' +
-    buildSalaOptionsHtml(sala) +
-    '</select>'
-  );
 }
 
 /** Sync #m-sala in the new-patient modal. */

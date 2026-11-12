@@ -30,10 +30,7 @@ import {
   _autoGrowTextarea,
   updateListadoMedico,
 } from './expediente/expediente-listado.mjs';
-import {
-  buildPatientDemographicsCardHtml,
-  renderPatientDataPane,
-} from './expediente/expediente-datos.mjs';
+import { renderPatientDataPane } from './expediente/expediente-datos.mjs';
 
 export { registerExpedienteRuntime, buildCultivoAntibiogramCellHtmlForPatient, invalidateCultivosTableCache };
 
@@ -47,7 +44,6 @@ export {
   isResLabChunkPureCultivo,
   extractCultivoTableRowsFromHistory,
   filterCultivoRowsSignificantFlip,
-  buildPatientDemographicsCardHtml,
   renderPatientDataPane,
   copyCultivoCondensado,
   generateListado,

@@ -3,7 +3,6 @@ import { refreshRpcDateFields } from './rpc-date-picker.mjs';
 import { ensurePatientAccesos, syncLegacyAccesoFields, VIA_ACCESO_LABELS } from './patient-accesos.mjs';
 import { getPatients, persistClinicalState } from './app-state.mjs';
 
-import { esc } from './dom-escape.mjs';
 import { lazyView } from './deferred-work.mjs';
 
 const accesoView = lazyView(() => import('./patient-data-accesos-view.jsx'));
@@ -19,73 +18,20 @@ function accesoRows(patient) {
   return list.length ? list : [{ via: '', fecha: '' }];
 }
 
-function viaSelectHtml(index, via) {
-  var v = String(via || '');
-  return (
-    '<select class="exp-datos-q patient-acceso-via" data-onchange="onPatientAccesoVia" data-onchange-args="[' +
-    index +
-    ']" data-onchange-pass="value" aria-label="Vía de acceso">' +
-    '<option value=""' +
-    (!v ? ' selected' : '') +
-    '>— Vía —</option>' +
-    Object.keys(VIA_ACCESO_LABELS)
-      .map(function (key) {
-        return '<option value="' + key + '"' + (v === key ? ' selected' : '') + '>' + VIA_ACCESO_LABELS[key] + '</option>';
-      })
-      .join('') +
-    '</select>'
-  );
-}
-
-/** Whole days from the access date to today, or '' when there is no valid date. */
-function accesoDiaHtml(fecha) {
-  var iso = accesoFechaToDateInputValue(fecha);
-  if (!iso) return '';
-  var days = Math.floor((Date.now() - new Date(iso + 'T00:00:00').getTime()) / 86400000);
-  return days >= 0 ? '<span class="exp-datos-tag exp-datos-tag--muted">día ' + days + '</span>' : '';
-}
-
-function renderAccesosListHtml(patient) {
-  var rows = accesoRows(patient);
-  return rows
-    .map(function (row, i) {
-      var name = 'Acceso' + (rows.length > 1 ? ' ' + (i + 1) : '');
-      return (
-        '<div class="exp-datos-prop patient-acceso-row">' +
-        '<span class="exp-datos-prop__k">' + name + '</span>' +
-        '<div class="exp-datos-acc">' +
-        viaSelectHtml(i, row.via) +
-        '<label class="exp-datos-acc__date"><span class="visually-hidden">Fecha ' + name + '</span>' +
-        '<input type="date" class="rpc-date-input patient-acceso-fecha" value="' +
-        esc(accesoFechaToDateInputValue(row.fecha)) +
-        '" data-oninput="onPatientAccesoFecha" data-oninput-args="[' +
-        i +
-        ']" data-oninput-pass="value"></label>' +
-        accesoDiaHtml(row.fecha) +
-        (rows.length > 1
-          ? '<button type="button" class="exp-datos-list__rm" data-onclick="removePatientAccesoRow" data-onclick-args="[' + i + ']" aria-label="Quitar ' + name + '">×</button>'
-          : '') +
-        '</div></div>'
-      );
-    })
-    .join('');
-}
-
-/** Access rows for the Ingreso group; "+ Acceso" lives in the group title. */
-export function buildPatientAccesosSectionHtml(patient) {
-  ensurePatientAccesos(patient);
-  return '<div class="patient-accesos-list" id="patient-accesos-list">' + renderAccesosListHtml(patient) + '</div>';
+/** Props for the acceso rows (AccesoRows in patient-data-accesos-view.jsx). */
+export function accesosListProps(patient, now) {
+  return {
+    rows: accesoRows(patient).map(function (row) { return { via: row.via, dateValue: accesoFechaToDateInputValue(row.fecha) }; }),
+    viaLabels: VIA_ACCESO_LABELS,
+    now: now,
+  };
 }
 
 function refreshAccesosListDom(patientId) {
   var patient = activePatient(patientId);
   var listEl = document.getElementById('patient-accesos-list');
   if (!patient || !listEl) return;
-  var props = {
-    rows: accesoRows(patient).map(function (row) { return { via: row.via, dateValue: accesoFechaToDateInputValue(row.fecha) }; }),
-    viaLabels: VIA_ACCESO_LABELS,
-    now: Date.now(),
-  };
+  var props = accesosListProps(patient, Date.now());
   accesoView.use(function (v) {
     v.drawAccesoRows(listEl, props);
     refreshRpcDateFields(listEl);
