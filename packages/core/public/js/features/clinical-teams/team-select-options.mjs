@@ -6,7 +6,7 @@ import { esc } from '../../dom-escape.mjs';
 
 function teamOptionHtml(team, selectedTeamId) {
   const id = String(team?.team_id || '');
-  const label = String(team?.name || team?.service || 'Equipo').trim() || 'Equipo';
+  const label = teamSelectLabel(team);
   const sel = id && id === String(selectedTeamId || '') ? ' selected' : '';
   return '<option value="' + esc(id) + '"' + sel + '>' + esc(label) + '</option>';
 }
@@ -22,17 +22,15 @@ function sortTeamsForSelect(teams) {
 }
 
 /**
+ * Teams in select order. Flat: one group with no label. By sala: one group per sala
+ * (known salas first, the rest A–Z).
  * @param {object[]} teams
- * @param {string} [selectedTeamId]
- * @param {{ groupBySala?: boolean }} [opts]
+ * @param {boolean} [groupBySala]
+ * @returns {{ label: string|null, teams: object[] }[]}
  */
-export function buildTeamSelectOptions(teams, selectedTeamId, opts = {}) {
+export function teamSelectGroups(teams, groupBySala) {
   const list = Array.isArray(teams) ? teams : [];
-  if (!opts.groupBySala) {
-    return sortTeamsForSelect(list)
-      .map((team) => teamOptionHtml(team, selectedTeamId))
-      .join('');
-  }
+  if (!groupBySala) return [{ label: null, teams: sortTeamsForSelect(list) }];
 
   /** @type {Map<string, object[]>} */
   const bySala = new Map();
@@ -48,13 +46,22 @@ export function buildTeamSelectOptions(teams, selectedTeamId, opts = {}) {
       .filter((s) => !CLINICAL_SALA_VALUES.includes(s))
       .sort((a, b) => a.localeCompare(b, 'es')),
   ];
+  return salaOrder.map((sala) => ({ label: sala, teams: sortTeamsForSelect(bySala.get(sala) || []) }));
+}
 
-  return salaOrder
-    .map((sala) => {
-      const optsHtml = sortTeamsForSelect(bySala.get(sala) || [])
-        .map((team) => teamOptionHtml(team, selectedTeamId))
-        .join('');
-      return '<optgroup label="' + esc(sala) + '">' + optsHtml + '</optgroup>';
+/** Label shown for a team in the select. */
+export const teamSelectLabel = (team) => String(team?.name || team?.service || 'Equipo').trim() || 'Equipo';
+
+/**
+ * @param {object[]} teams
+ * @param {string} [selectedTeamId]
+ * @param {{ groupBySala?: boolean }} [opts]
+ */
+export function buildTeamSelectOptions(teams, selectedTeamId, opts = {}) {
+  return teamSelectGroups(teams, opts.groupBySala)
+    .map(({ label, teams: group }) => {
+      const optsHtml = group.map((team) => teamOptionHtml(team, selectedTeamId)).join('');
+      return label === null ? optsHtml : '<optgroup label="' + esc(label) + '">' + optsHtml + '</optgroup>';
     })
     .join('');
 }
