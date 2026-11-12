@@ -1,7 +1,5 @@
 /** Fix guides for Diagnóstico Nube — tap an alert to open steps. */
 
-import { esc } from '../../dom-escape.mjs';
-import { STACKED_BACKDROP_CLASS } from './stacked-overlay.mjs';
 
 /** @typedef {{ id: string, title: string, summary: string, steps: string[] }} CloudNubeFixGuide */
 
@@ -289,44 +287,15 @@ export function resolveCloudErrorFixId(entry) {
 }
 
 /**
- * @param {CloudNubeFixGuide} guide
- */
-export function cloudNubeFixModalMarkup(guide) {
-  let stepsHtml = '';
-  guide.steps.forEach(function (step) {
-    stepsHtml += '<li class="cloud-nube-fix-step">' + esc(step) + '</li>';
-  });
-  return (
-    '<div class="' +
-    STACKED_BACKDROP_CLASS +
-    '" data-cloud-nube-fix-modal>' +
-    '<div class="lab-conflict-modal cloud-nube-fix-modal material-glass ui-overlay-dialog" role="dialog" aria-modal="true" aria-labelledby="cloud-nube-fix-title">' +
-    '<h3 id="cloud-nube-fix-title" class="cloud-nube-fix-title">' +
-    esc(guide.title) +
-    '</h3>' +
-    '<p class="cloud-nube-fix-summary">' +
-    esc(guide.summary) +
-    '</p>' +
-    '<ol class="cloud-nube-fix-steps">' +
-    stepsHtml +
-    '</ol>' +
-    '<div class="cloud-nube-fix-actions">' +
-    '<button type="button" class="cloud-sync-btn" data-cloud-nube-fix-close>Cerrar</button>' +
-    '</div></div></div>'
-  );
-}
-
-/**
  * @param {string} fixId
  */
-export function showCloudNubeFixModal(fixId) {
+export async function showCloudNubeFixModal(fixId) {
   const guide = getCloudNubeFixGuide(fixId) || getCloudNubeFixGuide('generic_sync_error');
   if (!guide) return;
 
-  const host = document.createElement('div');
-  host.innerHTML = cloudNubeFixModalMarkup(guide);
-  const overlay = host.firstElementChild;
-  if (!overlay || !(overlay instanceof HTMLElement)) return;
+  const { drawCloudNubeFixModal } = await import('./cloud-sync-overlays-view.jsx');
+  const overlay = drawCloudNubeFixModal(guide);
+  if (!overlay) return;
 
   function close() {
     overlay.remove();

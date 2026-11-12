@@ -186,3 +186,12 @@ export function EquiposShell({ chips }) {
 
 export const drawEquiposShell = (host, chips) => mount(host, <EquiposShell chips={chips} />);
 export const drawEquiposList = (host, groups) => mount(host, <EquiposList groups={groups} />);
+
+/** The toolbar's sala filter options: «Todas las salas», then each sala. */
+export const SalaOptions = ({ salas }) => (
+  <>
+    <option value="">Todas las salas</option>
+    {salas.map((s) => <option value={String(s)}>{String(s)}</option>)}
+  </>
+);
+export const drawSalaOptions = (select, salas) => mount(select, <SalaOptions salas={salas} />);

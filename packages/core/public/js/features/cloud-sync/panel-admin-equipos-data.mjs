@@ -4,9 +4,8 @@ import { resolveUserPlacement } from '../clinical-teams/teams-roster-directory-r
 import { CLINICAL_SALAS } from '../clinical-teams/shared.mjs';
 import {
   equiposListModel,
-  equiposSalaOptionsHtml,
 } from './panel-admin-equipos-html.mjs';
-import { drawEquiposList } from './panel-admin-equipos-view.jsx';
+import { drawEquiposList, drawSalaOptions } from './panel-admin-equipos-view.jsx';
 import { drawAdminError, drawAdminHint } from './panel-admin-view.jsx';
 import {
   countVisibleEquiposRows,
@@ -284,7 +283,7 @@ function paintEquiposSalaSelect(root, teams) {
   const extras = fromTeams
     .filter((s) => !CLINICAL_SALAS.includes(s))
     .sort((a, b) => a.localeCompare(b, 'es'));
-  sel.innerHTML = equiposSalaOptionsHtml([...CLINICAL_SALAS, ...extras]);
+  drawSalaOptions(sel, [...CLINICAL_SALAS, ...extras]);
   if (prev) sel.value = prev;
 }
 

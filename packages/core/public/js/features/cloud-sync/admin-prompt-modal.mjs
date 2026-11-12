@@ -1,6 +1,4 @@
-import { esc } from '../../dom-escape.mjs';
 import { wireFocusTrap } from '../../modal-dismiss.mjs';
-import { STACKED_BACKDROP_CLASS } from './stacked-overlay.mjs';
 
 /**
  * Electron renderer often cannot use window.prompt (returns null immediately).
@@ -23,55 +21,18 @@ export function showAdminPromptModal(opts) {
   const inputType = opts?.inputType === 'password' ? 'password' : 'text';
 
   return new Promise(function (resolve) {
-    const host = document.createElement('div');
-    host.innerHTML = adminPromptModalMarkup({
-      title,
-      message,
-      placeholder,
-      confirmLabel,
-      inputType,
-    });
-    const overlay = host.firstElementChild;
-    if (!(overlay instanceof HTMLElement)) {
+    import('./cloud-sync-overlays-view.jsx').then(function ({ drawAdminPromptModal }) {
+      const overlay = drawAdminPromptModal({ title, message, placeholder, confirmLabel, inputType });
+      if (!overlay) {
+        resolve(null);
+        return;
+      }
+      document.body.appendChild(overlay);
+      wireAdminPromptModal(overlay, resolve);
+    }, function () {
       resolve(null);
-      return;
-    }
-    document.body.appendChild(overlay);
-    wireAdminPromptModal(overlay, resolve);
+    });
   });
-}
-
-/**
- * @param {{
- *   title: string,
- *   message: string,
- *   placeholder: string,
- *   confirmLabel: string,
- *   inputType: string,
- * }} opts
- */
-export function adminPromptModalMarkup(opts) {
-  return (
-    '<div class="' + STACKED_BACKDROP_CLASS + '" data-admin-prompt-modal>' +
-    '<div class="lab-conflict-modal cloud-sync-admin-prompt-modal" role="dialog" aria-modal="true">' +
-    '<h3 style="margin:0 0 10px;">' +
-    esc(opts.title) +
-    '</h3>' +
-    '<p style="font-size:13px;line-height:1.45;margin:0 0 14px;color:var(--text-muted);white-space:pre-wrap;">' +
-    esc(opts.message) +
-    '</p>' +
-    '<input type="' +
-    esc(opts.inputType) +
-    '" class="profile-input" data-admin-prompt-input autocomplete="off" spellcheck="false" ' +
-    'placeholder="' +
-    esc(opts.placeholder) +
-    '" style="width:100%;margin:0 0 16px;" />' +
-    '<div style="display:flex;justify-content:flex-end;gap:8px;">' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-prompt-cancel>Cancelar</button>' +
-    '<button type="button" class="cloud-sync-btn" data-admin-prompt-ok>' +
-    esc(opts.confirmLabel) +
-    '</button></div></div></div>'
-  );
 }
 
 /**

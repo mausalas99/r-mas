@@ -476,3 +476,12 @@ export const drawAdminSalas = (host, model) => mount(host, <AdminSalas model={mo
 export const drawAdminRoomDetail = (host, model) => mount(host, <AdminRoomDetail model={model} />);
 export const drawAdminRed = (host, model) => mount(host, <AdminRed model={model} />);
 export const drawAdminMutations = (host, model) => mount(host, <AdminMutations model={model} />);
+
+/** A Registro / Peligro room select's options; `rooms` is [{ value, label }] and the first option is the prompt. */
+export const RoomOptions = ({ rooms }) => (
+  <>
+    <option value="">— Elige una sala —</option>
+    {rooms.map((r) => <option value={r.value}>{r.label}</option>)}
+  </>
+);
+export const drawRoomOptions = (select, rooms) => mount(select, <RoomOptions rooms={rooms} />);
