@@ -216,9 +216,9 @@ Mode switch behavior: pressing the active mode toggles expand/collapse of the sw
 
 | Group | Label | Notes | Source |
 |---|---|---|---|
-| Pinned | "Fijados" + count (aria "Pacientes fijados") | Shown only if any pinned | js/features/patients-card-html.mjs:156-163; patients-list.mjs:348-356 |
-| Active | "Pacientes" + count (aria "Lista de pacientes") | Shown only if any active. Virtualized when long | patients-card-html.mjs:169-171; patients-list.mjs:357-371 |
-| Archived | Toggle button "Archivados (n)" | Collapsed state kept in localStorage key `rpc-archived-section-collapsed` | patients-card-html.mjs:176-183; patients-list.mjs:48,381-393 |
+| Pinned | "Fijados" + count (aria "Pacientes fijados") | Shown only if any pinned | js/features/patients-list-view.jsx (PinnedLabel) |
+| Active | "Pacientes" + count (aria "Lista de pacientes") | Shown only if any active. Virtualized when long | js/features/patients-list-view.jsx (+ patients-list-model.mjs) |
+| Archived | Toggle button "Archivados (n)" | Collapsed state kept in localStorage key `rpc-archived-section-collapsed` | js/features/patients-list-view.jsx (+ patients-list-model.mjs) |
 
 ### 2.3 Card
 
@@ -226,14 +226,14 @@ Card = toolbar + body. Body: name (or "Sin nombre · registro" if empty), meta l
 
 | Card part | Label / title | Condition | Source |
 |---|---|---|---|
-| Pin chip | "Fijar paciente" / "Quitar de fijados" | Hidden in Interconsulta mode | patients-card-html.mjs:66,85-99 |
-| Archive chip | "Archivar paciente" / "Restaurar del archivo" (icon ↩ when archived) | not in bulk mode | patients-card-html.mjs:67-112 |
-| Delete "×" | aria "Eliminar" | Only if `canDeletePatientChart` allows | patients-card-html.mjs:71-80 |
-| Bulk check | ✓ box | Bulk mode only | patients-card-html.mjs:31-41,58-65 |
+| Pin chip | "Fijar paciente" / "Quitar de fijados" | Hidden in Interconsulta mode | patients-list-view.jsx (PatientCard / CardToolbar) |
+| Archive chip | "Archivar paciente" / "Restaurar del archivo" (icon ↩ when archived) | not in bulk mode | patients-list-view.jsx (PatientCard / CardToolbar) |
+| Delete "×" | aria "Eliminar" | Only if `canDeletePatientChart` allows | patients-list-view.jsx (PatientCard / CardToolbar) |
+| Bulk check | ✓ box | Bulk mode only | patients-list-view.jsx (PatientCard / CardToolbar) |
 
 | Card state (CSS class) | Look | Source |
 |---|---|---|
-| `.active` | tinted bg, 2.5px left border | styles/sidebar.css:438-443; patients-card-html.mjs:139 |
+| `.active` | tinted bg, 2.5px left border | styles/sidebar.css:438-443; patients-list-view.jsx (PatientCard / CardToolbar) |
 | `.patient-card--pinned` | accent border | sidebar.css:432; card-html:140 |
 | `.patient-card--archived` | class set; style: not found in skimmed lines | card-html:141 |
 | `.patient-card--bulk-selected` | class set (style at sidebar.css:325) | card-html:142 |

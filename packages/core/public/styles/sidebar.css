@@ -376,6 +376,11 @@ html.dark .btn-add:hover {
   flex: 0 1 auto;
   -webkit-overflow-scrolling: touch;
 }
+/* The zone is a flex column: without this the inner box shrinks to the zone's height, the list
+   is only as tall as the cards drawn so far and the scrollbar creeps (and jumps) as it goes. */
+.patient-sort-zone--virtual-active .virtual-scroll-inner {
+  flex: none;
+}
 .patient-sort-zone--virtual-active .virtual-scroll-inner .patient-card {
   margin-bottom: 0;
 }
