@@ -2,7 +2,6 @@
 import {
   renderEntry,
   isLabSectionHeaderHtml,
-  escTxt,
 } from '../labs.js';
 import { parseSomeTablesFromSources } from '../labs-some-table.mjs';
 import { normalizeFechaLabHistory, parseFechaLabToMs } from '../tend-core.mjs';
@@ -154,7 +153,9 @@ function appendLabLineRemoveControl_(div, text) {
   btn.addEventListener('click', function () {
     var bar = document.createElement('span');
     bar.className = 'lab-line-remove-confirm';
-    bar.innerHTML = '<span>¿Quitar ' + escTxt(label) + ' de este día?</span>';
+    var question = document.createElement('span');
+    question.textContent = '¿Quitar ' + label + ' de este día?';
+    bar.appendChild(question);
     var ok = document.createElement('button');
     ok.type = 'button';
     ok.className = 'lab-line-remove-ok';
@@ -293,7 +294,7 @@ export function syncLabOutputHistoryAfterRender(opts, result, rt) {
 export function prepareLabOutputBox(fechaBanner, rt) {
   var box = document.getElementById('lab-output-box');
   rt.removeAtbRisPanelsFromBody();
-  box.innerHTML = '';
+  box.replaceChildren();
   if (fechaBanner) {
     var fechaTop = document.createElement('div');
     fechaTop.className = 'lab-output-fecha';

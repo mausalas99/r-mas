@@ -4,7 +4,6 @@
 import { listManualLabTypes, fieldsForManualLabType, getManualLabType } from '../labs-manual-catalog.mjs';
 import { synthesizeManualResLabs } from '../labs-manual-synthesize.mjs';
 import { persistClinicalState } from '../app-state.mjs';
-import { esc } from '../dom-escape.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { registerLabPanelRuntime, rt } from './lab-panel-runtime-state.mjs';
 import { pushExternalLabHistory, finalizeLabHistoryImport } from './lab-panel-workbench-store.mjs';
@@ -36,62 +35,33 @@ function getActiveId() {
   return typeof rt.getActiveId === 'function' ? rt.getActiveId() : null;
 }
 
+/** Preact view loads on first use: the modal is not on the boot path. */
+function loadView() {
+  return import('./lab-manual-entry-view.jsx');
+}
+
 function selectedSectionKey() {
   var sel = document.getElementById('lab-manual-type');
   return sel ? String(sel.value || '').trim() : '';
 }
 
-function fillTypeSelect() {
+async function fillTypeSelect() {
   var sel = document.getElementById('lab-manual-type');
   if (!sel) return;
   var types = listManualLabTypes();
   var prev = sel.value;
-  sel.innerHTML = types
-    .map(function (t) {
-      var label = String(t.label || t.sectionKey);
-      var key = String(t.sectionKey || '');
-      // Avoid "Biometría (BH) (BH)" when label already includes the key.
-      if (key && label.indexOf('(' + key + ')') === -1) {
-        label = label + ' (' + key + ')';
-      }
-      return '<option value="' + esc(t.sectionKey) + '">' + esc(label) + '</option>';
-    })
-    .join('');
+  var view = await loadView();
+  view.drawLabManualTypeOptions(sel, types);
   if (prev && getManualLabType(prev)) sel.value = prev;
   else if (types.length) sel.value = types[0].sectionKey;
 }
 
-function renderFieldGrid() {
+async function renderFieldGrid() {
   var host = document.getElementById('lab-manual-fields');
   if (!host) return;
   var key = selectedSectionKey();
   var fields = fieldsForManualLabType(key);
-  if (!fields.length) {
-    host.innerHTML = '<p class="lab-manual-empty">Sin campos para este tipo.</p>';
-    return;
-  }
-  host.innerHTML = fields
-    .map(function (fld) {
-      var inputType = fld.mode === 'qual' ? 'text' : 'text';
-      var inputMode = fld.mode === 'num' ? ' decimal' : '';
-      return (
-        '<label class="lab-manual-field">' +
-        '<span class="lab-manual-field-label">' +
-        esc(fld.label) +
-        '</span>' +
-        '<input type="' +
-        inputType +
-        '" class="profile-input lab-manual-field-input" data-field-key="' +
-        esc(fld.key) +
-        '" data-field-mode="' +
-        esc(fld.mode) +
-        '" autocomplete="off" spellcheck="false"' +
-        (inputMode ? ' inputmode="decimal"' : '') +
-        ' />' +
-        '</label>'
-      );
-    })
-    .join('');
+  (await loadView()).drawLabManualFieldGrid(host, fields);
 }
 
 function readValuesFromGrid() {
@@ -123,7 +93,7 @@ export function registerLabManualEntryRuntime(ctx) {
   registerLabPanelRuntime(ctx);
 }
 
-export function openLabManualEntryModal() {
+export async function openLabManualEntryModal() {
   var modal = document.getElementById('lab-manual-entry-modal');
   if (!modal) return;
   var patientId = getActiveId();
@@ -137,8 +107,8 @@ export function openLabManualEntryModal() {
   // above this one, so its focus trap would pull every keystroke back into
   // #lab-input. Hand off like Procesar does.
   closeLabPasteModal();
-  fillTypeSelect();
-  renderFieldGrid();
+  await fillTypeSelect();
+  await renderFieldGrid();
   syncModalChrome();
 
   var fechaEl = document.getElementById('lab-manual-fecha');
