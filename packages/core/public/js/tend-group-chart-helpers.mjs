@@ -124,21 +124,6 @@ function applyChartYScale(chart, family) {
   }
 }
 
-function tendPanelEventsSvg() {
-  return (
-    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.59a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.83Z"/>' +
-    '<circle cx="7.5" cy="7.5" r="1.5"/></svg>'
-  );
-}
-
-function tendPanelEyeSvg() {
-  return (
-    '<svg class="tend-eye-svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
-  );
-}
-
 function orderPanelFamilies(activeFamilies, savedOrder, sectionKey) {
   var baseOrder = familyOrderForSection(sectionKey);
   var rank = Object.create(null);
@@ -288,8 +273,6 @@ export {
   yScaleBoundsForDatasets,
   visibleDatasetsForChart,
   applyChartYScale,
-  tendPanelEyeSvg,
-  tendPanelEventsSvg,
   orderPanelFamilies,
   formatTrendDisplayValue,
   colKeyForSet,

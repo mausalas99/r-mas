@@ -1,5 +1,6 @@
 import { getSetTrendValueForSeries } from './tend-core.mjs';
 import { evaluateGasoExtended } from './gaso-extended.mjs';
+import { drawGasoEmpty, clearGasoSlot } from './features/tend-group-gaso-view.jsx';
 
 export function serieNumFromLabSet(set, sec, fk) {
   var v = getSetTrendValueForSeries(set, sec, fk);
@@ -246,23 +247,17 @@ function appendGasoSummary(slot, summaryLines) {
   slot.appendChild(hs);
 }
 
-function renderGasoEmptySlot(slot, escHtml, message, isError) {
-  var color = isError ? 'var(--error)' : 'var(--text-muted)';
-  slot.innerHTML =
-    '<p class="tend-empty" style="font-size:13px;color:' +
-    color +
-    ';">' +
-    escHtml(message) +
-    '</p>';
+function renderGasoEmptySlot(slot, message, isError) {
+  drawGasoEmpty(slot, message, isError);
 }
 
 /** @param {HTMLElement} slot */
-export function refillGasoExtendedSlot(slot, latest, fio2, escHtml) {
+export function refillGasoExtendedSlot(slot, latest, fio2) {
   if (!slot) return;
-  slot.innerHTML = '';
+  clearGasoSlot(slot);
 
   if (!latest || !latest.parsedBySection) {
-    renderGasoEmptySlot(slot, escHtml, 'Sin valores recientes disponibles para gasometría.', false);
+    renderGasoEmptySlot(slot, 'Sin valores recientes disponibles para gasometría.', false);
     return;
   }
 
@@ -287,7 +282,7 @@ export function refillGasoExtendedSlot(slot, latest, fio2, escHtml) {
     slot.appendChild(panel);
     appendGasoSummary(slot, ev.summaryLines);
   } catch (e) {
-    renderGasoEmptySlot(slot, escHtml, 'No se pudo calcular la gasometría extendida.', true);
+    renderGasoEmptySlot(slot, 'No se pudo calcular la gasometría extendida.', true);
     console.error('evaluateGasoExtended', e);
   }
 }
