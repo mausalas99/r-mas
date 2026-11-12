@@ -6,6 +6,7 @@
  */
 import { render } from 'preact';
 import { bedLine } from './sala-view-variants.mjs';
+import { TeamOptions } from './patients-scope-filters-bar-view.jsx';
 
 export function IcBar() {
   return (
@@ -125,4 +126,76 @@ export function Archived({ patients, collapsed, canDelete }) {
 export function mountIcArchived(container, patients, collapsed, canDelete) {
   render(null, container);
   render(<Archived patients={patients} collapsed={collapsed} canDelete={canDelete} />, container);
+}
+
+/** Render `vnode` into a detached node and hand back its first element, for a caller that places it among DOM it does not own. */
+function detachedElement(vnode) {
+  const holder = document.createElement('div');
+  render(vnode, holder);
+  return holder.firstElementChild;
+}
+
+/** The consult fields beside the patient name. `model` is consultBandModel(...). The caller wires the delegation. */
+export function ConsultBand({ model }) {
+  return (
+    <div class="ic-consult-band">
+      <div class={'ic-cf ic-cf--svc' + (model.svcName ? ' is-picked' : '')} data-label="Servicio"
+        style={model.svcHue == null ? undefined : '--h:' + model.svcHue}>
+        <button type="button" class="ic-cf-svc" aria-label={(model.svcName || 'Elegir') + ', servicio solicitante'} data-ic-req-trigger="">
+          {model.svcName || 'Elegir'}
+        </button>
+      </div>
+      <div class="ic-cf ic-cf--reason" data-label="Motivo">
+        <input type="text" class="ic-consult-input" data-consult-field="reason" aria-label="Motivo de consulta" value={model.reason} placeholder="Agregar" />
+      </div>
+      <div class="ic-cf ic-cf--triage" data-label="Seguimiento">
+        <select class="ic-consult-input" data-consult-field="triage" aria-label="Seguimiento">
+          {model.triageOptions.map((o) => <option value={o.value} selected={o.selected}>{o.label}</option>)}
+        </select>
+      </div>
+      {model.times.map((t) => (
+        <div class="ic-cf" data-label={t.label}>
+          <input type="time" class="ic-consult-input" data-consult-time={t.key} aria-label={t.label} value={t.value} />
+        </div>
+      ))}
+      {model.team && (
+        <div class="ic-cf" data-label="Equipo">
+          <select class="ic-consult-input" aria-label="Equipo" data-consult-team-select="">
+            <option value="">Sin asignar</option>
+            <TeamOptions model={model.team} />
+          </select>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export const makeConsultBandEl = (model) => detachedElement(<ConsultBand model={model} />);
+
+export function BackToBoardButton() {
+  return (
+    <button type="button" class="wb-btn wb-btn-secondary wb-ic-back-btn" data-ic-back-to-board="" title="Volver al tablero de equipos">← Tablero</button>
+  );
+}
+
+export const makeBackToBoardButtonEl = () => detachedElement(<BackToBoardButton />);
+
+/** «Asignar a» menu entries: one per team (the first nine with their number key), then «Sin equipo». */
+export function AssignMenuItems({ options }) {
+  return (
+    <>
+      {options.map((o, i) => (
+        <button type="button" role="menuitem" data-ic-assign-team={o.id}>
+          {o.label}{i < 9 && <>{' '}<kbd>{i + 1}</kbd></>}
+        </button>
+      ))}
+      <button type="button" role="menuitem" data-ic-assign-team="">Sin equipo <kbd>0</kbd></button>
+    </>
+  );
+}
+
+export function drawAssignMenuItems(menu, options) {
+  render(null, menu);
+  menu.textContent = '';
+  render(<AssignMenuItems options={options} />, menu);
 }

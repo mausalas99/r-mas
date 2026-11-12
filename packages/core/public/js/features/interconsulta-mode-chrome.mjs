@@ -25,7 +25,7 @@ import { isModeSala } from '../mode-features.mjs';
 import { isGuardiaMode } from './chrome.mjs';
 import { settingsRef } from './profile-runtime.mjs';
 import { getPatients, persistClinicalState } from '../app-state.mjs';
-import { getConsultInfo, setConsultInfo, renderConsultBandHtml, isoFromTimeInput, icTimerStats, formatElapsed } from './patient-dashboard/consult-band.mjs';
+import { getConsultInfo, setConsultInfo, consultBandModel, isoFromTimeInput, icTimerStats, formatElapsed } from './patient-dashboard/consult-band.mjs';
 import { IC_OWN_SERVICE } from './patient-dashboard/interconsult-catalog.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import { getClinicalScopeContextForEvaluate } from '../clinical-access-runtime.mjs';
@@ -33,7 +33,7 @@ import { resolvePatientCensusTeamId } from './patients-clinical-filter.mjs';
 import { patientsVisibleInSidebar } from './patients-scope.mjs';
 import { interconsultaTeamOptions, stepFocusId, guardiaTeamLabel, assignKeyToTeamId } from './interconsulta-team-board.mjs';
 import { mountInterconsultaTeamBoard } from './interconsulta-team-board-view.jsx';
-import { mountIcBar, mountIcBoardFrame, mountIcArchived } from './interconsulta-mode-chrome-view.jsx';
+import { mountIcBar, mountIcBoardFrame, mountIcArchived, makeConsultBandEl, makeBackToBoardButtonEl, drawAssignMenuItems } from './interconsulta-mode-chrome-view.jsx';
 import { openServicePickerModal } from './patient-dashboard/ic-modal.mjs';
 import { openAddModal, openCompleteAdmissionModal } from './patients-modal.mjs';
 import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
@@ -245,12 +245,12 @@ export function renderConsultBandForActivePatient() {
   }
   var raw = patient.consultInfo || {};
   var info = Object.assign(getConsultInfo(patient), { receivedAt: raw.receivedAt, answeredAt: raw.answeredAt });
-  var html = renderConsultBandHtml(info, consultBandTeamCtx(patient));
+  var band = makeConsultBandEl(consultBandModel(info, consultBandTeamCtx(patient)));
   var existing = host.querySelector('.ic-consult-band');
   if (existing) {
-    existing.outerHTML = html;
+    existing.replaceWith(band);
   } else {
-    host.insertAdjacentHTML('beforeend', html);
+    host.appendChild(band);
   }
   ensureConsultBandDelegation(host.querySelector('.ic-consult-band'));
 }
@@ -274,11 +274,7 @@ function renderBackToBoardButton() {
     return;
   }
   if (dash.querySelector('[data-ic-back-to-board]')) return;
-  dash.insertAdjacentHTML(
-    'afterbegin',
-    '<button type="button" class="wb-btn wb-btn-secondary wb-ic-back-btn" ' +
-      'data-ic-back-to-board title="Volver al tablero de equipos">← Tablero</button>'
-  );
+  dash.prepend(makeBackToBoardButtonEl());
   dash.querySelector('[data-ic-back-to-board]').addEventListener('click', function () {
     showInterconsultaBoardView();
   });
@@ -535,10 +531,7 @@ function icOpenAssignMenu(pid, btn) {
   menu.setAttribute('role', 'menu');
   menu.setAttribute('aria-label', 'Asignar a');
   menu.dataset.patientId = String(pid);
-  menu.innerHTML = _icTeamOptions.map(function (o, i) {
-    return '<button type="button" role="menuitem" data-ic-assign-team="' + escHtml(o.id) + '">' +
-      escHtml(o.label) + (i < 9 ? ' <kbd>' + (i + 1) + '</kbd>' : '') + '</button>';
-  }).join('') + '<button type="button" role="menuitem" data-ic-assign-team="">Sin equipo <kbd>0</kbd></button>';
+  drawAssignMenuItems(menu, _icTeamOptions);
   menu.addEventListener('keydown', function (ev) {
     var items = Array.from(menu.querySelectorAll('[role="menuitem"]'));
     var i = items.indexOf(document.activeElement);

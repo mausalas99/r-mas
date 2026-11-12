@@ -60,7 +60,9 @@ function showCultPop_(wrap) {
   var bucket = (/atb-chip--([a-z])/.exec(chip.className) || [])[1] || '';
   var pop = document.createElement('div');
   pop.className = 'cult-atb-pop cult-atb-pop--' + bucket;
-  pop.innerHTML = names.innerHTML;
+  Array.prototype.forEach.call(names.childNodes, function (n) {
+    pop.appendChild(n.cloneNode(true));
+  });
   if (pop.querySelectorAll('.cult-atb-item').length < 2) pop.style.gridTemplateColumns = 'minmax(220px, 1fr)';
   pop.addEventListener('pointerenter', function () {
     clearTimeout(_cultPopTimer);

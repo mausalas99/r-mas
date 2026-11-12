@@ -36,15 +36,20 @@ export function CensusFiltersBody({ showSala, salas }) {
 
 const Option = ({ o }) => <option value={o.value} selected={o.selected}>{o.label}</option>;
 
+/** The team options of a teamSelectModel(...): flat, or one optgroup per sala. */
+export function TeamOptions({ model }) {
+  return model.options
+    ? model.options.map((o) => <Option o={o} />)
+    : model.groups.map((g) => <optgroup label={g.label}>{g.options.map((o) => <Option o={o} />)}</optgroup>);
+}
+
 /** `model` is teamSelectModel(...); `unassignedValue` adds the «Sin equipo asignado» entry. */
 export function TeamSelectOptions({ model, unassignedValue }) {
   return (
     <>
       <option value="">Todos los equipos</option>
       {unassignedValue && <option value={unassignedValue}>Sin equipo asignado</option>}
-      {model.options
-        ? model.options.map((o) => <Option o={o} />)
-        : model.groups.map((g) => <optgroup label={g.label}>{g.options.map((o) => <Option o={o} />)}</optgroup>)}
+      <TeamOptions model={model} />
     </>
   );
 }
