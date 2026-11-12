@@ -80,7 +80,7 @@ async function renderCompletedOnboarding(host) {
     const { renderTeamOnboardingInto, wireTeamOnboardingInteractions } = await import(
       './clinical-onboarding-team.mjs'
     );
-    renderTeamOnboardingInto(host);
+    await renderTeamOnboardingInto(host);
     wireTeamOnboardingInteractions(host);
     return;
   }
@@ -210,7 +210,7 @@ function renderLanProfileForm(host, settings) {
 
 async function renderNoSessionOnboarding(host) {
   if (needsClinicalSyncModeChoice()) {
-    renderSyncModeChoicePanel(host);
+    await renderSyncModeChoicePanel(host);
     await wireOnboardingInteractions();
     return;
   }
@@ -238,7 +238,7 @@ export async function renderOnboardingPanelInto(host) {
   }
 
   if (needsClinicalSyncModeChoice()) {
-    renderSyncModeChoicePanel(host);
+    await renderSyncModeChoicePanel(host);
     await wireOnboardingInteractions();
     return;
   }

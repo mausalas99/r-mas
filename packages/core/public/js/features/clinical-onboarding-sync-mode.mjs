@@ -7,10 +7,6 @@ import {
   setClinicalSyncModeLocalOnly,
   writeRpcSettings,
 } from '../clinical-settings.mjs';
-import {
-  buildOnboardingStageHtml,
-  buildSyncModeChoiceBodyHtml,
-} from './clinical-onboarding-shell.mjs';
 
 /** @param {string} userId */
 export function localOnlyUsernameForUserId(userId) {
@@ -22,14 +18,9 @@ export function localOnlyUsernameForUserId(userId) {
   return `local_${tail}`.slice(0, 32);
 }
 
-export function renderSyncModeChoicePanel(host) {
-  host.innerHTML = buildOnboardingStageHtml({
-    title: '¿Cómo usarás R+?',
-    leadHtml:
-      '<p>Elige cómo usarás R+ en este equipo. Con Nube creas cuenta o entras si ya tienes una; en solo equipo trabajas sin sincronizar.</p>',
-    bodyHtml: buildSyncModeChoiceBodyHtml(),
-    stepperIndex: 1,
-  });
+export async function renderSyncModeChoicePanel(host) {
+  const { drawSyncModeChoice } = await import('./clinical-onboarding-view.jsx');
+  drawSyncModeChoice(host);
 }
 
 async function refreshOnboardingHost() {

@@ -1,7 +1,6 @@
 /**
  * Inline Mi rotación host inside ⇄ Conexión → Opciones → Equipo.
  */
-import { buildTextSkeletonPanel } from '../../ui-skeleton.mjs';
 import {
   ensureClinicalPanelSession,
   getClinicalTeamsPanelHost,
@@ -18,11 +17,9 @@ function resolveEmbedBody(host) {
 }
 
 /** @param {HTMLElement | null | undefined} host */
-function setEmbedLoading(host) {
+async function setEmbedLoading(host) {
   const body = resolveEmbedBody(host);
-  if (body) {
-    body.innerHTML = buildTextSkeletonPanel('clinical-teams-skeleton skel-panel', 3);
-  }
+  if (body) (await import('../clinical-panel-host-view.jsx')).drawPanelSkeleton(body);
 }
 
 /**
@@ -79,7 +76,7 @@ export async function mountEquipoTeamsPanel(host, opts = {}) {
   if (!panelHost) return;
 
   setClinicalTeamsEmbedHost(panelHost);
-  setEmbedLoading(host);
+  await setEmbedLoading(host);
 
   const section = host.closest('.cloud-sync-conexion');
   if (section) wireClinicalTeamsFormDelegation(section);

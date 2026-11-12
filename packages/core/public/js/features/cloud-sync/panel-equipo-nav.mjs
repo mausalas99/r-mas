@@ -4,7 +4,6 @@
 import { openConnectionDropdown } from './panel-chrome.mjs';
 import { applyConexionView } from './panel-conexion-views.mjs';
 import { mountEquipoTeamsPanel } from './panel-equipo-embed.mjs';
-import { equipoEmbedHostHtml } from './panel-conexion-html.mjs';
 
 /** @param {number} [maxMs] */
 async function waitForConexionSection(maxMs = 6000) {
@@ -29,7 +28,7 @@ async function navigateEquipoView(section, opts) {
   if (!host) {
     const body = section.querySelector('[data-cloud-view="equipo"] .cloud-sync-view-body');
     if (body) {
-      body.insertAdjacentHTML('afterbegin', equipoEmbedHostHtml());
+      (await import('./connection-panel-view.jsx')).prependEquipoHost(body);
       host = body.querySelector('[data-cloud-equipo-host]');
     }
   }

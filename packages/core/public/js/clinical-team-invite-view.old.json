@@ -1,0 +1,4 @@
+{
+  "code": "0123456789abcdef0123456789abcdef",
+  "gate": "\n    <div class=\"clinical-team-invite-browser-gate-card\">\n      <h2>Únete desde la app R+ en Mac</h2>\n      <p>Los enlaces en Safari no agregan al equipo clínico (solo la app de escritorio con tu base de datos).</p>\n      <p class=\"clinical-team-invite-browser-gate-code\">Código: <strong>0123456789abcdef0123456789abcdef</strong></p>\n      <ol>\n        <li>Abre la aplicación <strong>R+</strong> en tu Mac (no el navegador).</li>\n        <li>Ve a <strong>Mi rotación</strong>.</li>\n        <li>En <strong>Unirte con código de equipo</strong>, pega: <code>0123456789abcdef0123456789abcdef</code></li>\n      </ol>\n      <button type=\"button\" class=\"wb-btn wb-btn-primary wb-btn-lg\" id=\"clinical-team-invite-browser-gate-dismiss\">Entendido</button>\n    </div>"
+}

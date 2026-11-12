@@ -1,6 +1,6 @@
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { canAccessCloudAdmin } from './panel-admin.mjs';
-import { nextStepHtml, userHasJoinedTeam } from './panel-conexion-html.mjs';
+import { userHasJoinedTeam } from './panel-conexion-html.mjs';
 import { applyConexionView } from './panel-conexion-views.mjs';
 import { mountEquipoTeamsPanel } from './panel-equipo-embed.mjs';
 import { wireClinicalTeamsFormDelegation } from '../clinical-teams/teams-roster-form-delegation.mjs';
@@ -182,12 +182,15 @@ export function wireConexionClicks(section, deps, ui) {
 }
 
 /** @param {HTMLElement} section @param {() => string} getToken */
-function refreshDisconnectedNextStep(section, getToken) {
+async function refreshDisconnectedNextStep(section, getToken) {
   const next = section.querySelector('.cloud-sync-next-step');
   if (userHasJoinedTeam() && next) next.remove();
   else if (!userHasJoinedTeam() && !next) {
     const anchor = section.querySelector('.cloud-sync-account');
-    if (anchor) anchor.insertAdjacentHTML('afterend', nextStepHtml(getToken));
+    if (anchor && getToken()) {
+      const view = await import('./connection-panel-view.jsx');
+      if (anchor.isConnected && !section.querySelector('.cloud-sync-next-step') && !userHasJoinedTeam()) view.insertNextStepAfter(anchor);
+    }
   }
 }
 
@@ -202,7 +205,7 @@ export function wireTeamsChangedListener(section, deps, ui) {
       return;
     }
     if (deps.getCloudSyncToken()) {
-      refreshDisconnectedNextStep(section, deps.getCloudSyncToken);
+      void refreshDisconnectedNextStep(section, deps.getCloudSyncToken);
       ui.renderDisconnected();
     }
   });

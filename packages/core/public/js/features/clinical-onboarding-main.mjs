@@ -6,7 +6,6 @@ import { ensureClinicalDbUnlocked, isSqlcipherNativeReady } from './db-unlock.mj
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../clinical-settings.mjs';
 import {
-  needsClinicalOnboarding,
   needsClinicalSyncModeChoice,
   needsOnboardingShell,
   needsProfileOnboarding,
@@ -181,8 +180,8 @@ function ensureOnboardingMainHost() {
   return host;
 }
 
-function mountSyncModeChoiceOnboarding(host) {
-  renderSyncModeChoicePanel(host);
+async function mountSyncModeChoiceOnboarding(host) {
+  await renderSyncModeChoicePanel(host);
   wireSyncModeOnboardingInteractions();
   void import('./settings-help/learn-hub.mjs').then((m) => {
     if (typeof m.syncLearnAprenderChrome === 'function') m.syncLearnAprenderChrome();
@@ -207,7 +206,7 @@ export function showEarlySyncModeOnboardingIfNeeded() {
     wireSyncModeOnboardingInteractions();
     return true;
   }
-  mountSyncModeChoiceOnboarding(host);
+  void mountSyncModeChoiceOnboarding(host);
   return true;
 }
 
@@ -231,7 +230,7 @@ export async function refreshTeamOnboardingShellOnly() {
   const { renderTeamOnboardingInto, wireTeamOnboardingInteractions } = await import(
     './clinical-onboarding-team.mjs'
   );
-  renderTeamOnboardingInto(host, { skipCloudSync: true });
+  await renderTeamOnboardingInto(host, { skipCloudSync: true });
   wireTeamOnboardingInteractions(host);
 }
 
@@ -335,7 +334,7 @@ async function showMainClinicalOnboardingBody() {
 
   if (needsClinicalSyncModeChoice()) {
     const host = ensureOnboardingMainHost();
-    if (host) mountSyncModeChoiceOnboarding(host);
+    if (host) await mountSyncModeChoiceOnboarding(host);
     return;
   }
 

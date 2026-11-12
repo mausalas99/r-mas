@@ -157,32 +157,20 @@ export function mountClinicalTeamInviteBrowserGate(code) {
   wrap.className = 'clinical-team-invite-browser-gate';
   wrap.setAttribute('role', 'alertdialog');
   wrap.setAttribute('aria-modal', 'true');
-  wrap.innerHTML = `
-    <div class="clinical-team-invite-browser-gate-card">
-      <h2>Únete desde la app R+ en Mac</h2>
-      <p>Los enlaces en Safari no agregan al equipo clínico (solo la app de escritorio con tu base de datos).</p>
-      <p class="clinical-team-invite-browser-gate-code">Código: <strong>${normalized}</strong></p>
-      <ol>
-        <li>Abre la aplicación <strong>R+</strong> en tu Mac (no el navegador).</li>
-        <li>Ve a <strong>Mi rotación</strong>.</li>
-        <li>En <strong>Unirte con código de equipo</strong>, pega: <code>${normalized}</code></li>
-      </ol>
-      <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="clinical-team-invite-browser-gate-dismiss">Entendido</button>
-    </div>`;
   document.body.appendChild(wrap);
-  const btn = document.getElementById('clinical-team-invite-browser-gate-dismiss');
-  if (btn) {
-    btn.addEventListener('click', () => {
-      wrap.remove();
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('joinTeam');
-        url.searchParams.delete('joinCode');
-        url.searchParams.delete('clinicalTeam');
-        window.history.replaceState({}, '', url.pathname + url.search + url.hash);
-      } catch (_e) { void _e; }
-    });
-  }
+  const onDismiss = () => {
+    wrap.remove();
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('joinTeam');
+      url.searchParams.delete('joinCode');
+      url.searchParams.delete('clinicalTeam');
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+    } catch (_e) { void _e; }
+  };
+  void import('./clinical-team-invite-view.jsx').then(({ drawBrowserGate }) => {
+    drawBrowserGate(wrap, { code: normalized, onDismiss });
+  });
 }
 
 /**

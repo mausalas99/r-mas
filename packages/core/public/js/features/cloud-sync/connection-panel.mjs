@@ -3,33 +3,14 @@
  */
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import { getUserSala } from './panel-clinical-context.mjs';
-import { escapeHtml } from '../../dom-escape.mjs';
 
 /** @type {ReturnType<import('./panel-nube-section.mjs').mountNubeSection> | null} */
 let _cloudNubeMount = null;
 
 /** @param {HTMLElement} root @param {'local-only'|'unsupported-sala'} kind */
-export function renderConnectionPanelFallback(root, kind) {
-  const copy =
-    kind === 'local-only'
-      ? {
-          title: 'Solo este equipo',
-          body:
-            'Este modo no usa R+ Cloud ni ⇄ Conexión. Para sincronizar censo y equipos, activa guardia en <strong>Ajustes → Respaldos, sync y recuperación</strong>.',
-        }
-      : {
-          title: 'Conexión no disponible',
-          body:
-            'Tu rotación actual no usa Nube. Completa el registro en la pantalla principal o elige una rotación con sincronización.',
-        };
-  root.innerHTML =
-    '<section class="cloud-sync-conexion cloud-sync-conexion--fallback" data-cloud-nube-fallback="1">' +
-    '<h4 class="cloud-sync-conexion-title">' +
-    escapeHtml(copy.title) +
-    '</h4>' +
-    '<p class="cloud-sync-hint">' +
-    copy.body +
-    '</p></section>';
+export async function renderConnectionPanelFallback(root, kind) {
+  const { drawConnectionFallback } = await import('./connection-panel-view.jsx');
+  drawConnectionFallback(root, kind);
 }
 
 function nubeSectionInDom() {
@@ -45,13 +26,13 @@ function nubeSectionInDom() {
  */
 export async function mountCloudConnectionPanel(root, deps) {
   if (isClinicalLocalOnlyMode(readRpcSettings())) {
-    renderConnectionPanelFallback(root, 'local-only');
+    await renderConnectionPanelFallback(root, 'local-only');
     return;
   }
 
   const { shouldShowNubePanel } = await import('./nube-sync-policy.mjs');
   if (!shouldShowNubePanel(getUserSala())) {
-    renderConnectionPanelFallback(root, 'unsupported-sala');
+    await renderConnectionPanelFallback(root, 'unsupported-sala');
     return;
   }
 
@@ -111,7 +92,7 @@ export async function mountCloudConnectionPanel(root, deps) {
     },
   });
   if (!_cloudNubeMount) {
-    renderConnectionPanelFallback(root, 'unsupported-sala');
+    await renderConnectionPanelFallback(root, 'unsupported-sala');
   }
 }
 

@@ -1,0 +1,7 @@
+{
+ "_source": "Old string builders (nextStepHtml, equipoEmbedHostHtml, connection-panel fallback template), captured before the Preact port",
+ "nextStep": "<div class=\"cloud-sync-next-step\"><p class=\"cloud-sync-next-step-lead\">Siguiente paso</p><p class=\"cloud-sync-hint\">Configura tu equipo en ⇄ Conexión → Opciones → Equipo.</p><button type=\"button\" class=\"cloud-sync-btn cloud-sync-btn--primary\" data-cloud-action=\"open-rotation\">Ir a Equipo</button></div>",
+ "equipoHost": "<div class=\"cloud-sync-equipo-embed\" data-cloud-equipo-host><div class=\"clinical-teams-panel-body clinical-teams-panel-body--embed\"></div></div>",
+ "fallbackLocal": "<section class=\"cloud-sync-conexion cloud-sync-conexion--fallback\" data-cloud-nube-fallback=\"1\"><h4 class=\"cloud-sync-conexion-title\">Solo este equipo</h4><p class=\"cloud-sync-hint\">Este modo no usa R+ Cloud ni ⇄ Conexión. Para sincronizar censo y equipos, activa guardia en <strong>Ajustes → Respaldos, sync y recuperación</strong>.</p></section>",
+ "fallbackUnsupported": "<section class=\"cloud-sync-conexion cloud-sync-conexion--fallback\" data-cloud-nube-fallback=\"1\"><h4 class=\"cloud-sync-conexion-title\">Conexión no disponible</h4><p class=\"cloud-sync-hint\">Tu rotación actual no usa Nube. Completa el registro en la pantalla principal o elige una rotación con sincronización.</p></section>"
+}

@@ -101,7 +101,7 @@ async function readPopoverState() {
     lastPushAt: diag.getLastCloudPushAt(),
     lastPullAt: diag.getLastCloudPullAt(),
     formatMonth: html.formatTurnMonth,
-    renderHtml: html.nubePopoverHtml,
+    formatWhen: html.formatCloudDiagWhen,
     runtime: runtimeMod.getSharedNubeRuntime(),
   };
 }
@@ -110,12 +110,9 @@ export async function refreshNubePopover() {
   const pop = document.getElementById(POPOVER_ID);
   if (!pop) return;
   const state = await readPopoverState();
-  const html = state.renderHtml({ ...state, stateWords: cloudHeaderStateWords, modifier: cloudHeaderSyncModifier });
-  // Same markup → leave it (keeps keyboard focus on the button).
-  if (pop._nubeHtml !== html) {
-    pop.innerHTML = html;
-    pop._nubeHtml = html;
-  }
+  const { drawNubePopover } = await import('./cloud-sync-overlays-view.jsx');
+  // Preact diffs against what it drew, so unchanged markup stays put (keeps keyboard focus on the button).
+  drawNubePopover(pop, { ...state, stateWords: cloudHeaderStateWords, modifier: cloudHeaderSyncModifier });
 }
 
 /** Below the icon, right edges aligned, kept inside the window. @param {HTMLElement} pop @param {HTMLElement} btn */

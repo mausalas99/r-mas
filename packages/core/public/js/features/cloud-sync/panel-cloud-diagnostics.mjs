@@ -3,7 +3,6 @@
  */
 import { copyToClipboardSafe } from '../soap-estado.mjs';
 import { buildCloudDiagnosticsHumanView } from './cloud-sync-diagnostics-human.mjs';
-import { renderCloudNubeDashboardHtml } from './panel-cloud-diagnostics-html.mjs';
 import {
   formatCloudDiagnosticsReport,
   getCloudSyncDiagnostics,
@@ -68,7 +67,7 @@ function buildCloudDiagnosticsDeps(deps) {
 function updateDashboardPanel(host, view) {
   const panel = host.querySelector('[data-cloud-diag-dashboard]');
   if (!panel) return;
-  panel.innerHTML = renderCloudNubeDashboardHtml(view);
+  void import('./panel-cloud-diagnostics-view.jsx').then((m) => m.drawNubeDashboard(panel, view));
 }
 
 /** @param {HTMLElement} host */

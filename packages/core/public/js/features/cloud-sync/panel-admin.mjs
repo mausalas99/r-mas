@@ -1,9 +1,9 @@
 import { hasProgramAdminPrivileges, effectiveClinicalRank } from '../../clinical-privileges.mjs';
 import { getSessionAdminKey } from './panel-admin-helpers.mjs';
+import { formatCloudRoomLabel } from './room-label.mjs';
 import {
   applyAdminSalasFilters,
   adminShellModel,
-  mutationsRoomOptionsHtml,
   setSelectAllVisibleNetwork,
   updateNetworkBulkBarVisibility,
 } from './panel-admin-html.mjs';
@@ -12,7 +12,7 @@ import { loadAdminResumen, loadAdminSalas, loadAdminNetworkCensus, loadAdminMuta
 import { createAdminClickHandler } from './panel-admin-actions.mjs';
 import { EQUIPOS_CHIPS } from './panel-admin-equipos-html.mjs';
 import { drawEquiposShell } from './panel-admin-equipos-view.jsx';
-import { drawAdminMutacionesShell, drawAdminPeligro, drawAdminShell, drawAdminSolicitudesShell } from './panel-admin-view.jsx';
+import { drawRoomOptions, drawAdminMutacionesShell, drawAdminPeligro, drawAdminShell, drawAdminSolicitudesShell } from './panel-admin-view.jsx';
 import { wireSolicitudesPanel } from './panel-admin-solicitudes.mjs';
 import { wireCloudEquiposPanel } from './panel-admin-equipos-actions.mjs';
 
@@ -103,11 +103,11 @@ export function mountCloudAdminPanel(host, deps) {
       const sel = root.querySelector('[data-admin-peligro-room]');
       return sel instanceof HTMLSelectElement ? sel.value : '';
     })();
-    const opts = mutationsRoomOptionsHtml(roomsCache);
+    const opts = roomsCache.map((r) => ({ value: String(r.id), label: formatCloudRoomLabel(r) }));
     root.querySelectorAll('[data-admin-mutations-room], [data-admin-peligro-room]').forEach(function (el) {
       if (!(el instanceof HTMLSelectElement)) return;
       const keep = el.hasAttribute('data-admin-mutations-room') ? prevMut : prevPel;
-      el.innerHTML = opts;
+      drawRoomOptions(el, opts);
       if (keep) el.value = keep;
     });
     // Registro starts on this device's sala (or the first one), no «Cargar» click.

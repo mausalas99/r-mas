@@ -3,30 +3,14 @@
  */
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { normalizeUsername } from '../clinical-username.mjs';
-import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
-import { escapeHtml } from '../dom-escape.mjs';
 import { getCloudSyncToken } from './cloud-sync/settings.mjs';
 import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
 
-function buildTeamOnboardLeadHtml() {
+function teamOnboardWho() {
   const rank = String(clinicalSessionContext.user?.rank || 'R1').trim();
   const sala = String(clinicalSessionContext.user?.sala || '').trim();
   const handle = normalizeUsername(clinicalSessionContext.user?.username || '');
-  const who = [handle ? '@' + handle : '', rank, sala].filter(Boolean).join(' · ');
-  const intro = who
-    ? `<p>Tu perfil y Nube están listos (<strong>${escapeHtml(who)}</strong>). Elige tu equipo de guardia.</p>`
-    : '<p>Tu perfil y Nube están listos. Elige tu equipo de guardia.</p>';
-  const nubeLine = isCloudSala(sala)
-    ? '<li>En <strong>Mi rotación → Explorar</strong> verás equipos de tu sala sincronizados por Nube; pulsa <strong>Unirme</strong>.</li>' +
-      '<li>Si no hay ninguno, <strong>Crear nuevo equipo</strong> (queda publicado a la sala).</li>' +
-      '<li>O pega el <strong>código de invitación</strong> de tu R2.</li>'
-    : '<li>En <strong>Mi rotación</strong> explora equipos de tu sala o pide código a tu R2.</li>';
-  return (
-    intro +
-    '<ul class="clinical-onboard-team-hints">' +
-    nubeLine +
-    '</ul>'
-  );
+  return [handle ? '@' + handle : '', rank, sala].filter(Boolean).join(' · ');
 }
 
 async function syncTeamsBeforeTeamStep() {
@@ -49,20 +33,12 @@ async function syncTeamsBeforeTeamStep() {
 }
 
 /** @param {HTMLElement} host @param {{ skipCloudSync?: boolean }} [opts] */
-export function renderTeamOnboardingInto(host, opts = {}) {
-  host.innerHTML = buildOnboardingStageHtml({
-    title: 'Únete a un equipo',
-    leadHtml: buildTeamOnboardLeadHtml(),
-    stepperIndex: 3,
-    bodyHtml:
-      '<p class="clinical-onboarding-status" id="clinical-onboard-team-status">' +
-      (opts.skipCloudSync
-        ? 'Listo — abre Mi rotación para unirte o crear equipo.'
-        : 'Buscando equipos en tu sala…') +
-      '</p>' +
-      '<div class="clinical-onboard-team-actions">' +
-      '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-team-onboard-open>Abrir Mi rotación</button>' +
-      '</div>',
+export async function renderTeamOnboardingInto(host, opts = {}) {
+  const { drawTeamStep } = await import('./clinical-onboarding-view.jsx');
+  drawTeamStep(host, {
+    who: teamOnboardWho(),
+    cloudSala: isCloudSala(String(clinicalSessionContext.user?.sala || '').trim()),
+    skipCloudSync: !!opts.skipCloudSync,
   });
   if (opts.skipCloudSync || host._rpcTeamOnboardSyncDone) return;
   host._rpcTeamOnboardSyncDone = true;
