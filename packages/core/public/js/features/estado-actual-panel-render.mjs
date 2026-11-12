@@ -54,17 +54,18 @@ export function buildEaDataKey(monitoreo, activeId) {
   return buildEaMonitoreoRevision(monitoreo, activeId, getMedRecetaByPatient());
 }
 
+/** The empty view loads lazily; a later shell render must not be overwritten when it arrives. */
+var eaPaintSeq = 0;
+
 export function renderEaEmptyPanel(mount, onReady) {
   syncEaCopyFab(false);
   invalidateEaPanelCache();
-  mount.innerHTML =
-    '<div class="estado-actual-panel ea-empty">' +
-    '<div class="empty-state empty-state--compact" role="status">' +
-    '<h3 class="empty-state-title">Selecciona un paciente para monitoreo</h3>' +
-    '<p class="empty-state-lead">Elige uno en el censo de la izquierda. Ahí podrás registrar signos, balance hídrico y dieta.</p>' +
-    '</div>' +
-    '</div>';
-  if (onReady) onReady();
+  var seq = ++eaPaintSeq;
+  import('./estado-actual-panel-render-view.jsx').then(function (view) {
+    if (seq !== eaPaintSeq) return;
+    view.renderEmptyPanel(mount);
+    if (onReady) onReady();
+  });
 }
 
 /**
@@ -161,6 +162,7 @@ export function patchEaPanelDynamicSections(mount, patient, monitoreo, patchOpts
  * @param {string} savedLabel
  */
 export function renderEaFullPanelShell(mount, patient, monitoreo, activeId, savedLabel) {
+  eaPaintSeq++;
   var eaUiState = captureEaPanelUiState(mount);
 
   mount.innerHTML =
