@@ -989,6 +989,7 @@ function buildRegistroFooterHtml() {
     '<span>Avance automático</span></label>' +
     '<span class="ea-steps-msg ea-muted" data-ea-step-msg role="status" aria-live="polite"></span>' +
     '<span class="ea-steps-spacer"></span>' +
+    '<button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-ea-layout-switch aria-pressed="false">Vista anterior</button>' +
     '<button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-ea-step-back>Atrás</button>' +
     '<button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-onclick="closeEstadoActualRegistroModal">Cancelar</button>' +
     '<button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-ea-step-next>Siguiente: Glucosa</button>' +

@@ -18,6 +18,14 @@ var RELEASE_NOTES_855 = [
     body: 'En Estado actual confirmas o descartas <strong>un medicamento a la vez</strong>. Los demás siguen pendientes.',
   },
   {
+    title: 'Datos en Excel',
+    body: 'En Respaldos, <strong>Datos para análisis</strong> crea un Excel con una hoja por tipo de dato.',
+  },
+  {
+    title: 'Cajas que avanzan solas',
+    body: 'Cuarto, cama y registro pasan a la siguiente caja al completar el valor.',
+  },
+  {
     title: 'Pacientes en una línea',
     body: 'En el tablero del paciente, las zonas marcadas muestran solo su primera línea.',
   },

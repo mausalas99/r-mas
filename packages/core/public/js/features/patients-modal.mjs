@@ -46,6 +46,7 @@ import { cloudSyncNowIso } from './cloud-sync/cloud-sync-clock.mjs';
 import { getConsultInfo, setConsultInfo } from './patient-dashboard/consult-band.mjs';
 import { INTERCONSULT_SERVICES, REQUESTING_SERVICE_IDS, IC_OWN_SERVICE } from './patient-dashboard/interconsult-catalog.mjs';
 import { accesoFechaToDateInputValue, dateInputValueToAccesoFecha } from '../patient-date-fields.mjs';
+import { boxAdvanceOnInput, isBoxReady, isTypedInput } from '../patient-box-advance.mjs';
 
 function _prefillServicioForSala() {
   var srv = document.getElementById('m-servicio');
@@ -634,6 +635,47 @@ export function initPatientModalEnterSave() {
   modal.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT') savePatient();
   });
+  modal.addEventListener('input', boxAutoAdvance);
+  modal.addEventListener('keydown', boxBackspaceBack);
+}
+
+/** Box order: registro rows in order, then cuarto → cama. Null for every other input. */
+function boxNeighbors(el) {
+  if (el.classList.contains('m-registro-row-input')) {
+    const rows = Array.from(document.querySelectorAll('#m-registro-list .m-registro-row-input'));
+    const i = rows.indexOf(el);
+    return i < 0 ? null : { prev: rows[i - 1] || null, next: rows[i + 1] || null };
+  }
+  if (el.id === 'm-cuarto') return { prev: null, next: document.getElementById('m-cama') };
+  if (el.id === 'm-cama') return { prev: document.getElementById('m-cuarto'), next: null };
+  return null;
+}
+
+function focusBox(el) {
+  if (!el) return;
+  try { el.focus(); } catch (_e) { void _e; }
+}
+
+const BOX_KEY = { 'm-cuarto': 'cuarto', 'm-cama': 'cama' };
+
+function boxAutoAdvance(e) {
+  const el = e.target;
+  if (!el || el.tagName !== 'INPUT' || !el.isConnected) return;
+  const n = boxNeighbors(el);
+  const isRegistro = el.classList.contains('m-registro-row-input');
+  const ready = isTypedInput(e) && isBoxReady({ key: BOX_KEY[el.id], value: el.value, isRegistro });
+  boxAdvanceOnInput(el, n && n.next, ready, !isRegistro);
+}
+
+/** Backspace on an empty box goes back one box. */
+function boxBackspaceBack(e) {
+  const el = e.target;
+  if (e.key !== 'Backspace' || !el || el.tagName !== 'INPUT' || el.value) return;
+  const n = boxNeighbors(el);
+  if (n && n.prev) {
+    e.preventDefault();
+    focusBox(n.prev);
+  }
 }
 
 export function focusPatientSearchInput() {

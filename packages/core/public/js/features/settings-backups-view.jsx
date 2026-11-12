@@ -56,6 +56,7 @@ export function SettingsBackups() {
           <Act fn="closeSettingsDropdown" data-onclick-2="openExportPatientsModal" label="Elegir…" />
         </Card>
         <Card title="Por rango"><Act fn="exportRangeBackupPrompt" /></Card>
+        <Card title="Datos para análisis" desc="Excel, una hoja por tipo de dato."><Act fn="exportPatientDataXlsx" /></Card>
       </Stack>
       <Label>Importar</Label>
       <Stack>

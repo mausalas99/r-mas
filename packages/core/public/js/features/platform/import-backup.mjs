@@ -32,6 +32,7 @@ export {
 } from './import-backup/export-backup.mjs';
 
 export { openExportPatientsModal } from './import-backup/export-patients-modal.mjs';
+export { exportPatientDataXlsx } from './import-backup/export-xlsx.mjs';
 
 export {
   triggerImportRangeBackup,

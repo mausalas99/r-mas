@@ -1,8 +1,10 @@
 /** Registro manual: pasos (Signos, Glucosa, Balance, Revisar), avance automático y números que ruedan. */
 import { VITAL_LABELS } from './estado-actual-panel-constants.mjs';
+import { boxAdvanceOnInput, isTypedInput, isValueComplete } from '../patient-box-advance.mjs';
 
 var STEP_NAMES = ['Signos', 'Glucosa', 'Balance', 'Revisar'];
 var AUTO_KEY = 'ea-registro-auto-advance';
+var LAYOUT_KEY = 'ea-registro-layout';
 /** iOS Motion.moderate (m 1, k 456.4, c 35.04) as a CSS curve. */
 var SPRING_MODERATE =
   'linear(0,0.041,0.134,0.243,0.359,0.481,0.584,0.675,0.757,0.821,0.872,0.914,0.944,0.967,0.984,0.995,1.002,1.006,1.009,1.01,1.01,1.009,1.008,1.007,1.006,1.005,1.004,1.003,1)';
@@ -142,6 +144,36 @@ function readAuto() {
   }
 }
 
+function readLegacy() {
+  try {
+    return localStorage.getItem(LAYOUT_KEY) === 'legacy';
+  } catch (_e) {
+    return false;
+  }
+}
+
+function writeLegacy(on) {
+  try {
+    localStorage.setItem(LAYOUT_KEY, on ? 'legacy' : 'steps');
+  } catch (_e) {
+    /* storage blocked: the switch still works for this session */
+  }
+}
+
+/** @param {HTMLElement} shell */
+function isLegacy(shell) {
+  return shell.classList.contains('ea-registro-shell--legacy');
+}
+
+/** @param {HTMLElement} shell @param {boolean} legacy */
+function applyLayout(shell, legacy) {
+  shell.classList.toggle('ea-registro-shell--legacy', legacy);
+  var btn = shell.querySelector('[data-ea-layout-switch]');
+  if (!btn) return;
+  btn.setAttribute('aria-pressed', String(legacy));
+  btn.textContent = legacy ? 'Vista por pasos' : 'Vista anterior';
+}
+
 function el(tag, cls, text) {
   var n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -207,8 +239,9 @@ function paint(shell, form) {
     next.hidden = step === 3;
     next.textContent = 'Siguiente: ' + STEP_NAMES[Math.min(step + 1, 3)];
   }
+  var legacy = isLegacy(shell);
   var submit = shell.querySelector('.ea-registro-submit');
-  if (submit) submit.hidden = step !== 3;
+  if (submit) submit.hidden = !legacy && step !== 3;
   if (step === 3) renderReview(form, shell);
 }
 
@@ -227,16 +260,13 @@ export function setEaRegistroStep(form, step, opts) {
   shell.querySelectorAll('.ea-steps-panes [data-ea-step]').forEach(function (pane) {
     var on = Number(pane.getAttribute('data-ea-step')) === to;
     pane.hidden = !on;
-    pane.classList.remove('ea-step-in-r', 'ea-step-in-l');
-    if (on && from !== to && !reducedMotion()) {
-      void pane.offsetWidth;
-      pane.classList.add(to > from ? 'ea-step-in-r' : 'ea-step-in-l');
-    }
   });
   paint(shell, form);
   if (!opts || opts.focus !== false) {
     var pane = shell.querySelector('.ea-steps-panes [data-ea-step="' + to + '"]');
-    var first = pane && pane.querySelector('input:not([type="hidden"]):not([disabled]), select:not([disabled])');
+    // Glucose pane: first visible value box (glucometría or bomba), not the Bomba switch that comes first in the markup.
+    var valueBox = pane && Array.prototype.find.call(pane.querySelectorAll('[data-ea-glu-value]:not([disabled]), [data-ea-bomba-value]:not([disabled])'), function (b) { return !b.closest('[hidden]'); });
+    var first = valueBox || (pane && pane.querySelector('input:not([type="hidden"]):not([disabled]), select:not([disabled])'));
     if (first && 'focus' in first) first.focus({ preventScroll: true });
   }
 }
@@ -247,7 +277,7 @@ export function setEaRegistroStep(form, step, opts) {
  * @param {HTMLElement} form
  * @param {boolean} commit
  */
-function onFormEdited(form, commit) {
+function onFormEdited(form, commit, target) {
   var shell = getShell(form);
   if (!shell) return;
   var step = currentStep(shell);
@@ -257,7 +287,49 @@ function onFormEdited(form, commit) {
   shell._eaWasComplete = now;
   paint(shell, form);
   var auto = shell.querySelector('[data-ea-auto]');
-  if (auto && auto.checked && now && !was && step < 3) setEaRegistroStep(form, step + 1);
+  // Balance (step 2) moves on only when Evacuaciones is committed, the last balance field.
+  var balanceDone = step !== 2 || (!!target && target.id === 'ea-io-evac');
+  if (auto && auto.checked && !isLegacy(shell) && now && !was && step < 3 && balanceDone) setEaRegistroStep(form, step + 1);
+}
+
+/** Pause after the last box of a step is typed, before the step moves on. */
+var STEP_WAIT_MS = 500;
+var stepTimer = null;
+
+/**
+ * Vitals and glucose boxes, both layouts. Moves to the next visible box once the typed value is complete (iOS rule).
+ * @param {HTMLElement} form
+ * @param {Event} ev
+ */
+function autoAdvanceReadings(form, ev) {
+  var el = /** @type {HTMLInputElement} */ (ev.target);
+  if (!el || el.tagName !== 'INPUT') return;
+  var key = el.hasAttribute('data-ea-vital') ? el.getAttribute('data-ea-vital') : el.hasAttribute('data-ea-glu-value') ? 'glucosa' : null;
+  if (!key) return;
+  var boxes = Array.prototype.filter.call(form.querySelectorAll('[data-ea-vital], [data-ea-glu-value]'), function (b) {
+    return !b.disabled && b.getClientRects().length > 0;
+  });
+  var i = boxes.indexOf(el);
+  var next = i >= 0 ? boxes[i + 1] || null : null;
+  var ready = isTypedInput(ev) && isValueComplete(key, el.value);
+  boxAdvanceOnInput(el, next, ready, false);
+  // Last visible box of this step: move to the next step once typing stops for STEP_WAIT_MS.
+  clearTimeout(stepTimer);
+  var shell = getShell(form);
+  var auto = shell && shell.querySelector('[data-ea-auto]');
+  if (!ready || i < 0 || next || !shell) return;
+  if (isLegacy(shell)) {
+    // Old view: last glucose box goes to the first Balance box (Ingresos, Matutino).
+    var ing = form.querySelector('#ea-io-ing-t1');
+    if (ing) stepTimer = setTimeout(function () {
+      if (document.activeElement === el && ing.isConnected) ing.focus();
+    }, STEP_WAIT_MS);
+  } else if (auto && auto.checked && currentStep(shell) < 3) {
+    var from = currentStep(shell);
+    stepTimer = setTimeout(function () {
+      if (currentStep(shell) === from) setEaRegistroStep(form, from + 1);
+    }, STEP_WAIT_MS);
+  }
 }
 
 /** @param {HTMLElement | null} form */
@@ -265,6 +337,7 @@ export function wireEaRegistroSteps(form) {
   if (!form) return;
   var shell = getShell(form);
   if (!shell) return;
+  applyLayout(shell, readLegacy());
   if (!shell.dataset.eaStepsWired) {
     shell.dataset.eaStepsWired = '1';
     var auto = shell.querySelector('[data-ea-auto]');
@@ -287,6 +360,12 @@ export function wireEaRegistroSteps(form) {
     shell.addEventListener('click', function (ev) {
       var t = /** @type {HTMLElement} */ (ev.target);
       var go = t.closest && t.closest('[data-ea-step-go]');
+      if (t.closest && t.closest('[data-ea-layout-switch]')) {
+        var legacyOn = !isLegacy(shell);
+        writeLegacy(legacyOn);
+        applyLayout(shell, legacyOn);
+        return setEaRegistroStep(form, currentStep(shell), { focus: false });
+      }
       if (go) return setEaRegistroStep(form, Number(go.getAttribute('data-ea-step-go')));
       if (t.closest && t.closest('[data-ea-step-back]')) return setEaRegistroStep(form, currentStep(shell) - 1);
       if (t.closest && t.closest('[data-ea-step-next]')) {
@@ -296,11 +375,12 @@ export function wireEaRegistroSteps(form) {
         return setEaRegistroStep(form, currentStep(shell) + 1);
       }
     });
-    form.addEventListener('input', function () {
+    form.addEventListener('input', function (ev) {
       onFormEdited(form, false);
+      autoAdvanceReadings(form, ev);
     });
-    form.addEventListener('change', function () {
-      onFormEdited(form, true);
+    form.addEventListener('change', function (ev) {
+      onFormEdited(form, true, /** @type {HTMLElement} */ (ev.target));
     });
   }
   if (!shell.dataset.eaStep) setEaRegistroStep(form, 0, { focus: false });

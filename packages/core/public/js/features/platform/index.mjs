@@ -144,6 +144,7 @@ export {
   exportSyncBundlePrompt,
   triggerImportSyncBundle,
   onSyncBundleFileChosen,
+  exportPatientDataXlsx,
 } from './import-backup.mjs';
 
 export {

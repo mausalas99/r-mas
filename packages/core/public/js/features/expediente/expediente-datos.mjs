@@ -8,6 +8,7 @@ import { refreshRpcDateFields } from '../../rpc-date-picker.mjs';
 import { accesoFechaToDateInputValue } from '../../patient-date-fields.mjs';
 import { buildPatientCensoDatosSectionsHtml } from '../../patient-data-censo-ui.mjs';
 import { rt, aid, esc } from './expediente-runtime.mjs';
+import { boxAdvanceOnInput, isBoxReady, isTypedInput } from '../../patient-box-advance.mjs';
 
 var UPPER = ' style="text-transform:uppercase;"';
 
@@ -223,6 +224,14 @@ function wireDatosPane(wrap) {
   };
   wrap.addEventListener('input', sync);
   wrap.addEventListener('change', sync);
+  // Cuarto → cama, same idle rule as the patient form.
+  wrap.addEventListener('input', function (ev) {
+    var el = /** @type {HTMLInputElement} */ (ev.target);
+    if (!el.classList || !el.classList.contains('exp-datos-q')) return;
+    var key = JSON.parse(el.getAttribute('data-oninput-args') || '[]')[0];
+    var next = key === 'cuarto' ? wrap.querySelector('[data-oninput-args=\'["cama"]\']') : null;
+    boxAdvanceOnInput(el, next, isTypedInput(ev) && isBoxReady({ key: key, value: el.value }), true);
+  });
   wrap.addEventListener('click', function (ev) {
     var btn = ev.target.closest && ev.target.closest('[data-datos-tab]');
     if (btn && wrap.contains(btn)) showDatosTab(wrap, btn.getAttribute('data-datos-tab'));

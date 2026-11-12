@@ -29,6 +29,7 @@ const platformHandlerNames = {
   exportDataBackup: 'exportDataBackup',
   exportActivePatientBackup: 'exportActivePatientBackup',
   exportRangeBackupPrompt: 'exportRangeBackupPrompt',
+  exportPatientDataXlsx: 'exportPatientDataXlsx',
   triggerImportRangeBackup: 'triggerImportRangeBackup',
   onRangeBackupFileChosen: 'onRangeBackupFileChosen',
   exportSyncBundlePrompt: 'exportSyncBundlePrompt',
