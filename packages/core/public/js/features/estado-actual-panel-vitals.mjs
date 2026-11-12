@@ -144,10 +144,13 @@ export function syncVitalDoubtFlags(form) {
     if (doubt && !mark) {
       var wrap = chip.querySelector('.ea-vital-value-wrap');
       if (wrap) {
-        wrap.insertAdjacentHTML(
-          'beforeend',
-          '<button type="button" class="vital-doubt-mark" aria-label="Valor dudoso" title="Valor dudoso: revise la captura">⚠</button>'
-        );
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'vital-doubt-mark';
+        btn.setAttribute('aria-label', 'Valor dudoso');
+        btn.title = 'Valor dudoso: revise la captura';
+        btn.textContent = '⚠';
+        wrap.appendChild(btn);
       }
     } else if (!doubt && mark) {
       mark.remove();

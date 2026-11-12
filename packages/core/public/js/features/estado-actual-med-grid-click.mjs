@@ -1,4 +1,4 @@
-import { addMedFieldItem, removeMedFieldItem, medRecetaSelectHtml } from './estado-actual-med-ui.mjs';
+import { addMedFieldItem, removeMedFieldItem, medRecetaOptions } from './estado-actual-med-ui.mjs';
 
 function handleMedRemoveClick(ev, target, grid, mount, ctx, monitoreo, refreshBlock) {
   const removeBtn = target.closest('[data-ea-med-remove]');
@@ -49,7 +49,11 @@ function handleMedFromRecetaClick(target, grid, ctx) {
   if (!target.closest('[data-ea-med-from-receta]')) return false;
   const cat = grid.querySelector('[data-ea-med-add-cat]');
   const slot = grid.querySelector('[data-ea-med-receta-slot]');
-  if (cat && slot) slot.innerHTML = medRecetaSelectHtml(String(cat.value), ctx.getActiveId(), ctx.medRecetaByPatient);
+  if (cat && slot) {
+    const key = String(cat.value);
+    const options = medRecetaOptions(key, ctx.getActiveId(), ctx.medRecetaByPatient);
+    import('./estado-actual-med-grid-view.jsx').then((view) => view.drawMedRecetaSelect(slot, key, options));
+  }
   return true;
 }
 

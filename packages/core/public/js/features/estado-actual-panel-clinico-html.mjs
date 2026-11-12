@@ -1,6 +1,6 @@
 /** Soporte respiratorio live DOM sync (the section markup is estado-actual-panel-clinico-view.jsx). */
 import { SOPORTE_OPTIONS } from './estado-actual-panel-constants.mjs';
-import { escHtml, escAttrNumeric } from './estado-actual-panel-format.mjs';
+import { escAttrNumeric } from './estado-actual-panel-format.mjs';
 import { buildSnapshotViewProps } from './estado-actual-panel-snapshot-html.mjs';
 import {
   normalizeSoporteValue,
@@ -40,26 +40,6 @@ export function buildClinicoViewProps(a) {
 }
 
 /**
- * @param {Record<string, unknown>} ec
- * @param {{ fr?: unknown, sat?: unknown, pesoKg?: unknown, lab?: unknown }} [vitalsCtx]
- */
-export function renderSoporteCalcHintsHtml(ec, vitalsCtx) {
-  var tier = soporteTier(ec.soporte != null ? String(ec.soporte) : '');
-  if (!tier) return '';
-  var hints = buildVentilatorioCalcHints(ec, vitalsCtx || {});
-  if (!hints.length) return '';
-  return (
-    '<ul class="ea-soporte-calc-list" data-ea-soporte-calc>' +
-    hints
-      .map(function (h) {
-        return '<li class="ea-soporte-calc-item">' + escHtml(h) + '</li>';
-      })
-      .join('') +
-    '</ul>'
-  );
-}
-
-/**
  * Re-render the hints in place (keeps input focus). Mirrors SoporteCalcHints in estado-actual-panel-clinico-view.jsx.
  * @param {HTMLElement | null} mount
  * @param {Record<string, unknown>} ec
@@ -70,7 +50,19 @@ export function refreshSoporteCalcHints(mount, ec, vitalsCtx) {
   if (!insights) return;
   var old = insights.querySelector('[data-ea-soporte-calc]');
   if (old) old.remove();
-  insights.insertAdjacentHTML('beforeend', renderSoporteCalcHintsHtml(ec, vitalsCtx));
+  var tier = soporteTier(ec.soporte != null ? String(ec.soporte) : '');
+  var hints = tier ? buildVentilatorioCalcHints(ec, vitalsCtx || {}) : [];
+  if (!hints.length) return;
+  var ul = document.createElement('ul');
+  ul.className = 'ea-soporte-calc-list';
+  ul.setAttribute('data-ea-soporte-calc', '');
+  hints.forEach(function (h) {
+    var li = document.createElement('li');
+    li.className = 'ea-soporte-calc-item';
+    li.textContent = h;
+    ul.appendChild(li);
+  });
+  insights.appendChild(ul);
 }
 
 function resolveSoporteTierFlags(tier) {

@@ -232,14 +232,16 @@ export function countHiddenGroups(groups) {
 export function renderFilterSelect(filtro) {
   if (!filtro) return;
   var labels = listSomePharmFilterLabels();
-  var html = labels
-    .map(function (lab) {
-      var sel = lab === mp.listFilter ? ' selected' : '';
-      var text = lab === 'TODOS' ? 'Todos los grupos' : lab;
-      return '<option value="' + esc(lab) + '"' + sel + '>' + esc(text) + '</option>';
-    })
-    .join('');
-  if (filtro.innerHTML !== html) filtro.innerHTML = html;
+  var cur = Array.from(filtro.options);
+  var same = cur.length === labels.length && cur.every(function (o, i) { return o.value === labels[i]; });
+  if (!same) {
+    filtro.replaceChildren.apply(filtro, labels.map(function (lab) {
+      var o = document.createElement('option');
+      o.value = lab;
+      o.textContent = lab === 'TODOS' ? 'Todos los grupos' : lab;
+      return o;
+    }));
+  }
   filtro.value = mp.listFilter;
 }
 
