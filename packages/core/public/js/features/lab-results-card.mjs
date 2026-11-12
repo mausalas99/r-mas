@@ -11,7 +11,7 @@
  *
  * Se llama después de poblar la caja (ver `lab-panel-parse.mjs#renderOutput`).
  */
-import { escTxt } from '../labs-display.mjs';
+import { drawLabHourHeader, drawLabAlteredChips } from './lab-results-card-view.jsx';
 import { fitOneRow } from './fit-one-row.mjs';
 import { isCriticalLabValue, clinicalPriorityRank } from '../labs-critical-values.mjs';
 import { sortLabHistoryChronological, normalizeFechaLabHistory, normalizeHoraLabHistory } from '../tend-core.mjs';
@@ -53,17 +53,20 @@ export function splitHourGroupHeaderText(text) {
   return { hora: '', label: s.trim() };
 }
 
+/** What the header shows: the hora and the label with its «N alterados» count. */
+export function hourHeaderParts(text, altered) {
+  var parts = splitHourGroupHeaderText(text);
+  return { hora: parts.hora, label: parts.label ? parts.label + (altered ? ' · ' + pluralAlterados(altered) : '') : '' };
+}
+
 export function restyleLabHourGroupHeaders(box) {
   if (!box) return;
   var headers = box.querySelectorAll('.lab-hour-group-h');
   headers.forEach(function (headerEl) {
-    var parts = splitHourGroupHeaderText(headerEl.textContent);
-    var n = countAlteredUntilNextGroup(headerEl);
-    var labelText = parts.label ? parts.label + (n ? ' · ' + pluralAlterados(n) : '') : '';
-    var html = '';
-    if (parts.hora) html += '<span class="lab-hour-time">' + escTxt(parts.hora) + '</span>';
-    if (labelText) html += '<span class="lab-hour-label">' + escTxt(labelText) + '</span>';
-    headerEl.innerHTML = html || escTxt(headerEl.textContent);
+    var text = headerEl.textContent;
+    var parts = hourHeaderParts(text, countAlteredUntilNextGroup(headerEl));
+    if (parts.hora || parts.label) drawLabHourHeader(headerEl, parts.hora, parts.label);
+    else headerEl.textContent = text;
   });
 }
 
@@ -110,27 +113,10 @@ export function renderLabAlteredChips(box) {
   order.sort(function (a, b) {
     return rank(byLabel[a]) - rank(byLabel[b]) || clinicalPriorityRank(a) - clinicalPriorityRank(b);
   });
-  host.innerHTML = order.length
-    ? '<span class="lab-altered-chips-lbl">Alterados</span>' +
-      order
-        .map(function (label) {
-          var c = byLabel[label];
-          return (
-            '<span class="lab-altered-chip' +
-            (c.critical ? ' lab-altered-chip--critical' : '') +
-            '" data-fit-chip' +
-            (c.critical ? ' title="Valor crítico"' : '') +
-            '>' +
-            escTxt(label) +
-            ' <strong>' +
-            escTxt(c.value) +
-            (c.trend ? ' ' + c.trend : '') +
-            '</strong></span>'
-          );
-        })
-        .join('') +
-      '<span class="lab-altered-chip lab-altered-chip--more" data-fit-chip-more hidden></span>'
-    : '';
+  drawLabAlteredChips(host, order.map(function (label) {
+    var c = byLabel[label];
+    return { label: label, value: c.value, critical: c.critical, trend: c.trend };
+  }));
   host.hidden = !order.length;
   fitOneRow(host);
 }
