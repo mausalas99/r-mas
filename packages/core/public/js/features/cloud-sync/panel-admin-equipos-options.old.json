@@ -1,0 +1,18 @@
+{
+ "team": {
+  "all": "<option value=\"\">Sin asignar</option><optgroup label=\"Sala 1\"><option value=\"t2\">Equipo &quot;Rojo&quot; (0)</option><option value=\"t1\">Equipo &lt;Azul&gt; · A (2)</option></optgroup><optgroup label=\"Sala 2\"><option value=\"t3\">Equipo · B (0)</option></optgroup><optgroup label=\"Sede X\"><option value=\"t4\">Otro &amp; Co · C (1)</option></optgroup><optgroup label=\"Sin sala\"><option value=\"t5\">Sin sala (0)</option></optgroup>",
+  "selected": "<option value=\"\">Sin asignar</option><optgroup label=\"Sala 1\"><option value=\"t2\">Equipo &quot;Rojo&quot; (0)</option><option value=\"t1\">Equipo &lt;Azul&gt; · A (2)</option></optgroup><optgroup label=\"Sala 2\"><option value=\"t3\" selected>Equipo · B (0)</option></optgroup><optgroup label=\"Sede X\"><option value=\"t4\">Otro &amp; Co · C (1)</option></optgroup><optgroup label=\"Sin sala\"><option value=\"t5\">Sin sala (0)</option></optgroup>",
+  "sala1": "<option value=\"\">Sin asignar</option><optgroup label=\"Sala 1\"><option value=\"t2\">Equipo &quot;Rojo&quot; (0)</option><option value=\"t1\">Equipo &lt;Azul&gt; · A (2)</option></optgroup>",
+  "sala1_selected_elsewhere": "<option value=\"\">Sin asignar</option><optgroup label=\"Sala 1\"><option value=\"t2\">Equipo &quot;Rojo&quot; (0)</option><option value=\"t1\">Equipo &lt;Azul&gt; · A (2)</option></optgroup><optgroup label=\"Sala 2\"><option value=\"t3\" selected>Equipo · B (0)</option></optgroup>",
+  "no_teams_in_sala": "<option value=\"\">Sin equipos en esta sala</option>"
+ },
+ "cycle": {
+  "no_team": "<option value=\"\">Ciclo</option>",
+  "r1": "<option value=\"A1\" selected>Subciclo R1 · A1</option><option value=\"B1\">Subciclo R1 · B1</option><option value=\"C1\">Subciclo R1 · C1</option><option value=\"D1\">Subciclo R1 · D1</option><option value=\"A2\">Subciclo R1 · A2</option><option value=\"B2\">Subciclo R1 · B2</option><option value=\"C2\">Subciclo R1 · C2</option><option value=\"D2\">Subciclo R1 · D2</option>",
+  "r2_pref": "<option value=\"A\">Ciclo R2 · A</option><option value=\"B\" selected>Ciclo R2 · B</option><option value=\"C\">Ciclo R2 · C</option><option value=\"D\">Ciclo R2 · D</option><option value=\"E\">Ciclo R2 · E</option><option value=\"F\">Ciclo R2 · F</option>",
+  "member_cycle": "<option value=\"A1\" selected>Subciclo R1 · A1</option><option value=\"B1\">Subciclo R1 · B1</option><option value=\"C1\">Subciclo R1 · C1</option><option value=\"D1\">Subciclo R1 · D1</option><option value=\"A2\">Subciclo R1 · A2</option><option value=\"B2\">Subciclo R1 · B2</option><option value=\"C2\">Subciclo R1 · C2</option><option value=\"D2\">Subciclo R1 · D2</option>",
+  "other_service": "<option value=\"A\" selected>Ciclo R3 · A</option><option value=\"B\">Ciclo R3 · B</option><option value=\"C\">Ciclo R3 · C</option><option value=\"D\">Ciclo R3 · D</option>",
+  "admin": "<option value=\"A\">Ciclo R2 · A</option><option value=\"B\">Ciclo R2 · B</option><option value=\"C\">Ciclo R2 · C</option><option value=\"D\">Ciclo R2 · D</option>"
+ },
+ "dash": "<option value=\"\">—</option>"
+}

@@ -9,6 +9,18 @@ import { Head, Refresh, mount } from './panel-admin-view.jsx';
 
 const Options = ({ list }) => list.map((o) => <option value={o.value} selected={o.selected}>{o.label}</option>);
 
+/** The assign-team select's contents: loose options, then one group per sala. */
+export const TeamOptions = ({ teamOptions }) => (
+  <>
+    <Options list={teamOptions.options} />
+    {teamOptions.groups.map((g) => <optgroup label={g.sala}><Options list={g.options} /></optgroup>)}
+  </>
+);
+
+/** Refill a row's team / cycle select in place (the row stays as drawn; only the options change). */
+export const drawTeamOptions = (select, teamOptions) => mount(select, <TeamOptions teamOptions={teamOptions} />);
+export const drawCycleOptions = (select, list) => mount(select, <Options list={list} />);
+
 /** Revoke / role / disable / delete for one Nube account (the row menu, no toggle of its own). */
 function NubeActions({ id, handle }) {
   return (
@@ -83,8 +95,7 @@ function EquiposRow({ m }) {
               <label class="cloud-sync-admin-equipos-field cloud-sync-admin-equipos-field--team">
                 <span class="cloud-sync-admin-equipos-field-label">Equipo</span>
                 <select class="profile-input cloud-sync-admin-equipos-team" aria-label="Equipo">
-                  <Options list={m.teamOptions.options} />
-                  {m.teamOptions.groups.map((g) => <optgroup label={g.sala}><Options list={g.options} /></optgroup>)}
+                  <TeamOptions teamOptions={m.teamOptions} />
                 </select>
               </label>
               <label class="cloud-sync-admin-equipos-field">
