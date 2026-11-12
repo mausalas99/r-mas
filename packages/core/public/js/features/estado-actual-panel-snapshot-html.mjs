@@ -1,13 +1,12 @@
-/** Snapshot / historial HTML fragments — extracted from estado-actual-panel-snapshot.mjs */
+/** Snapshot / historial data helpers (the markup lives in estado-actual-panel-snapshot-view.jsx). */
 import { isIoNumericValue } from './estado-actual-data.mjs';
 import {
   formatEgresoPartsForText,
   formatEvacForText,
-  formatIoBalanceDisplay,
   toEaSalidaText,
   formatIoTurnoEvent,
 } from './estado-actual-io.mjs';
-import { isGlucometriaMarkedAltered, isVitalAltered } from './estado-actual-ranges.mjs';
+import { isVitalAltered } from './estado-actual-ranges.mjs';
 import {
   formatEaVitalStampDateOnly,
   formatEaVitalStampForSnapshot,
@@ -16,7 +15,7 @@ import {
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-constants.mjs';
 import { formatInsulinPumpAlgoritmoLabel } from '../insulin-pump-some-detect.mjs';
-import { pad2, displayValue, displayBalance, escHtml, escAttr } from './estado-actual-panel-format.mjs';
+import { pad2, displayValue } from './estado-actual-panel-format.mjs';
 
 /**
  * @param {{ ing?: unknown, egr?: unknown, egrParts?: Array<{ label?: string, value?: unknown }>, evac?: unknown }} io
@@ -25,22 +24,22 @@ import { pad2, displayValue, displayBalance, escHtml, escAttr } from './estado-a
 export function formatSnapshotEgresos(io) {
   io = io || {};
   if (Array.isArray(io.egrParts) && io.egrParts.length) {
-    return escHtml(formatEgresoPartsForText(io.egrParts, { showTurnCount: false }).join(' · '));
+    return formatEgresoPartsForText(io.egrParts, { showTurnCount: false }).join(' · ');
   }
   var egr = io.egr;
   if (egr == null || egr === '') return '—';
-  if (isIoNumericValue(egr)) return escHtml(String(egr) + ' CC (DIURESIS)');
-  return escHtml(toEaSalidaText(egr));
+  if (isIoNumericValue(egr)) return String(egr) + ' CC (DIURESIS)';
+  return toEaSalidaText(egr);
 }
 
 /**
  * @param {unknown} ing
  * @returns {string}
  */
-function formatSnapshotIngresos(ing) {
-  if (ing === 'NC' || String(ing || '').toUpperCase() === 'NC') return escHtml('NC');
-  if (ing == null || ing === '') return escHtml('—');
-  return escHtml(String(ing) + ' CC');
+export function formatSnapshotIngresos(ing) {
+  if (ing === 'NC' || String(ing || '').toUpperCase() === 'NC') return 'NC';
+  if (ing == null || ing === '') return '—';
+  return String(ing) + ' CC';
 }
 
 /** Vitals shown as individual cards in the snapshot strip (T/A is combined). */
@@ -113,24 +112,6 @@ export function vitalHasHistory(vitalKey, snapshot) {
 }
 
 /**
- * @param {string} vitalKey
- * @param {boolean} hasHistory
- */
-function snapshotItemInteractionAttrs(vitalKey, hasHistory) {
-  if (!hasHistory) return '';
-  var keyArgs = escAttr(JSON.stringify([String(vitalKey)]));
-  return (
-    ' role="button" tabindex="0" data-ea-vital-history="' +
-    escAttr(vitalKey) +
-    '" data-onclick="openEaVitalHistoryModal" data-onclick-args=\'' +
-    keyArgs +
-    '\' data-onkeydown="openEaVitalHistoryModal" data-onkeydown-args=\'' +
-    keyArgs +
-    '\' data-onkeydown-keys="Enter,Space" data-onkeydown-prevent title="Ver historial del turno"'
-  );
-}
-
-/**
  * @param {number | null | undefined} tas
  * @param {number | null | undefined} tad
  */
@@ -153,46 +134,10 @@ function resolveVitalStamp(reading, fallbackKey, snapshot) {
   return '';
 }
 
-function todayDayMonth() {
-  var d = new Date();
+/** @param {Date} [now] */
+export function todayDayMonth(now) {
+  var d = now || new Date();
   return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
-}
-
-/**
- * @param {{ label: string, value: string, unit: string, stamp: string, vitalKey: string, altered: boolean, hasHistory: boolean }} opts
- * @param {string} headStamp date already shown beside the zone title
- */
-function renderSnapshotVitalRow(opts, headStamp) {
-  var cls =
-    'ea-snapshot-row' +
-    (opts.altered ? ' ea-snapshot-row--altered' : '') +
-    (opts.hasHistory ? ' ea-snapshot-row--interactive' : '');
-  var unitHtml = opts.unit
-    ? '<span class="ea-snapshot-row-unit">' + escHtml(opts.unit) + '</span>'
-    : '';
-  // Today's date on every vital is noise: only an older reading shows its date.
-  // The date shared by most rows sits beside the title; a row shows only a different one.
-  var stampHtml = opts.stamp && opts.stamp !== todayDayMonth() && opts.stamp !== headStamp
-    ? '<span class="ea-snapshot-row-stamp">' + escHtml(opts.stamp) + '</span>'
-    : '<span class="ea-snapshot-row-stamp ea-snapshot-row-stamp--empty" aria-hidden="true"></span>';
-  return (
-    '<div class="' +
-    cls +
-    '"' +
-    snapshotItemInteractionAttrs(opts.vitalKey, opts.hasHistory) +
-    '>' +
-    '<span class="ea-snapshot-row-label">' +
-    escHtml(opts.label) +
-    '</span>' +
-    '<span class="ea-snapshot-row-reading">' +
-    '<span class="ea-snapshot-row-value">' +
-    escHtml(opts.value) +
-    '</span>' +
-    unitHtml +
-    '</span>' +
-    stampHtml +
-    '</div>'
-  );
 }
 
 /**
@@ -263,7 +208,7 @@ function bpSnapshotRowOpts(snapshot) {
 /**
  * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
  */
-function snapshotVitalRowsOpts(snapshot) {
+export function snapshotVitalRowsOpts(snapshot) {
   return [bpSnapshotRowOpts(snapshot)].concat(
     SNAPSHOT_STRIP_VITAL_KEYS.map(function (key) {
       return vitalSnapshotRowOpts(key, snapshot);
@@ -272,7 +217,7 @@ function snapshotVitalRowsOpts(snapshot) {
 }
 
 /** Most common dd/mm among the vital rows (today included), or ''. */
-function vitalsHeadStamp(rows) {
+export function vitalsHeadStamp(rows) {
   /** @type {Record<string, number>} */
   var counts = {};
   var best = '';
@@ -282,82 +227,6 @@ function vitalsHeadStamp(rows) {
     if (!best || counts[r.stamp] > counts[best]) best = r.stamp;
   });
   return best;
-}
-
-/**
- * Zone title with the vitals date beside it, so the reader sees which day the numbers are from.
- * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
- */
-export function renderSnapshotVitalsZoneTitle(snapshot) {
-  var stamp = vitalsHeadStamp(snapshotVitalRowsOpts(snapshot));
-  return 'Signos vitales' + (stamp ? ' <span class="ea-snapshot-zone-stamp">' + escHtml(stamp) + '</span>' : '');
-}
-
-/**
- * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
- */
-export function renderSnapshotVitalsHtml(snapshot) {
-  var rows = snapshotVitalRowsOpts(snapshot);
-  var headStamp = vitalsHeadStamp(rows);
-  return rows
-    .map(function (r) {
-      return renderSnapshotVitalRow(r, headStamp);
-    })
-    .join('');
-}
-
-/**
- * Only the vital rows named in `keys` ('bp', 'fc', 'fr', 'temp', 'sat'), for the per-system cards.
- * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
- * @param {string[]} keys
- */
-export function renderSnapshotVitalsByKeys(snapshot, keys) {
-  var rows = snapshotVitalRowsOpts(snapshot);
-  var headStamp = vitalsHeadStamp(rows);
-  return rows
-    .filter(function (r) { return keys.indexOf(r.vitalKey) >= 0; })
-    .map(function (r) { return renderSnapshotVitalRow(r, headStamp); })
-    .join('');
-}
-
-function renderBombaChip(b) {
-  var t = b.time ? ' <span class="ea-snapshot-glu-time">' + b.time + '</span>' : '';
-  var u =
-    b.units != null && b.units !== '' && Number(b.units) !== 0
-      ? ' <span class="ea-snapshot-glu-units">(' + displayValue(b.units) + ' U)</span>'
-      : '';
-  return (
-    '<span class="ea-snapshot-glu-chip ea-snapshot-glu-chip--bomba">' +
-    displayValue(b.value) +
-    ' MG/DL' +
-    u +
-    t +
-    '</span>'
-  );
-}
-
-function renderGluChip(g) {
-  var t = g.time ? ' <span class="ea-snapshot-glu-time">' + g.time + '</span>' : '';
-  var rescue =
-    g.rescueUnits != null && g.rescueUnits !== '' && Number(g.rescueUnits) !== 0
-      ? ' <span class="ea-snapshot-glu-rescue">(' + displayValue(g.rescueUnits) + ' U rescate)</span>'
-      : '';
-  var postRescue =
-    g.postRescueValue != null && g.postRescueValue !== ''
-      ? ' <span class="ea-snapshot-glu-post">→ ' + displayValue(g.postRescueValue) + ' MG/DL</span>'
-      : '';
-  var alteredCls = isGlucometriaMarkedAltered(g) ? ' ea-snapshot-glu-chip--altered' : '';
-  return (
-    '<span class="ea-snapshot-glu-chip' +
-    alteredCls +
-    '">' +
-    displayValue(g.value) +
-    ' MG/DL' +
-    rescue +
-    postRescue +
-    t +
-    '</span>'
-  );
 }
 
 /**
@@ -372,65 +241,11 @@ export function renderSnapshotGluZoneTitle(snapshot) {
   return 'Glucometrías';
 }
 
-/**
- * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
- */
-export function renderSnapshotGluHtml(snapshot) {
-  var algLabel =
-    snapshot.bombaInsulinaAlgoritmo != null && Number.isFinite(Number(snapshot.bombaInsulinaAlgoritmo))
-      ? formatInsulinPumpAlgoritmoLabel(Number(snapshot.bombaInsulinaAlgoritmo))
-      : '';
-  if (snapshot.bombaInsulina && snapshot.bombaInsulina.length) {
-    var chips = snapshot.bombaInsulina.map(renderBombaChip).join('');
-    if (algLabel) {
-      return (
-        '<span class="ea-snapshot-glu-alg-badge ea-muted">' + escHtml(algLabel) + '</span>' + chips
-      );
-    }
-    return chips;
-  }
-  if (algLabel) {
-    return '<span class="ea-snapshot-glu-alg-badge ea-muted">' + escHtml(algLabel) + '</span>';
-  }
-  if (snapshot.glucometrias && snapshot.glucometrias.length) {
-    return snapshot.glucometrias.map(renderGluChip).join('');
-  }
-  return '<span class="ea-muted">—</span>';
-}
-
-/**
- * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
- * @param {number} balGlobal
- */
-export function renderSnapshotIoHtml(snapshot, balGlobal) {
-  var evacHtml =
-    snapshot.io.evac != null && snapshot.io.evac !== ''
-      ? '<div><span class="ea-snapshot-label">Evacuaciones</span><span class="ea-snapshot-io-val">' +
-        escHtml(formatEvacForText(snapshot.io.evac)) +
-        '</span></div>'
-      : '';
-  return (
-    '<div class="ea-snapshot-io">' +
-    '<div><span class="ea-snapshot-label">Ingresos</span><span class="ea-snapshot-io-val">' +
-    formatSnapshotIngresos(snapshot.io.ing) +
-    '</span></div>' +
-    '<div class="ea-snapshot-io-egr">' +
-    '<span class="ea-snapshot-label">Egresos</span>' +
-    '<span class="ea-snapshot-io-val">' +
-    formatSnapshotEgresos(snapshot.io) +
-    '</span></div>' +
-    evacHtml +
-    '<div class="ea-snapshot-row--interactive" role="button" tabindex="0" data-onclick="openEaTurnosBalanceModal" data-onkeydown="openEaTurnosBalanceModal" data-onkeydown-keys="Enter,Space" data-onkeydown-prevent title="Ver T1, T2 y T3 y eventos del turno">' +
-    '<span class="ea-snapshot-label">Turno <span aria-hidden="true">›</span>' +
-    (snapshot.io.turnos && hasIoTurnoEvents(snapshot.io.turnos) ? ' <span class="ea-turno-event-dot" aria-label="con eventos">●</span>' : '') +
-    '</span><span class="ea-snapshot-io-val">' +
-    formatIoBalanceDisplay(snapshot.io.ing, snapshot.io) +
-    '</span></div>' +
-    '<div><span class="ea-snapshot-label">Global</span><span class="ea-snapshot-io-val">' +
-    displayBalance(balGlobal) +
-    '</span></div>' +
-    '</div>'
-  );
+/** @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot */
+export function snapshotInsulinPumpAlgLabel(snapshot) {
+  return snapshot.bombaInsulinaAlgoritmo != null && Number.isFinite(Number(snapshot.bombaInsulinaAlgoritmo))
+    ? formatInsulinPumpAlgoritmoLabel(Number(snapshot.bombaInsulinaAlgoritmo))
+    : '';
 }
 
 /**
@@ -514,6 +329,6 @@ function appendHistorialIoParts(parts, io) {
 export { isIoNumericValue, toEaSalidaText };
 
 /** @param {{ eventos?: unknown[] }} turnos */
-function hasIoTurnoEvents(turnos) {
+export function hasIoTurnoEvents(turnos) {
   return Array.isArray(turnos.eventos) && turnos.eventos.length > 0;
 }

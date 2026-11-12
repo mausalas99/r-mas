@@ -6,7 +6,6 @@ import {
   ensureMonitoreo,
   migratePatientMonitoreo,
   deriveSnapshot,
-  balanceTurno,
   balanceGlobalHistorico,
   buildEaMonitoreoRevision,
 } from './estado-actual-data.mjs';
@@ -15,13 +14,11 @@ import {
   applyDietProposalFromRecetaBlock,
   syncRecetaProposalsFromSoapSelection,
 } from './estado-actual-meds.mjs';
-import {
-  buildEaHistorialChartsRevision,
-  renderEaChartsSummarySection,
-} from './estado-actual-charts.mjs';
+import { buildEaHistorialChartsRevision, eaChartsCanOpen } from './estado-actual-charts.mjs';
 import { syncEaCopyFab } from './estado-actual-panel-actions.mjs';
 import {
-  renderEstadoClinicoSection,
+  buildEstadoClinicoProps,
+  fillEstadoClinicoMedGrid,
   wireEstadoClinicoInteractions,
   captureEaPanelUiState,
   restoreEaPanelUiState,
@@ -29,22 +26,6 @@ import {
 import { _eaPanelCache, findActivePatient, invalidateEaPanelCache } from './estado-actual-panel-core.mjs';
 import { formatEaSavedLabel } from './estado-actual-panel-format.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
-import { renderSnapshotSection, renderHistorialSection } from './estado-actual-panel-snapshot.mjs';
-
-/**
- * Botones de la barra de acciones del panel Estado actual.
- * Sala: solo registro manual. Interconsulta: registro + enviar a nota.
- * @param {Record<string, unknown> | null | undefined} settings
- */
-export function buildEaActionBarButtons(settings) {
-  var html =
-    '<button type="button" class="ea-btn ea-btn--primary" data-onclick="openEstadoActualRegistroModal">Registro manual</button>';
-  if (!isModeSala(settings)) {
-    html +=
-      '<button type="button" class="ea-btn ea-btn--success" data-onclick="estadoActualEnviarANota">Enviar a nota</button>';
-  }
-  return html;
-}
 
 export function buildEaShellKey(activeId, monitoreo) {
   return String(activeId || '') + '|' + buildEaMonitoreoRevision(monitoreo, activeId, getMedRecetaByPatient());
@@ -54,14 +35,29 @@ export function buildEaDataKey(monitoreo, activeId) {
   return buildEaMonitoreoRevision(monitoreo, activeId, getMedRecetaByPatient());
 }
 
-/** The empty view loads lazily; a later shell render must not be overwritten when it arrives. */
+/** The views load lazily; a later render must not be overwritten when an earlier import arrives. */
 var eaPaintSeq = 0;
+
+/** @type {typeof import('./estado-actual-panel-render-view.jsx') | null} */
+var shellView = null;
+
+/** Run `cb` with the view: now when it is already loaded, else once it has loaded. */
+function withShellView(cb) {
+  if (shellView) {
+    cb(shellView);
+    return;
+  }
+  import('./estado-actual-panel-render-view.jsx').then(function (view) {
+    shellView = view;
+    cb(view);
+  });
+}
 
 export function renderEaEmptyPanel(mount, onReady) {
   syncEaCopyFab(false);
   invalidateEaPanelCache();
   var seq = ++eaPaintSeq;
-  import('./estado-actual-panel-render-view.jsx').then(function (view) {
+  withShellView(function (view) {
     if (seq !== eaPaintSeq) return;
     view.renderEmptyPanel(mount);
     if (onReady) onReady();
@@ -113,26 +109,29 @@ export function syncEaRecetaProposals(patient, activeId, monitoreo) {
  */
 export function patchEaPanelDynamicSections(mount, patient, monitoreo, patchOpts) {
   patchOpts = patchOpts || {};
+  var view = shellView;
+  if (!view) return; // the panel was never painted
   var snapshot = deriveSnapshot(monitoreo);
-  var balTurno = balanceTurno(monitoreo);
   var balGlobal = balanceGlobalHistorico(monitoreo);
   var savedLabel = formatEaSavedLabel(monitoreo.textoGuardado && monitoreo.textoGuardado.savedAt);
 
   if (patchOpts.refreshClinico) {
     var clinicoDet = mount.querySelector('.ea-estado-clinico');
     if (clinicoDet) {
-      clinicoDet.outerHTML = renderEstadoClinicoSection(monitoreo, getEaPanelRuntime().getActiveId(), patient);
+      var activeId = getEaPanelRuntime().getActiveId();
+      view.replaceClinico(clinicoDet, buildEstadoClinicoProps(monitoreo, activeId, patient));
+      fillEstadoClinicoMedGrid(mount, monitoreo, activeId);
       wireEstadoClinicoInteractions(mount, patient);
     }
   }
 
   var snapEl = mount.querySelector('#ea-snapshot');
-  if (snapEl) snapEl.outerHTML = renderSnapshotSection(snapshot, balTurno, balGlobal);
+  if (snapEl) view.replaceSnapshot(snapEl, snapshot, balGlobal);
 
   var histEl = mount.querySelector('#ea-historial');
   if (histEl) {
     var histWasOpen = histEl.open;
-    histEl.outerHTML = renderHistorialSection(Array.isArray(monitoreo.historial) ? monitoreo.historial : []);
+    view.replaceHistorial(histEl, Array.isArray(monitoreo.historial) ? monitoreo.historial : []);
     if (histWasOpen) {
       var newHist = mount.querySelector('#ea-historial');
       if (newHist) newHist.open = true;
@@ -148,7 +147,7 @@ export function patchEaPanelDynamicSections(mount, patient, monitoreo, patchOpts
       var chartsRev = buildEaHistorialChartsRevision(monitoreo);
       if (mount._eaChartsSummaryRev !== chartsRev) {
         mount._eaChartsSummaryRev = chartsRev;
-        chartsSummary.outerHTML = renderEaChartsSummarySection(monitoreo);
+        view.replaceChartsSummary(chartsSummary, eaChartsCanOpen(monitoreo));
       }
     }
   }
@@ -160,31 +159,25 @@ export function patchEaPanelDynamicSections(mount, patient, monitoreo, patchOpts
  * @param {Record<string, unknown>} monitoreo
  * @param {string | null} activeId
  * @param {string} savedLabel
+ * @param {(() => void) | null} [onPainted] runs once the panel is in the DOM (the view loads lazily the first time)
  */
-export function renderEaFullPanelShell(mount, patient, monitoreo, activeId, savedLabel) {
-  eaPaintSeq++;
+export function renderEaFullPanelShell(mount, patient, monitoreo, activeId, savedLabel, onPainted) {
+  var seq = ++eaPaintSeq;
   var eaUiState = captureEaPanelUiState(mount);
-
-  mount.innerHTML =
-    '<div class="estado-actual-panel">' +
-    '<div class="ea-action-bar">' +
-    '<h3 class="fit-title">Estado actual</h3>' +
-    '<span id="ea-meta-guardado" class="ea-meta-guardado">' +
-    savedLabel +
-    '</span>' +
-    '<div class="ea-action-bar__cluster" role="group" aria-label="Acciones de monitoreo">' +
-    renderEaChartsSummarySection(monitoreo) +
-    buildEaActionBarButtons(getEaPanelRuntime().getSettings()) +
-    '</div>' +
-    '</div>' +
-    '<div class="ea-main">' +
-    renderEstadoClinicoSection(monitoreo, activeId, patient) +
-    renderHistorialSection(Array.isArray(monitoreo.historial) ? monitoreo.historial : []) +
-    '</div>' +
-    '</div>';
-
-  restoreEaPanelUiState(mount, eaUiState);
-  wireEstadoClinicoInteractions(mount, patient);
+  withShellView(function (view) {
+    if (seq !== eaPaintSeq) return;
+    view.paintShell(mount, {
+      savedLabel: savedLabel,
+      chartsCanOpen: eaChartsCanOpen(monitoreo),
+      sala: isModeSala(getEaPanelRuntime().getSettings()),
+      clinico: buildEstadoClinicoProps(monitoreo, activeId, patient),
+      historial: Array.isArray(monitoreo.historial) ? monitoreo.historial : [],
+    });
+    fillEstadoClinicoMedGrid(mount, monitoreo, activeId);
+    restoreEaPanelUiState(mount, eaUiState);
+    wireEstadoClinicoInteractions(mount, patient);
+    if (onPainted) onPainted();
+  });
 }
 
 /**
@@ -269,11 +262,12 @@ export function renderEstadoActualPanel(opts) {
     return;
   }
 
-  renderEaFullPanelShell(mount, patient, monitoreo, activeId, savedLabel);
-  _eaPanelCache.shellKey = shellKey;
-  _eaPanelCache.dataKey = dataKey;
-  syncEaCopyFab(true);
-  if (onReady) onReady();
+  renderEaFullPanelShell(mount, patient, monitoreo, activeId, savedLabel, function () {
+    _eaPanelCache.shellKey = shellKey;
+    _eaPanelCache.dataKey = dataKey;
+    syncEaCopyFab(true);
+    if (onReady) onReady();
+  });
 }
 
 export function navigateToEstadoActualPanel() {

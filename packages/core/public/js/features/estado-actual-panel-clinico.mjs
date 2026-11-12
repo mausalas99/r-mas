@@ -15,24 +15,18 @@ import {
   isDietaParenteral,
 } from './estado-actual-data.mjs';
 import {
-  hasPendingEaProposals,
   estadoClinicoForDisplay,
   estadoClinicoForText,
   resolveEaAbxFechaActualizacion,
   DIET_PENDING_KEYS,
 } from './estado-actual-meds.mjs';
 import { getDietOptions, markDietAsManuallyConfirmed } from './estado-actual-meds-diet.mjs';
-import { renderMedCategoryGrid, wireMedCategoryGrid } from './estado-actual-med-ui.mjs';
+import { refreshMedCategoryBlock, wireMedCategoryGrid } from './estado-actual-med-ui.mjs';
 import { buildEstadoActualText } from './estado-actual-text.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 import { eaPanelBridge } from './estado-actual-panel-bridge.mjs';
-import {
-  renderEstadoClinicoBodyHtml,
-  syncSoporteParamsVisibility,
-  refreshSoporteCalcHints,
-} from './estado-actual-panel-clinico-html.mjs';
+import { syncSoporteParamsVisibility, refreshSoporteCalcHints } from './estado-actual-panel-clinico-html.mjs';
 import { normalizeSoporteValue } from './estado-actual-ventilatorio.mjs';
-import { renderSnapshotSection } from './estado-actual-panel-snapshot.mjs';
 import { resolveVentilatorioLabContext } from './estado-actual-ventilatorio-labs.mjs';
 import { cloudSyncNowIso } from './cloud-sync/cloud-sync-clock.mjs';
 
@@ -166,39 +160,36 @@ function buildVitalsCtx(monitoreo, activeId, patient) {
   };
 }
 
-function renderEstadoClinicoSection(monitoreo, activeId, patient) {
+/**
+ * Inputs for `EaClinicoSection` (estado-actual-panel-clinico-view.jsx).
+ * @param {Record<string, any>} monitoreo
+ * @param {string | null} activeId
+ * @param {{ peso?: unknown } | null} patient
+ */
+function buildEstadoClinicoProps(monitoreo, activeId, patient) {
   var pend = monitoreo.pendienteReceta || {};
   var dietPending = hasDietProposal(pend);
   var ec = estadoClinicoForDisplay(monitoreo, eaManejoFechaOpts(activeId, monitoreo));
-  var dietaSuplemento = isDietaSuplemento(ec.dieta);
   var dietaParenteral = isDietaParenteral(ec.dieta);
   var dietWeight = resolveDietWeightKg({ patientPeso: patient && patient.peso, pesoRef: ec.pesoRef });
-  var kcalDisplay = resolveKcalDisplay(ec, pend, dietPending, dietWeight, dietaParenteral);
-  var medFieldsHtml = renderMedCategoryGrid(monitoreo, activeId, getMedRecetaByPatient());
-  var anyPending = hasPendingEaProposals(pend);
-  var dietOptions = getDietOptions(monitoreo);
-  var dietOptionSelected = resolveDietOptionSelected(monitoreo);
-  var vitalsCtx = buildVitalsCtx(monitoreo, activeId, patient);
+  return {
+    ec: ec,
+    dietPending: dietPending,
+    dietaSuplemento: isDietaSuplemento(ec.dieta),
+    dietaParenteral: dietaParenteral,
+    kcalDisplay: resolveKcalDisplay(ec, pend, dietPending, dietWeight, dietaParenteral),
+    dietWeight: dietWeight,
+    dietOptions: getDietOptions(monitoreo),
+    dietOptionSelected: resolveDietOptionSelected(monitoreo),
+    vitalsCtx: buildVitalsCtx(monitoreo, activeId, patient),
+    snapshot: deriveSnapshot(monitoreo),
+    balGlobal: balanceGlobalHistorico(monitoreo),
+  };
+}
 
-  return (
-    '<details class="ea-estado-clinico" open>' +
-    '<summary>Estado clínico general</summary>' +
-    renderEstadoClinicoBodyHtml(
-      ec,
-      dietPending,
-      dietaSuplemento,
-      kcalDisplay,
-      dietWeight,
-      medFieldsHtml,
-      anyPending,
-      dietOptions,
-      dietOptionSelected,
-      dietaParenteral,
-      vitalsCtx,
-      renderSnapshotSection(deriveSnapshot(monitoreo), balanceTurno(monitoreo), balanceGlobalHistorico(monitoreo))
-    ) +
-    '</details>'
-  );
+/** Fill the medication grid frame the view leaves empty (the grid is still built as a string). */
+function fillEstadoClinicoMedGrid(root, monitoreo, activeId) {
+  refreshMedCategoryBlock(root, null, monitoreo, activeId, getMedRecetaByPatient());
 }
 
 /** @param {{ bold?: boolean }} [opts] `bold`: markdown-bold zone labels, meds and vitals (clipboard copy only). */
@@ -359,7 +350,8 @@ export {
   captureEaPanelUiState,
   restoreEaPanelUiState,
   getEstadoActualTextForPatient,
-  renderEstadoClinicoSection,
+  buildEstadoClinicoProps,
+  fillEstadoClinicoMedGrid,
   wireEstadoClinicoInteractions,
   generateEstadoActualText,
 };
