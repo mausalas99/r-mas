@@ -8,6 +8,7 @@ import { buildPaletteItems, rankPalette } from '../command-palette-model.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import { selectPatient } from './patients.mjs';
 import { shellToggleSettingsDropdown } from '../app-shell-lazy-panels.mjs';
+import { drawPaletteList, groupOf } from './command-palette-view.jsx';
 
 var ctx = null;
 var dom = null;
@@ -175,28 +176,6 @@ function syncSelection() {
   if (sel && typeof sel.scrollIntoView === 'function') sel.scrollIntoView({ block: 'nearest' });
 }
 
-var SVG_OPEN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">';
-var ROW_ICON_SVG = {
-  bolt: SVG_OPEN + '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
-  page: SVG_OPEN + '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/></svg>',
-  person: SVG_OPEN + '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
-};
-var ROW_ICON_KEY = {
-  action: 'bolt',
-  section: 'page',
-  'app-tab': 'page',
-  patient: 'person',
-  'patient-section': 'page',
-};
-
-// Group order matches the board: Secciones, Pacientes, Acciones.
-var GROUP_TITLES = ['Secciones', 'Pacientes', 'Acciones'];
-function groupOf(item) {
-  if (item.kind === 'patient' || item.kind === 'patient-section') return 1;
-  if (item.kind === 'action') return 2;
-  return 0;
-}
-
 function renderResults(query) {
   var d = ensureDom();
   var items = buildPaletteItems(settings(), getPatients());
@@ -205,70 +184,17 @@ function renderResults(query) {
     return groupOf(a) - groupOf(b);
   });
   selectedIndex = 0;
-  d.list.textContent = '';
-  var lastGroup = -1;
-  results.forEach(function (item, i) {
-    var g = groupOf(item);
-    if (g !== lastGroup) {
-      lastGroup = g;
-      var title = document.createElement('li');
-      title.className = 'cmdk-group-title';
-      title.setAttribute('role', 'presentation');
-      title.textContent = GROUP_TITLES[g];
-      d.list.appendChild(title);
-    }
-    var li = document.createElement('li');
-    li.className =
-      'cmdk-item' +
-      (item.kind === 'action' ? ' cmdk-item--action' : '') +
-      (i === 0 ? ' is-selected' : '');
-    li.setAttribute('role', 'option');
-    li.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
-    li.dataset.cmdkIndex = String(i);
-    var icon = document.createElement('span');
-    icon.className = 'cmdk-item-icon';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.innerHTML = ROW_ICON_SVG[ROW_ICON_KEY[item.kind]] || '';
-    li.appendChild(icon);
-    var label = document.createElement('span');
-    label.className = 'cmdk-item-label';
-    label.textContent = item.label;
-    li.appendChild(label);
-    // Patient rows keep their room hint; action/section rows show an icon only.
-    var hintText = item.kind === 'patient' || item.kind === 'patient-section' ? String(item.hint || '') : '';
-    if (hintText) {
-      var hint = document.createElement('span');
-      hint.className = 'cmdk-item-hint';
-      hint.textContent = hintText;
-      li.appendChild(hint);
-    }
-    li.addEventListener('pointerenter', function () {
+  drawPaletteList(d.list, {
+    items: results,
+    selected: 0,
+    query: query,
+    onHover: function (i) {
       if (selectedIndex === i) return;
       selectedIndex = i;
       syncSelection();
-    });
-    li.addEventListener('click', function () {
-      executeItem(item);
-    });
-    d.list.appendChild(li);
+    },
+    onPick: executeItem,
   });
-  if (!results.length) {
-    var empty = document.createElement('li');
-    empty.className = 'cmdk-empty';
-    empty.setAttribute('role', 'status');
-    if (String(query || '').trim()) {
-      empty.innerHTML =
-        '<span class="cmdk-empty-icon" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>' +
-        '<span class="empty-state-title">Sin coincidencias</span>' +
-        '<span class="empty-state-lead">Prueba con una acción (exportar, labs), el nombre del paciente o una sección.</span>';
-    } else {
-      empty.innerHTML =
-        '<span class="cmdk-empty-icon" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>' +
-        '<span class="empty-state-title">Atajos del workbench</span>' +
-        '<span class="empty-state-lead">Escribe para buscar acciones, pacientes o secciones del expediente.</span>';
-    }
-    d.list.appendChild(empty);
-  }
 }
 
 function executeItem(item) {
