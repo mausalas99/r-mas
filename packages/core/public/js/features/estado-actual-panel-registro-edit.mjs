@@ -6,6 +6,7 @@ import { buildBombaRow, syncEaGluMode } from './estado-actual-panel-glu.mjs';
 import { setVitalStackFromSeries } from './estado-actual-panel-vitals.mjs';
 import {
   fillIoFields,
+  whenRegistroViewReady,
   syncIoBalanceFromForm,
   applyParsedVitals,
   applyParsedGlus,
@@ -64,7 +65,7 @@ function applyMedicionBomba(form, bomba) {
   if (toggle && 'checked' in toggle) toggle.checked = bomba.length > 0;
   var bombaList = form.querySelector('#ea-bomba-list');
   if (bombaList && bomba.length) {
-    bombaList.innerHTML = '';
+    bombaList.replaceChildren();
     bomba.forEach(function (b) {
       bombaList.appendChild(buildBombaRow(b));
     });
@@ -112,6 +113,9 @@ export function editarEstadoActualMedicion(id) {
   if (typeof window !== 'undefined' && typeof window.openEstadoActualRegistroModal === 'function') {
     window.openEstadoActualRegistroModal();
   }
-  applyMedicionToForm(row);
-  setEaRegistroEditMode(document.getElementById('ea-form'), id);
+  // Extra/event rows are Preact-rendered from a lazily loaded view: wait for it (sync when cached).
+  whenRegistroViewReady(function () {
+    applyMedicionToForm(row);
+    setEaRegistroEditMode(document.getElementById('ea-form'), id);
+  });
 }

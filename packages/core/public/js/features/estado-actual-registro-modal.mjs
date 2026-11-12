@@ -2,7 +2,7 @@ import { closeEstadoActualPasteModal } from './estado-actual-paste-modal.mjs';
 import { setEaFormOpenPatientId } from './estado-actual-panel-core.mjs';
 import { setEaRegistroEditMode } from './estado-actual-panel-registro-edit.mjs';
 import { toDatetimeLocalValue } from './estado-actual-panel-format.mjs';
-import { syncIoBalanceFromForm, buildIoExtraRow } from './estado-actual-panel-registro.mjs';
+import { syncIoBalanceFromForm, buildIoExtraRow, whenRegistroViewReady } from './estado-actual-panel-registro.mjs';
 
 /** @type {{ ensureForm(): void, resetForm(): void, showToast(msg: string, type?: string): void }} */
 let rt = {
@@ -100,13 +100,15 @@ export function openPastHemodialisisRegistro() {
   var recorded = document.getElementById('ea-recorded-at');
   if (recorded && 'value' in recorded) recorded.value = toDatetimeLocalValue(yesterday);
   var extraList = form.querySelector('#ea-io-extra-list');
-  if (extraList) {
-    var row = buildIoExtraRow({ kind: 'ultrafiltrado' });
-    extraList.appendChild(row);
-    var valueEl = row.querySelector('[data-ea-io-extra-value]');
-    if (valueEl && 'focus' in valueEl) valueEl.focus();
-  }
-  syncIoBalanceFromForm(form);
+  whenRegistroViewReady(function () {
+    if (extraList) {
+      var row = buildIoExtraRow({ kind: 'ultrafiltrado' });
+      extraList.appendChild(row);
+      var valueEl = row.querySelector('[data-ea-io-extra-value]');
+      if (valueEl && 'focus' in valueEl) valueEl.focus();
+    }
+    syncIoBalanceFromForm(form);
+  });
 }
 
 export function closeEstadoActualRegistroModal() {
