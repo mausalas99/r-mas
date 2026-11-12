@@ -54,68 +54,135 @@
     return true;
   }
 
-  var ICON_ATTRS =
-    'class="clinical-onboard-mode-card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
-  var CHEVRON =
-    '<svg class="clinical-onboard-mode-card-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+  // DOM builders (no innerHTML). Keep in sync with features/clinical-onboarding-shell.mjs and
+  // features/clinical-onboarding-view.jsx. This file is a classic script that runs before the
+  // bundle, so it cannot import the Preact view.
+  var SVG_NS = 'http://www.w3.org/2000/svg';
 
-  // Keep in sync with buildModeCardHtml in features/clinical-onboarding-shell.mjs.
-  function modeCard(mode, iconPaths, title, descHtml, primary) {
-    return (
-      '<button type="button" class="clinical-onboard-mode-card' +
-      (primary ? ' clinical-onboard-mode-card--primary' : '') +
-      '" data-sync-mode="' + mode + '">' +
-      '<span class="clinical-onboard-mode-card-icon-wrap"><svg ' + ICON_ATTRS + '>' + iconPaths + '</svg></span>' +
-      '<span class="clinical-onboard-mode-card-head">' +
-      '<span class="clinical-onboard-mode-card-title">' + title + '</span>' +
-      '<span class="clinical-onboard-mode-card-desc">' + descHtml + '</span>' +
-      '</span>' +
-      CHEVRON +
-      '</button>'
+  function el(tag, attrs, kids, ns) {
+    var n = ns ? document.createElementNS(ns, tag) : document.createElement(tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    (kids || []).forEach(function (c) {
+      n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    });
+    return n;
+  }
+
+  function svgEl(tag, attrs, kids) {
+    return el(tag, attrs, kids, SVG_NS);
+  }
+
+  function svgIcon(cls, size, shapes) {
+    return svgEl(
+      'svg',
+      {
+        class: cls,
+        width: size,
+        height: size,
+        viewBox: '0 0 24 24',
+        fill: 'none',
+        stroke: 'currentColor',
+        'stroke-width': '2',
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round',
+        'aria-hidden': 'true',
+      },
+      shapes.map(function (s) {
+        return svgEl(s[0], s[1]);
+      })
     );
   }
 
-  function buildSyncModeBodyHtml() {
-    return (
-      '<div class="clinical-onboard-mode-grid" role="group" aria-label="Modo de uso">' +
+  function modeCard(mode, shapes, title, descKids, primary) {
+    return el(
+      'button',
+      {
+        type: 'button',
+        class: 'clinical-onboard-mode-card' + (primary ? ' clinical-onboard-mode-card--primary' : ''),
+        'data-sync-mode': mode,
+      },
+      [
+        el('span', { class: 'clinical-onboard-mode-card-icon-wrap' }, [
+          svgIcon('clinical-onboard-mode-card-icon', '22', shapes),
+        ]),
+        el('span', { class: 'clinical-onboard-mode-card-head' }, [
+          el('span', { class: 'clinical-onboard-mode-card-title' }, [title]),
+          el('span', { class: 'clinical-onboard-mode-card-desc' }, descKids),
+        ]),
+        svgIcon('clinical-onboard-mode-card-chevron', '18', [['path', { d: 'm9 18 6-6-6-6' }]]),
+      ]
+    );
+  }
+
+  function buildSyncModeBody() {
+    return el('div', { class: 'clinical-onboard-mode-grid', role: 'group', 'aria-label': 'Modo de uso' }, [
       modeCard(
         'nube',
-        '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+        [['path', { d: 'M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z' }]],
         'Guardia con R+ Cloud',
-        'Crea tu @usuario, elige rotación y sincroniza censo y equipos por <strong>Nube</strong>.',
+        [
+          'Crea tu @usuario, elige rotación y sincroniza censo y equipos por ',
+          el('strong', {}, ['Nube']),
+          '.',
+        ],
         true
-      ) +
+      ),
       modeCard(
         'existing',
-        '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>',
+        [
+          ['path', { d: 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4' }],
+          ['polyline', { points: '10 17 15 12 10 7' }],
+          ['line', { x1: '15', y1: '12', x2: '3', y2: '12' }],
+        ],
         'Ya tengo cuenta',
-        'Inicia sesión en Nube, recuerda este dispositivo y restaura tu censo y <strong>Mi rotación</strong>.'
-      ) +
+        [
+          'Inicia sesión en Nube, recuerda este dispositivo y restaura tu censo y ',
+          el('strong', {}, ['Mi rotación']),
+          '.',
+        ]
+      ),
       modeCard(
         'local',
-        '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
+        [
+          ['rect', { x: '2', y: '3', width: '20', height: '14', rx: '2' }],
+          ['path', { d: 'M8 21h8' }],
+          ['path', { d: 'M12 17v4' }],
+        ],
         'Solo este equipo',
-        'Sin Nube: expedientes y notas solo en esta Mac. Sin rotaciones ni sala compartida.'
-      ) +
-      '</div>'
-    );
+        ['Sin Nube: expedientes y notas solo en esta Mac. Sin rotaciones ni sala compartida.']
+      ),
+    ]);
   }
 
-  function buildStageHtml() {
-    return (
-      '<div class="clinical-onboarding-stage">' +
-      '<div class="clinical-onboarding-stage-inner">' +
-      '<div class="clinical-onboarding-progress" role="progressbar" aria-label="Progreso del registro" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1">' +
-      '<span class="clinical-onboarding-progress-label">Paso 1 de 3 · Modo</span>' +
-      '<span class="clinical-onboarding-progress-track"><span class="is-active"></span><span class=""></span><span class=""></span></span>' +
-      '</div>' +
-      '<h3 class="clinical-onboarding-title">¿Cómo usarás R+?</h3>' +
-      '<div class="clinical-onboarding-lead">' +
-      '<p>Elige cómo usarás R+ en este equipo. Con Nube creas cuenta o entras si ya tienes una; en solo equipo trabajas sin sincronizar.</p>' +
-      '</div>' +
-      buildSyncModeBodyHtml() +
-      '</div></div>'
-    );
+  function buildStage() {
+    var track = el('span', { class: 'clinical-onboarding-progress-track' }, [
+      el('span', { class: 'is-active' }),
+      el('span', { class: '' }),
+      el('span', { class: '' }),
+    ]);
+    return el('div', { class: 'clinical-onboarding-stage' }, [
+      el('div', { class: 'clinical-onboarding-stage-inner' }, [
+        el(
+          'div',
+          {
+            class: 'clinical-onboarding-progress',
+            role: 'progressbar',
+            'aria-label': 'Progreso del registro',
+            'aria-valuemin': '1',
+            'aria-valuemax': '3',
+            'aria-valuenow': '1',
+          },
+          [el('span', { class: 'clinical-onboarding-progress-label' }, ['Paso 1 de 3 · Modo']), track]
+        ),
+        el('h3', { class: 'clinical-onboarding-title' }, ['¿Cómo usarás R+?']),
+        el('div', { class: 'clinical-onboarding-lead' }, [
+          el('p', {}, [
+            'Elige cómo usarás R+ en este equipo. Con Nube creas cuenta o entras si ya tienes una; en solo equipo trabajas sin sincronizar.',
+          ]),
+        ]),
+        buildSyncModeBody(),
+      ]),
+    ]);
   }
 
   function persistSyncModeChoice(mode) {
@@ -141,28 +208,27 @@
   }
 
   function showPreparingHost(host) {
-    host.innerHTML = buildBootLoadingHtml('Preparando R+', 'Iniciando R+…');
+    host.replaceChildren(buildBootLoading('Preparando R+', 'Iniciando R+…'));
     if (window.__rpcOnboardingBootProgress && typeof window.__rpcOnboardingBootProgress.start === 'function') {
       window.__rpcOnboardingBootProgress.start(host);
     }
   }
 
-  function buildBootLoadingHtml(title, message) {
-    return (
-      '<div class="clinical-onboarding-stage"><div class="clinical-onboarding-stage-inner">' +
-      '<h3 class="clinical-onboarding-title">' +
-      title +
-      '</h3>' +
-      '<div class="clinical-onboard-boot-loader" role="status" aria-live="polite" aria-busy="true">' +
-      '<div class="clinical-onboard-boot-loader-row">' +
-      '<span class="clinical-onboard-boot-spinner" aria-hidden="true"></span>' +
-      '<p class="clinical-onboarding-status clinical-onboard-boot-progress-label">' +
-      message +
-      '</p></div>' +
-      '<div class="clinical-onboard-boot-progress-track" aria-hidden="true">' +
-      '<div class="clinical-onboard-boot-progress-bar" style="width:3%"></div>' +
-      '</div></div></div></div>'
-    );
+  function buildBootLoading(title, message) {
+    return el('div', { class: 'clinical-onboarding-stage' }, [
+      el('div', { class: 'clinical-onboarding-stage-inner' }, [
+        el('h3', { class: 'clinical-onboarding-title' }, [title]),
+        el('div', { class: 'clinical-onboard-boot-loader', role: 'status', 'aria-live': 'polite', 'aria-busy': 'true' }, [
+          el('div', { class: 'clinical-onboard-boot-loader-row' }, [
+            el('span', { class: 'clinical-onboard-boot-spinner', 'aria-hidden': 'true' }),
+            el('p', { class: 'clinical-onboarding-status clinical-onboard-boot-progress-label' }, [message]),
+          ]),
+          el('div', { class: 'clinical-onboard-boot-progress-track', 'aria-hidden': 'true' }, [
+            el('div', { class: 'clinical-onboard-boot-progress-bar', style: 'width:3%' }),
+          ]),
+        ]),
+      ]),
+    ]);
   }
 
   function appendScript(src, onDone) {
@@ -243,7 +309,7 @@
 
     document.documentElement.classList.add(ACTIVE_CLASS);
     if (!host.querySelector('.clinical-onboard-mode-grid')) {
-      host.innerHTML = buildStageHtml();
+      host.replaceChildren(buildStage());
     }
     wireEarlySyncModeClicks(host);
     window.__RPC_EARLY_ONBOARDING_MOUNTED__ = true;
