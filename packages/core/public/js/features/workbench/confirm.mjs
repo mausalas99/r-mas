@@ -8,94 +8,11 @@
  *    this just triggers the `om-rise` undo toast.
  * Modal open transition ~160ms ease-out. Esc key and click-outside close it.
  */
-import { escHtml } from '../../dom-escape.mjs';
 import { showUndoToast } from './undo-toast.mjs';
 import { wireFocusTrap, restoreFocus, focusFirstFocusable } from '../../modal-dismiss.mjs';
 
 /** @type {{ backdrop: HTMLElement, onKeydown: (ev: KeyboardEvent) => void, resolve: (v: string) => void, trap: { unwire: () => void }, previousFocus: Element|null }|null} */
 let activeConfirm = null;
-
-/**
- * @param {{
- *   weight: 'destructive'|'consequence',
- *   title?: string,
- *   message?: string,
- *   consequenceLabel?: string,
- *   consequenceText?: string,
- *   confirmLabel?: string,
- *   cancelLabel?: string,
- *   secondaryLabel?: string,
- * }} opts
- */
-function confirmButtonClass(weight) {
-  return weight === 'destructive' ? 'wb-btn wb-btn-danger' : 'wb-btn wb-btn-primary';
-}
-
-function buildConsequenceHtml(weight, consequenceLabel, consequenceText) {
-  if (weight !== 'consequence' || !consequenceText) return '';
-  const labelHtml = consequenceLabel
-    ? `<span class="wb-confirm-consequence-label">${escHtml(consequenceLabel)}</span>`
-    : '';
-  return (
-    '<div class="wb-confirm-consequence">' +
-    labelHtml +
-    `<span class="wb-confirm-consequence-text">${escHtml(consequenceText)}</span>` +
-    '</div>'
-  );
-}
-
-function buildSecondaryHtml(secondaryLabel) {
-  return secondaryLabel
-    ? `<button type="button" class="wb-btn wb-btn-ghost" data-wb-confirm-secondary>${escHtml(secondaryLabel)}</button>`
-    : '';
-}
-
-function footerClassForWeight(weight) {
-  return weight === 'consequence' ? 'wb-confirm-footer wb-confirm-footer--rail' : 'wb-confirm-footer';
-}
-
-export function buildConfirmModalHtml(opts = {}) {
-  const {
-    weight,
-    title = '',
-    message = '',
-    consequenceLabel = '',
-    consequenceText = '',
-    confirmLabel = 'Confirmar',
-    cancelLabel = 'Cancelar',
-    secondaryLabel = '',
-    inputLabel = '',
-    inputValue = '',
-    inputType = 'text',
-  } = opts;
-
-  const confirmClass = confirmButtonClass(weight);
-  const consequenceHtml = buildConsequenceHtml(weight, consequenceLabel, consequenceText);
-  const secondaryHtml = buildSecondaryHtml(secondaryLabel);
-  const footerClass = footerClassForWeight(weight);
-
-  return (
-    '<div class="wb-scrim" data-wb-confirm-backdrop>' +
-    `<div class="wb-confirm-modal wb-confirm-modal--${weight}" role="dialog" aria-modal="true">` +
-    '<div class="wb-confirm-body">' +
-    `<span class="wb-confirm-title">${escHtml(title)}</span>` +
-    consequenceHtml +
-    (message ? `<span class="wb-confirm-message">${escHtml(message)}</span>` : '') +
-    (inputLabel
-      ? `<input type="${inputType === 'password' ? 'password' : 'text'}" class="wb-confirm-input" data-wb-confirm-input autocomplete="off" aria-label="${escHtml(inputLabel)}" value="${escHtml(inputValue)}">`
-      : '') +
-    '</div>' +
-    `<div class="${footerClass}">` +
-    secondaryHtml +
-    '<div class="wb-confirm-footer-actions">' +
-    `<button type="button" class="wb-btn wb-btn-secondary" data-wb-confirm-cancel>${escHtml(cancelLabel)}</button>` +
-    `<button type="button" class="${confirmClass}" data-wb-confirm-ok>${escHtml(confirmLabel)}</button>` +
-    '</div>' +
-    '</div>' +
-    '</div>' +
-    '</div>'
-  );
-}
 
 /** @param {'confirm'|'cancel'|'secondary'} result */
 function closeActiveConfirm(result) {
@@ -110,21 +27,20 @@ function closeActiveConfirm(result) {
 }
 
 /**
- * @param {Parameters<typeof buildConfirmModalHtml>[0] & {
+ * @param {Record<string, any> & {
  *   onConfirm?: () => void,
  *   onCancel?: () => void,
  *   onSecondary?: () => void,
  * }} opts
  * @returns {Promise<'confirm'|'cancel'|'secondary'>}
  */
-function openModalConfirm(opts) {
+async function openModalConfirm(opts) {
+  const previousFocus = document.activeElement;
+  const { buildConfirmBackdrop } = await import('./confirm-view.jsx');
   return new Promise((resolve) => {
     if (activeConfirm) closeActiveConfirm('cancel');
-    const previousFocus = document.activeElement;
 
-    const wrap = document.createElement('div');
-    wrap.innerHTML = buildConfirmModalHtml(opts);
-    const backdrop = wrap.firstElementChild;
+    const backdrop = buildConfirmBackdrop(opts);
     document.body.appendChild(backdrop);
     const panel = backdrop.querySelector('[role="dialog"]');
     const trap = wireFocusTrap(panel);
