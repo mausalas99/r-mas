@@ -14,6 +14,9 @@ Añade los labs de 3 días al censo PDF y a la tabla de Guardia. Muestra NEGATIV
 - **Nuevo (Estado actual):** confirmar o descartar un medicamento propuesto, uno a la vez.
 - **Cambio (Estado actual):** rediseño visual de paneles y registro por pasos.
 - **Cambio (Tablero paciente):** las zonas marcadas muestran solo su primera línea.
+- **Nuevo (Respaldos):** «Datos para análisis» exporta los datos de los pacientes a Excel, una hoja por tipo.
+- **Cambio (Formularios):** cuarto, cama y registro avanzan solos al completar el valor.
+- **Cambio (Registro manual):** cada paso avanza solo al terminar de escribir. Un interruptor vuelve a la vista anterior.
 
 ## Instalación
 

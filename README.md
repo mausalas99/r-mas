@@ -61,6 +61,8 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 - **Labs:** NEGATIVO, POSITIVO y TRAZAS se muestran bien.
 - **Estado actual:** confirmar o descartar un medicamento propuesto, uno a la vez; rediseño visual.
 - **Tablero paciente:** zonas marcadas muestran solo su primera línea.
+- **Respaldos:** «Datos para análisis» exporta a Excel, una hoja por tipo de dato.
+- **Formularios:** cuarto, cama y registro avanzan solos al completar el valor.
 
 Notas: `docs/RELEASE_NOTES_8.5.5.txt`.
 
