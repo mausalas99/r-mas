@@ -225,7 +225,7 @@ export function clearLabWorkbenchMinimalDom() {
   var sec = document.getElementById('lab-output-section');
   if (sec) sec.style.display = 'none';
   var box = document.getElementById('lab-output-box');
-  if (box) box.innerHTML = '';
+  if (box) box.replaceChildren();
   var ta = document.getElementById('lab-input');
   if (ta) ta.value = '';
   syncLabOutputChrome();

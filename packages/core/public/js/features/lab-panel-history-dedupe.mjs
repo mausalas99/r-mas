@@ -26,8 +26,7 @@ import {
 import { isGasometriaOnlyResLabs } from '../lab-history-format.mjs';
 import {
   finishLabConsolidateUi,
-  wireLabConsolidateModal,
-  buildLabConsolidateModalHtml,
+  mountLabConsolidateModal,
   tipoLabel,
 } from './lab-panel-history-consolidate-modal.mjs';
 import { preferKeeperSetIdFromConsolidateResult } from './lab-panel-history-consolidate-refresh.mjs';
@@ -630,9 +629,8 @@ function consolidateLabHistoryByDayAndTipo() {
   var backdrop = document.createElement('div');
   backdrop.className = 'lab-conflict-backdrop';
   backdrop.id = 'lab-consolidate-backdrop';
-  backdrop.innerHTML = buildLabConsolidateModalHtml({ candidates: candidates });
   document.body.appendChild(backdrop);
-  wireLabConsolidateModal(backdrop, {
+  mountLabConsolidateModal(backdrop, {
     candidates: candidates,
     validateGroup: function (setIds) {
       return validateManualConsolidationGroup(

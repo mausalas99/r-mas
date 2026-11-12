@@ -25,9 +25,18 @@ function buildLoader() {
   root.className = 'paste-loader';
   root.setAttribute('role', 'status');
   root.setAttribute('aria-live', 'polite');
-  root.innerHTML =
-    '<div class="paste-loader-card"><div class="paste-loader-ring" aria-hidden="true"></div>' +
-    '<div><div class="paste-loader-text"></div><div class="paste-loader-step"></div></div></div>';
+  function div(cls, kids) {
+    var d = document.createElement('div');
+    if (cls) d.className = cls;
+    (kids || []).forEach(function (k) { d.appendChild(k); });
+    return d;
+  }
+  var ring = div('paste-loader-ring');
+  ring.setAttribute('aria-hidden', 'true');
+  root.appendChild(div('paste-loader-card', [
+    ring,
+    div('', [div('paste-loader-text'), div('paste-loader-step')]),
+  ]));
   document.body.appendChild(root);
   return root;
 }
