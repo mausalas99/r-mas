@@ -2,7 +2,6 @@
  * Workbench calendar popover, Preact. Same markup date-popover.mjs used to write as a string.
  */
 import { render } from 'preact';
-import { buildCalendarGridDays } from './date-popover.mjs';
 
 const WEEKDAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 const MONTH_FORMATTER = new Intl.DateTimeFormat('es', { month: 'long' });
@@ -42,10 +41,10 @@ function LabDays({ labDays, activeKey, onLabDay }) {
 }
 
 /**
- * @param {{ state: Record<string, any>, onPrev?: () => void, onNext?: () => void,
+ * @param {{ state: Record<string, any>, days: Array<{ date: Date, inMonth: boolean }>, onPrev?: () => void, onNext?: () => void,
  *   onDay?: (key: string) => void, onQuick?: (id: string) => void, onLabDay?: (key: string) => void }} p
  */
-export function DatePopover({ state, onPrev, onNext, onDay, onQuick, onLabDay }) {
+export function DatePopover({ state, days, onPrev, onNext, onDay, onQuick, onLabDay }) {
   const {
     monthDate, selectedDate = null, today = new Date(), hasData = () => true,
     loadedRangeLabel = '', quickFilters = [], activeQuickFilterId = null, labDays = [],
@@ -65,7 +64,7 @@ export function DatePopover({ state, onPrev, onNext, onDay, onQuick, onLabDay })
         {WEEKDAY_LABELS.map((w) => <span>{w}</span>)}
       </div>
       <div class="wb-date-popover-grid">
-        {buildCalendarGridDays(monthDate).map(({ date, inMonth }) => {
+        {days.map(({ date, inMonth }) => {
           const key = toDateKey(date);
           const dayHasData = inMonth && hasData(key);
           const classes = ['wb-date-popover-day'];

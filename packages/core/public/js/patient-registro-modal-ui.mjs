@@ -1,6 +1,7 @@
-import { drawRegistroRows } from './patient-registro-modal-view.jsx';
+import { lazyView } from './deferred-work.mjs';
 import { parseRegistrosFromBulkInput } from './patient-registro-parse.mjs';
 
+const registroView = lazyView(() => import('./patient-registro-modal-view.jsx'));
 var registroModalRows = [''];
 var registroModalMultiMode = false;
 
@@ -19,7 +20,8 @@ function registroRowsForRender() {
 function refreshRegistroModalListDom() {
   var listEl = document.getElementById('m-registro-list');
   if (!listEl) return;
-  drawRegistroRows(listEl, { rows: registroRowsForRender(), multi: registroModalMultiMode });
+  var props = { rows: registroRowsForRender(), multi: registroModalMultiMode };
+  registroView.use(function (v) { v.drawRegistroRows(listEl, props); });
 }
 
 /** @param {string[]} [values] */

@@ -72,3 +72,15 @@ export function scheduleTrailing(fn, delayMs) {
     fn();
   }, delay);
 }
+
+/**
+ * Keeps a Preact view out of the boot bundle. `load` is a dynamic import; it starts right away, so the
+ * chunk is usually there by the first use. `use(fn)` runs `fn(module)` now when loaded, else once it loads.
+ * @template M @param {() => Promise<M>} load @returns {{ use: (fn: (mod: M) => void) => void }}
+ */
+export function lazyView(load) {
+  let mod = null;
+  const pending = load().then((m) => { mod = m; return m; });
+  pending.catch(() => {}); // a failed preload resurfaces from use()
+  return { use(fn) { if (mod) fn(mod); else void pending.then(fn); } };
+}

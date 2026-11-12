@@ -4,11 +4,13 @@
  * and the fit watcher, and calls drawDashboard.
  */
 import { render } from 'preact';
-import { isGlucometriaMarkedAltered, isVitalAltered } from '../estado-actual-ranges.mjs';
-import { isTodoOverdue } from '../../todos-due.mjs';
-import { serviceById, hueForService } from './interconsult-catalog.mjs';
-import { packSoapCols } from './ea-glance-model.mjs';
-import { clinicalPriorityRank } from '../../labs-critical-values.mjs';
+
+/**
+ * Helpers the view calls, passed in by dashboard-mount.mjs (setDashboardDeps). They live in modules the boot
+ * bundle already holds; importing them here would split them into extra boot chunks now that this view loads lazily.
+ */
+let D = {};
+export function setDashboardDeps(deps) { D = deps; }
 
 function numText(value) {
   if (value == null || value === '') return '';
@@ -106,12 +108,12 @@ function range24h(series) {
 
 function vitalAlteredFlags(v, gluLast, glu) {
   return [
-    isVitalAltered('tas', v.tas) || isVitalAltered('tad', v.tad),
-    isVitalAltered('fc', v.fc),
-    isVitalAltered('fr', v.fr),
-    isVitalAltered('temp', v.temp),
-    isVitalAltered('sat', v.sat),
-    isGlucometriaMarkedAltered(gluLast && typeof gluLast === 'object' ? gluLast : { value: glu }),
+    D.isVitalAltered('tas', v.tas) || D.isVitalAltered('tad', v.tad),
+    D.isVitalAltered('fc', v.fc),
+    D.isVitalAltered('fr', v.fr),
+    D.isVitalAltered('temp', v.temp),
+    D.isVitalAltered('sat', v.sat),
+    D.isGlucometriaMarkedAltered(gluLast && typeof gluLast === 'object' ? gluLast : { value: glu }),
   ];
 }
 
@@ -200,9 +202,9 @@ function IcAssigned({ ids }) {
   return (
     <>
       {(Array.isArray(ids) ? ids : []).map((id) => {
-        var svc = serviceById(id);
+        var svc = D.serviceById(id);
         if (!svc) return null;
-        return <button type="button" class="svc" style={'--h:' + hueForService(svc)} data-dash-action="ic-toggle" data-ic-id={svc.id}>{svc.name}</button>;
+        return <button type="button" class="svc" style={'--h:' + D.hueForService(svc)} data-dash-action="ic-toggle" data-ic-id={svc.id}>{svc.name}</button>;
       })}
       <button type="button" class="svc-add" data-dash-action="ic-add">+ Agregar</button>
     </>
@@ -273,8 +275,8 @@ function sortDrawChips(chips) {
       return a.i - b.i;
     }
     if (aDown !== bDown) return aDown ? -1 : 1;
-    var aRank = clinicalPriorityRank(a.chip && a.chip.label);
-    var bRank = clinicalPriorityRank(b.chip && b.chip.label);
+    var aRank = D.clinicalPriorityRank(a.chip && a.chip.label);
+    var bRank = D.clinicalPriorityRank(b.chip && b.chip.label);
     if (aRank !== bRank) return aRank - bRank;
     return a.i - b.i;
   });
@@ -448,7 +450,7 @@ function MedsBand({ model }) {
         <div class="card-h">Medicamentos</div>
         <div class="card-b" data-fit=""><div class="soap-pack" data-fit-cols="3,4">
           {/* Clinical zone order from packSoapCols, flattened: CSS columns balance the layout. */}
-          {packSoapCols(soap).flat().map((zone) => <SoapZone zone={zone} />)}
+          {D.packSoapCols(soap).flat().map((zone) => <SoapZone zone={zone} />)}
         </div></div>
       </button>
     </div>
@@ -479,7 +481,7 @@ function Rows({ list, markOverdue, fromStart, now }) {
   return (
     <ul class="rows" data-fit-zone="" data-fit-from-start={fromStart ? '' : undefined}>
       {list.map((item) => {
-        var overdue = !!markOverdue && isTodoOverdue(item, now);
+        var overdue = !!markOverdue && D.isTodoOverdue(item, now);
         var t = rowTime(item);
         return (
           <li data-fit-item="" class={overdue ? 'is-overdue' : undefined}>
@@ -521,7 +523,7 @@ function GlucoseCard({ model }) {
           var n = Number(obj.value);
           var h = Number.isFinite(n) ? Math.max(12, Math.min(52, Math.round(n / 4))) : 12;
           return (
-            <div class={'glu-bar' + (isGlucometriaMarkedAltered(obj) ? ' hi' : '')}>
+            <div class={'glu-bar' + (D.isGlucometriaMarkedAltered(obj) ? ' hi' : '')}>
               <i style={'height:' + h + 'px'}></i><b>{numText(obj.value) || '—'}</b><small>{String(obj.time || '')}</small>
             </div>
           );

@@ -280,7 +280,7 @@ test('DatePopover matches the old markup', async () => {
     activeQuickFilterId: 'hoy',
     labDays: [{ dayKey: '2026-11-10', label: '10 nov', meta: '3 labs' }, { dayKey: '2026-11-9', label: '9 nov & x', disabled: true }, { dayKey: '2026-11-8', label: '8 nov' }],
   };
-  assert.equal(norm(html({ state })), norm(buildDatePopoverHtml(state)));
+  assert.equal(norm(html({ state, days: buildCalendarGridDays(state.monthDate) })), norm(buildDatePopoverHtml(state)));
   const bare = { monthDate: new Date(2026, 1, 1), today };
-  assert.equal(norm(html({ state: bare })), norm(buildDatePopoverHtml(bare)));
+  assert.equal(norm(html({ state: bare, days: buildCalendarGridDays(bare.monthDate) })), norm(buildDatePopoverHtml(bare)));
 });

@@ -1,7 +1,9 @@
 import { CLINICAL_SALA_VALUES } from '../../lib/clinical-salas.mjs';
 import { clinicalSessionContext } from './clinical-access-runtime.mjs';
 import { esc } from './dom-escape.mjs';
-import { drawSalaOptions } from './patient-sala-view.jsx';
+import { lazyView } from './deferred-work.mjs';
+
+const salaView = lazyView(() => import('./patient-sala-view.jsx'));
 
 /** @param {object[]|null|undefined} teams @param {string} teamId */
 function findTeamById(teams, teamId) {
@@ -56,8 +58,10 @@ export function syncPatientRegistrationSalaSelect(teamId) {
     tid = teamSel instanceof HTMLSelectElement ? teamSel.value : '';
   }
   const defaultSala = resolveRegistrationSalaDefault(user, tid, teams);
-  drawSalaOptions(select, { selected: defaultSala, values: CLINICAL_SALA_VALUES });
-  select.value = defaultSala;
+  salaView.use((v) => {
+    v.drawSalaOptions(select, { selected: defaultSala, values: CLINICAL_SALA_VALUES });
+    select.value = defaultSala;
+  });
 }
 
 /** @returns {string} */

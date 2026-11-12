@@ -10,7 +10,9 @@ import { formatCensoMedsFromReceta, formatCensoAtbFromReceta } from './censo-med
 import { getPatients, getMedRecetaByPatient, getVpoByPatient, persistClinicalState } from './app-state.mjs';
 
 import { esc } from './dom-escape.mjs';
-import { drawDxRows } from './patient-data-censo-view.jsx';
+import { lazyView } from './deferred-work.mjs';
+
+const dxView = lazyView(() => import('./patient-data-censo-view.jsx'));
 
 /** Dx/censo meds ride `entries/<id>/fields` — push now, or a peer's newer clock wins. */
 function stampCensoAndPush(patient, key) {
@@ -313,7 +315,8 @@ function refreshDxListDom(patientId) {
   var patient = activePatient(patientId);
   var listEl = document.getElementById('patient-dx-list');
   if (!patient || !listEl) return;
-  drawDxRows(listEl, { rows: dxRows(patient) });
+  var props = { rows: dxRows(patient) };
+  dxView.use(function (v) { v.drawDxRows(listEl, props); });
 }
 
 function currentPatientId() {

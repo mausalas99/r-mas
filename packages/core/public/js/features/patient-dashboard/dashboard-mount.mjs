@@ -9,9 +9,16 @@ import { resolveEaAbxFechaActualizacion } from '../estado-actual-meds-core.mjs';
 import { resolvePafi } from '../estado-actual-ventilatorio.mjs';
 import { resolveVentilatorioLabContext } from '../estado-actual-ventilatorio-labs.mjs';
 import { collectEaGlanceSoap } from './ea-glance-meds.mjs';
-import { toggleInterconsultId } from './interconsult-catalog.mjs';
+import { toggleInterconsultId, serviceById, hueForService } from './interconsult-catalog.mjs';
+import { isGlucometriaMarkedAltered, isVitalAltered } from '../estado-actual-ranges.mjs';
+import { isTodoOverdue } from '../../todos-due.mjs';
+import { packSoapCols } from './ea-glance-model.mjs';
+import { clinicalPriorityRank } from '../../labs-critical-values.mjs';
 import { buildDashboardModel, buildLabsForDashboard } from './dashboard-model.mjs';
-import { drawDashboard } from './dashboard-view.jsx';
+import { lazyView } from '../../deferred-work.mjs';
+
+const dashboardView = lazyView(() => import('./dashboard-view.jsx'));
+const viewDeps = { isVitalAltered, isGlucometriaMarkedAltered, isTodoOverdue, serviceById, hueForService, packSoapCols, clinicalPriorityRank };
 import { watchDashboardFit } from './dashboard-fit.mjs';
 import { openInterconsultModal } from './ic-modal.mjs';
 import { switchLabInner } from './lab-inner.mjs';
@@ -348,7 +355,7 @@ function fillDashboardLabs(targets, pid) {
     var model = mount && mount.isConnected ? paintedModels.get(mount) : null;
     if (!model) return;
     model.labs = labs;
-    drawDashboard(mount, model, true);
+    dashboardView.use(function (v) { v.setDashboardDeps(viewDeps); v.drawDashboard(mount, model, true); });
   });
   return true;
 }
@@ -371,8 +378,11 @@ export function renderPatientDashboard(hostEl, opts) {
   targets.forEach(function (mount) {
     wireDashboardHost(mount);
     paintedModels.set(mount, model);
-    drawDashboard(mount, model);
-    watchDashboardFit(mount);
+    dashboardView.use(function (v) {
+      v.setDashboardDeps(viewDeps);
+      v.drawDashboard(mount, model);
+      watchDashboardFit(mount);
+    });
   });
   syncInterconsultaModeChrome();
   if (!deferLabs) {

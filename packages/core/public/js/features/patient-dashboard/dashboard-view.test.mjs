@@ -4,7 +4,13 @@ import { createRequire } from 'node:module';
 import { loadJsx } from '../preact-view-test-helpers.mjs';
 import { sameHtml } from '../preact-html-compare.mjs';
 
-const view = await loadJsx(import.meta.url, `import { DashboardView } from './dashboard-view.jsx';
+const view = await loadJsx(import.meta.url, `import { DashboardView, setDashboardDeps } from './dashboard-view.jsx';
+  import { isGlucometriaMarkedAltered, isVitalAltered } from '../estado-actual-ranges.mjs';
+  import { isTodoOverdue } from '../../todos-due.mjs';
+  import { serviceById, hueForService } from './interconsult-catalog.mjs';
+  import { packSoapCols } from './ea-glance-model.mjs';
+  import { clinicalPriorityRank } from '../../labs-critical-values.mjs';
+  setDashboardDeps({ isVitalAltered, isGlucometriaMarkedAltered, isTodoOverdue, serviceById, hueForService, packSoapCols, clinicalPriorityRank });
   import { MODELS } from './dashboard-view-models.mjs';
   export const html = (k) => renderToString(<DashboardView model={MODELS[k]} now={new Date('2026-06-01T12:00:00')} />);`);
 

@@ -122,6 +122,8 @@ export async function openDatePopover(anchorEl, opts = {}) {
   function render() {
     view.drawDatePopover(wrap, {
       state,
+      // The view takes the grid from here: importing date-popover.mjs would split it into its own boot chunk.
+      days: buildCalendarGridDays(state.monthDate),
       onPrev: () => {
         state.monthDate = new Date(state.monthDate.getFullYear(), state.monthDate.getMonth() - 1, 1);
         render();

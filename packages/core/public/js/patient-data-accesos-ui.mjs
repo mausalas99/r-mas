@@ -4,7 +4,9 @@ import { ensurePatientAccesos, syncLegacyAccesoFields, VIA_ACCESO_LABELS } from 
 import { getPatients, persistClinicalState } from './app-state.mjs';
 
 import { esc } from './dom-escape.mjs';
-import { drawAccesoRows } from './patient-data-accesos-view.jsx';
+import { lazyView } from './deferred-work.mjs';
+
+const accesoView = lazyView(() => import('./patient-data-accesos-view.jsx'));
 function activePatient(patientId) {
   return getPatients().find(function (p) {
     return String(p.id) === String(patientId);
@@ -79,12 +81,15 @@ function refreshAccesosListDom(patientId) {
   var patient = activePatient(patientId);
   var listEl = document.getElementById('patient-accesos-list');
   if (!patient || !listEl) return;
-  drawAccesoRows(listEl, {
+  var props = {
     rows: accesoRows(patient).map(function (row) { return { via: row.via, dateValue: accesoFechaToDateInputValue(row.fecha) }; }),
     viaLabels: VIA_ACCESO_LABELS,
     now: Date.now(),
+  };
+  accesoView.use(function (v) {
+    v.drawAccesoRows(listEl, props);
+    refreshRpcDateFields(listEl);
   });
-  refreshRpcDateFields(listEl);
 }
 
 function currentPatientId() {
