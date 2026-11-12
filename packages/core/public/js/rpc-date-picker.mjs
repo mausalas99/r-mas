@@ -1,24 +1,13 @@
 import { formatAccesoFechaDisplay } from './patient-date-fields.mjs';
 
-import { esc } from './dom-escape.mjs';
-const MONTHS_ES = [
-  'Enero',
-  'Febrero',
-  'Marzo',
-  'Abril',
-  'Mayo',
-  'Junio',
-  'Julio',
-  'Agosto',
-  'Septiembre',
-  'Octubre',
-  'Noviembre',
-  'Diciembre',
-];
-const WEEKDAYS_ES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
-
-const CALENDAR_SVG =
-  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+/** The Preact view loads lazily so Preact stays off the boot path; init preloads it. */
+let view = null;
+let viewLoad = null;
+function loadView() {
+  if (view) return Promise.resolve(view);
+  if (!viewLoad) viewLoad = import('./rpc-date-picker-view.jsx').then(function (m) { view = m; return m; });
+  return viewLoad;
+}
 
 /** @type {HTMLElement|null} */
 let popoverEl = null;
@@ -69,7 +58,8 @@ function ensurePopover() {
 function closePopover() {
   if (!popoverEl || popoverEl.hidden) return;
   popoverEl.hidden = true;
-  popoverEl.innerHTML = '';
+  if (view) view.clearDatePopover(popoverEl);
+  else popoverEl.replaceChildren();
   popoverEl.removeAttribute('data-open');
   if (activeClose) {
     activeClose();
@@ -106,37 +96,17 @@ function positionPopover(anchor) {
   });
 }
 
-function renderCalendarBody(year, month, selectedIso) {
-  var first = new Date(year, month, 1);
-  var startPad = (first.getDay() + 6) % 7;
-  var days = new Date(year, month + 1, 0).getDate();
-  var today = todayIso();
-  var cells = '';
-  for (var i = 0; i < startPad; i++) {
-    cells += '<span class="rpc-date-popover__day rpc-date-popover__day--pad" aria-hidden="true"></span>';
-  }
-  for (var day = 1; day <= days; day++) {
-    var iso = isoFromDate(new Date(year, month, day));
-    var cls = 'rpc-date-popover__day';
-    if (iso === selectedIso) cls += ' is-selected';
-    if (iso === today) cls += ' is-today';
-    cells +=
-      '<button type="button" class="' +
-      cls +
-      '" data-iso="' +
-      esc(iso) +
-      '">' +
-      day +
-      '</button>';
-  }
-  return cells;
-}
-
 /**
  * @param {HTMLElement} anchor
  * @param {{ value?: string, onSelect?: (iso: string) => void }} opts
  */
 export function openRpcDatePicker(anchor, opts) {
+  if (!view) {
+    loadView().then(function () {
+      openRpcDatePicker(anchor, opts);
+    });
+    return;
+  }
   var options = opts || {};
   var selected = parseIso(options.value) || new Date();
   var viewYear = selected.getFullYear();
@@ -146,32 +116,18 @@ export function openRpcDatePicker(anchor, opts) {
   var pop = ensurePopover();
   closePopover();
 
-  function paint() {
-    pop.innerHTML =
-      '<div class="rpc-date-popover__head">' +
-      '<button type="button" class="rpc-date-popover__nav" data-nav="-1" aria-label="Mes anterior">‹</button>' +
-      '<span class="rpc-date-popover__title">' +
-      esc(MONTHS_ES[viewMonth] + ' ' + viewYear) +
-      '</span>' +
-      '<button type="button" class="rpc-date-popover__nav" data-nav="1" aria-label="Mes siguiente">›</button>' +
-      '</div>' +
-      '<div class="rpc-date-popover__weekdays">' +
-      WEEKDAYS_ES.map(function (w) {
-        return '<span>' + w + '</span>';
-      }).join('') +
-      '</div>' +
-      '<div class="rpc-date-popover__grid">' +
-      renderCalendarBody(viewYear, viewMonth, selectedIso) +
-      '</div>' +
-      '<div class="rpc-date-popover__foot">' +
-      '<button type="button" class="rpc-date-popover__foot-btn" data-action="clear">Borrar</button>' +
-      '<button type="button" class="rpc-date-popover__foot-btn rpc-date-popover__foot-btn--primary" data-action="today">Hoy</button>' +
-      '</div>';
+  function done(iso) {
+    if (options.onSelect) options.onSelect(iso);
+    closePopover();
+  }
 
-    pop.querySelectorAll('[data-nav]').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        var delta = Number(btn.getAttribute('data-nav'));
+  function paint() {
+    view.drawDatePopover(pop, {
+      year: viewYear,
+      month: viewMonth,
+      selectedIso: selectedIso,
+      today: todayIso(),
+      onNav: function (delta) {
         viewMonth += delta;
         if (viewMonth < 0) {
           viewMonth = 11;
@@ -181,35 +137,15 @@ export function openRpcDatePicker(anchor, opts) {
           viewYear += 1;
         }
         paint();
-      });
+      },
+      onPick: done,
+      onClear: function () {
+        done('');
+      },
+      onToday: function () {
+        done(todayIso());
+      },
     });
-
-    pop.querySelectorAll('.rpc-date-popover__day[data-iso]').forEach(function (dayBtn) {
-      dayBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        var iso = dayBtn.getAttribute('data-iso') || '';
-        if (options.onSelect) options.onSelect(iso);
-        closePopover();
-      });
-    });
-
-    var clearBtn = pop.querySelector('[data-action="clear"]');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        if (options.onSelect) options.onSelect('');
-        closePopover();
-      });
-    }
-    var todayBtn = pop.querySelector('[data-action="today"]');
-    if (todayBtn) {
-      todayBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        var iso = todayIso();
-        if (options.onSelect) options.onSelect(iso);
-        closePopover();
-      });
-    }
   }
 
   paint();
@@ -233,7 +169,7 @@ function parseTimeParts(hhmm) {
 }
 
 function fillHourSelect(select, selected) {
-  select.innerHTML = '';
+  select.replaceChildren();
   for (var h = 0; h < 24; h += 1) {
     var v = String(h).padStart(2, '0');
     var opt = document.createElement('option');
@@ -245,7 +181,7 @@ function fillHourSelect(select, selected) {
 }
 
 function fillMinuteSelect(select, selected) {
-  select.innerHTML = '';
+  select.replaceChildren();
   var stepSet = Object.create(null);
   for (var m = 0; m < 60; m += 5) {
     var v = String(m).padStart(2, '0');
@@ -332,7 +268,9 @@ export function mountRpcDateInput(input) {
   label.className = 'rpc-date-field__label';
   var icon = document.createElement('span');
   icon.className = 'rpc-date-field__icon';
-  icon.innerHTML = CALENDAR_SVG;
+  loadView().then(function (v) {
+    v.drawCalendarIcon(icon);
+  });
   btn.appendChild(label);
   btn.appendChild(icon);
   wrap.insertBefore(btn, input);
@@ -441,6 +379,7 @@ function scheduleRefresh() {
 }
 
 export function initRpcDatePicker() {
+  loadView();
   ensurePopover();
   refreshRpcDateFields(document);
 
