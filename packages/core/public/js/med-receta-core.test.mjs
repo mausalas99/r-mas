@@ -1020,9 +1020,17 @@ test('listDietCandidatesFromRecetaBlock — KAVIBEN y NPT como opciones distinta
   assert.match(candidates[2].descripcion, /NPT calculada/i);
 });
 
+// The Manejo list is now a Preact view over buildMedRecetaListModel; these tests read its markup.
+async function buildMedRecetaListHtml(activeId, block) {
+  var { buildMedRecetaListModel } = await import('./features/medications-panel-rows.mjs');
+  var { loadJsx } = await import('./features/preact-view-test-helpers.mjs');
+  var view = await loadJsx(import.meta.url, "import { MedRecetaList } from './features/medications-panel-view.jsx';\n  export const html = (m) => renderToString(<MedRecetaList model={m} />);");
+  var model = buildMedRecetaListModel(activeId, block, new Date(2026, 10, 12));
+  return model ? view.html(model) : '';
+}
+
 test('buildMedRecetaListHtml — dest picker visible for SOAP meds', async () => {
-  var { buildMedRecetaListHtml } = await import('./features/medications-panel-rows.mjs');
-  var html = buildMedRecetaListHtml('p1', {
+  var html = await buildMedRecetaListHtml('p1', {
     fechaActualizacion: '11/08/2026',
     items: [
       { id: 'a', nombreRaw: 'PREGABALINA', dosisRaw: '75MG VO C/24H' },
@@ -1051,8 +1059,8 @@ test('formatMedicationSoapShort — dosis en tabletas conserva el espacio', () =
 });
 
 test('buildMedRecetaListHtml — Manejo-B groups: Falta destino first, Excluidos last; name/dose split', async () => {
-  var { buildMedRecetaListHtml, splitMedLabel } = await import('./features/medications-panel-rows.mjs');
-  var html = buildMedRecetaListHtml('p1', {
+  var { splitMedLabel } = await import('./features/medications-panel-rows.mjs');
+  var html = await buildMedRecetaListHtml('p1', {
     items: [
       { id: 'a', nombreRaw: 'CEFTRIAXONA 1 G SOL INY', viaRaw: 'VIA INTRAVENOSA', dosisRaw: '1 G //', frecuenciaRaw: 'CADA 24 HORAS' },
       { id: 'b', nombreRaw: 'FARMACO NUEVO XYZ 100 MG SOL INY', viaRaw: 'VIA INTRAVENOSA', dosisRaw: '100 MG //', frecuenciaRaw: 'CADA 24 HORAS' },
@@ -1067,10 +1075,10 @@ test('buildMedRecetaListHtml — Manejo-B groups: Falta destino first, Excluidos
 });
 
 test('buildMedRecetaListHtml — 16+ rows go dense, short lists stay roomy', async () => {
-  var { buildMedRecetaListHtml, MED_DENSE_MIN_ROWS } = await import('./features/medications-panel-rows.mjs');
+  var { MED_DENSE_MIN_ROWS } = await import('./features/medications-panel-rows.mjs');
   var mk = (n) => Array.from({ length: n }, (_, i) => ({ id: 'm' + i, nombreRaw: 'FARMACO' + i + ' 10 MG TABLETA', viaRaw: 'VIA ORAL', dosisRaw: '10 MG //', frecuenciaRaw: 'CADA 24 HORAS' }));
-  assert.match(buildMedRecetaListHtml('p1', { items: mk(MED_DENSE_MIN_ROWS) }), /med-groups--dense/);
-  assert.doesNotMatch(buildMedRecetaListHtml('p1', { items: mk(MED_DENSE_MIN_ROWS - 1) }), /med-groups--dense/);
+  assert.match(await buildMedRecetaListHtml('p1', { items: mk(MED_DENSE_MIN_ROWS) }), /med-groups--dense/);
+  assert.doesNotMatch(await buildMedRecetaListHtml('p1', { items: mk(MED_DENSE_MIN_ROWS - 1) }), /med-groups--dense/);
 });
 
 test('parseMedicationPaste — infusión SOME en dos filas Pn se fusiona (buprenorfina, norepinefrina)', () => {
