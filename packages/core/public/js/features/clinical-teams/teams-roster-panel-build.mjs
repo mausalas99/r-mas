@@ -157,74 +157,38 @@ export function markSalaConfirmedThisMonth() {
   } catch (_e) { void _e; }
 }
 
-/** Mi perfil: Sala chips. A tap saves the profile and moves the Nube room (see profile submit). */
-export function buildPerfilSalaHtml(ctx) {
-  const chips = CLINICAL_SALAS.map(
-    (s) =>
-      `<button type="button" class="settings-perfil-chip" data-perfil-sala="${escapeAttr(s)}" aria-pressed="${ctx.sala === s}">${escapeHtml(s)}</button>`
-  ).join('');
+/**
+ * Mi perfil: Sala chips props (drawn by perfil-clinical-view.jsx). A tap saves the profile and moves the
+ * Nube room (see profile submit). `now` is the clock, passed in so tests need no real date.
+ */
+export function perfilSalaProps(ctx, now = new Date()) {
   // After «Iniciar nueva rotación» every sala is unset. The first user to join the
   // new sala's Nube room becomes its owner and holds the room key (room-dek.mjs),
   // so the pick is asked for loudly: open, whatever the saved collapse state says.
   const pick = !ctx.sala;
-  const newMonth = !pick && new Date().getDate() === 1 && !isSalaConfirmedThisMonth();
+  const newMonth = !pick && now.getDate() === 1 && !isSalaConfirmedThisMonth();
   const open = pick || newMonth || readClinicalTeamsCollapseOpen(PERFIL_SALA_COLLAPSE_KEY, true);
-  const hint = pick
-    ? '<p class="settings-acc-hint settings-acc-hint--tight" data-perfil-sala-hint role="status"><b>Elige la sala de tu nueva rotación.</b></p>'
-    : newMonth
-      ? '<p class="settings-acc-hint settings-acc-hint--tight" data-perfil-sala-hint role="status">Hoy empieza el mes. Confirma tu sala de rotación.</p>'
-      : '';
-  return `
-    <details class="settings-perfil-sala" data-collapse-key="${PERFIL_SALA_COLLAPSE_KEY}"${open ? ' open' : ''}>
-      <summary>
-        <span class="settings-perfil-sala-title">Sala de guardia</span>
-        <span class="settings-perfil-sala-note">Al cambiar de sala se guarda tu perfil y pasas a la sala en Nube.</span>
-        <span class="settings-perfil-sala-current">${escapeHtml(ctx.sala || 'Sin sala')}</span>
-      </summary>
-      ${hint}
-      <div class="settings-perfil-chips" role="group" aria-label="Sala de guardia">${chips}</div>
-      <input type="hidden" id="clinical-profile-sala" form="clinical-profile-form" value="${escapeAttr(ctx.sala)}">
-    </details>`;
+  return {
+    sala: ctx.sala,
+    salas: CLINICAL_SALAS,
+    collapseKey: PERFIL_SALA_COLLAPSE_KEY,
+    open,
+    hint: pick ? 'pick' : newMonth ? 'newMonth' : '',
+  };
 }
 
-/** Mi perfil: the account form as the same cards the rest of the window uses. */
-export function buildPerfilAccountHtml(ctx, user) {
-  const clinicalName = ctx.profileGatePending ? '' : escapeHtml(user.clinical_name || '');
-  const legacyBanner = ctx.legacyUsername
-    ? '<p class="clinical-teams-legacy-banner">Registra tu @usuario (obligatorio). Sin esto no apareces en equipos ni entregas.</p>'
-    : '';
-  const directoryNote = ctx.canViewDirectoryUsers
-    ? ''
-    : '<p class="settings-acc-hint settings-acc-hint--tight">El directorio completo lo abren R4, Admin o quien tenga privilegios de administración.</p>';
-  const card = (title, desc, action, labelFor) => `
-        <div class="settings-card">
-          <div class="settings-card__copy">
-            <label class="settings-card__title"${labelFor ? ` for="${labelFor}"` : ''}>${title}</label>
-            ${desc ? `<p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">${desc}</p>` : ''}
-          </div>
-          <div class="settings-card__action">${action}</div>
-        </div>`;
-  // R1–R3 cannot promote themselves: only an R4 or an Admin grants R4.
-  const ranks = (ctx.rank === 'R4' || ctx.programAdmin ? ['R1', 'R2', 'R3', 'R4'] : ['R1', 'R2', 'R3'])
-    .map((r) => `<option value="${r}" ${r === ctx.rank ? 'selected' : ''}>${r}</option>`)
-    .join('');
-  return `
-    <form id="clinical-profile-form" class="settings-perfil-account" novalidate>
-      ${legacyBanner}
-      <p class="settings-section-label">Mi cuenta</p>
-      <div class="settings-card-stack">
-        ${card('Usuario', '@usuario en minúsculas, sin espacios.', `<input id="clinical-profile-username" type="text" class="profile-input" value="${escapeAttr(ctx.usernameForInput)}" placeholder="drmendoza" autocomplete="off" spellcheck="false" pattern="[a-z][a-z0-9_]{2,31}" required>`, 'clinical-profile-username')}
-        ${card('Nombre en guardia', '', `<input id="clinical-profile-name" type="text" class="profile-input" value="${clinicalName}" required>`, 'clinical-profile-name')}
-        ${card('Rango clínico', 'Equipos, entregas y alcance.', `<select id="clinical-profile-rank" class="profile-input">${ranks}</select>`, 'clinical-profile-rank')}
-        ${card(
-          'Privilegios de administración',
-          'Requiere tu código. Rotación, censo global y directorio.',
-          `<input type="checkbox" id="clinical-profile-admin" ${ctx.programAdmin ? 'checked' : ''}>${ctx.programAdmin ? '<button type="button" class="wb-btn wb-btn-ghost wb-btn-sm" id="btn-clinical-admin-code-change">Cambiar código</button>' : ''}`,
-          'clinical-profile-admin'
-        )}
-      </div>
-      ${directoryNote}
-    </form>`;
+/** Mi perfil: the account form props, the same cards the rest of the window uses. */
+export function perfilAccountProps(ctx, user) {
+  return {
+    legacyUsername: ctx.legacyUsername,
+    usernameForInput: ctx.usernameForInput,
+    clinicalName: ctx.profileGatePending ? '' : String(user.clinical_name || ''),
+    rank: ctx.rank,
+    // R1–R3 cannot promote themselves: only an R4 or an Admin grants R4.
+    ranks: ctx.rank === 'R4' || ctx.programAdmin ? ['R1', 'R2', 'R3', 'R4'] : ['R1', 'R2', 'R3'],
+    programAdmin: ctx.programAdmin,
+    directoryNote: !ctx.canViewDirectoryUsers,
+  };
 }
 
 /**

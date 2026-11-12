@@ -36,8 +36,8 @@ import { drawPerfilEquipo } from './teams-roster-interactions-view.jsx';
 import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
 import {
   resolveClinicalTeamsPanelContext,
-  buildPerfilSalaHtml,
-  buildPerfilAccountHtml,
+  perfilSalaProps,
+  perfilAccountProps,
 } from './teams-roster-panel-build.mjs';
 import { wireTeamManageModalDelegation } from './teams-roster-manage.mjs';
 import {
@@ -162,13 +162,13 @@ export async function mountPerfilClinical(salaHost, accountHost) {
   if (!(salaHost instanceof HTMLElement) || !(accountHost instanceof HTMLElement)) return;
   const user = clinicalSessionContext.user;
   if (!user || !currentUserId()) {
-    salaHost.innerHTML = '';
-    accountHost.innerHTML = '';
+    const { drawPerfilClinical } = await import('./perfil-clinical-view.jsx');
+    drawPerfilClinical(salaHost, accountHost, null, null);
     return;
   }
   const ctx = await resolveClinicalTeamsPanelContext(user, filterJoinedTeams(clinicalSessionContext.teams, user));
-  salaHost.innerHTML = buildPerfilSalaHtml(ctx);
-  accountHost.innerHTML = buildPerfilAccountHtml(ctx, user);
+  const { drawPerfilClinical } = await import('./perfil-clinical-view.jsx');
+  drawPerfilClinical(salaHost, accountHost, perfilSalaProps(ctx), perfilAccountProps(ctx, user));
   wireProfileFormControls();
   const form = accountHost.querySelector('#clinical-profile-form');
   if (form instanceof HTMLFormElement) wireProfileAutosave(form);
