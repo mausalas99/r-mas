@@ -4,7 +4,6 @@ import {
   effectiveDiaTratamiento,
   SOAP_DESTINATION_LABELS,
   SOAP_DESTINATION_KEYS,
-  soapDestinationSelectOptionsHtml,
   isPrnMedicationItem,
   shouldIncludeMedicationInSoap,
   soapDestinationUiValue,
@@ -14,7 +13,7 @@ import {
   classifyApoyoKind,
   apoyoKindLabel,
 } from "../med-receta-core.mjs";
-import { insulinPumpAlgorithmForMedicationItem, insulinPumpMedLabelHtml } from "../insulin-pump-some-detect.mjs";
+import { insulinPumpAlgorithmForMedicationItem, formatInsulinPumpAlgorithmPill } from "../insulin-pump-some-detect.mjs";
 import { skipRecetaItemForInsulinPumpCarrier } from "../insulin-pump-receta-display.mjs";
 import {
   INSULIN_RESCATE_GROUP_ID,
@@ -49,8 +48,7 @@ import {
   stanfordSolutionGroupMedLabelHtml,
   stanfordSolutionItemsFromList,
 } from "../stanford-solution-display.mjs";
-import { esc, isMedNotaSelected } from "./medications-utils.mjs";
-import { escAttr } from "../dom-escape.mjs";
+import { isMedNotaSelected } from "./medications-utils.mjs";
 
 /**
  * Diet chip text for the Manejo header (Manejo-B): one diet → "desc · kcal · g prot.",
@@ -105,78 +103,18 @@ export function splitMedLabel(label) {
   return { name: name.charAt(0).toUpperCase() + name.slice(1), dose: dose };
 }
 
-var NOTA_TITLE = "Incluir en Estado Actual (nota)";
-var EXCL_TITLE = "Excluir de Estado actual y egreso";
-var ICON_DEST =
-  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>';
-var ICON_EXCL =
-  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>';
-
-function actionAttr(fn, args) {
-  return ' data-onclick="' + fn + "\" data-onclick-args='" + escAttr(JSON.stringify(args)) + "'";
+/** Group labels are plain text (the view escapes them); the old builders took an HTML escaper. */
+function rawText(x) {
+  return String(x || "");
 }
 
-function notaChipHtml(fn, argsBeforeState, on) {
-  return (
-    '<button type="button" class="med-nota-chip' +
-    (on ? " is-on" : "") +
-    '" data-med-soap-chk="1" aria-pressed="' +
-    (on ? "true" : "false") +
-    '" title="' +
-    NOTA_TITLE +
-    '"' +
-    actionAttr(fn, argsBeforeState.concat([!on])) +
-    ">Nota</button>"
-  );
+/** Action buttons as data: final click args (the state flips on click), nothing escaped. */
+function notaAction(fn, argsBeforeState, on) {
+  return { fn: fn, args: argsBeforeState.concat([!on]), on: on };
 }
 
-function exclButtonsHtml(fn, argsBeforeState, excluded) {
-  if (excluded) {
-    return '<button type="button" class="wb-btn wb-btn-ghost wb-btn-sm med-restore-btn"' + actionAttr(fn, argsBeforeState.concat([false])) + ">Restaurar</button>";
-  }
-  return (
-    '<button type="button" class="wb-btn wb-btn-ghost wb-btn-icon med-excl-btn" aria-label="' +
-    EXCL_TITLE +
-    '" title="' +
-    EXCL_TITLE +
-    '"' +
-    actionAttr(fn, argsBeforeState.concat([true])) +
-    ">" +
-    ICON_EXCL +
-    "</button>"
-  );
-}
-
-/** «Cambiar destino»: an icon over the existing native destino select. */
-function destPickerHtml(it, sid) {
-  var current = soapDestinationUiValue(it, classifyMedicationSoapCategory);
-  return (
-    '<label class="med-receta-dest-picker wb-btn wb-btn-ghost wb-btn-icon" title="Cambiar destino">' +
-    ICON_DEST +
-    '<span class="visually-hidden med-receta-dest-label">' +
-    esc(current ? SOAP_DESTINATION_LABELS[current] || current : "Elegir destino…") +
-    "</span>" +
-    '<select class="med-receta-dest" aria-label="Cambiar destino"' +
-    ' data-onchange="setMedRecetaSoapCategory" data-onchange-args=\'' +
-    escAttr(JSON.stringify([sid])) +
-    "' data-onchange-pass=\"value\">" +
-    soapDestinationSelectOptionsHtml(esc, { current: current }) +
-    "</select></label>"
-  );
-}
-
-function rowHtml(id, extraClass, nameHtml, actionsHtml) {
-  return (
-    '<div class="med-receta-row' +
-    (extraClass ? " " + extraClass : "") +
-    '" data-med-item-id="' +
-    esc(id) +
-    '"><div class="med-receta-name">' +
-    nameHtml +
-    '</div><div class="med-receta-actions">' +
-    actionsHtml +
-    "</div></div>"
-  );
+function exclAction(fn, argsBeforeState, excluded) {
+  return { fn: fn, args: argsBeforeState.concat([!excluded]), excluded: excluded };
 }
 
 /** Insulin rescate / prandial, potassium repos and Stanford rows: one row for many items. */
@@ -186,7 +124,7 @@ var GROUP_ROWS = [
     cls: "med-receta-row--insulin-rescate",
     is: isInsulinRescateMedicationItem,
     first: insulinRescateItemsFromList,
-    label: function () { return insulinRescateMedLabelHtml(esc); },
+    label: function () { return insulinRescateMedLabelHtml(rawText); },
     sel: isInsulinRescateGroupSoapSelected,
     susp: isInsulinRescateGroupSuspended,
     notaFn: "toggleMedRecetaInsulinRescateParaNota",
@@ -197,7 +135,7 @@ var GROUP_ROWS = [
     cls: "med-receta-row--insulin-prandial",
     is: isInsulinPrandialMedicationItem,
     first: insulinPrandialItemsFromList,
-    label: function (items) { return insulinPrandialMedLabelHtml(items, esc); },
+    label: function (items) { return insulinPrandialMedLabelHtml(items, rawText); },
     sel: isInsulinPrandialGroupSoapSelected,
     susp: isInsulinPrandialGroupSuspended,
     notaFn: "toggleMedRecetaInsulinPrandialParaNota",
@@ -208,7 +146,7 @@ var GROUP_ROWS = [
     cls: "med-receta-row--potassium-repos",
     is: isPotassiumReposMedicationItem,
     first: potassiumReposItemsFromList,
-    label: function (items) { return potassiumReposGroupMedLabelHtml(items, esc); },
+    label: function (items) { return potassiumReposGroupMedLabelHtml(items, rawText); },
     sel: isPotassiumReposGroupSoapSelected,
     susp: isPotassiumReposGroupSuspended,
     notaFn: "toggleMedRecetaPotassiumReposParaNota",
@@ -220,7 +158,7 @@ var GROUP_ROWS = [
     cls: "med-receta-row--stanford-solution",
     is: isStanfordSolutionMedicationItem,
     first: stanfordSolutionItemsFromList,
-    label: function (items) { return stanfordSolutionGroupMedLabelHtml(items, esc); },
+    label: function (items) { return stanfordSolutionGroupMedLabelHtml(items, rawText); },
     sel: isStanfordSolutionGroupSoapSelected,
     susp: isStanfordSolutionGroupSuspended,
     notaFn: "toggleMedRecetaStanfordSolutionParaNota",
@@ -237,62 +175,53 @@ function buildGroupRow(def, activeId, items) {
   });
   var first = def.first(items)[0];
   var group = suspended ? "excl" : def.group || soapDestinationUiValue(first, classifyMedicationSoapCategory) || "nm";
-  var actions = suspended
-    ? exclButtonsHtml(def.exclFn, [], true)
-    : notaChipHtml(def.notaFn, [], def.sel(activeId, items, isMedNotaSelected)) + exclButtonsHtml(def.exclFn, [], false);
-  var label = def.label(items);
-  // Plain (already escaped) labels get the same sentence case + dose split as single rows.
-  var parts = /</.test(label) ? null : splitMedLabel(label);
-  var nameHtml = parts
-    ? '<span class="med-row-name">' + parts.name + "</span>" + (parts.dose ? '<div class="med-row-dose">' + parts.dose + "</div>" : "")
-    : '<span class="med-row-name">' + label + "</span>";
-  return { group: group, html: rowHtml(def.id, def.cls + (suspended ? " is-excluded" : ""), nameHtml, actions) };
+  // Plain labels get the same sentence case + dose split as single rows.
+  var parts = splitMedLabel(def.label(items));
+  return {
+    group: group,
+    id: def.id,
+    cls: def.cls + (suspended ? " is-excluded" : ""),
+    name: { text: parts.name, dose: parts.dose },
+    nota: suspended ? null : notaAction(def.notaFn, [], def.sel(activeId, items, isMedNotaSelected)),
+    dest: null,
+    excl: exclAction(def.exclFn, [], suspended),
+  };
 }
 
-/** Name cell: sentence-case name, Día chip, PRN tag, gray dose (pump rows keep their own label). */
-function medRowNameHtml(it, sid, fechaActualizacion, allItems) {
+/** Name cell data: sentence-case name, Día chip, PRN tag, gray dose (pump rows keep their own label). */
+function medRowName(it, sid, fechaActualizacion, allItems, now) {
   var pumpAlg = insulinPumpAlgorithmForMedicationItem(allItems || [], it);
-  if (pumpAlg != null) return '<span class="med-row-name">' + insulinPumpMedLabelHtml(pumpAlg, esc) + "</span>";
-  var diaOpts = fechaActualizacion ? { fechaActualizacion: fechaActualizacion } : undefined;
+  if (pumpAlg != null) return { pill: formatInsulinPumpAlgorithmPill(pumpAlg) };
+  var diaOpts = { refDate: now };
+  if (fechaActualizacion) diaOpts.fechaActualizacion = fechaActualizacion;
   var fullLabel = formatMedicationSoapShort(it, diaOpts);
   if (it.diaTratamiento != null) fullLabel = fullLabel.replace(/\s+DIA\s+\d+\s*$/i, "");
-  var diaDisplay = it.diaTratamiento != null ? effectiveDiaTratamiento(it.diaTratamiento, fechaActualizacion) : null;
+  var diaDisplay = it.diaTratamiento != null ? effectiveDiaTratamiento(it.diaTratamiento, fechaActualizacion, now) : null;
   var parts = splitMedLabel(fullLabel.slice(0, 160));
-  return (
-    '<span class="med-row-name" title="' + escAttr(fullLabel) + '">' + esc(parts.name) + "</span>" +
-    (diaDisplay != null
-      ? '<button type="button" class="med-receta-dia" title="Cambiar día de antibiótico"' +
-        actionAttr("editMedRecetaAbxDia", [sid]) +
-        ">Día " + esc(String(diaDisplay)) + "</button>"
-      : "") +
-    (isPrnMedicationItem(it) ? '<span class="med-prn-tag">PRN</span>' : "") +
-    (parts.dose ? '<div class="med-row-dose">' + esc(parts.dose) + "</div>" : "")
-  );
+  return {
+    text: parts.name,
+    title: fullLabel,
+    dia: diaDisplay,
+    diaArgs: [sid],
+    prn: isPrnMedicationItem(it),
+    dose: parts.dose,
+  };
 }
 
-/** Actions: «Nota» (only with a destino), «Cambiar destino», ⊘ Excluir / Restaurar. */
-function medRowActionsHtml(activeId, it, sid, soapEligible, dest) {
-  if (it.suspendido) return exclButtonsHtml("toggleMedRecetaSuspendido", [sid], true);
-  return (
-    (soapEligible && dest ? notaChipHtml("toggleMedRecetaParaNota", [sid], isMedNotaSelected(activeId, sid)) : "") +
-    (soapEligible ? destPickerHtml(it, sid) : "") +
-    exclButtonsHtml("toggleMedRecetaSuspendido", [sid], false)
-  );
-}
-
-function buildMedRow(activeId, it, fechaActualizacion, allItems) {
+function buildMedRow(activeId, it, fechaActualizacion, allItems, now) {
   var sid = String(it.id || "");
   var soapEligible = shouldIncludeMedicationInSoap(it, classifyMedicationSoapCategory);
   var dest = soapDestinationUiValue(it, classifyMedicationSoapCategory);
   var group = it.suspendido ? "excl" : !soapEligible ? "solo" : dest || "falta";
+  var excluded = !!it.suspendido;
   return {
     group: group,
-    html: rowHtml(
-      sid,
-      it.suspendido ? "is-excluded" : "",
-      medRowNameHtml(it, sid, fechaActualizacion, allItems),
-      medRowActionsHtml(activeId, it, sid, soapEligible, dest)
-    ),
+    id: sid,
+    cls: excluded ? "is-excluded" : "",
+    name: medRowName(it, sid, fechaActualizacion, allItems, now),
+    nota: !excluded && soapEligible && dest ? notaAction("toggleMedRecetaParaNota", [sid], isMedNotaSelected(activeId, sid)) : null,
+    dest: !excluded && soapEligible ? { sid: sid, current: dest } : null,
+    excl: exclAction("toggleMedRecetaSuspendido", [sid], excluded),
   };
 }
 
@@ -310,8 +239,12 @@ export function medGroupOrder() {
 
 export var MED_DENSE_MIN_ROWS = 16;
 
-/** Manejo-B: rows grouped by destino, each group a card with an uppercase label + count. */
-export function buildMedRecetaListHtml(activeId, block) {
+/**
+ * Manejo-B list as data: rows grouped by destino, each group a card with an uppercase label + count.
+ * `now` is the reference date for «Día N» (the caller passes it; no clock is read here).
+ * @returns {{ dense: boolean, groups: { key: string, label: string, hint?: string, cls?: string, rows: object[] }[] } | null} null when nothing shows
+ */
+export function buildMedRecetaListModel(activeId, block, now) {
   var items = block.items || [];
   var rows = [];
   var shownGroupRows = {};
@@ -329,37 +262,28 @@ export function buildMedRecetaListHtml(activeId, block) {
     }
     if (skipRecetaItemForInsulinPumpCarrier(it, items)) return;
     if (isPotassiumReposCarrierMedicationItem(it, items)) return;
-    rows.push(buildMedRow(activeId, it, block.fechaActualizacion, items));
+    rows.push(buildMedRow(activeId, it, block.fechaActualizacion, items, now));
   });
-  if (!rows.length) return "";
-  var html = medGroupOrder()
-    .map(function (key) {
-      var inGroup = rows.filter(function (r) {
-        return r.group === key;
-      });
-      if (!inGroup.length) return "";
-      var meta = GROUP_META[key] || { label: SOAP_DESTINATION_LABELS[key] || key };
-      return (
-        '<section class="med-group' + (meta.cls ? " " + meta.cls : "") + '" data-med-group="' + esc(key) + '">' +
-        '<div class="med-group-head"><span class="med-group-label">' + esc(meta.label) + ' <span class="med-group-count">· ' + inGroup.length + "</span></span>" +
-        (meta.hint ? '<span class="med-group-hint">' + esc(meta.hint) + "</span>" : "") +
-        '</div><div class="med-group-card">' +
-        inGroup.map(function (r) { return r.html; }).join("") +
-        "</div></section>"
-      );
-    })
-    .join("");
+  if (!rows.length) return null;
+  var groups = [];
+  medGroupOrder().forEach(function (key) {
+    var inGroup = rows.filter(function (r) {
+      return r.group === key;
+    });
+    if (!inGroup.length) return;
+    var meta = GROUP_META[key] || { label: SOAP_DESTINATION_LABELS[key] || key };
+    groups.push({ key: key, label: meta.label, hint: meta.hint, cls: meta.cls, rows: inGroup });
+  });
   // Long lists go dense (one-line rows, 3 columns) so they fit without scrolling.
   // ponytail: row-count threshold, not a measured fit; measure the viewport if 16 misfires.
-  var dense = rows.length >= MED_DENSE_MIN_ROWS ? " med-groups--dense" : "";
-  return '<div class="med-receta-wrap med-groups' + dense + '">' + html + "</div>";
+  return { dense: rows.length >= MED_DENSE_MIN_ROWS, groups: groups };
 }
 
 /**
  * Counts the Manejo turno rows split into real medications vs. apoyo (support) items
  * — e.g. oxygen therapy — so the header can show "Medicamentos del turno · N" plus
  * "más K apoyo(s) (O₂)" apart, instead of lumping apoyos into the medication count.
- * Mirrors the row-skip logic in buildMedRecetaListHtml (nutrition rows never shown here,
+ * Mirrors the row-skip logic in buildMedRecetaListModel (nutrition rows never shown here,
  * insulin rescate/prandial/potassium-repos groups count once each as a medication).
  * @param {unknown[]} items
  * @returns {{ medCount: number, apoyoCount: number, apoyoKinds: string[] }}

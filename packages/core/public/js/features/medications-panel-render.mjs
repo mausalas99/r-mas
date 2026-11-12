@@ -11,7 +11,7 @@ import { restoreMedInputForPatient } from "./medications-input.mjs";
 import { buildMedPanelCacheKey } from "./medications-panel-cache.mjs";
 import {
   buildMedDietChip,
-  buildMedRecetaListHtml,
+  buildMedRecetaListModel,
   countMedTurnoItems,
   buildMedTurnoHeaderText,
 } from "./medications-panel-rows.mjs";
@@ -26,6 +26,7 @@ import {
   bustMedPanelCache,
 } from "./medications-runtime-state.mjs";
 import { setMedActiveLeadVisible } from "./medications-utils.mjs";
+import { drawMedRecetaList } from "./medications-panel-view.jsx";
 
 function getMedPanelDom() {
   return {
@@ -71,7 +72,7 @@ function renderMedPanelEmptyNoPatient(els) {
   els.hintEl.textContent = "Selecciona un paciente en la columna izquierda para ver su manejo.";
   setMedActiveLeadVisible(false);
   if (els.fechaEl) els.fechaEl.hidden = true;
-  els.listEl.innerHTML = "";
+  drawMedRecetaList(els.listEl, null);
   syncMedHeaderExtras(els, null);
   hideMedNotaFooter();
 }
@@ -84,7 +85,7 @@ function renderMedPanelEmptyNoContent(activeId, cacheKey, els) {
     "Aún no hay medicamentos. Pulsa Importar SOME, pega el bloque del hospital y procesa la receta.";
   setMedActiveLeadVisible(false);
   if (els.fechaEl) els.fechaEl.hidden = true;
-  els.listEl.innerHTML = "";
+  drawMedRecetaList(els.listEl, null);
   syncMedHeaderExtras(els, null);
   hideMedNotaFooter();
 }
@@ -111,7 +112,7 @@ function renderMedPanelRecetaContent(activeId, block, cacheKey, els) {
     els.fechaEl.textContent = fechaTxt;
     els.fechaEl.title = "Última importación SOME: " + fechaTxt;
   }
-  els.listEl.innerHTML = buildMedRecetaListHtml(activeId, block);
+  drawMedRecetaList(els.listEl, buildMedRecetaListModel(activeId, block, new Date()));
   syncMedHeaderExtras(els, block);
   renderMedNotaFooter();
 }
