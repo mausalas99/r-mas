@@ -11,7 +11,7 @@ import { resolveVentilatorioLabContext } from '../estado-actual-ventilatorio-lab
 import { collectEaGlanceSoap } from './ea-glance-meds.mjs';
 import { toggleInterconsultId } from './interconsult-catalog.mjs';
 import { buildDashboardModel, buildLabsForDashboard } from './dashboard-model.mjs';
-import { renderDashboardHtml, renderLabsHtml } from './dashboard-html.mjs';
+import { drawDashboard } from './dashboard-view.jsx';
 import { watchDashboardFit } from './dashboard-fit.mjs';
 import { openInterconsultModal } from './ic-modal.mjs';
 import { switchLabInner } from './lab-inner.mjs';
@@ -332,6 +332,9 @@ function localTodayKey() {
   return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
 }
 
+/** Last model painted per host, so the deferred labs can repaint through the same view. */
+var paintedModels = new WeakMap();
+
 function fillDashboardLabs(targets, pid) {
   if (String(rt.getActiveId() || '') !== String(pid || '')) return false;
   var labs = pid
@@ -341,11 +344,11 @@ function fillDashboardLabs(targets, pid) {
       })
     : { envios: [] };
   if (pid) labs.cultivosSinRevisar = pendingCultivosForPatient(pid).length;
-  var html = renderLabsHtml({ labs: labs });
   targets.forEach(function (mount) {
-    if (!mount || !mount.isConnected) return;
-    var slot = mount.querySelector('[data-dash-labs]');
-    if (slot) slot.outerHTML = html;
+    var model = mount && mount.isConnected ? paintedModels.get(mount) : null;
+    if (!model) return;
+    model.labs = labs;
+    drawDashboard(mount, model, true);
   });
   return true;
 }
@@ -365,10 +368,10 @@ export function renderPatientDashboard(hostEl, opts) {
   var deferLabs = !!opts.deferLabs;
   var pid = rt.getActiveId();
   var model = collectDashboardModel(inner, { skipLabs: deferLabs });
-  var html = renderDashboardHtml(model);
   targets.forEach(function (mount) {
     wireDashboardHost(mount);
-    mount.innerHTML = html;
+    paintedModels.set(mount, model);
+    drawDashboard(mount, model);
     watchDashboardFit(mount);
   });
   syncInterconsultaModeChrome();
