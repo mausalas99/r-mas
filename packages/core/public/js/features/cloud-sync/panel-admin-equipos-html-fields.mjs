@@ -1,4 +1,3 @@
-import { esc } from '../../dom-escape.mjs';
 import { formatCycleOptionLabel } from '../clinical-teams/teams-roster-directory-render.mjs';
 import { CLINICAL_SALAS } from '../clinical-teams/shared.mjs';
 import { getCycleLetterOptionsForRank } from '../../clinico-access.mjs';
@@ -19,13 +18,6 @@ export function userSalaOptions(selectedSala) {
     { value: '', label: '— Elegir —', selected: !selected },
     ...CLINICAL_SALAS.map((sala) => ({ value: sala, label: sala, selected: sala === selected })),
   ];
-}
-
-/** @param {{ value: string, label: string, selected?: boolean }[]} options */
-function optionsHtml(options) {
-  return options
-    .map((o) => '<option value="' + esc(o.value) + '"' + (o.selected ? ' selected' : '') + '>' + esc(o.label) + '</option>')
-    .join('');
 }
 
 /**
@@ -100,12 +92,6 @@ export function assignTeamOptions(teams, selectedTeamId, salaFilter) {
   };
 }
 
-/** The same options as `<option>` strings, for the selects that are refilled in place while a row is edited. */
-export function renderEquiposAssignTeamOptionsHtml(teams, selectedTeamId, salaFilter) {
-  const { options, groups } = assignTeamOptions(teams, selectedTeamId, salaFilter);
-  return optionsHtml(options) + groups.map((g) => '<optgroup label="' + esc(g.sala) + '">' + optionsHtml(g.options) + '</optgroup>').join('');
-}
-
 /** @param {object | null | undefined} team @param {string} userId @param {string} userRank @param {string} [selectedCycle] */
 export function cycleOptions(team, userId, userRank, selectedCycle) {
   const none = [{ value: '', label: 'Ciclo' }];
@@ -118,6 +104,3 @@ export function cycleOptions(team, userId, userRank, selectedCycle) {
   if (!letters.length) return none;
   return letters.map((letter) => ({ value: letter, label: formatCycleOptionLabel(letter, rank), selected: letter === selected }));
 }
-
-export const cycleOptionsForTeam = (team, userId, userRank, selectedCycle) =>
-  optionsHtml(cycleOptions(team, userId, userRank, selectedCycle));

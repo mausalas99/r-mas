@@ -9,24 +9,7 @@ import {
   getCloudSyncToken,
 } from './settings.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
-import { copyInternoQrImage, drawInternoQrCanvas } from '../../interno-qr-render.mjs';
-
-/** @param {HTMLElement} host @param {string} url */
-function mountCloudMobileQrPreview(host, url) {
-  if (!host || !url) return;
-  host.innerHTML = '';
-  const canvas = document.createElement('canvas');
-  canvas.className = 'cloud-mobile-invite-qr-canvas';
-  canvas.setAttribute('role', 'img');
-  canvas.setAttribute('aria-label', 'Código QR del enlace móvil Nube');
-  try {
-    drawInternoQrCanvas(canvas, url, { cellPx: 2, margin: 10 });
-    host.appendChild(canvas);
-    host.removeAttribute('aria-hidden');
-  } catch {
-    host.setAttribute('aria-hidden', 'true');
-  }
-}
+import { copyInternoQrImage } from '../../interno-qr-render.mjs';
 
 /**
  * @param {{ runtime: () => { showToast: (msg: string, kind?: string) => void } }} deps
@@ -73,71 +56,24 @@ function resolveCloudMobileInviteUrl() {
 }
 
 /**
- * Dedicated mobile subview — content only (modal header already titles the screen).
- * @param {HTMLElement} body
+ * Dedicated mobile subview — content only (modal header already titles the screen). Empty when there is no
+ * Nube session to build the link from.
+ * @param {HTMLElement | null} host
  * @param {{ runtime: () => { showToast: (msg: string, kind?: string) => void } }} deps
- * @param {string} url
  */
-function fillCloudMobileInviteBody(body, deps, url) {
-  const hint = document.createElement('p');
-  hint.className = 'lan-connect-card-hint';
-  hint.style.margin = '0 0 8px';
-  hint.innerHTML =
-    'Enlace <strong>permanente</strong> ligado a <strong>tu @usuario</strong>. ' +
-    'No cambia con la rotación — el iPad entra a tu sala nube activa. ' +
-    'Ábrelo en Safari → <strong>Añadir a pantalla de inicio</strong>.';
-  body.appendChild(hint);
-
-  const copyBtn = document.createElement('button');
-  copyBtn.type = 'button';
-  copyBtn.className = 'wb-btn wb-btn-primary cloud-mobile-invite-copy-btn';
-  copyBtn.style.width = '100%';
-  copyBtn.textContent = 'Copiar enlace móvil (Nube)';
-  copyBtn.onclick = function () {
-    void copyCloudMobileLinkFromUi(deps, url);
-  };
-  body.appendChild(copyBtn);
-
-  const qrRow = document.createElement('div');
-  qrRow.className = 'lan-connect-actions-row';
-  qrRow.style.marginTop = '8px';
-  const copyQrBtn = document.createElement('button');
-  copyQrBtn.type = 'button';
-  copyQrBtn.className = 'wb-btn wb-btn-secondary';
-  copyQrBtn.style.flex = '1';
-  copyQrBtn.textContent = 'Copiar QR';
-  copyQrBtn.onclick = function () {
-    void copyInternoQrImage(url, function (msg, kind) {
-      deps.runtime().showToast(msg, kind);
-    });
-  };
-  qrRow.appendChild(copyQrBtn);
-  body.appendChild(qrRow);
-
-  const qrHost = document.createElement('div');
-  qrHost.className = 'cloud-mobile-invite-qr-host';
-  qrHost.style.marginTop = '8px';
-  qrHost.style.display = 'flex';
-  qrHost.style.justifyContent = 'center';
-  mountCloudMobileQrPreview(qrHost, url);
-  body.appendChild(qrHost);
-}
-
-/** @param {{ runtime: () => { showToast: (msg: string, kind?: string) => void } }} deps @param {HTMLElement} root */
-export function appendCloudMobileInviteCard(deps, root) {
-  if (!root) return;
-  const url = resolveCloudMobileInviteUrl();
-  if (!url) return;
-  fillCloudMobileInviteBody(root, deps, url);
-}
-
-/** @param {HTMLElement | null} host @param {{ runtime: () => { showToast: (msg: string, kind?: string) => void } }} deps */
-export function mountCloudMobileInviteInHost(host, deps) {
+export async function mountCloudMobileInviteInHost(host, deps) {
   if (!host) return;
-  host.replaceChildren();
-  const panel = document.createElement('div');
-  panel.className =
-    'cloud-mobile-invite-panel lan-invite-collapsible--mobile lan-invite-collapsible--cloud';
-  appendCloudMobileInviteCard(deps, panel);
-  if (panel.childElementCount) host.appendChild(panel);
+  const url = resolveCloudMobileInviteUrl();
+  const { drawInviteCard } = await import('./panel-mobile-invite-view.jsx');
+  drawInviteCard(host, url && {
+    url,
+    onCopyLink() {
+      void copyCloudMobileLinkFromUi(deps, url);
+    },
+    onCopyQr() {
+      void copyInternoQrImage(url, function (msg, kind) {
+        deps.runtime().showToast(msg, kind);
+      });
+    },
+  });
 }

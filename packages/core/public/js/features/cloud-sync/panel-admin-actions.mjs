@@ -21,9 +21,9 @@ import {
 import {
   listSelectedNetworkPatients,
   listVisibleNetworkRowsWithRegistro,
-  applyNetworkCensusFilters,
   updateNetworkBulkBarVisibility,
 } from './panel-admin-html.mjs';
+import { applyNetworkCensusFilters } from './panel-admin-network-dom.mjs';
 import { verifyNetworkLabsRows, labRepoCheckAvailable } from './panel-admin-labs-verify.mjs';
 import { loadAdminEquipos } from './panel-admin-equipos-data.mjs';
 import { purgeClinicalUserMatchingCloudHandle } from './panel-admin-clinical-purge.mjs';

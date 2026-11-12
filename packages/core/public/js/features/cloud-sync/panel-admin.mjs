@@ -4,10 +4,10 @@ import {
   applyAdminSalasFilters,
   adminShellModel,
   mutationsRoomOptionsHtml,
-  applyNetworkCensusFilters,
   setSelectAllVisibleNetwork,
   updateNetworkBulkBarVisibility,
 } from './panel-admin-html.mjs';
+import { applyNetworkCensusFilters } from './panel-admin-network-dom.mjs';
 import { loadAdminResumen, loadAdminSalas, loadAdminNetworkCensus, loadAdminMutations } from './panel-admin-data.mjs';
 import { createAdminClickHandler } from './panel-admin-actions.mjs';
 import { EQUIPOS_CHIPS } from './panel-admin-equipos-html.mjs';

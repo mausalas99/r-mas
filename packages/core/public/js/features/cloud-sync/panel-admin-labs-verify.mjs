@@ -1,8 +1,7 @@
 import {
   listVisibleNetworkRowsWithRegistro,
-  markNetworkRowLabsVerified,
-  applyNetworkCensusFilters,
 } from './panel-admin-html.mjs';
+import { markNetworkRowLabsVerified, applyNetworkCensusFilters } from './panel-admin-network-dom.mjs';
 import { getLabPortalUrlSetting } from '../../lab-repo-portal-prompt.mjs';
 import { getCachedLabVerify, setCachedLabVerify } from './lab-verify-cache.mjs';
 

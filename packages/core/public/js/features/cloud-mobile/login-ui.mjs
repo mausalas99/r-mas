@@ -7,11 +7,7 @@ import {
   toastRegisterError,
 } from '../cloud-sync/panel-conexion-handlers.mjs';
 import { bridgeCloudIdentityToLocal } from '../cloud-sync/identity-bridge.mjs';
-import {
-  CLINICAL_LAN_USERNAME_HINT_HTML,
-  CLINICAL_LAN_DISPLAY_NAME_HINT_HTML,
-} from '../../clinical-settings.mjs';
-import { esc } from '../../dom-escape.mjs';
+import { drawLoadingShell, drawLoginShell } from './login-ui-view.jsx';
 import {
   getCloudSyncToken,
   getCloudSyncRoomId,
@@ -86,57 +82,8 @@ export function rewriteCloudMobileBookmarkUrl(user) {
 /** @param {HTMLElement} gate */
 export function dismissCloudMobileGate(gate) {
   gate.hidden = true;
-  gate.innerHTML = '';
+  gate.replaceChildren();
   document.body.classList.remove('rpc-cloud-mobile-gated');
-}
-
-function authBodyHtml(prefilledUser) {
-  const userVal = prefilledUser ? ' value="' + esc(prefilledUser) + '"' : '';
-  return (
-    '<div class="cloud-sync-tabs" role="tablist" aria-label="Cuenta Nube">' +
-    '<button type="button" class="cloud-sync-tab is-active" role="tab" aria-selected="true" data-cloud-tab="login">Entrar</button>' +
-    '<button type="button" class="cloud-sync-tab" role="tab" aria-selected="false" data-cloud-tab="register">Crear cuenta</button>' +
-    '</div>' +
-    '<div class="cloud-sync-tab-panels">' +
-    '<div class="cloud-sync-tab-panel" data-cloud-tab-panel="login" role="tabpanel">' +
-    '<div class="cloud-sync-field"><label>Usuario (@usuario)</label>' +
-    '<input type="text" class="profile-input" data-cloud-login-user autocomplete="username" placeholder="ej. drmendoza" spellcheck="false"' +
-    userVal +
-    ' /></div>' +
-    '<div class="cloud-sync-field"><label>Contraseña</label>' +
-    '<input type="password" class="profile-input" data-cloud-login-pass autocomplete="current-password" /></div>' +
-    '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="login">Entrar</button></div>' +
-    '<div class="cloud-sync-tab-panel" data-cloud-tab-panel="register" role="tabpanel" hidden>' +
-    '<div class="cloud-sync-field"><label>Usuario (@usuario)</label>' +
-    '<input type="text" class="profile-input" data-cloud-reg-user autocomplete="username" placeholder="ej. drmendoza" spellcheck="false"' +
-    userVal +
-    ' />' +
-    '<p class="cloud-sync-hint">' +
-    CLINICAL_LAN_USERNAME_HINT_HTML +
-    '</p></div>' +
-    '<div class="cloud-sync-field"><label>Nombre en guardia</label>' +
-    '<input type="text" class="profile-input" data-cloud-reg-display autocomplete="name" placeholder="ej. Dr. Mendoza" />' +
-    '<p class="cloud-sync-hint">' +
-    CLINICAL_LAN_DISPLAY_NAME_HINT_HTML +
-    '</p></div>' +
-    '<div class="cloud-sync-field"><label>Contraseña</label>' +
-    '<input type="password" class="profile-input" data-cloud-reg-pass autocomplete="new-password" /></div>' +
-    '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="register">Crear cuenta</button></div>' +
-    '</div>'
-  );
-}
-
-/** @param {string} prefilledCode */
-function joinBodyHtml(prefilledCode) {
-  const value = prefilledCode ? ' value="' + esc(prefilledCode) + '"' : '';
-  return (
-    '<p class="cloud-sync-lead">Ingresa el código que compartió el equipo en escritorio.</p>' +
-    '<div class="cloud-sync-field"><label>Código de sala</label>' +
-    '<input type="text" class="profile-input" data-cloud-join-code placeholder="ABC123"' +
-    value +
-    ' /></div>' +
-    '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="join-room">Unirse al turno</button>'
-  );
 }
 
 /**
@@ -145,26 +92,7 @@ function joinBodyHtml(prefilledCode) {
  * @param {string} [prefilled]
  */
 function renderShell(section, mode, prefilled) {
-  const body =
-    mode === 'join'
-      ? joinBodyHtml(prefilled || '')
-      : authBodyHtml(prefilled || readCloudMobileJoinUser());
-  const title = mode === 'join' ? 'Unirse al turno' : 'R+ Móvil · Nube';
-  const sub =
-    mode === 'join'
-      ? 'Sesión iniciada — une tu iPad al turno.'
-      : 'Inicia sesión para sincronizar el censo.';
-  section.innerHTML =
-    '<div class="rpc-cloud-mobile-modal__head">' +
-    '<h4 id="rpc-cloud-mobile-modal-title" class="rpc-cloud-mobile-modal__title">' +
-    esc(title) +
-    '</h4>' +
-    '<p class="rpc-cloud-mobile-modal__sub">' +
-    esc(sub) +
-    '</p></div>' +
-    '<div class="rpc-cloud-mobile-modal__body">' +
-    body +
-    '</div>';
+  drawLoginShell(section, mode, mode === 'join' ? prefilled || '' : prefilled || readCloudMobileJoinUser());
   if (mode === 'auth') wireCloudAuthTabs(section);
 }
 
@@ -306,12 +234,7 @@ export function mountCloudMobileLoginShell(root, { onConnected }) {
 
   if (getCloudSyncToken() && !getCloudSyncRoomId()) {
     wireShellActions(section, onConnected);
-    section.innerHTML =
-      '<div class="rpc-cloud-mobile-modal__head">' +
-      '<h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4>' +
-      '<p class="rpc-cloud-mobile-modal__sub">Buscando tu sala nube…</p></div>' +
-      '<div class="rpc-cloud-mobile-modal__body rpc-cloud-mobile-modal__body--center">' +
-      '<span class="rpc-cloud-mobile-spinner" aria-hidden="true"></span></div>';
+    drawLoadingShell(section);
     void withCloudMobileBootTimeout(
       resolveCloudMobileActiveRoom(),
       CLOUD_MOBILE_ROOM_RESOLVE_TIMEOUT_MS,

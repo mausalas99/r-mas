@@ -15,8 +15,6 @@ import { assignTeamOptions, cycleOptions, rankOptions, userSalaOptions } from '.
 
 export {
   CLINICAL_RANK_OPTIONS,
-  renderEquiposAssignTeamOptionsHtml,
-  cycleOptionsForTeam,
 } from './panel-admin-equipos-html-fields.mjs';
 
 /** Board «Admin · Usuarios» chips: id → label (counts fill in after the list loads). */

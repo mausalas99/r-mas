@@ -3,7 +3,8 @@ import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { getCycleLetterOptionsForRank } from '../../clinico-access.mjs';
 import { publishClinicalTeamsAfterChange } from '../clinical-teams/teams-guardia-bridge.mjs';
 import { confirmAction } from './panel-admin-helpers.mjs';
-import { renderEquiposAssignTeamOptionsHtml, cycleOptionsForTeam } from './panel-admin-equipos-html-fields.mjs';
+import { assignTeamOptions, cycleOptions } from './panel-admin-equipos-html-fields.mjs';
+import { drawCycleOptions, drawTeamOptions } from './panel-admin-equipos-view.jsx';
 import {
   applyEquiposFiltersFromToolbar,
   loadAdminEquipos,
@@ -160,7 +161,7 @@ export function syncCloudEquiposCycleSelect(teamSelect, teams, preferredCycle = 
 
   const teamId = String(teamSelect.value || '').trim();
   if (!teamId) {
-    cycleSelect.innerHTML = '<option value="">—</option>';
+    drawCycleOptions(cycleSelect, [{ value: '', label: '—' }]);
     cycleSelect.disabled = true;
     return;
   }
@@ -169,7 +170,7 @@ export function syncCloudEquiposCycleSelect(teamSelect, teams, preferredCycle = 
   const userId = String(row?.getAttribute('data-user-id') || '').trim();
   const userRank = readEquiposRowRank(row);
   const rowPreferred = String(preferredCycle || '').trim();
-  cycleSelect.innerHTML = cycleOptionsForTeam(team, userId, userRank, rowPreferred);
+  drawCycleOptions(cycleSelect, cycleOptions(team, userId, userRank, rowPreferred));
   cycleSelect.disabled = false;
   if (team) {
     const service = String(team.service || 'Sala');
@@ -186,7 +187,7 @@ export function syncCloudEquiposTeamSelect(row, teams, root) {
   if (!(teamSelect instanceof HTMLSelectElement)) return;
   const prev = String(teamSelect.value || '').trim();
   const sala = resolveEquiposTeamSalaScope(row, root);
-  teamSelect.innerHTML = renderEquiposAssignTeamOptionsHtml(teams, prev, sala);
+  drawTeamOptions(teamSelect, assignTeamOptions(teams, prev, sala));
   const values = new Set([...teamSelect.options].map((o) => o.value).filter(Boolean));
   teamSelect.value = prev && values.has(prev) ? prev : '';
   syncCloudEquiposCycleSelect(teamSelect, teams);
