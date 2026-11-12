@@ -9,12 +9,8 @@ import { getPatients } from "../app-state.mjs";
 import { closeModalAnimated } from "../ui-motion.mjs";
 import { enqueueCloudAgendaUpsert, enqueueCloudAgendaDelete } from "./cloud-sync/mutate-bridge.mjs";
 import { openConfirm } from "./workbench/confirm.mjs";
-import {
-  buildAgendaBoardHead,
-  buildAgendaTimesColumn,
-  collectAgendaClipsByDay,
-  buildAgendaDayColumn,
-} from "./agenda-panel-render.mjs";
+import { buildAgendaBoardModel, collectAgendaClipsByDay } from "./agenda-panel-render.mjs";
+import { getProcedureAgendaRowPx } from "./chrome.mjs";
 import {
   fillProcedureAgendaModalForEdit,
   fillProcedureAgendaModalForNew,
@@ -99,7 +95,7 @@ export function resetProcedureAgendaWeek() {
   renderProcedureAgendaPanel();
 }
 
-export function renderProcedureAgendaPanel() {
+export async function renderProcedureAgendaPanel() {
   var mount = document.getElementById("procedure-agenda-grid-mount");
   var rangeEl = document.getElementById("procedure-agenda-range");
   if (!mount || !rangeEl) return;
@@ -117,31 +113,17 @@ export function renderProcedureAgendaPanel() {
   var newBtn = document.getElementById("procedure-agenda-new");
   if (newBtn) newBtn.disabled = elig.length === 0;
 
-  var board = document.createElement("div");
-  board.appendChild(buildAgendaBoardHead(monday));
-
-  var bodyRow = document.createElement("div");
-  bodyRow.className = "rpc-proc-agenda-board-body";
-  bodyRow.appendChild(buildAgendaTimesColumn(monday));
-
-  var clipsByDay = collectAgendaClipsByDay(monday, week, pmap);
-  for (var iDay = 0; iDay < 7; iDay += 1) {
-    bodyRow.appendChild(buildAgendaDayColumn(iDay, monday, clipsByDay[iDay], openProcedureAgendaModal));
-  }
-  if (clipsByDay.every(function (c) { return c.length === 0; })) {
-    var empty = document.createElement("div");
-    empty.className = "rpc-proc-agenda-empty";
-    empty.innerHTML = '<span class="rpc-proc-agenda-empty-title">Semana libre</span>' +
-      '<span>Usa + Procedimiento para agendar uno.</span>';
-    bodyRow.appendChild(empty);
-  }
-
-  board.appendChild(bodyRow);
-  mount.innerHTML = "";
-  mount.appendChild(board);
+  var model = buildAgendaBoardModel(
+    monday,
+    collectAgendaClipsByDay(monday, week, pmap),
+    getProcedureAgendaRowPx(),
+    new Date()
+  );
+  var view = await import("./agenda-view.jsx");
+  view.drawAgendaBoard(mount, model, openProcedureAgendaModal);
 }
 
-export function openProcedureAgendaModal(editEventId) {
+export async function openProcedureAgendaModal(editEventId) {
   var bd = document.getElementById("procedure-agenda-modal");
   if (!bd) return;
   var errEl = document.getElementById("pa-modal-error");
@@ -155,13 +137,7 @@ export function openProcedureAgendaModal(editEventId) {
   var elig = agendaEligiblePatients();
   var sel = document.getElementById("pa-patient");
   if (sel) {
-    sel.innerHTML = "";
-    elig.forEach(function (p) {
-      var opt = document.createElement("option");
-      opt.value = String(p.id);
-      opt.textContent = String(p.nombre || p.id);
-      sel.appendChild(opt);
-    });
+    (await import("./agenda-view.jsx")).drawPatientOptions(sel, elig);
   }
 
   if (delBtn) delBtn.style.display = editEventId ? "inline-flex" : "none";
