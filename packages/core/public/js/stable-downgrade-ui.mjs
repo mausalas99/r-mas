@@ -194,25 +194,14 @@ export function formatDowngradeOptionText(label, summary) {
   return { text: isGenericSummary ? label : fullText, title: fullText };
 }
 
-function populateDowngradeSelect(select, entries) {
-  select.innerHTML = '';
-  if (!entries.length) {
-    const empty = document.createElement('option');
-    empty.value = '';
-    empty.textContent = 'Sin versiones anteriores';
-    select.appendChild(empty);
-    select.disabled = true;
-    return;
-  }
-  select.disabled = false;
-  entries.forEach(function (e) {
-    const opt = document.createElement('option');
-    opt.value = e.version;
+async function populateDowngradeSelect(select, entries) {
+  const view = await import('./stable-downgrade-view.jsx');
+  view.drawDowngradeOptions(select, entries.map(function (e) {
     const formatted = formatDowngradeOptionText(e.label, e.summary);
-    opt.textContent = formatted.text;
-    opt.title = formatted.title;
-    select.appendChild(opt);
-  });
+    return { version: e.version, text: formatted.text, title: formatted.title };
+  }));
+  select.disabled = !entries.length;
+  if (!entries.length) return;
   select.value = pickDefaultDowngradeVersion(entries);
 }
 
@@ -227,12 +216,12 @@ async function loadDowngradeCatalogBundle() {
   ]);
 }
 
-function renderDowngradeLoadError(hint, select, githubBtn) {
+async function renderDowngradeLoadError(hint, select, githubBtn) {
   if (hint) {
     hint.textContent =
       'No se pudo cargar el catálogo de versiones. Revisa la red o abre el instalador en GitHub.';
   }
-  populateDowngradeSelect(select, []);
+  await populateDowngradeSelect(select, []);
   if (githubBtn) {
     githubBtn.disabled = false;
     githubBtn.onclick = function () {
@@ -318,7 +307,7 @@ export async function refreshStableDowngradeSettings(deps) {
     minVersion = results[1];
     currentVersion = results[2];
   } catch {
-    renderDowngradeLoadError(hint, select, githubBtn);
+    await renderDowngradeLoadError(hint, select, githubBtn);
     return { entries: [], source: 'error' };
   }
 
@@ -332,13 +321,13 @@ export async function refreshStableDowngradeSettings(deps) {
         currentVersion +
         ' en el catálogo. Abre Releases en GitHub para instalar manualmente.';
     }
-    populateDowngradeSelect(select, []);
+    await populateDowngradeSelect(select, []);
     btn.disabled = true;
     wireDowngradeGithubButton(githubBtn, select, entries);
     return { entries, source };
   }
 
-  populateDowngradeSelect(select, entries);
+  await populateDowngradeSelect(select, entries);
   renderDowngradeHint(hint, catalog);
   wireDowngradeStableButton(deps, btn, select, entries, minVersion);
   wireDowngradeGithubButton(githubBtn, select, entries);

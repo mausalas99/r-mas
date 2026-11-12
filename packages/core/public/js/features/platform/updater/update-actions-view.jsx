@@ -25,6 +25,26 @@ export function ReadyPrimary({ isDowngrade, onInstall, onLater }) {
   );
 }
 
+/** Error modal: retry. */
+export function ErrorPrimary({ onRetry }) {
+  return <button class="btn-primary" onClick={onRetry}>Reintentar</button>;
+}
+
+/** Native-runtime failure modal, primary row. */
+export function RecoveryPrimary({ onSettings, onReleases }) {
+  return (
+    <>
+      <button class="btn-primary" onClick={onSettings}>Abrir restaurar versión estable…</button>
+      <button class="btn-secondary" onClick={onReleases}>Ver releases en GitHub</button>
+    </>
+  );
+}
+
+/** Native-runtime failure modal, secondary row. */
+export function RecoverySecondary({ onClose }) {
+  return <button class="btn-secondary" onClick={onClose}>Continuar de todos modos</button>;
+}
+
 /** Empty the host (and any Preact tree in it); with a vnode, draw it fresh. */
 export function drawUpdateActions(host, vnode) {
   render(null, host);
@@ -34,4 +54,7 @@ export function drawUpdateActions(host, vnode) {
 
 export const drawAvailablePrimary = (host, props) => drawUpdateActions(host, <AvailablePrimary {...props} />);
 export const drawAvailableSecondary = (host, props) => drawUpdateActions(host, <AvailableSecondary {...props} />);
+export const drawErrorPrimary = (host, props) => drawUpdateActions(host, <ErrorPrimary {...props} />);
+export const drawRecoveryPrimary = (host, props) => drawUpdateActions(host, <RecoveryPrimary {...props} />);
+export const drawRecoverySecondary = (host, props) => drawUpdateActions(host, <RecoverySecondary {...props} />);
 export const drawReadyPrimary = (host, props) => drawUpdateActions(host, <ReadyPrimary {...props} />);

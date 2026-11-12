@@ -82,6 +82,23 @@ function stripHtmlToPlainText(html) {
     .trim();
 }
 
+async function drawUpdateErrorActions() {
+  var actions = document.getElementById('update-modal-actions-primary');
+  var sec = document.getElementById('update-modal-actions-secondary');
+  if (!actions && !sec) return;
+  var view = await import('./update-actions-view.jsx');
+  if (actions) {
+    view.drawErrorPrimary(actions, {
+      onRetry: function () {
+        resetUpdateModalPanels();
+        if (window.electronAPI && window.electronAPI.checkForUpdates) window.electronAPI.checkForUpdates();
+        hideUpdateModal();
+      },
+    });
+  }
+  if (sec) view.drawUpdateActions(sec, null);
+}
+
 function renderUpdateError(msg) {
   resetUpdateModalPanels();
   var box = document.getElementById('update-modal-error');
@@ -104,21 +121,7 @@ function renderUpdateError(msg) {
   if (title && title.firstChild && title.firstChild.nodeType === 3) {
     title.firstChild.textContent = 'Actualizaciones';
   }
-  var actions = document.getElementById('update-modal-actions-primary');
-  var sec = document.getElementById('update-modal-actions-secondary');
-  if (actions) {
-    actions.innerHTML = '';
-    var retry = document.createElement('button');
-    retry.className = 'btn-primary';
-    retry.textContent = 'Reintentar';
-    retry.onclick = function() {
-      resetUpdateModalPanels();
-      if (window.electronAPI && window.electronAPI.checkForUpdates) window.electronAPI.checkForUpdates();
-      hideUpdateModal();
-    };
-    actions.appendChild(retry);
-  }
-  if (sec) sec.innerHTML = '';
+  drawUpdateErrorActions();
   showUpdateModal();
 }
 

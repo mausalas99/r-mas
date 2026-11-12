@@ -30,37 +30,25 @@ function populateNativeRecoveryContent(msg) {
   }
 }
 
-function populateNativeRecoveryActions() {
+async function populateNativeRecoveryActions() {
   var actions = document.getElementById('update-modal-actions-primary');
   var sec = document.getElementById('update-modal-actions-secondary');
+  if (!actions && !sec) return;
+  var view = await import('./update-actions-view.jsx');
   if (actions) {
-    actions.innerHTML = '';
-    var settingsBtn = document.createElement('button');
-    settingsBtn.className = 'btn-primary';
-    settingsBtn.textContent = 'Abrir restaurar versión estable…';
-    settingsBtn.onclick = function () {
-      hideUpdateModal();
-      openSettingsDowngradeSection();
-    };
-    actions.appendChild(settingsBtn);
-    var ghBtn = document.createElement('button');
-    ghBtn.className = 'btn-secondary';
-    ghBtn.textContent = 'Ver releases en GitHub';
-    ghBtn.onclick = function () {
-      if (window.electronAPI && window.electronAPI.openExternal) {
-        window.electronAPI.openExternal('https://github.com/mausalas99/r-mas/releases');
-      }
-    };
-    actions.appendChild(ghBtn);
+    view.drawRecoveryPrimary(actions, {
+      onSettings: function () {
+        hideUpdateModal();
+        openSettingsDowngradeSection();
+      },
+      onReleases: function () {
+        if (window.electronAPI && window.electronAPI.openExternal) {
+          window.electronAPI.openExternal('https://github.com/mausalas99/r-mas/releases');
+        }
+      },
+    });
   }
-  if (sec) {
-    sec.innerHTML = '';
-    var closeBtn = document.createElement('button');
-    closeBtn.className = 'btn-secondary';
-    closeBtn.textContent = 'Continuar de todos modos';
-    closeBtn.onclick = function () { hideUpdateModal(); };
-    sec.appendChild(closeBtn);
-  }
+  if (sec) view.drawRecoverySecondary(sec, { onClose: function () { hideUpdateModal(); } });
 }
 
 function showNativeRuntimeRecoveryModal(status) {
