@@ -24,7 +24,7 @@ export function Stepper({ index }) {
   );
 }
 
-function Stage({ title, stepperIndex, lead, children }) {
+export function Stage({ title, stepperIndex, lead, children }) {
   return (
     <div class="clinical-onboarding-stage">
       <div class="clinical-onboarding-stage-inner">

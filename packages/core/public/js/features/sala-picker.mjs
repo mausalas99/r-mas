@@ -11,10 +11,13 @@ import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 export const ROTACION_PENDING = 'Rotación';
 export const ROTACION_PENDING_MSG = 'Elige tu servicio.';
 
-const PILL_LABELS = { 'UCI': 'UCI', 'PostQx': 'PostQx', 'Subespecialidad': 'Subespecialidad' };
+export const PILL_LABELS = { 'UCI': 'UCI', 'PostQx': 'PostQx', 'Subespecialidad': 'Subespecialidad' };
 
-const isRotacion = (sala) => Object.hasOwn(ROTACION_SALA_SLUGS, sala);
-const hintText = (sala) => (isRotacion(sala) ? `Tu sala Nube será ${PILL_LABELS[sala]}.` : '');
+export const isRotacion = (sala) => Object.hasOwn(ROTACION_SALA_SLUGS, sala);
+export const hintText = (sala) => (isRotacion(sala) ? `Tu sala Nube será ${PILL_LABELS[sala]}.` : '');
+
+/** Salas listed one by one in the picker (the three rotation salas fold into «Otra rotación»). */
+export const SALA_OPTION_VALUES = CLINICAL_SALA_VALUES.filter((s) => !isRotacion(s));
 
 /** @param {string} [prefilled] */
 export function salaPickerOptionsHtml(prefilled = '') {

@@ -9,9 +9,6 @@ import {
   resumeClinicalIdentityByUsername,
 } from '../clinical-access-runtime.mjs';
 import {
-  CLINICAL_LAN_DISPLAY_NAME_HINT_HTML,
-  CLINICAL_LAN_PROFILE_GATE_LEAD_HTML,
-  CLINICAL_LAN_USERNAME_HINT_HTML,
   ensureLanProfileGateDeviceReset,
   isClinicalLocalOnlyMode,
   needsClinicalLanProfileGate,
@@ -22,10 +19,9 @@ import {
   isLegacyMachineUsername,
   normalizeUsername,
 } from '../clinical-username.mjs';
-import { salaPickerOptionsHtml, salaPickerRotacionHtml } from './sala-picker.mjs';
 import { renderSyncModeChoicePanel } from './clinical-onboarding-sync-mode.mjs';
-import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
 import { drawLocalOnlyConfirm } from './clinical-onboarding-view.jsx';
+import { drawLanProfileStage } from './clinical-onboarding-forms-view.jsx';
 import {
   getClientId,
   needsClinicalSyncModeChoice,
@@ -40,15 +36,14 @@ import {
   tryResumeOnboardingFromStoredCloudToken,
   wireExistingAccountLoginInteractions,
 } from './clinical-onboarding-existing-login.mjs';
-import { getCloudSyncToken } from './cloud-sync/settings.mjs';
+import { getCloudSyncToken, getCloudSyncUrl } from './cloud-sync/settings.mjs';
 import { wireOnboardingInteractions } from './clinical-onboarding-handlers.mjs';
 import {
-  buildNubePasswordFieldHtml,
+  shouldShowNubePasswordField,
   syncOnboardingNubeVisibility,
 } from './clinical-onboarding-nube.mjs';
 import { isCloudSalaUpgradePending } from './cloud-sync/cloud-sala-upgrade.mjs';
 
-import { escapeAttr } from '../dom-escape.mjs';
 async function tryAutoResumeCachedUsername(settings) {
   const profileGatePending = needsClinicalLanProfileGate(settings);
   const cachedUsername = profileGatePending
@@ -92,12 +87,6 @@ async function renderCompletedOnboarding(host) {
   }
 }
 
-function buildRankOptionsHtml(rank) {
-  return ['R1', 'R2', 'R3', 'R4']
-    .map((r) => `<option value="${r}" ${rank === r ? 'selected' : ''}>${r}</option>`)
-    .join('');
-}
-
 function resolveOnboardUsernamePrefill(settings) {
   const profileGatePending = needsClinicalLanProfileGate(settings);
   const sessionUsername = normalizeUsername(clinicalSessionContext.user?.username || '');
@@ -113,97 +102,20 @@ function resolveOnboardUsernamePrefill(settings) {
   return '';
 }
 
-function buildLanProfileFormBody(settings) {
-  const cachedUsername = resolveOnboardUsernamePrefill(settings);
-  const rank = String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1');
-  const prefilledName = String(
-    settings.clinicalDisplayName ||
-      clinicalSessionContext.user?.clinical_name ||
-      ''
-  );
-  const prefilledSala = String(settings.clinicalSala || clinicalSessionContext.user?.sala || '');
-  const shiftPinFieldHtml = '';
-
-  return `
-      <div class="clinical-onboard-form-shell">
-        <form id="clinical-onboard-username-form" class="clinical-teams-create-form clinical-onboard-form" novalidate>
-          <fieldset class="clinical-onboard-substep" data-substep>
-            <legend class="clinical-onboard-question">Elige tu @usuario</legend>
-            <div class="field-group">
-              <label for="onboard-username">Usuario *</label>
-              <input id="onboard-username" type="text" class="profile-input" placeholder="ej. drmendoza"
-                value="${escapeAttr(cachedUsername)}" required autocomplete="off" spellcheck="false">
-              <p class="clinical-teams-hint">${CLINICAL_LAN_USERNAME_HINT_HTML}</p>
-            </div>
-          </fieldset>
-          <fieldset class="clinical-onboard-substep" data-substep hidden>
-            <legend class="clinical-onboard-question">¿Cómo te llaman en guardia?</legend>
-            <div class="field-group">
-              <label for="onboard-clinical-name">Nombre en guardia *</label>
-              <input id="onboard-clinical-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza"
-                value="${escapeAttr(prefilledName)}" required autocomplete="name">
-              <p class="clinical-teams-hint">${CLINICAL_LAN_DISPLAY_NAME_HINT_HTML}</p>
-            </div>
-          </fieldset>
-          <fieldset class="clinical-onboard-substep" data-substep hidden>
-            <legend class="clinical-onboard-question">¿Dónde rotas?</legend>
-            <div class="field-group">
-              <label for="onboard-rank">Rango</label>
-              <select id="onboard-rank" class="profile-input">
-                ${buildRankOptionsHtml(rank)}
-              </select>
-            </div>
-            <div class="field-group">
-              <label for="onboard-sala">Rotación *</label>
-              <select id="onboard-sala" class="profile-input" required>
-                <option value="">— Seleccionar —</option>
-                ${salaPickerOptionsHtml(prefilledSala)}
-              </select>
-              ${salaPickerRotacionHtml(prefilledSala)}
-            </div>
-            ${buildNubePasswordFieldHtml(prefilledSala)}
-            ${shiftPinFieldHtml}
-          </fieldset>
-          <p id="onboard-error" class="clinical-registration-error" hidden></p>
-          <div class="modal-actions clinical-onboard-form-actions">
-            <button type="button" class="wb-btn wb-btn-secondary" data-substep-back hidden>Atrás</button>
-            <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg">Guardar perfil</button>
-          </div>
-        </form>
-        <div class="clinical-onboard-alt-actions">
-          <button type="button" id="clinical-onboard-switch-existing-btn" class="wb-btn wb-btn-ghost">Ya tengo cuenta Nube</button>
-          <button type="button" id="clinical-onboard-resume-btn" class="wb-btn wb-btn-ghost">Recuperar mi usuario</button>
-          <button type="button" id="clinical-onboard-mode-back-btn" class="wb-btn wb-btn-ghost">Cambiar modo</button>
-        </div>
-      </div>`;
-}
-
 function renderLanProfileForm(host, settings) {
   const profileGatePending = needsClinicalLanProfileGate(settings);
   const salaUpgrade = isCloudSalaUpgradePending(settings);
-  let gateLead;
-  if (profileGatePending) {
-    gateLead = `<p class="clinical-onboard-gate-lead">${CLINICAL_LAN_PROFILE_GATE_LEAD_HTML}</p>`;
-  } else if (salaUpgrade) {
-    gateLead =
-      '<p class="clinical-onboard-gate-lead">Pasaste a <strong>Sala</strong> o <strong>Torre HU</strong>. ' +
-      'Completa el perfil y registra tu <strong>contraseña de Nube</strong> para sincronizar el turno.</p>';
-  } else {
-    gateLead =
-      '<p>Confirma tu @usuario de R+ Cloud, nombre en guardia, rango y rotación. ' +
-      'Para equipos, abre <strong>Mi rotación</strong> después.</p>';
-  }
-  const title = profileGatePending
-    ? 'Confirma tu perfil'
-    : salaUpgrade
-      ? 'Conectar Nube'
-      : 'Configura tu rotación';
-
-  host.innerHTML = buildOnboardingStageHtml({
-    title,
-    leadHtml: gateLead,
-    stepperIndex: 2,
-    bodyHtml: buildLanProfileFormBody(settings),
+  const prefilledSala = String(settings.clinicalSala || clinicalSessionContext.user?.sala || '');
+  drawLanProfileStage(host, {
+    title: profileGatePending ? 'Confirma tu perfil' : salaUpgrade ? 'Conectar Nube' : 'Configura tu rotación',
+    leadKind: profileGatePending ? 'gate' : salaUpgrade ? 'upgrade' : 'default',
+    username: resolveOnboardUsernamePrefill(settings),
+    name: String(settings.clinicalDisplayName || clinicalSessionContext.user?.clinical_name || ''),
+    rank: String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1'),
+    sala: prefilledSala,
+    nubeShow: shouldShowNubePasswordField(prefilledSala),
+    upgrade: isCloudSalaUpgradePending(),
+    cloudUrl: getCloudSyncUrl(),
   });
   syncOnboardingNubeVisibility(host);
 }

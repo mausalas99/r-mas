@@ -19,11 +19,10 @@ import {
   isValidUsernameFormat,
   normalizeUsername,
 } from '../clinical-username.mjs';
-import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 import { getClientId, hasPersistedClinicalProfile } from './clinical-onboarding-gates.mjs';
-import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
+import { drawExistingLoginStage } from './clinical-onboarding-forms-view.jsx';
 import { wireOnboardingModeBackButtons } from './clinical-onboarding-sync-mode.mjs';
-import { ROTACION_PENDING, ROTACION_PENDING_MSG, salaPickerOptionsHtml, salaPickerRotacionHtml, wireSalaPicker } from './sala-picker.mjs';
+import { ROTACION_PENDING, ROTACION_PENDING_MSG, wireSalaPicker } from './sala-picker.mjs';
 import { bridgeCloudIdentityToLocal } from './cloud-sync/identity-bridge.mjs';
 import { createCloudSyncApi } from './cloud-sync/api-client.mjs';
 import {
@@ -42,58 +41,12 @@ export function needsExistingAccountLogin(
   return !hasPersistedClinicalProfile(settings, user);
 }
 
-export function buildExistingAccountLoginBodyHtml(settings = readRpcSettings()) {
-  const prefilledSala = String(settings.clinicalSala || clinicalSessionContext.user?.sala || '');
-  const prefilledUser = normalizeUsername(
-    String(settings.clinicalUsername || clinicalSessionContext.user?.username || '')
-  );
-  const rememberChecked = getCloudSyncRemember();
-  return `
-      <div class="clinical-onboard-form-shell">
-        <form id="clinical-onboard-existing-login-form" class="clinical-teams-create-form clinical-onboard-form" novalidate>
-          <div class="field-group">
-            <label for="onboard-existing-username">Usuario (@usuario) *</label>
-            <input id="onboard-existing-username" type="text" class="profile-input" placeholder="ej. drmendoza"
-              value="${escapeAttr(prefilledUser)}" required autocomplete="username" spellcheck="false">
-          </div>
-          <div class="field-group">
-            <label for="onboard-existing-password">Contraseña Nube *</label>
-            <input id="onboard-existing-password" type="password" class="profile-input"
-              required autocomplete="current-password" minlength="10">
-          </div>
-          <label class="cloud-sync-remember clinical-onboard-remember">
-            <input type="checkbox" id="onboard-existing-remember" data-onboard-existing-remember${
-              rememberChecked ? ' checked' : ''
-            } />
-            Recuérdame en este dispositivo
-          </label>
-          <p class="clinical-teams-hint">Mantiene la sesión Nube al reiniciar R+. No uses esto en una Mac compartida.</p>
-          <div class="field-group">
-            <label for="onboard-existing-sala">Rotación *</label>
-            <select id="onboard-existing-sala" class="profile-input" required>
-              <option value="">— Seleccionar —</option>
-              ${salaPickerOptionsHtml(prefilledSala)}
-            </select>
-            ${salaPickerRotacionHtml(prefilledSala)}
-            <p class="clinical-teams-hint">Necesaria para unirte a la sala de turno en Nube (${escapeHtml(getCloudSyncUrl())}).</p>
-          </div>
-          <p id="onboard-existing-status" class="clinical-teams-hint" aria-live="polite"></p>
-          <p id="onboard-existing-error" class="clinical-registration-error" hidden></p>
-          <div class="modal-actions clinical-onboard-form-actions">
-            <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg">Entrar y sincronizar</button>
-            <button type="button" id="clinical-onboard-existing-back-btn" class="wb-btn wb-btn-secondary">Cambiar modo</button>
-          </div>
-        </form>
-      </div>`;
-}
-
 export function renderExistingAccountLoginPanel(host, settings = readRpcSettings()) {
-  host.innerHTML = buildOnboardingStageHtml({
-    title: 'Inicia sesión en Nube',
-    leadHtml:
-      '<p>Entra con tu @usuario y contraseña de R+ Cloud. Sincronizaremos equipos y censo del turno en este equipo.</p>',
-    stepperIndex: 2,
-    bodyHtml: buildExistingAccountLoginBodyHtml(settings),
+  drawExistingLoginStage(host, {
+    username: normalizeUsername(String(settings.clinicalUsername || clinicalSessionContext.user?.username || '')),
+    sala: String(settings.clinicalSala || clinicalSessionContext.user?.sala || ''),
+    remember: getCloudSyncRemember(),
+    cloudUrl: getCloudSyncUrl(),
   });
 }
 
