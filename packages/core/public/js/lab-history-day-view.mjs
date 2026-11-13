@@ -183,10 +183,32 @@ function newestMs(sets) {
  * @param {object[]} sets one calendar day's history sets
  * @returns {Array<{ hora: string, tipoLabel: string, sets: object[], resLabs: string[], sourceText: string, bhExtras: object, refsBySection: object }>}
  */
-export function clusterDayLabSets(sets) {
-  var list = (sets || []).filter(function (set) {
-    return set && set.resLabs && set.resLabs.length;
+/** Same day + same rows = same report. Drops repeats (and hour-less copies) before clustering. */
+function dedupeSameDaySets_(list) {
+  var sameKey = function (set) {
+    return dayKeyFromLabSet(set) + '\x01' + set.resLabs.join('\n');
+  };
+  var hasHora = Object.create(null);
+  list.forEach(function (set) {
+    if (horaKey(set)) hasHora[sameKey(set)] = true;
   });
+  var seen = Object.create(null);
+  return list.filter(function (set) {
+    var k = sameKey(set);
+    var h = horaKey(set);
+    if (!h && hasHora[k]) return false;
+    if (seen[k + '\x01' + h]) return false;
+    seen[k + '\x01' + h] = true;
+    return true;
+  });
+}
+
+export function clusterDayLabSets(sets) {
+  var list = dedupeSameDaySets_(
+    (sets || []).filter(function (set) {
+      return set && set.resLabs && set.resLabs.length;
+    })
+  );
   if (!list.length) return [];
   var clusters = clusterByDayTipoAndTimeWindow(
     list,
