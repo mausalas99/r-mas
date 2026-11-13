@@ -22,13 +22,13 @@ const VITAL_LABELS = { ta: 'T/A', tas: 'T/A', fc: 'FC', fr: 'FR', temp: 'Temp', 
 const GUARDIA_CENSUS_FILTER_DEFAULT = 'todos';
 
 export const GUARDIA_ESFUERZO_OPTIONS = [
-  { id: 'full', icon: '🍪', label: 'Reanimar' },
-  { id: 'show', icon: '🎭', label: 'Show' },
-  { id: 'no', icon: '🚫', label: 'No reanimar' },
+  { id: 'full', label: 'Reanimar' },
+  { id: 'show', label: 'Show' },
+  { id: 'no', label: 'No reanimar' },
 ];
 export const GUARDIA_PRONOSTICO_OPTIONS = [
-  { id: 'good', icon: '🙂', label: 'Bueno' },
-  { id: 'bad', icon: '🙁', label: 'Malo' },
+  { id: 'good', label: 'Bueno' },
+  { id: 'bad', label: 'Malo' },
 ];
 export const GUARDIA_NOTA_MAX = 200;
 
@@ -75,8 +75,8 @@ function guardiaMarkBadges(p) {
     (o) => o.id === normalizeGuardiaPronostico(p?.guardiaPronostico)
   );
   const out = [];
-  if (esfuerzo) out.push({ icon: esfuerzo.icon, title: `Esfuerzo: ${esfuerzo.label}`, risk: esfuerzo.id === 'no' });
-  if (pronostico) out.push({ icon: pronostico.icon, title: `Pronóstico: ${pronostico.label}`, risk: pronostico.id === 'bad' });
+  if (esfuerzo) out.push({ text: esfuerzo.label, title: `Esfuerzo: ${esfuerzo.label}`, risk: esfuerzo.id === 'no' });
+  if (pronostico) out.push({ text: pronostico.label, title: `Pronóstico: ${pronostico.label}`, risk: pronostico.id === 'bad' });
   return out;
 }
 

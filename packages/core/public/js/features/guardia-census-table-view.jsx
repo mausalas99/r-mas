@@ -40,10 +40,10 @@ function Card({ card, onRowClick }) {
               class="gct-chip gct-chip--stale-labs"
               title="Sin laboratorios en 7 días: posible alta"
               aria-label="Sin laboratorios en 7 días: posible alta"
-            >⏳</span>
+            >Sin labs</span>
           )}
           {card.badges.map((b) => (
-            <span class={b.risk ? 'gct-chip gct-chip--risk' : 'gct-chip'} title={b.title} aria-label={b.title}>{b.icon}</span>
+            <span class={b.risk ? 'gct-chip gct-chip--risk' : 'gct-chip'} title={b.title} aria-label={b.title}>{b.text}</span>
           ))}
         </span>
       </div>

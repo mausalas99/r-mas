@@ -92,7 +92,7 @@ export function GuardiaMarksGroup({ label, mark, options, current, patientId }) 
       <span class="guardia-marks-group__label">{label}</span>
       {options.map((o) => (
         <button type="button" class="guardia-marks-btn" data-value={o.id} aria-pressed={o.id === value ? 'true' : 'false'}
-          onClick={() => pick(o.id)}>{o.icon} {o.label}</button>
+          onClick={() => pick(o.id)}>{o.label}</button>
       ))}
     </div>
   );

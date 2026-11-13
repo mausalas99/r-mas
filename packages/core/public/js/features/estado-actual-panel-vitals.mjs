@@ -117,8 +117,8 @@ function updateVitalStackLayerVisibility(form, vitalKey) {
 var doubtWired = new WeakSet();
 
 /**
- * Marca valores físicamente imposibles (chip con clase vital-doubt + ⚠).
- * Clic en ⚠ enfoca el campo. Escucha input/clic una sola vez por formulario.
+ * Marca valores físicamente imposibles (chip con clase vital-doubt + aviso).
+ * Clic en el aviso enfoca el campo. Escucha input/clic una sola vez por formulario.
  * @param {HTMLElement | null} form
  */
 export function syncVitalDoubtFlags(form) {
@@ -149,7 +149,7 @@ export function syncVitalDoubtFlags(form) {
         btn.className = 'vital-doubt-mark';
         btn.setAttribute('aria-label', 'Valor dudoso');
         btn.title = 'Valor dudoso: revise la captura';
-        btn.textContent = '⚠';
+        btn.textContent = '!';
         wrap.appendChild(btn);
       }
     } else if (!doubt && mark) {

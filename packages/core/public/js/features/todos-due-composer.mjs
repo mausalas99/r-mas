@@ -19,7 +19,6 @@ function syncDueAddSelection(state, toggleEl, selectionEl, presetBtns) {
   }
   if (selectionEl) {
     var label = state.dueDate ? formatTodoDueLabel(state.dueDate) : '';
-    if (state.dueDate && state.remindEnabled) label += ' 🔔';
     selectionEl.textContent = label;
     selectionEl.hidden = !state.dueDate;
   }

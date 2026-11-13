@@ -3588,7 +3588,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   text-align: right;
 }
 
-/* Valor dudoso (imposible): tinte warn + ⚠ clicable que enfoca el campo. */
+/* Valor dudoso (imposible): tinte warn + aviso clicable que enfoca el campo. */
 .ea-registro-modal .ea-vital-chip.vital-doubt {
   border-color: color-mix(in oklab, var(--warn) 55%, transparent);
   background: color-mix(in oklab, var(--warn) 7%, transparent);
