@@ -15,7 +15,6 @@ import {
   guardiaTeamGroupLabel,
 } from './unified-patient-grid-team-groups.mjs';
 import { vitalsBannerForGuardia } from './unified-patient-grid-board.mjs';
-import { openEntregaModal } from './clinical-entrega.mjs';
 import { mergeSalaGuardiaTodayRows } from './clinical-entrega/clinical-entrega-util.mjs';
 import { ensureTeamAssignedPatientsOnDevice, refreshGuardiaCensusFromDb } from '../clinical-access-runtime.mjs';
 import { entregaChipMarkerIds } from '../../../lib/entrega/entrega-chip-markers.mjs';
@@ -82,8 +81,6 @@ export async function bootstrapGuardiaCensusData(settings) {
 export function installGuardiaAppShell() {
   if (isAppShellInstalled() || typeof window === 'undefined') return;
   markAppShellInstalled();
-  window.appShell = window.appShell || {};
-  window.appShell.openEntregaModal = openEntregaModal;
   document.addEventListener('click', (ev) => {
     const btn = ev.target?.closest?.('#guardia-btn-cambiar-sala');
     if (!btn) return;

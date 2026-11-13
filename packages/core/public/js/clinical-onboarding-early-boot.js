@@ -312,14 +312,11 @@
       host.replaceChildren(buildStage());
     }
     wireEarlySyncModeClicks(host);
-    window.__RPC_EARLY_ONBOARDING_MOUNTED__ = true;
-    window.__RPC_DEFER_APP_BUNDLE__ = true;
     return true;
   }
 
   window.rpcMountEarlySyncModeOnboardingIfNeeded = mountEarlySyncModeOnboarding;
   window.rpcNeedsEarlySyncModeChoice = needsEarlySyncModeChoice;
-  window.rpcLoadDeferredAppScripts = scheduleAppScriptsLoad;
 
   if (!mountEarlySyncModeOnboarding()) {
     scheduleAppScriptsLoad();
