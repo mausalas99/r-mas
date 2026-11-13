@@ -60,7 +60,7 @@ function OpenRow({ row, h }) {
       onAnimationEnd={ghost ? () => h.onLeaveEnd(row.id) : undefined}
     >
       <button type="button" class={'wb-todo-prior wb-todo-prior--' + row.priority} title="Clic: cambiar prioridad" onClick={() => h.onPrio(row.id)}>
-        {todoPriorityLabel(row.priority).toUpperCase()}
+        {todoPriorityLabel(row.priority).toLocaleUpperCase('es')}
       </button>
       <span class="wb-todo-pendiente">
         <TextInput row={row} h={h} />

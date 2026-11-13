@@ -25,7 +25,7 @@ export function htmlNodes(html) {
   for (const m of String(html).matchAll(TOKEN)) {
     const top = stack[stack.length - 1];
     if (m[4] !== undefined) { top.children.push(decode(m[4])); continue; }
-    const tag = m[2].toLowerCase();
+    const tag = m[2].toLocaleLowerCase('es');
     if (!TAGS.has(tag)) throw new Error('htmlNodes: tag not allowed: ' + tag);
     if (m[1]) {
       if (stack.length < 2 || top.tag !== tag) throw new Error('htmlNodes: unbalanced </' + tag + '>');

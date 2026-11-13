@@ -88,7 +88,7 @@ if (!perfConfig.hardwareAcceleration) {
 const UPDATE_CHANNEL_FILE = 'update-channel.json';
 
 function normalizeUpdateChannel(channel) {
-  return String(channel || '').toLowerCase() === 'beta' ? 'beta' : 'estable';
+  return String(channel || '').toLocaleLowerCase('es') === 'beta' ? 'beta' : 'estable';
 }
 
 function updateChannelFilePath() {

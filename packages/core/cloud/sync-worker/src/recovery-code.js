@@ -25,7 +25,7 @@ export function generateRecoveryCode() {
 export function normalizeRecoveryCode(raw) {
   const s = String(raw ?? '')
     .trim()
-    .toUpperCase()
+    .toLocaleUpperCase('es')
     .replace(/\s+/g, '');
   if (!CODE_RE.test(s)) return '';
   const body = s.slice(2).replace(/-/g, '');

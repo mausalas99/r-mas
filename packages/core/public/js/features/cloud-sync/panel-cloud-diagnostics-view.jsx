@@ -109,7 +109,7 @@ function Hero({ verdict, chain }) {
 
 const capitalize = (kind) => {
   const s = String(kind || '');
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  return s.charAt(0).toLocaleUpperCase('es') + s.slice(1);
 };
 
 function Waiting({ v }) {

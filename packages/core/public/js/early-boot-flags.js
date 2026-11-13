@@ -63,7 +63,7 @@
       var room = String(p.get('room') || '').trim();
       var sala = String(p.get('sala') || '').trim();
       var salaRooms = { 'Sala 1': 'sala-1', 'Sala 2': 'sala-2', 'Sala E': 'sala-e', 'Torre HU': 'torre-hu', 'Área A/Pensionistas': 'area-a-pensionistas', 'UCI': 'rotacion-uci', 'PostQx': 'rotacion-postqx', 'Subespecialidad': 'rotacion-sub' };
-      if (/^sala-[12e]|torre-hu|area-a-pensionistas|rotacion-(?:uci|postqx|sub)$/i.test(sala)) room = room || sala.toLowerCase();
+      if (/^sala-[12e]|torre-hu|area-a-pensionistas|rotacion-(?:uci|postqx|sub)$/i.test(sala)) room = room || sala.toLocaleLowerCase('es');
       else if (Object.prototype.hasOwnProperty.call(salaRooms, sala)) room = room || salaRooms[sala];
       var prev = {};
       try { prev = JSON.parse(ls.getItem('rpc-lan-config') || '{}') || {}; } catch { /* ignore */ }

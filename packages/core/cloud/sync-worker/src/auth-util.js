@@ -5,7 +5,7 @@ const MIN_PASSWORD_LEN = 10;
 
 /** @param {string} u */
 export function normalizeUsername(u) {
-  return String(u ?? '').trim().toLowerCase();
+  return String(u ?? '').trim().toLocaleLowerCase('es');
 }
 
 /** @param {string} username */

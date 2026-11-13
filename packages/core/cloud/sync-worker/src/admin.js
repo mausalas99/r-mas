@@ -284,7 +284,7 @@ async function readOptionalJson(request) {
 
 /** @param {unknown} raw */
 function proposedRoomCode(raw) {
-  const code = String(raw || '').trim().toUpperCase();
+  const code = String(raw || '').trim().toLocaleUpperCase('es');
   if (!ROOM_CODE_RE.test(code)) throw new SyncError('invalid_request', 'Código de sala inválido.');
   return code;
 }

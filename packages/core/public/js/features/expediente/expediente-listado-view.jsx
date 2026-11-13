@@ -31,9 +31,9 @@ function Seccion({ seccion, label, lst }) {
       <div class="listado-group-body listado-sort-zone" data-seccion-rows={seccion}>
         {arr.length
           ? arr.map((p, i) => <Row seccion={seccion} p={p} idx={i} />)
-          : <div class="listado-empty">{'Sin problemas ' + label.toLowerCase() + '.'}</div>}
+          : <div class="listado-empty">{'Sin problemas ' + label.toLocaleLowerCase('es') + '.'}</div>}
       </div>
-      <button type="button" class="listado-add-row listado-link" data-onclick="addProblemaUI" data-onclick-args={args([seccion])}>{'+ Agregar problema ' + label.toLowerCase().replace(/s$/, '')}</button>
+      <button type="button" class="listado-add-row listado-link" data-onclick="addProblemaUI" data-onclick-args={args([seccion])}>{'+ Agregar problema ' + label.toLocaleLowerCase('es').replace(/s$/, '')}</button>
     </div>
   );
 }

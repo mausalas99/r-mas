@@ -92,7 +92,7 @@ function prepareMacSigning(env) {
   const unlocked = unlockMacKeychainFromEnv(e);
   const signed =
     !!String(e.CSC_LINK || '').trim() ||
-    String(e.CSC_IDENTITY_AUTO_DISCOVERY || '').toLowerCase() !== 'false' ||
+    String(e.CSC_IDENTITY_AUTO_DISCOVERY || '').toLocaleLowerCase('es') !== 'false' ||
     !!String(e.CSC_NAME || '').trim();
   const notarize =
     e.RELEASE_SKIP_NOTARIZE !== '1' &&

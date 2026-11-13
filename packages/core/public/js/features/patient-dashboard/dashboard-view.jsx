@@ -317,7 +317,7 @@ function dedupeChipsAcrossEnvios(visibleEnvios) {
     var envio = visibleEnvios[i];
     var groups = (envio.groups || []).map(function (g) {
       var chips = (g.chips || []).filter(function (chip) {
-        var norm = String((chip && chip.label) || '').trim().toLowerCase();
+        var norm = String((chip && chip.label) || '').trim().toLocaleLowerCase('es');
         if (seenLabels[norm]) return false;
         seenLabels[norm] = true;
         return true;
@@ -337,7 +337,7 @@ function AtbPop({ c }) {
   return (
     <span class="cult-pop" role="tooltip">
       <span class="cult-pop-h">{c.sitioFull || c.sitio}</span>
-      {groups.map((g) => <span class="cult-pop-row"><b class={'atb-k is-' + String(g.k).toLowerCase()}>{g.k}</b>{g.drugs}</span>)}
+      {groups.map((g) => <span class="cult-pop-row"><b class={'atb-k is-' + String(g.k).toLocaleLowerCase('es')}>{g.k}</b>{g.drugs}</span>)}
     </span>
   );
 }

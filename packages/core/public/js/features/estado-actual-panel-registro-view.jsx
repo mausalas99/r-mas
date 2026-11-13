@@ -35,7 +35,7 @@ export function IoEventRowBody({ kinds, turnos }) {
         <button type="button" class="ea-io-remove" data-ea-io-event-remove="" title="Quitar" aria-label="Quitar evento">×</button>
       </div>
       <select class="ea-input" data-ea-io-event-turno="" aria-label="Turno">
-        {turnos.map((t) => <option value={t}>{t.toUpperCase()}</option>)}
+        {turnos.map((t) => <option value={t}>{t.toLocaleUpperCase('es')}</option>)}
       </select>
       <input type="text" class="ea-input" data-ea-io-event-detail="" autocomplete="off" aria-label="Detalle" />
       <input type="text" class="ea-input" data-ea-io-event-ml="" inputmode="decimal" autocomplete="off" aria-label="Volumen" />

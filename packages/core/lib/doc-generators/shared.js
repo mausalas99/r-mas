@@ -27,7 +27,7 @@ function esc(text) {
  * which reads as «MG» (a 1000× dose), so the micro sign stays as it is.
  */
 function upper(text) {
-  return String(text).split('\u00b5').map((s) => s.toUpperCase()).join('\u00b5');
+  return String(text).split('\u00b5').map((s) => s.toLocaleUpperCase('es')).join('\u00b5');
 }
 
 function replaceT(xml, oldVal, newVal) {

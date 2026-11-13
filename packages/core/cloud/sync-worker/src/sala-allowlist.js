@@ -22,7 +22,7 @@ const ROTACION_BY_KEY = {
 /** @param {unknown} raw */
 export function normalizeCloudSala(raw) {
   const s = String(raw || '').trim();
-  const key = s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+  const key = s.toLocaleLowerCase('es').normalize('NFD').replace(/\p{M}/gu, '');
   const salaUnit = key.match(/^sala\s*([12e])$/);
   if (salaUnit) {
     const unit = salaUnit[1] === 'e' ? 'E' : salaUnit[1];

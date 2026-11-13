@@ -16,7 +16,7 @@ SLUG_TO_SALA.set('e', 'Sala E');
 
 /** @param {unknown} slug */
 export function salaFromSlug(slug) {
-  const key = String(slug || '').trim().toLowerCase();
+  const key = String(slug || '').trim().toLocaleLowerCase('es');
   return SLUG_TO_SALA.get(key) || '';
 }
 

@@ -184,7 +184,7 @@ function RedRow({ r, noTeam }) {
       data-archived={archived}
       data-inactive={r.inactive ? '1' : '0'}
       data-no-labs={r.lastLabAt ? '0' : '1'}
-      data-search={(r.nombre + ' ' + r.registro).toLowerCase()}
+      data-search={(r.nombre + ' ' + r.registro).toLocaleLowerCase('es')}
       class={r.staleLabs ? 'cloud-sync-admin-row--stale-labs' : undefined}
     >
       <td>

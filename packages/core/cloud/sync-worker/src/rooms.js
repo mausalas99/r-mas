@@ -246,7 +246,7 @@ export async function handleJoinRoom(db, request) {
   const user = await requireUser(db, request);
   assertApproved(user);
   const body = await parseJsonBody(request);
-  const code = String(body?.code ?? '').trim().toUpperCase();
+  const code = String(body?.code ?? '').trim().toLocaleUpperCase('es');
 
   if (!code) {
     throw new SyncError('invalid_request', 'Código de sala requerido.');

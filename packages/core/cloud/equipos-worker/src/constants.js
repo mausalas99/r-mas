@@ -13,7 +13,7 @@ export const EQUIPOS_ROTACIONES = [
 
 /** @param {string} deviceType */
 export function normalizeEquiposDeviceType(deviceType) {
-  const d = String(deviceType || '').trim().toLowerCase();
+  const d = String(deviceType || '').trim().toLocaleLowerCase('es');
   return EQUIPOS_DEVICE_TYPES.includes(d) ? d : '';
 }
 

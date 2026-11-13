@@ -133,7 +133,7 @@ function GluSection() {
 }
 
 function IoTurnoBox({ prefix, turno, inputmode, label }) {
-  const T = turno.toUpperCase();
+  const T = turno.toLocaleUpperCase('es');
   return (
     <div class="ea-turno-box">
       <input
@@ -175,7 +175,7 @@ function IoSection({ ioExtraKinds, ioEventKinds }) {
       <div class="ea-io-grid ea-io-table">
         <IoTableRow
           label=""
-          cells={IO_TURNO_IDS.map((t) => <span class="ea-io-table-head" title={t.toUpperCase()}>{IO_TURNO_NAMES[t]}</span>)}
+          cells={IO_TURNO_IDS.map((t) => <span class="ea-io-table-head" title={t.toLocaleUpperCase('es')}>{IO_TURNO_NAMES[t]}</span>)}
           total="Total"
           cls="ea-io-table-row--head"
         />

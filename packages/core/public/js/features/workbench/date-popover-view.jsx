@@ -7,7 +7,7 @@ const WEEKDAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 const MONTH_FORMATTER = new Intl.DateTimeFormat('es', { month: 'long' });
 
 const toDateKey = (d) => d.toISOString().slice(0, 10);
-const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+const capitalize = (s) => (s ? s.charAt(0).toLocaleUpperCase('es') + s.slice(1) : s);
 
 /** Lab-history keys are `YYYY-M-D`, calendar keys `YYYY-MM-DD`: compare them unpadded. */
 const normalizeDayKeyForCompare = (key) => String(key).split('-').map((p) => String(parseInt(p, 10))).join('-');

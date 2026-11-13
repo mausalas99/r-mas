@@ -55,7 +55,7 @@ export function Dropdown({ placeholder, query, onQuery, inputRef, dropdownRef, c
   );
 }
 
-const has = (text, q) => String(text).toLowerCase().indexOf(q) >= 0;
+const has = (text, q) => String(text).toLocaleLowerCase('es').indexOf(q) >= 0;
 
 /**
  * chips: [{ key, name, secLabel }]. getGroups(): [{ sectionKey, label, specs: [{ fieldKey, title }] }], read each
@@ -97,7 +97,7 @@ export function AnalytePicker({ chips, getGroups, onPickField, onRemove }) {
     setOpen(true);
   };
   const active = activeKey == null ? null : groups.filter((g) => g.sectionKey === activeKey)[0] || null;
-  const q = query.trim().toLowerCase();
+  const q = query.trim().toLocaleLowerCase('es');
   const pick = (setKey) => (ev, key) => {
     ev.stopPropagation();
     setKey(key);

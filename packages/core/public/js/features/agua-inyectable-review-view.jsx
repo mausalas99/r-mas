@@ -8,8 +8,8 @@ import { render } from 'preact';
 export const VIAS = ['VIA ORAL', 'VIA SUBCUTANEA', 'VIA INTRAVENOSA', 'VIA INTRAMUSCULAR', 'VIA SUBLINGUAL', 'VIA TOPICA', 'VIA RECTAL'];
 
 function sentenceCase(t) {
-  const s = String(t || '').toLowerCase();
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  const s = String(t || '').toLocaleLowerCase('es');
+  return s.charAt(0).toLocaleUpperCase('es') + s.slice(1);
 }
 
 function Row({ a, i }) {
