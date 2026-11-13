@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { loadJsx } from './preact-view-test-helpers.mjs';
@@ -13,6 +13,8 @@ import {
 const OLD = createRequire(import.meta.url)('./entrega-modal-old-html.json');
 const { ctxs, plans, items, actors } = OLD.cases;
 const NOW = new Date(2026, 10, 12, 21, 32, 10);
+// The vitals summary reads the clock («Finalizado» once the until-time passes); the old markup was captured at NOW.
+const atNow = (fn) => () => { mock.timers.enable({ apis: ['Date'], now: NOW }); try { fn(); } finally { mock.timers.reset(); } };
 
 const view = await loadJsx(import.meta.url, `import { ClinicalStatusField, HandoffPanel, VitalsPanel, ProcedimientosPanel, AddProcForm, EntregaModal } from './entrega-modal-view.jsx';
   import { setPatients } from '../app-state.mjs';
@@ -46,15 +48,15 @@ test('clinical status select equals the old slot markup', () => {
   same(view.status(ctxs.busy.clinicalStatus), OLD.statusSlot.busy, 'busy');
 });
 
-test('vitals panel equals the old markup for interval, shift, routine and a fresh plan', () => {
+test('vitals panel equals the old markup for interval, shift, routine and a fresh plan', atNow(() => {
   for (const k of ['interval', 'shift', 'routine', 'fresh']) {
     // The old panel always drew the «Sin signos» hint hidden and only unhid it after a mode click; a saved routine plan now shows it.
     const old = k === 'routine' ? sub(OLD.vitals[k], 'entrega-freq-routine-hint is-hidden', 'entrega-freq-routine-hint') : OLD.vitals[k];
     same(view.vitals(vitalsUiFromPlan(plans[k])), old, k);
   }
-});
+}));
 
-test('handoff panel equals the old markup (empty, busy, vasopresina, mcg/min, with and without marks)', () => {
+test('handoff panel equals the old markup (empty, busy, vasopresina, mcg/min, with and without marks)', atNow(() => {
   const ui = vitalsUiFromPlan(plans.interval);
   const cases = [
     ['empty', ctxs.empty, false, ''], ['emptyWithMarks', ctxs.empty, false, 'pt-2'], ['busy', ctxs.busy, true, 'pt-1'],
@@ -63,7 +65,7 @@ test('handoff panel equals the old markup (empty, busy, vasopresina, mcg/min, wi
   for (const [k, ctx, crit, pid] of cases) {
     same(view.handoff(handoffFieldsFromContext(ctx), crit, pid, ui), withVitals(OLD.handoff[k], OLD.vitals.interval), k);
   }
-});
+}));
 
 test('procedure list equals the old markup for each actor', () => {
   const ul = (html) => html.match(/<ul id="entrega-proc-list"[^>]*>[\s\S]*?<\/ul>/)[0];
