@@ -140,7 +140,6 @@ export function isInterconsultaDemoShortcut(e) {
 export function initInterconsultaDemoShortcut() {
   if (initInterconsultaDemoShortcut._bound) return;
   initInterconsultaDemoShortcut._bound = true;
-  if (typeof window !== 'undefined') window.toggleInterconsultaDemo = toggleInterconsultaDemo;
   document.addEventListener(
     'keydown',
     function (e) {

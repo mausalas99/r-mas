@@ -55,11 +55,6 @@ export function showToast(msg, type, opts) {
 
 if (typeof window !== 'undefined') {
   window.showToast = showToast;
-  window.__hybridDemoSheet = function () {
-    return import('./ui-overlay.mjs').then(function (mod) {
-      return mod.mountHybridDemoSheet();
-    });
-  };
 }
 
 const shellCtx = {

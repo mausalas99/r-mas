@@ -32,17 +32,12 @@ function _rpcDeferInit(fn) {
   }
 }
 
-/** Expose clinical handoff entry points on window.appShell. */
+/** Warm the Entrega chunk so the first open is instant. */
 export function installClinicalAppShell() {
   if (typeof window === 'undefined') return;
-  window.appShell = window.appShell || {};
-  void importLazyRoutes()
-    .then(function (routes) {
-      return routes.ensureEntregaLoaded();
-    })
-    .then(function (mod) {
-      window.appShell.openEntregaModal = mod.openEntregaModal;
-    });
+  void importLazyRoutes().then(function (routes) {
+    return routes.ensureEntregaLoaded();
+  });
 }
 
 function deferMobileWebBoot_() {
