@@ -126,7 +126,10 @@ export function getInternoScopeContext(db) {
 export function getClinicalScopeContext(db, userId) {
   const nowIso = new Date().toISOString();
   const uid = String(userId || '').trim();
-  const teams = listTeamsForRenderer(db, uid).map((team) => ({
+  // Admin/R4 see every active team, staged ones too (same list as Mi perfil). Others: live + joined.
+  const actor = uid ? db.prepare('SELECT rank, is_program_admin FROM users WHERE user_id = ?').get(uid) : null;
+  const elevated = !!actor && (actor.is_program_admin === 1 || actor.rank === 'R4' || actor.rank === 'Admin');
+  const teams = (elevated ? listActiveTeams(db) : listTeamsForRenderer(db, uid)).map((team) => ({
     ...withEffectiveTeamSala(db, team),
     members: listTeamMembers(db, team.team_id),
   }));
