@@ -26,7 +26,7 @@ function AuthBody({ prefilled }) {
   const user = prefilled || undefined;
   return (
     <>
-      <div class="cloud-sync-tabs" role="tablist" aria-label="Cuenta Nube">
+      <div class="cloud-sync-tabs" role="tablist" aria-label="Cuenta nube">
         <button type="button" class="cloud-sync-tab is-active" role="tab" aria-selected="true" data-cloud-tab="login">Entrar</button>
         <button type="button" class="cloud-sync-tab" role="tab" aria-selected="false" data-cloud-tab="register">Crear cuenta</button>
       </div>

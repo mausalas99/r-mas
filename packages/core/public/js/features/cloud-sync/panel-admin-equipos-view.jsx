@@ -26,7 +26,7 @@ function NubeActions({ id, handle }) {
   return (
     <div class="cloud-sync-admin-row-actions cloud-sync-admin-row-actions--compact">
       <button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="revoke-sessions" data-user-id={id} data-user-handle={handle}>Revocar</button>
-      <select class="profile-input cloud-sync-admin-role-select" data-admin-promote-role="" data-user-id={id} title="Rol Nube" aria-label="Rol Nube">
+      <select class="profile-input cloud-sync-admin-role-select" data-admin-promote-role="" data-user-id={id} title="Rol nube" aria-label="Rol nube">
         <option value="admin">Admin</option>
         <option value="program_admin">Admin programa</option>
         <option value="member" selected>Miembro</option>
@@ -115,7 +115,7 @@ function EquiposRow({ m }) {
             ) : null}
             {m.cloudId ? (
               <>
-                <p class="cloud-sync-admin-equipos-menu-label">Cuenta Nube</p>
+                <p class="cloud-sync-admin-equipos-menu-label">Cuenta nube</p>
                 <div class="cloud-sync-admin-equipos-nube-wrap"><NubeActions id={m.cloudId} handle={m.handle} /></div>
               </>
             ) : null}

@@ -117,7 +117,7 @@ const USER = { autocomplete: 'username', placeholder: 'drdemo', spellcheck: 'fal
 export function SignedOutBody({ url, sala, remember }) {
   return (
     <div class="cloud-sync-status-sheet cloud-sync-signed-out" data-cloud-signed-out="">
-      <div class="cloud-sync-inset-group cloud-sync-auth-card" aria-label="Cuenta Nube">
+      <div class="cloud-sync-inset-group cloud-sync-auth-card" aria-label="Cuenta nube">
         <div class="cloud-sync-tab-panel" data-cloud-tab-panel="login" role="tabpanel">
           <AuthHead title="Entra a tu cuenta" back={false} />
           <div class="cloud-sync-auth-grid">
@@ -295,14 +295,14 @@ export function ConnectedBody({ identity, room, salaForActions, showAdmin, showI
           <OptionsGroup label="Guardia">
             <OptionsRow title="iPad / R+ Móvil" meta="QR y enlace permanente" view="mobile" />
             <OptionsRow title="Equipo" meta="@usuario, equipos y sala" view="equipo" />
-            {showInternoQr ? <OptionsRow title="QR Internos" meta="Vitales desde el celular por sala" view="interno-qr" /> : null}
+            {showInternoQr ? <OptionsRow title="QR internos" meta="Vitales desde el celular por sala" view="interno-qr" /> : null}
           </OptionsGroup>
           <OptionsGroup label="Cuenta">
             <OptionsRow title="Cuenta" meta="Recuperación y sesión" view="cuenta" />
             {showAdmin ? <OptionsRow title="Administración" meta="Usuarios, salas y clave admin" view="admin" /> : null}
           </OptionsGroup>
           <OptionsGroup label="Sistema">
-            <OptionsRow title="Diagnóstico Nube" meta="Dashboard de estado y alertas" view="nube" />
+            <OptionsRow title="Diagnóstico nube" meta="Dashboard de estado y alertas" view="nube" />
             <OptionsRow title="Avanzado" meta="URL del servicio" view="advanced" />
           </OptionsGroup>
         </div>
@@ -314,7 +314,7 @@ export function ConnectedBody({ identity, room, salaForActions, showAdmin, showI
         <div class="cloud-sync-mobile-invite-host" data-cloud-mobile-invite-host=""></div>
       </ViewBlock>
       {showInternoQr ? (
-        <ViewBlock id="interno-qr" title="QR Internos">
+        <ViewBlock id="interno-qr" title="QR internos">
           <div class="cloud-sync-interno-qr-host" data-cloud-interno-qr-host=""></div>
         </ViewBlock>
       ) : null}
@@ -331,7 +331,7 @@ export function ConnectedBody({ identity, room, salaForActions, showAdmin, showI
           <div class="cloud-sync-admin-host" data-cloud-admin-host=""></div>
         </ViewBlock>
       ) : null}
-      <ViewBlock id="nube" title="Diagnóstico Nube">
+      <ViewBlock id="nube" title="Diagnóstico nube">
         <div class="cloud-sync-nube-diagnostics-host" data-cloud-nube-diagnostics-host=""></div>
       </ViewBlock>
       <ViewBlock id="advanced" title="Avanzado">

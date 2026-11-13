@@ -69,7 +69,7 @@ function SoporteParams({ p, tier }) {
   return (
     <div class="ea-soporte-params" data-ea-soporte-params="">
       <div class="ea-soporte-params-grid">
-        <NumField num={num} cls="ea-soporte-tier-litros" show={litros} label="Litros O₂" k="soporteLitros" ph="L/min" />
+        <NumField num={num} cls="ea-soporte-tier-litros" show={litros} label="Litros de oxígeno" k="soporteLitros" ph="L/min" />
         <NumField num={num} cls="ea-soporte-tier-hfnc" show={hfnc} label="Flujo (L/min)" k="soporteFlujoLmin" ph="60" />
         <NumField num={num} cls="ea-soporte-tier-vmni ea-soporte-tier-vm" show={vmni || vm} label="PEEP / EPAP" k="vmPeep" ph="cmH₂O" />
         <NumField num={num} cls="ea-soporte-tier-vmni" show={vmni} label="PS (cmH₂O)" k="vmPsoporte" ph="Sobre EPAP" />
