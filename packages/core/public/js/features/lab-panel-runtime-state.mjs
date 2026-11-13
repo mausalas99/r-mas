@@ -69,8 +69,8 @@ var rt = {
   isResLabChunkPureCultivo() {
     return false;
   },
-  buildCultivoOutputHtmlFragments() {
-    return "";
+  buildCultivoOutputNodes() {
+    return [];
   },
   buildLabSetDateLine() {
     return "";

@@ -9,7 +9,7 @@ import {
   isCultureTableHeaderLine,
 } from './expediente-cultivos-parse.mjs';
 import {
-  buildCultivoAntibiogramCellHtmlForPatient,
+  buildCultivoAntibiogramCellNodes,
   cultivoAtbSignature,
   wireAtbRisHoverPanels,
   removeAtbRisPanelsFromBody,
@@ -147,8 +147,8 @@ function cultivoOrganismoModel(r, pend, group) {
   };
 }
 
-function cultivoAntibiogramCellHtml(r) {
-  return buildCultivoAntibiogramCellHtmlForPatient(r, aid());
+function cultivoAntibiogramCellNodes(r) {
+  return buildCultivoAntibiogramCellNodes(r, aid());
 }
 /**
  * Un mismo cultivo puede quedar duplicado en el historial cuando "Actualizar"
@@ -585,7 +585,7 @@ function cultivoSiteModel(site, pending, pid) {
         })
         .join(' · '),
       org: cultivoOrganismoModel(r, pend, group),
-      atbHtml: cultivoAntibiogramCellHtml(r),
+      atbNodes: cultivoAntibiogramCellNodes(r),
       seenKeys: pend ? JSON.stringify(pends.map(function (p) { return p.key; })) : '',
       removeId: removeId,
     };
@@ -606,14 +606,6 @@ function cultivoSiteModel(site, pending, pid) {
     dots: cultivoSiteDotsModel(site.rows, newFechas, fold),
     rows: rows,
   };
-}
-
-/** Filas del modelo en el orden en que la vista las dibuja (tarjetas positivas, luego negativos). */
-function cultivoRowsInDrawOrder(model) {
-  var sites = model.pos.concat(model.neg ? model.neg.sites : []);
-  return sites.reduce(function (acc, s) {
-    return acc.concat(s.rows);
-  }, []);
 }
 
 /** Todo lo que dibuja la tabla Cultivos (toolbar + tarjetas por sitio + franja de negativos), sin HTML. */
@@ -678,11 +670,6 @@ function renderCultivosTable() {
   }
   var model = buildCultivosModel(pid, flatRows, pendingCultivosForPatient(pid), _cultivoRefreshBusy);
   drawCultivosTable(container, { model: model });
-  // El antibiograma sigue siendo HTML de expediente-cultivos-atb-ui.mjs: la vista deja las celdas vacías.
-  var cells = container.querySelectorAll('td.cultivos-cell-atb');
-  cultivoRowsInDrawOrder(model).forEach(function (r, i) {
-    if (cells[i]) cells[i].innerHTML = r.atbHtml;
-  });
   wireAtbRisHoverPanels(container);
 }
 
@@ -704,5 +691,4 @@ export {
   extractCultivoTableRowsFromHistory,
   filterCultivoRowsSignificantFlip,
   buildCultivosModel,
-  cultivoRowsInDrawOrder,
 };

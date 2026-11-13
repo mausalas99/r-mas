@@ -2,12 +2,31 @@
  * Cultivos table (toolbar + one card per site + the "Negativos" strip). Preact: same DOM, classes and
  * data-* hooks the string builders in expediente-cultivos-table.mjs made. It draws a plain model
  * (buildCultivosModel); the data rules, the collapsed list, the pending marks and every click /
- * hover handler stay in expediente-cultivos-table.mjs. The antibiogram cell is still an HTML string
- * from expediente-cultivos-atb-ui.mjs: this view leaves each `td.cultivos-cell-atb` empty and the
- * .mjs fills them in draw order (cultivoRowsInDrawOrder). Every draw unmounts first, so the DOM is
+ * hover handler stay in expediente-cultivos-table.mjs. The antibiogram cell is a node tree from
+ * expediente-cultivos-atb-ui.mjs (row.atbNodes), drawn by HNodes. Every draw unmounts first, so the DOM is
  * rebuilt from scratch like the old `innerHTML` swap (the handlers toggle classes on that DOM).
  */
-import { render } from 'preact';
+import { h, render } from 'preact';
+
+function toVnode(n) {
+  if (typeof n === 'string') return n;
+  return h(n.tag, n.attrs, n.kids.map(toVnode));
+}
+
+/**
+ * Draws the small HTML trees the lab builders return (labs-display.mjs `hn` nodes: `{ tag, attrs, kids }`
+ * or a text string): antibiogram cells and summaries, cultivo chunks and lab output lines. Same tags,
+ * classes and attributes the old string builders wrote, so the CSS and the hover-panel wiring keep working.
+ * @param {{ nodes: Array<object|string> }} props
+ */
+export function HNodes({ nodes }) {
+  return <>{nodes.map(toVnode)}</>;
+}
+
+/** Draws `nodes` into `host` at once (no hooks), so callers can read the DOM right after. */
+export function drawNodes(host, nodes) {
+  render(<HNodes nodes={nodes} />, host);
+}
 
 function OrgCell({ o }) {
   return (
@@ -38,7 +57,7 @@ function Row({ r }) {
     <tr class={r.trClass} data-fecha={r.fecha} data-fechas={r.fechas}>
       <td class="cultivos-cell-fecha">{r.fechaCell}</td>
       <td class="cultivos-cell-org"><OrgCell o={r.org} /></td>
-      <td class="cultivos-cell-atb"></td>
+      <td class="cultivos-cell-atb"><HNodes nodes={r.atbNodes} /></td>
       <td class="cultivos-cell-remove">
         {r.seenKeys && <button type="button" class="cultivo-row-seen-btn" data-cult-keys={r.seenKeys}>Visto</button>}
         {r.removeId && (

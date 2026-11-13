@@ -2,13 +2,14 @@
 import { getLabHistory } from '../../app-state.mjs';
 import { parseFechaLabToMs, normalizeFechaLabHistory } from '../../tend-core.mjs';
 import {
-  renderEntry,
-  buildAtbRisSummaryHtml,
+  renderEntryNodes,
+  buildAtbRisSummaryNodes,
   extractSensCrudasForGermFromSource,
   formatCultivoCondensedForCopy,
   isParsedCultivoHeaderLine,
   parseCuentaFromCultivoChunkLines,
 } from '../../labs.js';
+import { hn } from '../../labs-display.mjs';
 import { insertSpaceAfterCultivoKeyword_ } from '../../labs-cultivo-scan.mjs';
 import {
   findCultivoChunkInSet,
@@ -185,7 +186,8 @@ function isResLabChunkPureCultivo(text) {
   });
 }
 
-function buildCultivoOutputHtmlFragments(text, sourceText) {
+/** Nodes (one div per output line) the lab output draws for a cultivo chunk. */
+function buildCultivoOutputNodes(text, sourceText) {
   var raw = String(text || '');
   var chunks = raw
     .split(/\n\n+/)
@@ -193,7 +195,6 @@ function buildCultivoOutputHtmlFragments(text, sourceText) {
       return s.trim();
     })
     .filter(Boolean);
-  if (!chunks.length) return '';
   var parts = [];
   chunks.forEach(function (chunk) {
     var lines = chunk.split(/\n/);
@@ -207,22 +208,20 @@ function buildCultivoOutputHtmlFragments(text, sourceText) {
       if (/^USER\b/i.test(t)) return;
       if (/\bLabo\s*-?\d+/i.test(t) && /\b(Campo|Feme)\b|\bLabo\s*-?\d+\*?\s+[A-Z]{2,6}\s+\d+/i.test(t)) return;
       if (/^ATB\b/i.test(t) && sens && sens.length) {
-        parts.push(
-          '<div class="out-line cultivos-atb-chips lab-out-atb">' + buildAtbRisSummaryHtml(sens) + '</div>'
-        );
+        parts.push(hn('div', { class: 'out-line cultivos-atb-chips lab-out-atb' }, buildAtbRisSummaryNodes(sens)));
         return;
       }
-      renderEntry(lineRaw).forEach(function (html, idx) {
-        parts.push('<div class="' + (idx === 0 ? 'out-line' : 'out-indent') + '">' + html + '</div>');
+      renderEntryNodes(lineRaw).forEach(function (nodes, idx) {
+        parts.push(hn('div', { class: idx === 0 ? 'out-line' : 'out-indent' }, nodes));
       });
     });
   });
-  return parts.join('');
+  return parts;
 }
 
 export {
   copyCultivoCondensado,
-  buildCultivoOutputHtmlFragments,
+  buildCultivoOutputNodes,
   isResLabChunkPureCultivo,
   parseCultureBlockFromLineArray,
   isCultureTableHeaderLine,
