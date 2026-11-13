@@ -9,10 +9,9 @@ import { scheduleCloudSyncPush } from './features/cloud-sync/mutate-bridge.mjs';
 import { formatCensoMedsFromReceta, formatCensoAtbFromReceta } from './censo-meds-format.mjs';
 import { getPatients, getMedRecetaByPatient, getVpoByPatient, persistClinicalState } from './app-state.mjs';
 
-import { esc } from './dom-escape.mjs';
 import { lazyView } from './deferred-work.mjs';
 
-const dxView = lazyView(() => import('./patient-data-censo-view.jsx'));
+const censoView = lazyView(() => import('./patient-data-censo-view.jsx'));
 
 /** Dx/censo meds ride `entries/<id>/fields` — push now, or a peer's newer clock wins. */
 function stampCensoAndPush(patient, key) {
@@ -29,28 +28,6 @@ function activePatient(patientId) {
 function dxRows(patient) {
   var list = (patient.diagnosticosList || []).slice();
   return list.length ? list : [''];
-}
-
-function renderDxListHtml(patient) {
-  var rows = dxRows(patient);
-  return rows
-    .map(function (dx, i) {
-      var n = i + 1;
-      return (
-        '<li><label class="exp-datos-list__n" for="patient-dx-' + n + '">' + n + '</label>' +
-        '<input type="text" id="patient-dx-' + n + '" class="exp-datos-q" value="' + esc(dx) + '"' +
-        (dx ? '' : ' placeholder="Diagnóstico · pegar DX1 + DX2"') +
-        ' aria-label="Diagnóstico ' + n + '" style="text-transform:uppercase;"' +
-        ' data-oninput="onPatientDxInput" data-oninput-args="[' + i + ']" data-oninput-pass="value"' +
-        ' data-onpaste="splitPatientDxPaste" data-onpaste-args="[' + i + ']" data-onpaste-pass="event"' +
-        ' data-onkeydown="addPatientDxRow" data-onkeydown-keys="Enter">' +
-        (rows.length > 1
-          ? '<button type="button" class="exp-datos-list__rm" data-onclick="removePatientDxRow" data-onclick-args="[' + i + ']" aria-label="Quitar diagnóstico ' + n + '">×</button>'
-          : '') +
-        '</li>'
-      );
-    })
-    .join('');
 }
 
 /* ATB / meds stay plain text; each non-empty line is one item. The census
@@ -106,118 +83,63 @@ function censoItemText(it) {
 /** Pending new line: { kind, index } while its editor is open, not yet saved. */
 var draftLine = null;
 
-/* Crossed-out meds live in `censoMedsStruckText`, same line format as
-   censoMedsText. They are already gone from censoMedsText (so from the census);
-   this list only lets a click bring them back. */
-function struckMedsHtml(patient, offset) {
-  return parseCensoLines(patient.censoMedsStruckText).map(function (it, j) {
-    return (
-      '<li><button type="button" class="exp-datos-line exp-datos-line--struck" data-onclick="toggleCensoMed" data-onclick-args="[' + (offset + j) + ']"' +
-      ' aria-label="Restaurar ' + esc(censoItemText(it)) + '"><span class="exp-datos-line__t">' + esc(it.name) + '</span></button></li>'
-    );
-  });
-}
-
 function censoRenderItems(patient, kind) {
   var items = parseCensoLines(patient[CENSO_LINES[kind].field]);
   if (draftLine && draftLine.kind === kind) items.splice(draftLine.index, 0, { name: '', dia: '', sep: '\n' });
   return items;
 }
 
-function censoListHtml(patient, kind, editIndex) {
+/* Crossed-out meds live in `censoMedsStruckText`, same line format as
+   censoMedsText. They are already gone from censoMedsText (so from the census);
+   this list only lets a click bring them back. */
+function censoListProps(patient, kind, editIndex) {
   var cfg = CENSO_LINES[kind];
-  var items = censoRenderItems(patient, kind);
-  var lis = items.map(function (it, i) {
-    if (i === editIndex) {
-      return (
-        '<li><input type="text" class="exp-datos-q" value="' + esc(censoItemText(it)) + '" aria-label="' + cfg.label + ' ' + (i + 1) + '"' +
-        ' data-onkeydown="onCensoLineKey" data-onkeydown-keys="Enter,Escape" data-onkeydown-args=\'["' + kind + '",' + i + ']\' data-onkeydown-pass="event"' +
-        ' data-onblur="commitCensoLine" data-onblur-args=\'["' + kind + '",' + i + ']\' data-onblur-pass="event"></li>'
-      );
-    }
-    var tag = it.dia
-      ? '<span class="exp-datos-tag">' + esc(it.dia) + '</span>'
-      : kind === 'atb'
-        ? '<span class="exp-datos-tag exp-datos-tag--muted">sin día</span>'
-        : '';
-    if (kind === 'meds') {
-      return (
-        '<li><button type="button" class="exp-datos-line exp-datos-line--toggle" data-onclick="toggleCensoMed" data-onclick-args="[' + i + ']"' +
-        ' aria-label="Tachar ' + esc(censoItemText(it)) + '"><span class="exp-datos-line__t">' + esc(it.name) + '</span>' + tag + '</button></li>'
-      );
-    }
-    return (
-      '<li><button type="button" class="exp-datos-line" data-line="' + i + '" data-onclick="editCensoLine" data-onclick-args=\'["' + kind + '",' + i + ']\'' +
-      ' aria-label="Editar ' + esc(censoItemText(it)) + '"><span class="exp-datos-line__t">' + esc(it.name) + '</span>' + tag + '</button></li>'
-    );
-  });
-  if (kind === 'meds' && editIndex < 0) lis = lis.concat(struckMedsHtml(patient, lis.length));
-  if (!lis.length) {
-    lis.push(
-      '<li><button type="button" class="exp-datos-line exp-datos-line--empty" data-onclick="editCensoLine" data-onclick-args=\'["' + kind + '",0]\'>' +
-        cfg.empty + '</button></li>'
-    );
-  }
-  return (
-    '<ul class="exp-datos-list exp-datos-list--chips" id="patient-censo-' + kind + '">' + lis.join('') + '</ul>'
-  );
+  var text = function (it) { return { name: it.name, dia: it.dia, text: censoItemText(it) }; };
+  return {
+    kind: kind,
+    label: cfg.label,
+    empty: cfg.empty,
+    editIndex: editIndex,
+    items: censoRenderItems(patient, kind).map(text),
+    struck: kind === 'meds' && editIndex < 0 ? parseCensoLines(patient.censoMedsStruckText).map(text) : [],
+  };
 }
 
-function censoCountHtml(patient, kind) {
-  var n = parseCensoLines(patient[CENSO_LINES[kind].field]).length;
-  return '<span class="exp-datos-sec__count" id="patient-censo-' + kind + '-count">' + (n ? '· ' + n : '') + '</span>';
-}
-
-var TOMAR_BTN = function (fn, what) {
-  return (
-    '<button type="button" class="exp-datos-sec__action exp-datos-sec__action--muted" data-onclick="' + fn + '" title="Tomar de ' + what + '">↻ Tomar de lista</button>'
-  );
-};
-
-function censoActionsHtml(kind, fn, what) {
-  return (
-    '<span class="exp-datos-sec__actions">' + TOMAR_BTN(fn, what) +
-    '<button type="button" class="exp-datos-sec__action" data-onclick="addCensoLine" data-onclick-args=\'["' + kind + '"]\'>+ Agregar</button></span>'
-  );
+function censoCount(patient, kind) {
+  return parseCensoLines(patient[CENSO_LINES[kind].field]).length;
 }
 
 /**
- * Censo blocks for Expediente → Datos, each wrapped by the caller's section builder.
+ * Props for the censo blocks of Expediente → Datos (see expediente-datos-view.jsx).
  * @param {Record<string, unknown>} patient
- * @param {(title: string, body: string, action?: string) => string} section
  */
-export function buildPatientCensoDatosSectionsHtml(patient, section) {
+export function censoDatosProps(patient) {
   migratePatientDiagnosticosFromVpo(patient, getVpoByPatient()[patient.id]);
   ensurePatientDiagnosticos(patient);
   draftLine = null;
-  return (
-    '<div class="exp-datos-censo-col">' +
-    section(
-      'Diagnósticos',
-      '<ol class="exp-datos-list exp-datos-list--dx" id="patient-dx-list">' + renderDxListHtml(patient) + '</ol>',
-      '<button type="button" class="exp-datos-sec__action" data-onclick="addPatientDxRow">+ Agregar</button>'
-    ) +
-    '</div><div class="exp-datos-censo-col">' +
-    section('Antibióticos ' + censoCountHtml(patient, 'atb'), censoListHtml(patient, 'atb', -1), censoActionsHtml('atb', 'censoTomarDeAntibioticos', 'Antibióticos')) +
-    section('Medicamentos ' + censoCountHtml(patient, 'meds'), censoListHtml(patient, 'meds', -1), censoActionsHtml('meds', 'censoTomarDeMedicamentos', 'Medicamentos')) +
-    '</div>'
-  );
+  return {
+    dx: dxRows(patient),
+    atb: { count: censoCount(patient, 'atb'), list: censoListProps(patient, 'atb', -1) },
+    meds: { count: censoCount(patient, 'meds'), list: censoListProps(patient, 'meds', -1) },
+  };
 }
 
 function refreshCensoLines(kind, editIndex) {
   var patient = activePatient(currentPatientId());
   var listEl = document.getElementById('patient-censo-' + kind);
   if (!patient || !listEl) return;
-  listEl.outerHTML = censoListHtml(patient, kind, editIndex);
-  var countEl = document.getElementById('patient-censo-' + kind + '-count');
-  if (countEl) countEl.outerHTML = censoCountHtml(patient, kind);
-  if (editIndex >= 0) {
-    var input = document.querySelector('#patient-censo-' + kind + ' input');
-    if (input) {
-      input.focus();
-      input.setSelectionRange(input.value.length, input.value.length);
+  censoView.use(function (v) {
+    v.replaceWithCensoList(listEl, censoListProps(patient, kind, editIndex));
+    var countEl = document.getElementById('patient-censo-' + kind + '-count');
+    if (countEl) v.replaceWithCensoCount(countEl, { kind: kind, count: censoCount(patient, kind) });
+    if (editIndex >= 0) {
+      var input = document.querySelector('#patient-censo-' + kind + ' input');
+      if (input) {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
     }
-  }
+  });
 }
 
 function saveCensoText(kind, text) {
@@ -316,7 +238,7 @@ function refreshDxListDom(patientId) {
   var listEl = document.getElementById('patient-dx-list');
   if (!patient || !listEl) return;
   var props = { rows: dxRows(patient) };
-  dxView.use(function (v) { v.drawDxRows(listEl, props); });
+  censoView.use(function (v) { v.drawDxRows(listEl, props); });
 }
 
 function currentPatientId() {

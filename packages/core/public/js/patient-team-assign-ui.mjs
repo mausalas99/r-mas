@@ -6,11 +6,10 @@ import {
 import { resolvePatientTeamIdFromAssignments, stampPatientClinicalSala } from './clinico-access.mjs';
 import { hasElevatedTeamPrivileges } from './clinical-privileges.mjs';
 import { filterJoinedTeams } from './features/clinical-teams/shared.mjs';
-import { buildTeamSelectOptions, fillTeamSelectOptions } from './features/clinical-teams/team-select-options.mjs';
+import { teamSelectModel, fillTeamSelectOptions } from './features/clinical-teams/team-select-options.mjs';
 import { resolveActiveTeamFilterId } from './features/clinical-census-filters-ui.mjs';
 import { getPatients, persistClinicalState } from './app-state.mjs';
 
-import { esc } from './dom-escape.mjs';
 function dbApi() {
   if (typeof window === 'undefined') return null;
   return window.rplusDb || window.electronAPI || null;
@@ -238,54 +237,29 @@ export function readPatientRegistrationTeamId() {
   return String(select.value || '').trim();
 }
 
-export function buildPatientTeamAssignSectionHtml(patient) {
+/**
+ * Props for the «Equipo» block of Expediente → Datos (TeamAssign in features/expediente/expediente-datos-view.jsx),
+ * or null when there is no signed-in user or patient.
+ */
+export function teamAssignProps(patient) {
   const user = clinicalSessionContext.user;
-  if (!user?.user_id || !patient?.id) return '';
+  if (!user?.user_id || !patient?.id) return null;
 
-  const patientId = String(patient.id);
-  const teamId = activePatientTeamId(patientId);
+  const teamId = activePatientTeamId(String(patient.id));
   const joinedTeams = assignableTeamsForUser(user);
+  const currentLabel = teamId ? teamLabelById(teamId) : '';
 
-  if (!joinedTeams.length) {
-    const readOnly = teamId
-      ? '<input type="text" class="field-readonly" readonly value="' +
-        esc(teamLabelById(teamId)) +
-        '" aria-label="Equipo asignado">'
-      : '<p class="profile-hint profile-hint--field">Sin equipo asignado.</p>';
-    return (
-      '<div class="field-group patient-team-assign-block">' +
-      '<label>Equipo</label>' +
-      readOnly +
-      '<p class="profile-hint profile-hint--field">Únete a un equipo en <strong>Mi rotación</strong> para cambiar la asignación.</p>' +
-      '</div>'
-    );
-  }
+  if (!joinedTeams.length) return { readOnly: true, currentLabel };
 
-  const placeholder = teamId ? '— Cambiar equipo —' : '— Asignar a equipo —';
-  const hint = teamId
-    ? 'Cambia el equipo si el paciente cambió de cubeta. Solo el equipo activo verá el caso en ⇄.'
-    : 'Al asignar, el paciente solo será visible para ese equipo en la red ⇄.';
-  const groupBySala = shouldGroupAssignableTeamsBySala(user);
-
-  return (
-    '<div class="field-group patient-team-assign-block">' +
-    '<label for="patient-team-assign-select">Equipo</label>' +
-    '<select id="patient-team-assign-select" class="profile-input patient-team-assign-select" data-onchange="onPatientTeamAssignChange" data-onchange-pass="value">' +
-    '<option value="">' +
-    esc(placeholder) +
-    '</option>' +
-    buildTeamSelectOptions(joinedTeams, teamId, { groupBySala }) +
-    '</select>' +
-  (teamId
-    ? '<p class="profile-hint profile-hint--field">Equipo actual: <strong>' +
-      esc(teamLabelById(teamId)) +
-      '</strong></p>'
-    : '') +
-    '<p class="profile-hint profile-hint--field">' +
-    hint +
-    '</p>' +
-    '</div>'
-  );
+  return {
+    readOnly: false,
+    currentLabel,
+    placeholder: teamId ? '— Cambiar equipo —' : '— Asignar a equipo —',
+    hint: teamId
+      ? 'Cambia el equipo si el paciente cambió de cubeta. Solo el equipo activo verá el caso en ⇄.'
+      : 'Al asignar, el paciente solo será visible para ese equipo en la red ⇄.',
+    select: teamSelectModel(joinedTeams, teamId, { groupBySala: shouldGroupAssignableTeamsBySala(user) }),
+  };
 }
 
 function activePatientIdFromDom() {
