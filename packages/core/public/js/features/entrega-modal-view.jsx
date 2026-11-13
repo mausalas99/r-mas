@@ -26,6 +26,7 @@ import { GUARDIA_ESFUERZO_OPTIONS, GUARDIA_PRONOSTICO_OPTIONS, normalizeGuardiaM
 import { findPatient, saveGuardiaMarks } from './guardia-marks.mjs';
 import { openConfirm } from './workbench/confirm.mjs';
 import { notify } from '../toast-notify.mjs';
+import { Button, Field } from '../ui-kit/kit.jsx';
 import {
   defaultProcedureTimeHHmm,
   formatHHmm,
@@ -100,12 +101,9 @@ export function GuardiaMarksGroup({ label, mark, options, current, patientId }) 
 
 export function ClinicalStatusField({ value, onChange }) {
   return (
-    <>
-      <label for="entrega-clinical-status">Estado general</label>
-      <select id="entrega-clinical-status" class="profile-input" value={value} onChange={(e) => onChange(e.currentTarget.value)}>
-        {CLINICAL_STATUS_OPTIONS.map((o) => <option value={o.value}>{o.label}</option>)}
-      </select>
-    </>
+    <Field label="Estado general" as="select" id="entrega-clinical-status" value={value} onChange={(e) => onChange(e.currentTarget.value)}>
+      {CLINICAL_STATUS_OPTIONS.map((o) => <option value={o.value}>{o.label}</option>)}
+    </Field>
   );
 }
 
@@ -115,11 +113,10 @@ function VasoDose({ vaso, set }) {
   return (
     <div class="entrega-vaso-dose">
       <div class="field-group">
-        <label for="entrega-vaso-agent">Agente</label>
-        <select id="entrega-vaso-agent" class="profile-input" value={agent}
+        <Field label="Agente" as="select" id="entrega-vaso-agent" value={agent}
           onChange={(e) => set((f) => withVasoDefaults(f, e.currentTarget.value))}>
           {VASOPRESSOR_AGENTS.map((a) => <option value={a.value}>{a.label}</option>)}
-        </select>
+        </Field>
       </div>
       <div class="field-group entrega-vaso-dose-row">
         <label for="entrega-vaso-dose">Infusión</label>
@@ -292,8 +289,7 @@ export function HandoffPanel({ f, set, isCritical, setCritical, markPatientId, v
         )}
       </div>
       <div class="field-group entrega-handoff-notes">
-        <label for="entrega-handoff-notes">Notas breves de entrega</label>
-        <textarea id="entrega-handoff-notes" class="profile-input entrega-handoff-notes-input" maxlength="240" rows="2"
+        <Field label="Notas breves de entrega" as="textarea" id="entrega-handoff-notes" class="entrega-handoff-notes-input" maxlength="240" rows="2"
           placeholder="Antecedentes relevantes para la guardia…" value={f.notes}
           onInput={(e) => { const notes = e.currentTarget.value; set((x) => ({ ...x, notes })); }} />
       </div>
@@ -325,19 +321,16 @@ export function HandoffPanel({ f, set, isCritical, setCritical, markPatientId, v
               </div>
               <div class={'entrega-handoff-support-detail' + (vent.active ? '' : ' is-hidden')} data-handoff-detail="ventilation">
                 <div class="field-group">
-                  <label for="entrega-vent-mode">Modalidad</label>
-                  <select id="entrega-vent-mode" class="profile-input" value={vent.mode} onChange={(e) => patchVent({ mode: e.currentTarget.value })}>
+                  <Field label="Modalidad" as="select" id="entrega-vent-mode" value={vent.mode} onChange={(e) => patchVent({ mode: e.currentTarget.value })}>
                     {VENTILATION_MODES.map((m) => <option value={m.value}>{m.label}</option>)}
-                  </select>
+                  </Field>
                 </div>
                 <div class="field-group">
-                  <label for="entrega-vent-fio2">FiO₂ / flujo</label>
-                  <input id="entrega-vent-fio2" class="profile-input" type="text" placeholder="ej. 40% · 50 L/min" value={vent.fio2}
+                  <Field label="FiO₂ / flujo" id="entrega-vent-fio2" type="text" placeholder="ej. 40% · 50 L/min" value={vent.fio2}
                     onInput={(e) => patchVent({ fio2: e.currentTarget.value })} />
                 </div>
                 <div class="field-group">
-                  <label for="entrega-vent-settings">Parámetros</label>
-                  <input id="entrega-vent-settings" class="profile-input" type="text" placeholder="PEEP, VT, presiones…" value={vent.settings}
+                  <Field label="Parámetros" id="entrega-vent-settings" type="text" placeholder="PEEP, VT, presiones…" value={vent.settings}
                     onInput={(e) => patchVent({ settings: e.currentTarget.value })} />
                 </div>
               </div>
@@ -356,7 +349,7 @@ export function HandoffPanel({ f, set, isCritical, setCritical, markPatientId, v
 
 function ProcCard({ item, actor, onFlag, onDelete }) {
   const del = canDeletePendienteItem(item, actor) ? (
-    <button type="button" class="wb-btn wb-btn-danger-outline entrega-proc-delete" data-action="delete" onClick={() => onDelete(item)}>Eliminar</button>
+    <Button class="wb-btn-danger-outline entrega-proc-delete" data-action="delete" onClick={() => onDelete(item)}>Eliminar</Button>
   ) : null;
   if (item.type === 'legacy_text') {
     return (
@@ -438,11 +431,10 @@ export function AddProcForm({ initial = {}, now, actor, onAdd, onCancel }) {
       </div>
       <div class="entrega-inline-form__grid">
         <div class="field-group">
-          <label for="entrega-proc-kind">Tipo</label>
-          <select id="entrega-proc-kind" name="entrega-proc-kind" class="profile-input" value={f.kind} onChange={(e) => set({ kind: e.currentTarget.value })}>
+          <Field label="Tipo" as="select" id="entrega-proc-kind" name="entrega-proc-kind" value={f.kind} onChange={(e) => set({ kind: e.currentTarget.value })}>
             <option value="imagen">Imagen</option>
             <option value="otro">Otro</option>
-          </select>
+          </Field>
         </div>
         <div class="field-group entrega-inline-form__label-wide">
           <label for="entrega-proc-label">Descripción</label>
@@ -478,8 +470,8 @@ export function AddProcForm({ initial = {}, now, actor, onAdd, onCancel }) {
       </div>
       <div class="entrega-inline-form__foot">
         <div class="entrega-inline-form__foot-actions entrega-inline-form__foot-actions--end">
-          <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" data-action="cancel-form" onClick={onCancel}>Cancelar</button>
-          <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-action="add-item" onClick={add}>Añadir</button>
+          <Button class="wb-btn-secondary wb-btn-lg" data-action="cancel-form" onClick={onCancel}>Cancelar</Button>
+          <Button primary class="wb-btn-lg" data-action="add-item" onClick={add}>Añadir</Button>
         </div>
       </div>
     </div>
@@ -509,9 +501,9 @@ export function ProcedimientosPanel({ items, setItems, actor, getNow = () => new
         </summary>
         <div class="entrega-panel-body entrega-proc-block">
           <div class="entrega-proc-toolbar">
-            <button type="button" id="btn-entrega-add-proc" class="wb-btn wb-btn-secondary" onClick={() => setAdding(true)}>
+            <Button id="btn-entrega-add-proc" class="wb-btn-secondary" onClick={() => setAdding(true)}>
               + Procedimiento
-            </button>
+            </Button>
           </div>
           <ul id="entrega-proc-list" class="entrega-proc-list">
             {items.length
@@ -570,9 +562,9 @@ export function EntregaModal({ model, draftRef, onCancel, onSubmit, onNav, getNo
         </div>
         <button type="button" class="entrega-nav-btn" id="entrega-nav-next" aria-label="Paciente siguiente" disabled={nav.nextDisabled}
           onClick={() => onNav(1)}><NavChevron points="9 18 15 12 9 6" /></button>
-        <button type="button" class="wb-btn wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close="" aria-label="Cerrar" onClick={onCancel}>
+        <Button class="wb-btn-ghost wb-btn-icon wb-modal-close" data-wb-close="" aria-label="Cerrar" onClick={onCancel}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" /></svg>
-        </button>
+        </Button>
       </header>
       <h3 id="entrega-modal-title" class="visually-hidden">{model.title}</h3>
       <form id="entrega-form" class="entrega-modal-form" onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
@@ -608,8 +600,8 @@ export function EntregaModal({ model, draftRef, onCancel, onSubmit, onNav, getNo
           <ProcedimientosPanel items={items} setItems={setItems} actor={model.actor} getNow={getNow} />
         </div>
         <footer class="modal-actions entrega-modal-foot wb-modal-foot">
-          <button type="button" class="wb-btn wb-btn-secondary wb-btn-lg" id="btn-entrega-cancel" data-wb-cancel="" onClick={onCancel}>Cancelar</button>
-          <button type="submit" class="wb-btn wb-btn-primary wb-btn-lg" id="btn-entrega-save">Guardar paciente</button>
+          <Button class="wb-btn-secondary wb-btn-lg" id="btn-entrega-cancel" data-wb-cancel="" onClick={onCancel}>Cancelar</Button>
+          <Button type="submit" primary class="wb-btn-lg" id="btn-entrega-save">Guardar paciente</Button>
         </footer>
       </form>
     </div>

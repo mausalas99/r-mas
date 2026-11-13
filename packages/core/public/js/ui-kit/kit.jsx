@@ -16,6 +16,16 @@ export function Button({ primary, class: cls, children, ...rest }) {
   );
 }
 
+/** Labelled field: `.profile-input` on an <input>, <select> or <textarea> (`as`), with the label wrapped around it. */
+export function Field({ label, as: Control = 'input', class: cls, children, ...rest }) {
+  return (
+    <label>
+      {label}
+      <Control class={join('profile-input', cls)} {...rest} {...(children === undefined ? {} : { children })} />
+    </label>
+  );
+}
+
 /** Text-only action: `.ea-io-link`. */
 export function TextButton({ class: cls, children, ...rest }) {
   return (

@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { stopEscapeBehindDialog } from './kit.jsx';
+import { h } from 'preact';
+import renderToString from 'preact-render-to-string';
+import { stopEscapeBehindDialog, Field } from './kit.jsx';
 
 const doc = (...open) => ({ querySelectorAll: () => open });
 const key = (k) => ({ key: k, stopped: false, stopPropagation() { this.stopped = true; } });
@@ -17,6 +19,16 @@ test('a dialog under another one lets the event pass', () => {
   const ev = key('Escape');
   assert.equal(stopEscapeBehindDialog(ev, dlg, doc(dlg, { open: true })), false);
   assert.equal(ev.stopped, false);
+});
+
+test('Field wraps its control in a label with the shared field class', () => {
+  const html = renderToString(h(Field, { label: 'Dosis', value: '0.1', class: 'x' }));
+  assert.equal(html, '<label>Dosis<input class="profile-input x" value="0.1"/></label>');
+});
+
+test('Field renders a select when `as` is given', () => {
+  const html = renderToString(h(Field, { label: 'Unidad', as: 'select' }, h('option', null, 'mL/h')));
+  assert.equal(html, '<label>Unidad<select class="profile-input"><option>mL/h</option></select></label>');
 });
 
 test('other keys and closed dialogs are left alone', () => {
