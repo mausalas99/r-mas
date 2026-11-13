@@ -358,7 +358,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
   color: var(--text);
   font: inherit;
-  font-size: 12.5px;
+  font-size: 16px;
 }
 .settings-search-input::placeholder { color: var(--text-muted); }
 .settings-search-input:focus-visible {
