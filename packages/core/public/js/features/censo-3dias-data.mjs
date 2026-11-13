@@ -3,6 +3,7 @@ import { sortLabHistoryChronological, getSetTrendValueForSeries, trendDayKey } f
 import { isVitalAltered } from './estado-actual-ranges.mjs';
 import { listManualLabTypes } from '../labs-manual-catalog.mjs';
 import { sortResLabsByClinicalOrder } from '../labs-section-order.mjs';
+import { egoFieldsFromChunk } from '../labs-ego-parse-helpers.mjs';
 
 // Seed ranges for the first 18 analytes; every other catalog analyte shows ref "—".
 // ref: [min, max] inclusive; lt: value must be strictly below max. s/f = tend catalog section/field keys.
@@ -62,16 +63,32 @@ function sectionKeyIn(set, s) {
   return Object.keys(pb).find((k) => k.toUpperCase() === up) || s;
 }
 
+/** EGO value of one set (from its stored "EGO:" chunk), "*" kept for abnormal. Null if none. */
+function egoSetValue(set, f) {
+  const stored = set.parsedBySection && set.parsedBySection.EGO;
+  if (stored && stored[f] != null) return String(stored[f]);
+  const chunk = (set.resLabs || []).find((c) => /^\s*EGO:/.test(String(c)));
+  return chunk ? egoFieldsFromChunk(chunk)[f] ?? null : null;
+}
+
 function threeDayCell(hist, spec) {
   const seen = new Set();
   const out = [];
   for (const set of sortLabHistoryChronological(hist)) { // newest first
-    const n = getSetTrendValueForSeries(set, sectionKeyIn(set, spec.s), spec.f);
-    if (n == null) continue;
+    let cell;
+    if (spec.s === 'EGO') {
+      const v = egoSetValue(set, spec.f);
+      if (v == null) continue;
+      cell = { text: v.replace(/\*$/, ''), alt: v.endsWith('*') };
+    } else {
+      const n = getSetTrendValueForSeries(set, sectionKeyIn(set, spec.s), spec.f);
+      if (n == null) continue;
+      cell = { text: fmt(n), alt: labAltered(spec, n) };
+    }
     const day = trendDayKey(set);
     if (seen.has(day)) continue;
     seen.add(day);
-    out.push({ text: fmt(n), alt: labAltered(spec, n) });
+    out.push(cell);
     if (out.length === 3) break;
   }
   return out.reverse();

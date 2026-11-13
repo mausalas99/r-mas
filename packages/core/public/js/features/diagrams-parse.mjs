@@ -3,6 +3,7 @@ import { parseBhTrendValuesFromResLab } from "../labs.js";
 import { tendEligibleSectionKey } from "../tend-core.mjs";
 import { normalizeTropTrendFields_ } from "../labs-troponin.mjs";
 import { labValueNumber_ } from "../labs-extract.mjs";
+import { egoFieldsFromChunk } from "../labs-ego-parse-helpers.mjs";
 
 export function parsearSecciones(resLabs) {
   var secs = {};
@@ -102,6 +103,11 @@ export function buildParsedBySectionFromResLabs(resLabs, bhExtras) {
       if (!out.BH) out.BH = {};
       if (out.BH[k] == null) out.BH[k] = n;
     });
+  });
+  // EGO is text (NEG, AMARILLO): keep it as stored so census text views can print it.
+  (resLabs || []).forEach(function (entry) {
+    var ego = egoFieldsFromChunk(entry);
+    if (Object.keys(ego).length) out.EGO = Object.assign(out.EGO || {}, ego);
   });
   if (bhExtras && typeof bhExtras === "object") {
     if (!out.BH) out.BH = {};

@@ -12,3 +12,12 @@ test('labs3DiasText: secciones, un analito por línea, 3 valores, * en alterados
   assert.equal(out[2], 'Electrolitos (ESC)');
   assert.equal(out[3], 'Sodio  150* · 141 · 140');
 });
+
+test('labs3DiasText: EGO texto (NEG, pH marcado) sale en 3 días', () => {
+  const ego = (fecha, body) => ({ fecha, hora: '08:00', resLabs: [body], parsedBySection: {} });
+  const hist = [ego('01/01/2026', 'EGO:\n  AMARILLO  pH 5.0*\n  Prot NEG\n  Leu 0-2'), ego('02/01/2026', 'EGO:\n  AMARILLO  pH 6.0\n  Prot 30*\n  Leu 0-2')];
+  const out = labs3DiasText('p1', () => hist);
+  assert.ok(out.includes('Color  AMARILLO · AMARILLO'), out);
+  assert.ok(out.includes('pH  5.0* · 6.0'), out);
+  assert.ok(out.includes('Prot  NEG · 30*'), out);
+});

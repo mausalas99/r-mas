@@ -25,7 +25,31 @@ import { joinTeam } from './db/clinical-access-teams-membership.mjs';
 import { assignPatientToTeam } from './db/clinical-access-assignments.mjs';
 import { procesarLabs } from '../public/js/labs.js';
 import { extractParsedValues } from '../public/js/features/diagrams-parse.mjs';
-import { DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } from '../public/js/tour-demo-some-lab.mjs';
+import { DEMO_SOME_LAB_REPORT } from '../public/js/tour-demo-some-lab.mjs';
+
+/** Synthetic EGO (urine) block, SOME layout. Appended to every seeded report so urine shows in censo views. */
+const UI_TEST_EGO_BLOCK = `
+EXAMEN GENERAL DE ORINA
+Estudio		Resultado	Unidades	Valor de Referencia
+FISICO
+COLOR	
+*
+AMARILLO OSCURO
+QUIMICO
+PH	
+B
+5.0
+5.5 - 6.5
+PROTEINAS	
+*
+30
+mg/dL	NEGATIVO
+SEDIMENTO
+LEUCOCITOS	
+*
+0-2
+/CAMPO	0-5/CAMPO
+`;
 
 /**
  * Fixed local identity for the isolated UI test mode — matched by preload.js,
@@ -184,17 +208,11 @@ export function buildUiTestRoster(now) {
         : {}),
     });
 
-    // Two sets on different dates, so Tendencias has something to chart.
-    if (def.labs === 'structured') {
-      labHistory[id] = [
-        buildLabHistoryEntry(id + '-l1', OLDER_DEMO_SOME_LAB_REPORT, new Date(today.getTime() - 5 * 86400000)),
-        buildLabHistoryEntry(id + '-l2', DEMO_SOME_LAB_REPORT, new Date(today.getTime() - 2 * 86400000)),
-      ];
-    } else if (def.labs === 'raw-fixture') {
-      labHistory[id] = [
-        buildLabHistoryEntry(id + '-l1', OLDER_DEMO_SOME_LAB_REPORT, new Date(today.getTime() - 3 * 86400000)),
-        buildLabHistoryEntry(id + '-l2', DEMO_SOME_LAB_REPORT, today),
-      ];
+    // Three days of full labs (all sections + urine): Tendencias charts, Labs 3 días has columns.
+    if (def.labs) {
+      labHistory[id] = [4, 2, 0].map((d, k) =>
+        buildLabHistoryEntry(id + '-l' + (k + 1), DEMO_SOME_LAB_REPORT + UI_TEST_EGO_BLOCK, new Date(today.getTime() - d * 86400000)),
+      );
     }
   });
 

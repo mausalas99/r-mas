@@ -184,3 +184,27 @@ export function buildEgoSections_(f) {
   });
   return sections;
 }
+
+/** Prefix parseEGO_ writes before each labeled EGO value ("pH 5.0*", "Prot NEG"). */
+const EGO_STORED_PREFIX = { pH: 'pH', Dens: 'D', Prot: 'Prot', Glu: 'Glu', Cet: 'Cet', Bili: 'Bili', Nitr: 'Nitr', EstLeu: 'EstLeu', Leu: 'Leu', Eri: 'Eri' };
+
+/**
+ * EGO values of one stored "EGO:" chunk, keyed by catalog field (pH, Prot, Leu, Color, Asp...).
+ * Values keep parseEGO_'s "*" abnormal marker. Color/Asp: first words of the physical line.
+ * @param {string} chunk @returns {Record<string, string>}
+ */
+export function egoFieldsFromChunk(chunk) {
+  var out = {};
+  var body = String(chunk || '').replace(/^\s*EGO:/, '');
+  if (body === String(chunk || '')) return out; // not an EGO chunk
+  var first = body.split('\n').map(function (l) { return l.trim(); }).find(Boolean) || '';
+  var parts = first.split(/\s{2,}/);
+  var isToken = function (p) { return Object.keys(EGO_STORED_PREFIX).some(function (k) { return p.indexOf(EGO_STORED_PREFIX[k] + ' ') === 0; }); };
+  if (parts[0] && !isToken(parts[0])) out.Color = parts[0];
+  if (parts[1] && !isToken(parts[1])) out.Asp = parts[1];
+  Object.keys(EGO_STORED_PREFIX).forEach(function (f) {
+    var m = body.match(new RegExp('(?:^|\\s)' + EGO_STORED_PREFIX[f] + '\\s+(\\S+)'));
+    if (m) out[f] = m[1];
+  });
+  return out;
+}
