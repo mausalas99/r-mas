@@ -307,7 +307,7 @@ html.dark .todo-text-input:focus {
   background: var(--surface);
   color: var(--text);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.35;
   box-sizing: border-box;
 }

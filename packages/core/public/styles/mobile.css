@@ -341,7 +341,7 @@ body.focus-mode #focus-mode-pill { display: block; }
   border-radius: var(--radius-md);
   padding: 10px 12px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--text);
   background: var(--input-fill);
   line-height: 1.5;

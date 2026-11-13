@@ -772,7 +772,7 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
   background-color: var(--surface);
   color: var(--text-muted);
   font: inherit;
-  font-size: 11px;
+  font-size: 16px;
   font-weight: 600;
   line-height: 1.2;
   box-shadow: none;
@@ -2551,7 +2551,7 @@ select.profile-input.profile-select {
 .patient-search-input {
   width: 100%; box-sizing: border-box;
   padding: calc(6px * var(--density-space)) calc(10px * var(--density-space));
-  font-size: calc(11px * var(--density-font));
+  font-size: 16px;
   min-height: 30px;
   border: 1px solid var(--border); border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--surface) 82%, var(--bg));
@@ -2714,7 +2714,7 @@ select.profile-input.profile-select {
   min-height: 72px;
   resize: vertical;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 16px;
   box-sizing: border-box;
 }
 .formats-defaults-editor-footer {

@@ -691,6 +691,7 @@ aside.patient-sidebar #patient-search {
   background: var(--input-fill);
   border-radius: var(--radius-control);
   font: var(--type-caption);
+  font-size: 16px;
   padding: calc(6px * var(--density-space)) calc(10px * var(--density-space));
   min-height: 30px;
   transition:

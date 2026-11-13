@@ -1257,7 +1257,7 @@
   box-sizing: border-box;
   font: inherit;
   font-weight: 400;
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.45;
   color: var(--text);
   background: var(--input-fill);
@@ -1577,7 +1577,7 @@
   width: 100%;
   box-sizing: border-box;
   font: inherit;
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.5;
   color: var(--text);
   background: var(--surface, transparent);
