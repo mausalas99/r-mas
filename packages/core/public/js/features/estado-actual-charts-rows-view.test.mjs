@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import { loadJsx } from './preact-view-test-helpers.mjs';
 import { historialSortedAsc } from './estado-actual-charts-series.mjs';
 
 // Output of the old string builders (renderEaChartsRows before the Preact port) for HIST, captured
 // per tab|range|sel|slot-or-inline. `slot` = pills in the header slot (ctl), `inline` = pills in the mount.
-const OLD = JSON.parse(fs.readFileSync(new URL('./estado-actual-charts-rows-view-old-html.json', import.meta.url), 'utf8'));
+const OLD = createRequire(import.meta.url)('./estado-actual-charts-rows-view-old-html.json');
 
 // Synthetic: 7 days x 2 registros, some vitals/glucometrías out of range.
 function makeHist() {

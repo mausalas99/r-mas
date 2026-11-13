@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import { loadJsx } from './preact-view-test-helpers.mjs';
 import { TYPES, FIELDS } from './lab-manual-entry-view-scenarios.mjs';
 
-const old = JSON.parse(fs.readFileSync(new URL('./lab-manual-entry-view.old.json', import.meta.url), 'utf8'));
+const old = createRequire(import.meta.url)('./lab-manual-entry-view.old.json');
 const m = await loadJsx(import.meta.url, `
   import { LabManualTypeOptions, LabManualFieldGrid } from './lab-manual-entry-view.jsx';
   export const types = (t) => renderToString(<LabManualTypeOptions types={t} />);

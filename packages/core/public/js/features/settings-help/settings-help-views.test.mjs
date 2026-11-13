@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import { loadJsx } from '../preact-view-test-helpers.mjs';
 
 // Old markup (innerHTML strings) captured from the code before the Preact port; synthetic labels only.
-const fx = JSON.parse(fs.readFileSync(new URL('./settings-help-views.fixture.json', import.meta.url), 'utf8'));
+const fx = createRequire(import.meta.url)('./settings-help-views.fixture.json');
 const view = await loadJsx(import.meta.url, `
   import { HtmlNodes } from './simple-html-nodes.jsx';
   import { HelpArticle, HelpList } from './help-content-view.jsx';
