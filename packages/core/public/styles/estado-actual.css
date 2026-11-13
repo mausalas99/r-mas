@@ -750,7 +750,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   border-radius: var(--radius-sm);
   padding: 7px 10px;
   font: inherit;
-  font-size: calc(13px * var(--density-font, 1));
+  font-size: 16px;
   background: var(--input-fill);
   color: var(--text);
   transition: border-color 0.12s, box-shadow 0.12s;
@@ -3099,7 +3099,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   background: none;
   padding: 2px 0;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--action);
   cursor: pointer;
@@ -3436,7 +3436,7 @@ select.ea-io-link {
   border-radius: var(--radius-control, 8px);
   background: var(--input-fill);
   box-shadow: none;
-  font-size: calc(13px * var(--density-font, 1));
+  font-size: 16px;
 }
 
 .estado-actual-panel .ea-clinico-grid .ea-input:focus {

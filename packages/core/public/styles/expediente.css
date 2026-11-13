@@ -62,7 +62,7 @@
   border-radius: var(--radius-control, 8px);
   background: var(--input-fill);
   color: var(--text);
-  font-size: 12.5px;
+  font-size: 16px;
   font-family: inherit;
   box-shadow: none;
 }
