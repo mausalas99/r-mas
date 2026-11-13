@@ -14,7 +14,7 @@
 .tend-search svg { position: absolute; left: 14px; top: 11px; pointer-events: none; }
 .tend-search-input {
   box-sizing: border-box; width: 100%; height: 40px; padding: 0 14px 0 40px; border-radius: 999px;
-  border: 0; background: var(--sunken-bg); color: var(--text); font: inherit; font-size: 13.5px;
+  border: 0; background: var(--sunken-bg); color: var(--text); font: inherit; font-size: 16px;
 }
 .tend-search-input:focus-visible, .tend-seg-btn:focus-visible, .tend-pill:focus-visible,
 .tend-section-toggle:focus-visible, .tend-section-chart-btn:focus-visible, .tend-row-hide-btn:focus-visible {

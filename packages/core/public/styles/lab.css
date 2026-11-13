@@ -1384,7 +1384,7 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   flex-shrink: 0;
 }
 .lab-history-date-select {
-  font: 600 12px/1 var(--font-mono);
+  font: 600 16px/1 var(--font-mono);
   font-variant-numeric: tabular-nums;
   min-width: 0;
   max-width: min(48vw, 240px);
@@ -3484,7 +3484,7 @@ html.motion-sobrio .paste-loader-ring {
   outline: 0;
   background: transparent;
   color: var(--text);
-  font: 13px/1 var(--font-mono, ui-monospace, monospace);
+  font: 16px/1 var(--font-mono, ui-monospace, monospace);
 }
 .lab-search-count {
   font: 12px/1 var(--font-mono, ui-monospace, monospace);
