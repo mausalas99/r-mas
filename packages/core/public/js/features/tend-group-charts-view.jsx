@@ -84,6 +84,35 @@ export function LegendItem({ m }) {
   );
 }
 
+const ICON = { width: '15', height: '15', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' };
+
+/** The three icon buttons inside a chart panel's toolbar (the .mjs wires their clicks after the draw). */
+export function PanelToolbarButtons() {
+  return (
+    <div class="patient-card-toolbar-left">
+      <button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-copy-svg" title="Copiar gráfica" aria-label="Copiar gráfica como imagen">
+        <svg {...ICON}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M8 17V9M12 17V5M16 17v-4" /></svg>
+      </button>
+      <button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-eye" title="Ocultar panel" aria-label="Ocultar panel">
+        <svg class="tend-eye-svg" {...ICON} width="17" height="17"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+      </button>
+      <button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-events-toggle" title="Ocultar eventos" aria-label="Ocultar eventos" aria-pressed="false">
+        <svg {...ICON}><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.59a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.83Z" /><circle cx="7.5" cy="7.5" r="1.5" /></svg>
+      </button>
+    </div>
+  );
+}
+
+/** Red note that replaces a chart whose Chart.js build threw. */
+export function ChartError() {
+  return <p class="tend-empty" style="margin:12px 0;font-size:13px;color:var(--error);">No se pudo dibujar este panel.</p>;
+}
+
+/** Note shown in the charts panel when the whole charts render threw. */
+export function ChartsLoadError() {
+  return <p class="tend-empty">No se pudieron cargar las gráficas. Recarga la app e intenta de nuevo.</p>;
+}
+
 function draw(host, vnode) {
   render(null, host);
   host.textContent = '';
@@ -101,4 +130,59 @@ export function drawScaleRow(row, rel) {
 
 export function drawLegendItem(item, m) {
   draw(item, <LegendItem m={m} />);
+}
+
+export function drawPanelToolbar(toolbar) {
+  draw(toolbar, <PanelToolbarButtons />);
+}
+
+/** Replaces whatever the wrap holds (canvas included) with the error note. */
+export function drawChartError(wrap) {
+  draw(wrap, <ChartError />);
+}
+
+export function drawChartsLoadError(panel) {
+  draw(panel, <ChartsLoadError />);
+}
+
+// Extended gasometry dialog frame and the slot's empty / error note (string markup of tend-group-gaso-dialog / -slot).
+export function GasoExtDialog() {
+  return (
+    <div id="tend-gaso-ext-dialog" class="tend-gaso-ext-dialog" role="dialog" aria-modal="true" aria-labelledby="tend-gaso-ext-title">
+      <div class="tend-gaso-ext-header">
+        <div class="tend-gaso-ext-header-text">
+          <h2 id="tend-gaso-ext-title">Gasometría extendida</h2>
+          <p class="tend-gaso-ext-subtitle">Último estudio · interpretación ácido-base</p>
+        </div>
+        <div class="tend-gaso-ext-header-actions">
+          <div class="tend-gaso-fio2-chip" role="group" aria-label="Fracción inspirada de oxígeno">
+            <span class="tend-gaso-fio2-chip-label">FiO₂</span>
+            <input type="number" class="tend-gaso-fio2-input" step="0.01" min="0.08" max="100" inputmode="decimal" aria-label="FiO₂ (0.21 o 21)" title="Fracción 0.21 o porcentaje 21" />
+            <span class="tend-gaso-fio2-chip-hint">0.21 · 21%</span>
+          </div>
+        </div>
+      </div>
+      <div class="tend-gaso-extended-inner"></div>
+    </div>
+  );
+}
+
+export function GasoEmpty({ message, isError }) {
+  const color = isError ? 'var(--error)' : 'var(--text-muted)';
+  return <p class="tend-empty" style={'font-size:13px;color:' + color + ';'}>{message}</p>;
+}
+
+/** Unmount first, then wipe: the slot is also filled with plain DOM, so it may hold nodes Preact does not know. */
+export function clearGasoSlot(slot) {
+  render(null, slot);
+  slot.replaceChildren();
+}
+
+export function drawGasoEmpty(slot, message, isError) {
+  clearGasoSlot(slot);
+  render(<GasoEmpty message={message} isError={isError} />, slot);
+}
+
+export function drawGasoDialog(backdrop) {
+  render(<GasoExtDialog />, backdrop);
 }

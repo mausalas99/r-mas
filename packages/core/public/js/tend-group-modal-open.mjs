@@ -9,6 +9,7 @@ import { readGroupVisibleFields } from './tend-prefs.mjs';
 import { toAscendingHistory } from './tend-group-chart-helpers.mjs';
 import { buildTableTsv, copyTableModelAsPng, copyTableText } from './tend-export.mjs';
 import { cancelOverlayClose } from './ui-motion.mjs';
+import { drawChartsLoadError } from './features/tend-group-charts-view.jsx';
 import { showTendPane } from './tend-pane.mjs';
 
 export function eligibleSpecs(deps, sectionKey, historyDesc) {
@@ -201,8 +202,7 @@ export function renderTendGroupPanels(sectionKey, renderCharts, renderTable) {
     console.error('tend-group renderCharts', e);
     var panelErr = document.getElementById('tend-group-panel-charts');
     if (panelErr) {
-      panelErr.innerHTML =
-        '<p class="tend-empty">No se pudieron cargar las gráficas. Recarga la app e intenta de nuevo.</p>';
+      drawChartsLoadError(panelErr);
     }
   }
   try {

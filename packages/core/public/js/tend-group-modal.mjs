@@ -77,15 +77,7 @@ function isAbgAnalysisHidden() {
   return true;
 }
 
-function defaultEsc(t) {
-  return String(t == null ? '' : t);
-}
-
 function createTendGroupGasoApi(deps, state) {
-  function escHtml(t) {
-    return (deps.esc || defaultEsc)(t);
-  }
-
   function closeGasoExtended() {
     closeGasoExtendedBackdrop();
   }
@@ -96,8 +88,7 @@ function createTendGroupGasoApi(deps, state) {
     refillGasoExtendedSlot(
       bd.querySelector('.tend-gaso-extended-inner'),
       state.historyDesc[0],
-      state.gasoExtendedFio2,
-      escHtml
+      state.gasoExtendedFio2
     );
   }
 
@@ -129,15 +120,14 @@ function createTendGroupGasoApi(deps, state) {
       return;
     }
 
-    var bd = ensureGasoExtendedDialog(escHtml, closeGasoExtended);
+    var bd = ensureGasoExtendedDialog(closeGasoExtended);
     wireGasoExtendedDialog(bd, state, function () {
       rerunGasoSlot(bd);
     });
     refillGasoExtendedSlot(
       bd.querySelector('.tend-gaso-extended-inner'),
       latest,
-      state.gasoExtendedFio2,
-      escHtml
+      state.gasoExtendedFio2
     );
     showGasoExtendedBackdrop(bd);
   }
@@ -191,9 +181,9 @@ export function createTendGroupModal(deps) {
       if (bd) bd.style.display = 'none';
       destroyCharts();
       var chartsPanel = document.getElementById('tend-group-panel-charts');
-      if (chartsPanel) chartsPanel.innerHTML = '';
+      if (chartsPanel) chartsPanel.replaceChildren();
       var wrap = document.getElementById('tend-group-table-wrap');
-      if (wrap) wrap.innerHTML = '';
+      if (wrap) wrap.replaceChildren();
     });
   }
 

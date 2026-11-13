@@ -1,6 +1,7 @@
+import { drawGasoDialog } from './features/tend-group-charts-view.jsx';
 import { cancelOverlayClose, closeOverlayAnimated } from './ui-motion.mjs';
 
-export function ensureGasoExtendedDialog(escHtml, onBackdropClick) {
+export function ensureGasoExtendedDialog(onBackdropClick) {
   var bd = document.getElementById('tend-gaso-ext-backdrop');
   if (bd) return bd;
 
@@ -10,23 +11,7 @@ export function ensureGasoExtendedDialog(escHtml, onBackdropClick) {
   bd.setAttribute('aria-hidden', 'true');
   bd.style.display = 'none';
 
-  bd.innerHTML =
-    '<div id="tend-gaso-ext-dialog" class="tend-gaso-ext-dialog" role="dialog" aria-modal="true" aria-labelledby="tend-gaso-ext-title">' +
-      '<div class="tend-gaso-ext-header">' +
-        '<div class="tend-gaso-ext-header-text">' +
-          '<h2 id="tend-gaso-ext-title">' + escHtml('Gasometría extendida') + '</h2>' +
-          '<p class="tend-gaso-ext-subtitle">' + escHtml('Último estudio · interpretación ácido-base') + '</p>' +
-        '</div>' +
-        '<div class="tend-gaso-ext-header-actions">' +
-          '<div class="tend-gaso-fio2-chip" role="group" aria-label="Fracción inspirada de oxígeno">' +
-            '<span class="tend-gaso-fio2-chip-label">FiO₂</span>' +
-            '<input type="number" class="tend-gaso-fio2-input" step="0.01" min="0.08" max="100" inputmode="decimal" aria-label="FiO₂ (0.21 o 21)" title="Fracción 0.21 o porcentaje 21" />' +
-            '<span class="tend-gaso-fio2-chip-hint">0.21 · 21%</span>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="tend-gaso-extended-inner"></div>' +
-    '</div>';
+  drawGasoDialog(bd);
 
   bd.addEventListener('click', function (ev) {
     if (ev.target === bd) onBackdropClick();

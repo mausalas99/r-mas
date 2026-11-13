@@ -30,13 +30,11 @@ import {
   isPanelEventsHidden,
   togglePanelEventsHidden,
 } from './tend-prefs.mjs';
-import { drawPanelsHiddenBar, drawScaleRow, drawLegendItem, legendItemModel } from './features/tend-group-charts-view.jsx';
+import { drawPanelsHiddenBar, drawScaleRow, drawLegendItem, legendItemModel, drawPanelToolbar, drawChartError } from './features/tend-group-charts-view.jsx';
 import { copyChartPng } from './tend-export.mjs';
 import {
   GENERIC_FAMILY_ORDER,
   applyChartYScale,
-  tendPanelEyeSvg,
-  tendPanelEventsSvg,
   orderPanelFamilies,
   formatTrendDisplayValue,
   hexToRgba,
@@ -260,28 +258,10 @@ function appendEmptyChartsMessage(panelEl) {
   panelEl.appendChild(emptyP);
 }
 
-function tendSectionChartSvgIcon() {
-  return (
-    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 17V9M12 17V5M16 17v-4"/></svg>'
-  );
-}
-
 function buildPanelToolbar() {
   var toolbar = document.createElement('div');
   toolbar.className = 'patient-card-toolbar tend-group-panel-toolbar';
-  toolbar.innerHTML =
-    '<div class="patient-card-toolbar-left">' +
-    '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-copy-svg" title="Copiar gráfica" aria-label="Copiar gráfica como imagen">' +
-    tendSectionChartSvgIcon() +
-    '</button>' +
-    '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-eye" title="Ocultar panel" aria-label="Ocultar panel">' +
-    tendPanelEyeSvg() +
-    '</button>' +
-    '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-events-toggle" title="Ocultar eventos" aria-label="Ocultar eventos" aria-pressed="false">' +
-    tendPanelEventsSvg() +
-    '</button>' +
-    '</div>';
+  drawPanelToolbar(toolbar);
   return toolbar;
 }
 
@@ -507,7 +487,7 @@ function applyThresholdsToChart(chart, fieldKey, thresholds) {
 }
 
 function renderThresholdChips(container, ctx, chart, items) {
-  container.innerHTML = '';
+  container.replaceChildren();
   items.forEach(function (item) {
     var fk = item.spec.fieldKey;
     var label = fieldLabelForItem(ctx, item);
@@ -868,8 +848,7 @@ function renderPanelFamilyCard(fam, ctx) {
   } catch (chartErr) {
     console.error('tend-group chart', fam, chartErr);
     readout.remove();
-    chartWrap.innerHTML =
-      '<p class="tend-empty" style="margin:12px 0;font-size:13px;color:var(--error);">No se pudo dibujar este panel.</p>';
+    drawChartError(chartWrap);
   }
 }
 
@@ -889,7 +868,7 @@ function renderGroupChartsInner(deps, state, sectionKey, legendLabelForSpec, pan
     } catch (_e) { void _e; }
     panelSortableRef.current = null;
   }
-  panelEl.innerHTML = '';
+  panelEl.replaceChildren();
 
   var catalogSpecs = catalogSpecsForCharts(deps, state, sectionKey);
   var families = buildFamiliesMap(deps, state, sectionKey, catalogSpecs);
