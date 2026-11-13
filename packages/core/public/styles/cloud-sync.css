@@ -65,8 +65,8 @@
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
+  gap: 4px;
+  padding: 4px 12px;
   border-radius: var(--radius-chip);
   border: 1px solid color-mix(in oklab, var(--text) 14%, var(--divider));
   background: color-mix(in oklab, var(--text) 6%, var(--color-elevated));
@@ -499,7 +499,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: calc(4px * var(--density-space));
-  padding: 3px;
+  padding: 4px;
   border: var(--border-hairline);
   border-radius: var(--radius-pill);
   background: var(--color-elevated);
@@ -763,7 +763,7 @@
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   padding-top: 8px;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
   scrollbar-gutter: stable;
 }
 
@@ -817,11 +817,11 @@
   row-gap: 0.75rem;
   align-content: start;
   align-items: start;
-  padding: 10px 12px 12px;
+  padding: 8px 12px 12px;
 }
 
 .cloud-sync-equipo-embed .clinical-teams-section--joined {
-  padding: 10px 12px;
+  padding: 8px 12px;
   gap: 8px;
 }
 
@@ -830,8 +830,8 @@
 }
 
 .cloud-sync-equipo-embed .clinical-teams-rotation-card {
-  padding: 8px 10px;
-  gap: 6px;
+  padding: 8px 8px;
+  gap: 4px;
 }
 
 .cloud-sync-equipo-embed .clinical-teams-rotation-card .clinical-teams-section-desc {
@@ -955,7 +955,7 @@
 .cloud-sync-admin-nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-height: 40px;
   padding: 0 12px;
   border: 0;
@@ -1039,14 +1039,14 @@
 .cloud-sync-admin-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .cloud-sync-admin-card {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   border: var(--border-hairline);
   border-radius: var(--radius-container);
   background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
@@ -1153,7 +1153,7 @@
 .cloud-sync-admin-sala {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   padding: 16px;
   border: var(--border-hairline);
   border-radius: var(--radius-container);
@@ -1201,7 +1201,7 @@
 
 .cloud-sync-admin-sala-code {
   align-self: flex-start;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--text) 6%, transparent);
   font-family: var(--font-mono, 'IBM Plex Mono', monospace);
@@ -1220,8 +1220,8 @@
 .cloud-sync-admin-sala-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 4px;
+  margin-top: 4px;
 }
 
 .cloud-sync-admin-more {
@@ -1287,9 +1287,9 @@
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   align-self: center;
-  padding: 8px 10px 8px 18px;
+  padding: 8px 8px 8px 16px;
   border: var(--border-hairline);
   border-radius: var(--radius-pill);
   background: var(--color-elevated);
@@ -1322,7 +1322,7 @@
 }
 
 .cloud-sync-admin-event-group {
-  padding: 12px 16px 6px;
+  padding: 12px 16px 4px;
   font-size: calc(11px * var(--density-font));
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1338,7 +1338,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
+  padding: 8px 16px;
   list-style: none;
   cursor: pointer;
   font-size: calc(13px * var(--density-font));
@@ -1370,9 +1370,9 @@
 .cloud-sync-admin-event-kv {
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);
-  gap: 6px 16px;
+  gap: 4px 16px;
   margin: 0;
-  padding: 4px 16px 10px 68px;
+  padding: 4px 16px 8px 68px;
   font-size: calc(12px * var(--density-font));
 }
 
@@ -1401,15 +1401,15 @@
 .cloud-sync-admin-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
 .cloud-sync-admin-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   height: 34px;
-  padding: 0 14px;
+  padding: 0 12px;
   border: var(--border-hairline);
   border-radius: var(--radius-pill);
   background: var(--color-elevated);
@@ -1668,7 +1668,7 @@
   display: inline-block;
   width: 9px;
   height: 9px;
-  margin-right: 7px;
+  margin-right: 8px;
   border-radius: 50%;
   background: var(--text-muted);
 }
@@ -1705,7 +1705,7 @@
 
 .cloud-sync-admin-role-select {
   min-width: 7rem;
-  padding: 4px 6px;
+  padding: 4px 4px;
   font-size: calc(11px * var(--density-font));
 }
 
@@ -1823,7 +1823,7 @@
   font-size: 0.72em;
   font-weight: 600;
   letter-spacing: 0.02em;
-  padding: 0.12rem 0.45rem;
+  padding: 0.12rem 8px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--divider);
   color: var(--text-muted);
@@ -1838,10 +1838,10 @@
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 4px;
   font-size: 0.72em;
   min-height: 1.6rem;
-  padding: 0.1rem 0.45rem;
+  padding: 0.1rem 8px;
 }
 
 .cloud-sync-admin-equipos-history-count {
@@ -1849,7 +1849,7 @@
   align-items: center;
   justify-content: center;
   min-width: 1.15rem;
-  padding: 0.05rem 0.35rem;
+  padding: 0.05rem 4px;
   border-radius: var(--radius-pill);
   font-size: 0.9em;
   font-weight: 700;
@@ -1870,7 +1870,7 @@
 }
 
 .cloud-sync-equipos-history-modal-sub {
-  margin: 0.35rem 0 0;
+  margin: 4px 0 0;
   font-size: 0.82rem;
   color: var(--text-muted);
 }
@@ -1904,7 +1904,7 @@
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
-  padding: 0.28rem 0.55rem;
+  padding: 4px 8px;
   font-size: 0.72em;
   line-height: 1.35;
   color: var(--text-secondary);
@@ -1927,7 +1927,7 @@
 }
 
 .cloud-sync-admin-equipos-history-more {
-  padding: 0.28rem 0.55rem;
+  padding: 4px 8px;
   font-size: 0.72em;
   font-style: italic;
   color: var(--text-muted);
@@ -1944,7 +1944,7 @@
 .cloud-sync-admin-equipos-check-label {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 4px;
   font-size: 0.9em;
   color: var(--text-secondary);
   cursor: pointer;
@@ -2283,7 +2283,7 @@
 .cloud-nube-dash-alert {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: 10px;
+  column-gap: 8px;
   row-gap: 4px;
   align-items: start;
   width: 100%;
@@ -2395,7 +2395,7 @@
 }
 
 .cloud-sync-diag-technical[open] > summary {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .cloud-sync-diag-technical .cloud-sync-diagnostics-pre {
@@ -2560,7 +2560,7 @@
   flex: 1;
   min-width: 12px;
   height: 0;
-  margin-top: 19px;
+  margin-top: 16px;
   border-top: 2px solid color-mix(in oklab, var(--color-accent) 55%, transparent);
 }
 
@@ -2583,7 +2583,7 @@
 .cloud-sync-room-code-group {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .cloud-sync-room-code {
@@ -2608,7 +2608,7 @@
 }
 
 .cloud-sync-room-copy.cloud-sync-btn--ghost {
-  padding-left: 10px;
+  padding-left: 8px;
   font-family: var(--font-ui);
   color: var(--color-accent);
 }
@@ -2805,7 +2805,7 @@
 .nube-pop-head {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .nube-pop-dot {
@@ -2849,7 +2849,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--text) 5%, transparent);
 }
@@ -2884,7 +2884,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--text) 5%, transparent);
   font-size: calc(11px * var(--density-font));
@@ -2969,7 +2969,7 @@
 .cloud-sync-auth-remember {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-size: calc(13px * var(--density-font));
   color: var(--text);
 }

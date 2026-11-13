@@ -41,7 +41,7 @@
   cursor: pointer;
   font-size: 1.1rem;
   line-height: 1;
-  padding: 0.15rem 0.35rem;
+  padding: 4px 4px;
   border-radius: var(--radius-badge);
 }
 .ui-approval-dismiss:hover {
@@ -51,7 +51,7 @@
 .ui-approval-options {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 4px;
   margin-top: 0.5rem;
 }
 .ui-approval-option,
@@ -60,7 +60,7 @@
   align-items: center;
   gap: 0.5rem;
   margin: 0 -0.35rem;
-  padding: 0.35rem 0.5rem;
+  padding: 4px 0.5rem;
   border: none;
   background: transparent;
   border-radius: var(--radius-control);
@@ -109,13 +109,13 @@
   justify-content: space-between;
   gap: 0.75rem;
   margin-top: 0.75rem;
-  padding-top: 0.65rem;
+  padding-top: 12px;
   border-top: 1px solid var(--color-border, #e5e7eb);
 }
 .ui-approval-pager {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 4px;
 }
 .ui-approval-dot {
   width: 7px;
@@ -139,7 +139,7 @@
 .ui-approval-primary {
   border: none;
   border-radius: var(--radius-control);
-  padding: 0.4rem 0.85rem;
+  padding: 8px 12px;
   font: inherit;
   font-size: 12.5px;
   font-weight: 600;
@@ -180,7 +180,7 @@
 .ui-diff-bar {
   display: flex;
   align-items: center;
-  padding: 0.55rem 0.75rem;
+  padding: 8px 0.75rem;
   border-bottom: 1px solid var(--color-border, #e5e7eb);
 }
 .ui-diff-title {
@@ -195,7 +195,7 @@
   text-align: left;
 }
 .ui-diff-th {
-  padding: 0.45rem 0.75rem;
+  padding: 8px 0.75rem;
   font-size: 12px;
   font-weight: 500;
   color: var(--color-ink-muted);
@@ -243,7 +243,7 @@
   box-shadow: var(--shadow-card, 0 1px 2px rgba(0, 0, 0, 0.06));
 }
 .ui-rec-pad {
-  padding: 0.85rem 1rem 0.65rem;
+  padding: 12px 1rem 12px;
 }
 .ui-rec-title {
   margin: 0;
@@ -252,7 +252,7 @@
   color: var(--color-ink);
 }
 .ui-rec-body {
-  margin-top: 0.4rem;
+  margin-top: 8px;
   font-size: 13px;
   line-height: 1.45;
   color: var(--color-ink-muted);
@@ -270,7 +270,7 @@
 }
 .ui-rec-drawer-lead {
   margin: 0;
-  padding: 0 0.35rem 0.25rem;
+  padding: 0 4px 0.25rem;
   font-size: 11px;
   font-weight: 500;
   color: var(--color-ink-muted);
@@ -279,11 +279,11 @@
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 0.55rem;
+  gap: 8px;
   border: none;
   background: transparent;
   border-radius: var(--radius-control);
-  padding: 0.4rem 0.35rem;
+  padding: 8px 4px;
   text-align: left;
   font: inherit;
   cursor: pointer;
@@ -310,14 +310,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.55rem 0.75rem;
+  padding: 8px 0.75rem;
   border-top: 1px solid var(--color-border, #e5e7eb);
   background: var(--card-body-bg);
 }
 .ui-rec-confidence {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 8px;
 }
 .ui-rec-confidence-label {
   font-size: 12.5px;
@@ -337,14 +337,14 @@
 .ui-rec-actions {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 8px;
 }
 .ui-rec-alts-btn,
 .ui-rec-primary {
   height: 1.75rem;
   border: none;
   border-radius: var(--radius-control);
-  padding: 0 0.7rem;
+  padding: 0 12px;
   font: inherit;
   font-size: 12.5px;
   font-weight: 500;
@@ -392,7 +392,7 @@
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 4px;
   border-radius: var(--radius-control);
   background: var(--card-body-bg);
   color: var(--color-ink-muted);
@@ -405,8 +405,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.35rem;
-  margin: 0.35rem 0 0.5rem;
+  gap: 4px;
+  margin: 4px 0 0.5rem;
 }
 .tend-detail-compare-label {
   font-size: 11.5px;
@@ -417,7 +417,7 @@
   font-size: 12px;
   border-radius: var(--radius-badge);
   border: 1px solid var(--color-border, #e5e7eb);
-  padding: 0.2rem 0.4rem;
+  padding: 4px 8px;
   background: var(--color-surface, #fff);
   color: var(--color-ink);
 }
@@ -426,8 +426,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
-  margin: 0 0 0.6rem;
+  gap: 8px;
+  margin: 0 0 8px;
 }
 .tend-group-range-label,
 .tend-group-range-sep {
@@ -442,7 +442,7 @@
   width: auto;
   max-width: min(150px, 40vw);
   min-height: 32px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   font-size: 12px;
 }
 .tend-group-range-row .rpc-date-field__label {
@@ -457,7 +457,7 @@
   color: var(--text-muted, var(--color-ink-muted));
   text-decoration: underline;
   cursor: pointer;
-  padding: 0.1rem 0.2rem;
+  padding: 0.1rem 4px;
 }
 .tend-group-range-clear:hover {
   color: var(--text, var(--color-ink));
@@ -468,7 +468,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 .tend-group-threshold-add-btn {
   font-size: 12px;
@@ -477,7 +477,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .tend-group-threshold-form[hidden] {
   display: none;
@@ -505,7 +505,7 @@
 .tend-group-threshold-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 .tend-group-threshold-chip {
   display: inline-flex;
@@ -515,7 +515,7 @@
   color: var(--text, var(--color-ink));
   background: var(--color-content);
   border-radius: var(--radius-pill, 999px);
-  padding: 3px 6px 3px 10px;
+  padding: 4px 4px 4px 8px;
 }
 .tend-group-threshold-chip-remove {
   border: none;
@@ -559,9 +559,6 @@
   position: absolute;
   inset: 0;
   border-radius: var(--radius-container, 8px);
-}
-.card-open-btn:focus-visible {
-  outline: none;
 }
 .card-open-btn:focus-visible::after {
   outline: 2px solid var(--action);

@@ -8,7 +8,7 @@
   font-size: 14px;
   line-height: 1;
   cursor: pointer;
-  padding: 1px 5px;
+  padding: 1px 4px;
   border-radius: var(--radius-control);
 }
 .cultivos-row-remove-btn:hover {
@@ -18,21 +18,21 @@
 .cultivos-cell-remove { width: 1px; white-space: nowrap; text-align: right; padding-left: 4px; padding-right: 8px; }
 /* Un sitio de muestra = un <details>: fila resumen + tabla de resultados. */
 .cult-site {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
   overflow: hidden;
 }
 .cult-site-head {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; cursor: pointer; list-style: none;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; cursor: pointer; list-style: none;
 }
 .cult-site-head::-webkit-details-marker { display: none; }
 .cult-site[open] > .cult-site-head { border-bottom: 1px solid var(--border); }
 .cult-site-title { font-size: 12px; font-weight: 600; letter-spacing: 0.03em; color: var(--text); min-width: 0; }
 .cult-site-tipo { color: var(--text-muted); font-weight: 500; letter-spacing: 0; }
-.cult-site-dots { display: inline-flex; gap: 3px; align-items: center; }
+.cult-site-dots { display: inline-flex; gap: 4px; align-items: center; }
 .cult-site-last {
   margin-left: auto; font-size: 12px; color: var(--text-muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
@@ -41,7 +41,7 @@
 .cult-dot { width: 7px; height: 7px; border-radius: 50%; background: color-mix(in oklab, var(--text-muted) 45%, transparent); }
 .cult-dot--pos { background: var(--danger); }
 .cult-site .cultivos-table { font-size: 13px; }
-.cult-site .cultivos-table td { padding: 8px 14px; vertical-align: middle; border-bottom: none; border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
+.cult-site .cultivos-table td { padding: 8px 12px; vertical-align: middle; border-bottom: none; border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
 .cult-site .cultivos-table tr:first-child td { border-top: none; }
 .cult-site .cultivos-cell-fecha { width: 84px; white-space: nowrap; color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .cult-site .cultivos-cell-atb { width: 1%; white-space: nowrap; }
@@ -53,7 +53,7 @@
 .cult-org-name::first-letter { text-transform: uppercase; }
 .cult-org-name--isolate { font-style: italic; font-weight: 600; }
 .cult-org-tag {
-  display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: var(--radius-pill);
+  display: inline-block; margin-left: 4px; padding: 1px 8px; border-radius: var(--radius-pill);
   font-size: 10px; font-weight: 600; vertical-align: 1px;
   background: var(--lab-chip-bg); color: var(--text-muted);
 }
@@ -68,25 +68,25 @@
 .cult-site tr:hover .cultivos-row-remove-btn, .cult-site tr:focus-within .cultivos-row-remove-btn { opacity: 1; }
 .cultivos-neg-fold { margin-top: 12px; }
 .cultivos-neg-head {
-  display: flex; align-items: center; gap: 8px; padding: 6px 2px 10px;
+  display: flex; align-items: center; gap: 8px; padding: 4px 2px 8px;
   cursor: pointer; list-style: none; font-size: 13px; font-weight: 600; color: var(--text-muted);
 }
 .cultivos-neg-head::-webkit-details-marker { display: none; }
 .cultivos-neg-count {
-  font-size: 11px; font-weight: 700; line-height: 1; padding: 3px 8px;
+  font-size: 11px; font-weight: 700; line-height: 1; padding: 4px 8px;
   border-radius: var(--radius-pill); background: var(--lab-chip-bg); color: var(--text-muted);
 }
 #cultivos-table-container .cultivo-refresh-idle { color: var(--text-muted); }
 .cultivos-toolbar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
 }
 /* Block-layout wrap around a <table>: display:flex lets the sticky fade
    pseudo sit beside the table instead of on a new line below it. */
-.cultivos-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: flex; position: relative; }
+.cultivos-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); display: flex; position: relative; }
 .cultivos-table-wrap::after {
   content: "";
   position: sticky;
@@ -99,10 +99,10 @@
 }
 .cultivos-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .cultivos-table th {
-  text-align: left; padding: 10px 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.02em;
+  text-align: left; padding: 8px 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.02em;
   font-size: 10px; border-bottom: 1px solid var(--border); background: var(--lab-chip-bg); white-space: nowrap;
 }
-.cultivos-table td { padding: 10px 12px; vertical-align: top; border-bottom: 1px solid var(--border); color: var(--text); }
+.cultivos-table td { padding: 8px 12px; vertical-align: top; border-bottom: 1px solid var(--border); color: var(--text); }
 .cultivos-cell-atb { overflow: visible; position: relative; z-index: 0; }
 .cultivos-cell-atb .cult-atb-ris-chip-wrap:focus-within,
 .cultivos-cell-atb .cult-atb-ris-chip-wrap:hover { z-index: 5; }
@@ -123,13 +123,13 @@
 .cultivos-atb-fallback { margin: 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
 .cultivos-atb-wrap { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .cultivos-atb-chips {
-  display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center;
+  display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center;
 }
 .lab-out-cultivo-chunk { margin-top: 12px; }
 #lab-output-box > .lab-out-cultivo-chunk:first-child { margin-top: 0; }
 .cultivos-atb-chips .atb-chip, .lab-out-atb .atb-chip {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 24px; padding: 2px 7px; border-radius: var(--radius-badge);
+  min-width: 24px; padding: 2px 8px; border-radius: var(--radius-badge);
   font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
   border: 1px solid var(--border); cursor: default; font-family: var(--font-ui);
   min-height: 24px; box-sizing: border-box;
@@ -146,7 +146,7 @@
 .cult-atb-ris-chips {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
 }
 .cult-atb-ris-chip-wrap {
@@ -177,7 +177,7 @@
 .atb-ris-hover-panel--s { border-left: 3px solid color-mix(in oklab, var(--success) 75%, var(--border)); }
 .atb-ris-panel-head {
   margin: 0;
-  padding: 8px 12px 6px;
+  padding: 8px 12px 4px;
   font-size: 11px;
   font-weight: 750;
   letter-spacing: 0.02em;
@@ -187,7 +187,7 @@
 }
 .atb-ris-detail-list {
   margin: 0;
-  padding: 6px 10px 10px;
+  padding: 4px 8px 8px;
   list-style: none;
 }
 .atb-ris-detail-item { margin: 0; padding: 0; }
@@ -215,7 +215,7 @@
   flex-basis: 100%;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 8px;
+  gap: 4px 8px;
   justify-content: flex-end;
   text-align: right;
   font-size: 11px;
@@ -231,7 +231,7 @@
 .atb-ris-meta-sep { opacity: 0.45; user-select: none; }
 .atb-ris-int {
   font-weight: 700;
-  padding: 1px 6px;
+  padding: 1px 4px;
   border-radius: 4px;
   border: 1px solid var(--border);
 }
@@ -242,7 +242,7 @@
   display: block;
 }
 .cultivos-copy-full-btn {
-  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: var(--radius-badge);
+  font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: var(--radius-badge);
   border: 1px solid var(--border); background: var(--lab-chip-bg); color: var(--text);
   cursor: pointer; font-family: inherit;
 }
@@ -251,7 +251,7 @@
 .tend-detail-chart-row {
   display: flex;
   align-items: stretch;
-  gap: 14px;
+  gap: 12px;
   min-height: 320px;
 }
 .tend-detail-chart-cell {
@@ -275,7 +275,7 @@ html.rpc-mobile-web #connection-dropdown-backdrop:not(.open) {
 body.focus-mode #btn-open-settings,
 body.focus-mode #btn-header-team-sync { display: none !important; }
 #focus-mode-pill {
-  display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+  display: none; position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
   background: var(--action); color: var(--color-on-accent); font-size: 11px; font-weight: 600;
   padding: 4px 12px; border-radius: var(--radius-pill); box-shadow: var(--shadow-md);
   z-index: 150; letter-spacing: 0.3px; opacity: 0.9; pointer-events: none;
@@ -283,7 +283,7 @@ body.focus-mode #btn-header-team-sync { display: none !important; }
 body.focus-mode #focus-mode-pill { display: block; }
 /* ── Búsqueda unificada ────────────────────────────────────── */
 .unified-search-result {
-  border: 1px solid var(--border); border-radius: var(--radius-control); padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-control); padding: 8px 12px;
   background: var(--surface); cursor: pointer; display: flex; flex-direction: column;
   gap: 4px; transition: border-color 0.15s, background 0.15s;
 }
@@ -293,7 +293,7 @@ body.focus-mode #focus-mode-pill { display: block; }
   align-items: center; justify-content: space-between; gap: 8px;
 }
 .unified-search-result .usr-tag {
-  font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: var(--radius-pill);
+  font-size: 10px; font-weight: 700; padding: 1px 8px; border-radius: var(--radius-pill);
   letter-spacing: 0.4px; background: var(--lab-chip-bg); color: var(--lab-chip-txt);
   border: 1px solid color-mix(in oklab, var(--action) 28%, var(--border));
 }
@@ -308,15 +308,15 @@ body.focus-mode #focus-mode-pill { display: block; }
 }
 /* ── Plantillas guardadas (extra-templates) ────────────────── */
 .extra-tmpl-row {
-  border: 1px solid var(--border); border-radius: var(--radius-control); padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-control); padding: 8px 8px;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   background: var(--surface);
 }
 .extra-tmpl-row .etr-label { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.extra-tmpl-row .etr-actions { display: flex; gap: 6px; }
+.extra-tmpl-row .etr-actions { display: flex; gap: 4px; }
 .extra-tmpl-row .etr-actions button {
   background: var(--lab-chip-bg); color: var(--action); border: none;
-  border-radius: 5px; padding: 4px 10px; font-size: 11px; font-family: inherit;
+  border-radius: 5px; padding: 4px 8px; font-size: 11px; font-family: inherit;
   cursor: pointer; font-weight: 600;
 }
 .extra-tmpl-row .etr-actions .etr-del {
@@ -324,7 +324,7 @@ body.focus-mode #focus-mode-pill { display: block; }
 }
 .extra-tmpl-row .etr-actions .etr-del:hover { background: color-mix(in oklab, var(--error) 14%, var(--surface)); }
 .indica-extra-tmpl {
-  display: flex; gap: 8px; align-items: center; padding: 10px 12px;
+  display: flex; gap: 8px; align-items: center; padding: 8px 12px;
   border: 1px dashed var(--border); border-radius: var(--radius-control); background: var(--bg);
 }
 .indica-extra-tmpl--empty {
@@ -339,7 +339,7 @@ body.focus-mode #focus-mode-pill { display: block; }
   min-width: 0;
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   border-radius: var(--radius-md);
-  padding: 10px 12px;
+  padding: 8px 12px;
   font-family: inherit;
   font-size: 16px;
   color: var(--text);
@@ -356,7 +356,7 @@ body.focus-mode #focus-mode-pill { display: block; }
 }
 .indica-extra-tmpl button:not(.wb-btn) {
   background: var(--action); color: var(--color-on-accent); border: none; border-radius: var(--radius-badge);
-  padding: 6px 14px; font-size: 12px; font-weight: 700; font-family: inherit;
+  padding: 4px 12px; font-size: 12px; font-weight: 700; font-family: inherit;
   cursor: pointer; white-space: nowrap;
 }
 .indica-extra-tmpl button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -418,7 +418,7 @@ html.rpc-mobile-web .patient-card {
   right: 12px;
   bottom: max(12px, env(safe-area-inset-bottom, 0px));
   z-index: var(--z-banner);
-  padding: 10px 14px;
+  padding: 8px 12px;
   border-radius: var(--radius-container);
   background: color-mix(in oklab, var(--color-ink) 88%, transparent);
   color: var(--color-paper);
@@ -524,7 +524,7 @@ html.rpc-mobile-web body {
 
 /* Filtros censo — sidebar above patient list (must not flex-grow like desktop toolbar mount) */
 html.rpc-mobile-web .clinical-census-filters-mount--sidebar {
-  margin: 0 10px 6px;
+  margin: 0 8px 4px;
   flex: 0 0 auto;
   min-height: 0;
   width: auto;
@@ -536,7 +536,7 @@ html.rpc-mobile-web aside.patient-sidebar .patient-list {
 }
 
 html.rpc-mobile-web .clinical-census-filters--mobile-sidebar {
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid color-mix(in oklab, var(--color-ink) 12%, transparent);
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
   padding: 0;
@@ -550,11 +550,11 @@ html.rpc-mobile-web .clinical-census-filters--mobile-sidebar.is-collapsed {
 html.rpc-mobile-web .clinical-census-filters--mobile-sidebar .clinical-census-filters-toggle {
   width: 100%;
   min-height: 36px;
-  padding: 8px 10px;
+  padding: 8px 8px;
   font-size: 12px;
   font-weight: 600;
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 html.rpc-mobile-web .clinical-census-filters--mobile-sidebar.is-collapsed .clinical-census-filters-toggle {
@@ -565,7 +565,7 @@ html.rpc-mobile-web .clinical-census-filters--mobile-sidebar:not(.is-collapsed) 
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 10px 10px;
+  padding: 0 8px 8px;
 }
 
 html.rpc-mobile-web .clinical-census-filters--mobile-sidebar.is-collapsed .clinical-census-filters-body,
@@ -616,7 +616,7 @@ html.rpc-mobile-web .clinical-census-filters--mobile-sidebar .clinical-census-fi
   }
   html.rpc-mobile-web .sidebar-hover-strip { display: none !important; }
   html.rpc-mobile-web aside.patient-sidebar .patient-card {
-    padding: 8px 6px;
+    padding: 8px 4px;
     text-align: center;
   }
   html.rpc-mobile-web aside.patient-sidebar .patient-card .p-name {
@@ -646,7 +646,7 @@ html.rpc-mobile-web .clinical-census-filters--mobile-sidebar .clinical-census-fi
     height: 28px;
   }
   html.rpc-mobile-web .patient-dash { padding-top: 2px; }
-  html.rpc-mobile-web .patient-dash .idrow { margin-bottom: 6px; }
+  html.rpc-mobile-web .patient-dash .idrow { margin-bottom: 4px; }
 }
 
 /* Interconsulta (iPad): the bed rail replaces the patient list. Specificity

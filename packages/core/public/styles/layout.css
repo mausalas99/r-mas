@@ -115,7 +115,7 @@ header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
   pointer-events: auto;
   cursor: pointer;
   border-radius: var(--radius-row-btn, 7px);
-  padding: 4px 6px;
+  padding: 4px 4px;
 }
 #today-date:hover,
 #today-date:focus-visible {
@@ -137,8 +137,8 @@ header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
 #app-brand {
   cursor: pointer;
   border-radius: var(--radius-md);
-  padding: 2px 6px;
-  margin-left: -6px;
+  padding: 2px 4px;
+  margin-left: -4px;
   flex-shrink: 0;
   grid-column: 1;
   justify-self: start;
@@ -245,8 +245,8 @@ html.ic-board-mode #sidebar-hover-strip {
 .ic-board-header {
   display: flex;
   justify-content: flex-end;
-  gap: 0.6rem;
-  margin-bottom: 0.6rem;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 /* Hard backstop: whatever inline-style tug-of-war Resumen's own show/hide
    logic (patients-select.mjs) is mid-race with, the board view always wins
@@ -392,8 +392,8 @@ html.ui-density-normal #main-area {
 .header-work-cluster .btn-export-censo-header {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 4px;
+  padding: 4px 12px;
   font-size: 11px;
   font-weight: 600;
   line-height: 1.25;
@@ -411,7 +411,7 @@ html.ui-density-normal #main-area {
 
 @media (max-width: 920px) {
   .header-work-cluster .btn-export-censo-header {
-    padding: 6px 10px;
+    padding: 4px 8px;
   }
 }
 .estado-actual-meta {
@@ -482,7 +482,7 @@ html.censo-preview-open {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 12px 14px 10px;
+  padding: 12px 12px 8px;
   overflow: hidden;
   border-radius: var(--radius-lg);
   box-shadow: 0 24px 64px rgba(15, 23, 42, 0.28);
@@ -492,7 +492,7 @@ html.censo-preview-open {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px 14px;
+  gap: 4px 12px;
 }
 .censo-preview-modal .modal-title {
   margin: 0;
@@ -515,7 +515,7 @@ html.censo-preview-open {
   color: var(--text);
 }
 .censo-export-date {
-  margin: 0 0 18px;
+  margin: 0 0 16px;
   font-size: 13px;
   color: var(--text-muted);
 }
@@ -523,11 +523,11 @@ html.censo-preview-open {
   gap: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 0 14px;
+  padding: 0 12px;
 }
 .censo-export-options .lab-pref-row {
   min-height: 52px;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 .censo-export-options .lab-pref-row + .lab-pref-row {
   border-top: 1px solid var(--border);
@@ -557,7 +557,7 @@ html.censo-preview-open {
 }
 .censo-col-chips::before {
   content: 'Columnas';
-  padding: 0 8px 0 10px;
+  padding: 0 8px 0 8px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -568,8 +568,8 @@ html.censo-preview-open {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
+  gap: 4px;
+  padding: 4px 12px;
   border-radius: 999px;
   font-size: 12.5px;
   font-weight: 500;
@@ -625,8 +625,8 @@ html.censo-preview-open {
 }
 .censo-preview-modal .modal-actions {
   flex-shrink: 0;
-  margin-top: 10px;
-  gap: 10px;
+  margin-top: 8px;
+  gap: 8px;
 }
 
 html.ui-density-normal .main-col {
@@ -681,7 +681,7 @@ html.sidebar-auto-hide:not(.sidebar-reveal) .app {
   align-items: center;
   gap: 8px;
   min-height: 40px;
-  padding: 6px 16px;
+  padding: 4px 16px;
   border: 1px solid color-mix(in oklab, var(--warn) 45%, transparent);
   border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--warn) 14%, var(--surface));
@@ -765,7 +765,7 @@ html.sidebar-auto-hide.sidebar-reveal:not(.ui-density-normal) #main-area {
 .app-tab-attention::after {
   content: '';
   position: absolute;
-  top: 6px;
+  top: 4px;
   right: 8px;
   width: 7px;
   height: 7px;
@@ -776,17 +776,17 @@ html.sidebar-auto-hide.sidebar-reveal:not(.ui-density-normal) #main-area {
 .settings-data-sync-compare {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 12px;
 }
 .settings-sync-card {
   border: none;
   border-radius: var(--radius-container);
-  padding: 14px 16px;
+  padding: 12px 16px;
   background: color-mix(in oklab, var(--text) 4%, transparent);
 }
 .settings-sync-card h4 {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   font-size: 12px;
   font-weight: 700;
   color: var(--text);
@@ -800,13 +800,13 @@ html.sidebar-auto-hide.sidebar-reveal:not(.ui-density-normal) #main-area {
 .settings-sync-help-link {
   font-size: 11px;
   color: var(--text-muted);
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   line-height: 1.45;
 }
 .guided-empty-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   justify-content: center;
   margin-top: 8px;
 }
@@ -814,7 +814,7 @@ html.sidebar-auto-hide.sidebar-reveal:not(.ui-density-normal) #main-area {
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
-  padding: 9px 16px;
+  padding: 8px 16px;
   border-radius: var(--radius-pill);
   cursor: pointer;
   border: 1px solid var(--border);
@@ -861,7 +861,7 @@ html.sidebar-auto-hide.sidebar-reveal:not(.ui-density-normal) #main-area {
   flex: none;
   align-items: flex-start;
   justify-content: flex-start;
-  padding: 14px 12px;
+  padding: 12px 12px;
   color: var(--text-muted);
 }
 .unified-search-empty.empty-state--compact .empty-state-title {
@@ -999,7 +999,7 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
 
 .header-context-patient:not(:empty) + .header-context-path:not(:empty)::before {
   content: '\00B7';
-  margin: 0 6px;
+  margin: 0 4px;
   opacity: 0.45;
 }
 
@@ -1088,8 +1088,8 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
 }
 
 .header-mode-seg:not(:hover):not(.is-expanded):not(:focus-within) .header-mode-seg-btn.is-active {
-  padding-left: 10px;
-  padding-right: 10px;
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
 .header-mode-seg-btn:not(.is-active) {
@@ -1128,7 +1128,7 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
   transform: translateX(-50%);
   display: flex;
   gap: 4px;
-  margin-top: 5px;
+  margin-top: 4px;
   transition: opacity var(--dur-normal) var(--ease-out);
 }
 
@@ -1167,7 +1167,7 @@ html.rpc-topbar body > header {
   --header-bar-height: 54px;
   height: 54px;
   min-height: 54px;
-  gap: 10px;
+  gap: 8px;
 }
 /* Actions never shrink under the tabs; Guardia (no tabs) keeps the base
  * shrinkable column so a narrow window does not scroll sideways. */
@@ -1181,7 +1181,7 @@ html.rpc-topbar .app-tabs-row {
 .topbar-nav {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   height: 100%;
 }
@@ -1256,7 +1256,7 @@ html.tab-bar-indicators-ready .topbar-nav .app-tab.active {
   background: transparent;
   box-shadow: none;
 }
-.topbar-l2 .lab-inner-nav.inner-tab-bar { padding: 0 8px; gap: 6px; }
+.topbar-l2 .lab-inner-nav.inner-tab-bar { padding: 0 8px; gap: 4px; }
 .topbar-l2 .inner-tab-bar::after {
   display: none;
 }
@@ -1279,10 +1279,10 @@ html.tab-bar-indicators-ready .topbar-nav .app-tab.active {
 html.dark .topbar-l2 .exp-group-name {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   height: 30px;
   margin: 0;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
@@ -1312,7 +1312,7 @@ html.tab-bar-indicators-ready .topbar-l2 .inner-tab.active,
   left: 0;
   z-index: 0;
   height: 30px;
-  margin-top: -15px;
+  margin-top: -16px;
   border-radius: var(--radius-pill);
   background: var(--color-accent-soft);
   pointer-events: none;
@@ -1364,8 +1364,8 @@ html.rpc-topbar .toast.toast--leave {
 /* Header icons (owner 2026-09-27): Drive, Datos and Buscar get the same
  * 34 px round icon-button box and spacing as the rest of the bar. */
 .topbar-l2 .exp-expediente-nav-actions {
-  gap: 6px;
-  margin-left: 6px;
+  gap: 4px;
+  margin-left: 4px;
 }
 .topbar-l2 .exp-expediente-nav-actions .wb-btn-icon,
 html.rpc-topbar .header-work-cluster .header-cmdk-hint {
@@ -1413,7 +1413,7 @@ html.rpc-topbar #btn-open-learn {
 }
 .topbar-help-menu button {
   height: 32px;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -1440,7 +1440,7 @@ html.rpc-topbar .topbar-l2 .exp-expediente-nav > #exp-group-row {
 html.rpc-topbar #patient-sidebar .patient-search-wrap {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 html.rpc-topbar #patient-sidebar .patient-search-input {
   flex: 1;
@@ -1448,11 +1448,11 @@ html.rpc-topbar #patient-sidebar .patient-search-input {
   order: 0;
 }
 html.rpc-topbar #patient-sidebar .patient-search-wrap:has(#btn-patient-filters:not([hidden])) .patient-search-input {
-  padding-right: 34px;
+  padding-right: 32px;
 }
 html.rpc-topbar #patient-sidebar .patient-search-wrap .patient-filters-anchor {
   order: 1;
-  margin-left: -38px;
+  margin-left: -32px;
 }
 html.rpc-topbar #patient-sidebar .patient-search-wrap .btn-patient-filters {
   border-color: transparent;
@@ -1469,7 +1469,7 @@ html.rpc-topbar .sv-home-actions #btn-export-censo-header,
 html.rpc-topbar .ic-board-header #btn-export-censo-header {
   align-items: center;
   height: 32px;
-  gap: 6px;
+  gap: 4px;
   padding: 0 12px;
 }
 html.rpc-topbar .ic-board-header {
@@ -1534,8 +1534,8 @@ html.rpc-topbar .clinical-context-bar #header-mode-seg {
   flex-direction: column;
   gap: 2px;
   min-width: 176px;
-  padding: 6px;
-  border-radius: 14px;
+  padding: 4px;
+  border-radius: 12px;
   background: var(--surface);
   box-shadow: var(--elev-overlay);
   opacity: 0;
@@ -1571,8 +1571,8 @@ html.rpc-topbar .clinical-context-bar #header-mode-seg {
   gap: 24px;
   width: 100%;
   height: 36px;
-  padding: 0 10px;
-  border-radius: 9px;
+  padding: 0 8px;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
   text-align: left;

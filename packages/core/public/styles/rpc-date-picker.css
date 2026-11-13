@@ -79,7 +79,7 @@ button.rpc-date-field__trigger.profile-input {
 .rpc-time-picker {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
   min-width: 0;
 }
@@ -91,7 +91,7 @@ button.rpc-date-field__trigger.profile-input {
   margin: 0;
   min-height: 40px;
   height: 40px;
-  padding: 0 1.35rem 0 0.5rem;
+  padding: 0 24px 0 0.5rem;
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   border-radius: var(--radius-control);
   background-color: var(--input-fill);
@@ -180,12 +180,12 @@ input.rpc-datetime-input.rpc-datetime-field__native {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .rpc-date-popover__title {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--primary);
   text-transform: capitalize;
@@ -217,7 +217,7 @@ input.rpc-datetime-input.rpc-datetime-field__native {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .rpc-date-popover__weekdays span {
@@ -271,8 +271,8 @@ input.rpc-datetime-input.rpc-datetime-field__native {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
 }
 
@@ -285,7 +285,7 @@ input.rpc-datetime-input.rpc-datetime-field__native {
   font-size: 12px;
   font-weight: 700;
   font-family: inherit;
-  padding: 8px 10px;
+  padding: 8px 8px;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }

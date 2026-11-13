@@ -45,21 +45,21 @@ html.rpc-mobile-web #onboarding-intro-backdrop {
     border: none;
     padding: 0;
     background: transparent;
-    gap: 3px;
+    gap: 4px;
     flex-shrink: 0;
   }
 
   html.rpc-mobile-web .header-mode-seg.is-expanded {
     border: var(--border-hairline);
     border-radius: var(--radius-md);
-    padding: 3px;
+    padding: 4px;
     background: color-mix(in oklab, var(--surface) 94%, var(--bg));
   }
 
   html.rpc-mobile-web .header-mode-seg-btn {
     min-height: 36px;
     min-width: 0;
-    padding: 0 11px;
+    padding: 0 12px;
     font-size: 12px;
     border-radius: var(--radius-pill);
   }
@@ -88,15 +88,15 @@ html.rpc-mobile-web #onboarding-intro-backdrop {
   html.rpc-mobile-web .header-mode-seg.is-expanded .header-mode-seg-btn:not([hidden]) {
     display: inline-flex !important;
     max-width: 9rem;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 8px;
+    padding-right: 8px;
     opacity: 1;
     pointer-events: auto;
   }
 
   html.rpc-mobile-web .header-mode-seg.is-expanded .header-mode-seg-btn {
     min-height: 40px;
-    padding: 0 10px;
+    padding: 0 8px;
   }
 
   html.rpc-mobile-web .header-mode-seg.is-expanded .header-mode-seg-btn.is-active {
@@ -131,7 +131,7 @@ html.rpc-mobile-web #onboarding-intro-backdrop {
   }
 
   html.rpc-mobile-web .app-tabs-row {
-    padding: 0 6px 0 2px;
+    padding: 0 4px 0 2px;
     background: var(--surface);
     border-bottom: var(--border-hairline);
   }
@@ -145,7 +145,7 @@ html.rpc-mobile-web #onboarding-intro-backdrop {
   html.rpc-mobile-web .app-tab {
     flex: 1 1 0;
     justify-content: center;
-    padding: 14px 8px 12px;
+    padding: 12px 8px 12px;
     font-size: 13px;
     border-radius: 0;
   }
@@ -291,7 +291,7 @@ html.rpc-mobile-web #appcontent-lab #lab-output-section {
 
 html.rpc-mobile-web #appcontent-lab #lab-output-section > .card-header {
   flex-shrink: 0;
-  padding: 12px 16px 10px;
+  padding: 12px 16px 8px;
   border-bottom: var(--border-hairline);
   background: color-mix(in oklab, var(--color-ink) 3%, transparent);
 }
@@ -335,7 +335,7 @@ html.rpc-mobile-web #appcontent-lab .lab-history-date-select {
   font: var(--type-body);
   border-radius: var(--radius-control);
   border: var(--border-hairline);
-  padding: 0 14px;
+  padding: 0 12px;
   background: var(--input-fill, var(--color-elevated));
 }
 
@@ -350,7 +350,7 @@ html.rpc-mobile-web #appcontent-lab #lab-output-section > .card-body {
   flex: 0 1 auto;
   min-height: 0;
   gap: 0;
-  padding: 12px 16px 14px;
+  padding: 12px 16px 12px;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -437,7 +437,7 @@ html[data-cloud-mobile='1'] #lan-connection-banner {
   right: 12px;
   top: max(56px, calc(env(safe-area-inset-top) + 48px));
   z-index: 11000;
-  padding: 12px 14px;
+  padding: 12px 12px;
   border-radius: var(--radius-container);
   background: color-mix(in oklab, var(--color-accent, #4a52e8) 14%, var(--color-surface-elevated, #fff));
   border: 1px solid color-mix(in oklab, var(--color-accent, #4a52e8) 35%, transparent);
@@ -498,7 +498,7 @@ body.rpc-cloud-mobile-gated main {
 }
 
 .rpc-cloud-mobile-modal__head {
-  padding: 18px 18px 12px;
+  padding: 16px 16px 12px;
   border-bottom: 1px solid color-mix(in oklab, var(--color-ink, #0b0d12) 12%, transparent);
   background: var(--color-elevated, #ffffff);
 }
@@ -519,7 +519,7 @@ body.rpc-cloud-mobile-gated main {
 }
 
 .rpc-cloud-mobile-modal__body {
-  padding: 16px 18px 18px;
+  padding: 16px 16px 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -535,7 +535,7 @@ body.rpc-cloud-mobile-gated main {
 .rpc-cloud-mobile-modal .cloud-sync-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 4px;
   margin: 0;
 }
 

@@ -70,7 +70,7 @@ html.dark.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
   /* One row always. Narrow sidebar (720 px window): «+ Agregar» drops its word
      (container query below) instead of wrapping or sliding over the auto-hide button. */
   container-type: inline-size;
-  gap: 6px;
+  gap: 4px;
   background: transparent;
   position: relative;
   z-index: 30;
@@ -78,7 +78,7 @@ html.dark.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
 .sidebar-header-title-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex: 0 0 auto;
 }
 .btn-sidebar-auto-hide {
@@ -120,7 +120,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
 .sidebar-header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
 }
 .patient-filters-anchor {
@@ -185,7 +185,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   z-index: 520;
 }
 .clinical-census-filters--popover {
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-container);
   background: var(--surface);
@@ -272,7 +272,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
 .patient-bulk-bar-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   width: 100%;
 }
@@ -458,14 +458,14 @@ html.dark .patient-card:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: calc(6px * var(--density-space));
   min-height: 22px;
 }
 .patient-card-toolbar-left {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
 }
 .patient-toolbar-chip--on {
@@ -477,7 +477,7 @@ html.dark .patient-card:hover {
 aside.patient-sidebar .patient-toolbar-chip {
   min-height: 24px;
   min-width: 24px;
-  padding: 2px 5px;
+  padding: 2px 4px;
   font-size: calc(10px * var(--density-font));
 }
 aside.patient-sidebar .btn-delete-card {
@@ -583,7 +583,7 @@ html.dark .patient-toolbar-chip--on {
 .patient-toolbar-chip--icon {
   min-width: 26px;
   min-height: 24px;
-  padding: 2px 5px;
+  padding: 2px 4px;
 }
 .patient-toolbar-chip--icon svg {
   display: block;

@@ -20,7 +20,7 @@
 
 .ev-panel__head {
   flex-shrink: 0;
-  padding: 0 6px 4px;
+  padding: 0 4px 4px;
 }
 
 .ev-panel__hint {
@@ -81,7 +81,7 @@
 .ev-day__summary {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: calc(10px * var(--density-space, 1)) calc(12px * var(--density-space, 1));
   cursor: pointer;
   list-style: none;
@@ -191,14 +191,14 @@
 .ev-card__actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
 .ev-card__edit {
   flex-shrink: 0;
   margin: 0;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
   border-radius: var(--radius-pill);
   background: transparent;
@@ -219,7 +219,7 @@
 .ev-card__delete {
   flex-shrink: 0;
   margin: 0;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
   border-radius: var(--radius-pill);
   background: transparent;
@@ -280,7 +280,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .ev-compose__top .ev-compose__label {
@@ -302,10 +302,10 @@
   width: auto;
   max-width: min(168px, 42vw);
   min-height: 36px;
-  padding: 6px 10px 6px 12px;
+  padding: 4px 8px 4px 12px;
   border-radius: var(--radius-pill);
   justify-content: flex-end;
-  gap: 6px;
+  gap: 4px;
 }
 
 .ev-compose__date-slot .rpc-date-field__label {

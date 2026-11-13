@@ -219,7 +219,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   justify-content: flex-start;
   min-height: 2rem;
   margin-bottom: 2px;
-  padding: 8px 14px 0;
+  padding: 8px 12px 0;
 }
 
 .todo-toolbar-add-btn {
@@ -228,7 +228,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   border: none;
   color: var(--color-on-accent);
   border-radius: var(--radius-pill);
-  padding: 7px 12px;
+  padding: 8px 12px;
   font: 600 11.5px/1 var(--font-ui, -apple-system, sans-serif);
   cursor: pointer;
 }
@@ -260,8 +260,8 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 }
 .wb-pendientes-tab-badge {
   position: absolute;
-  top: -3px;
-  right: -3px;
+  top: -4px;
+  right: -4px;
   width: 11px;
   height: 11px;
   background: var(--color-danger);
@@ -299,7 +299,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
  * open groups (vencido/hoy/sin_fecha) use the PRIOR/PENDIENTE/QUIÉN/VENCE
  * grid, the trailing "listo" (cerrados) group collapses to 3 columns. */
 .exp-pendientes-mount .todo-group-header {
-  padding: 9px 16px;
+  padding: 8px 16px;
 }
 
 .exp-pendientes-mount .wb-table-card-header--alert {
@@ -432,7 +432,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 .exp-pendientes-mount .wb-todo-accion {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   justify-content: flex-end;
 }
 
@@ -451,7 +451,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   background: none;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-  padding: 2px 7px;
+  padding: 2px 8px;
   white-space: nowrap; /* a narrow Acción column wrapped it to "EN / CURSO" */
   cursor: pointer;
   font: 600 10px/1 var(--font-mono, 'IBM Plex Mono', monospace);

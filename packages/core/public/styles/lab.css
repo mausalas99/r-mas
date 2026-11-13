@@ -5,7 +5,7 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.4px;
-  padding: 1px 6px;
+  padding: 1px 4px;
   border-radius: var(--radius-chip);
   border: 1px solid color-mix(in oklab, var(--color-accent) 28%, var(--border));
 }
@@ -34,7 +34,7 @@ html.dark .lab-value-star { color: var(--error); }
 #lab-output-box .lab-value-star { display: none; }
 /* Fase 5 — flecha de tendencia vs. toma previa (solo valores alterados). Hereda el color de .lab-value-altered. */
 .lab-trend-arrow {
-  margin-left: 3px;
+  margin-left: 4px;
   font-weight: 700;
 }
 .lab-trend-up::before { content: '\2191'; }
@@ -70,7 +70,7 @@ html.dark .lab-value-star { color: var(--error); }
 .btn-delete-card {
   position: static; background: none; border: none;
   color: var(--text-muted); font-size: 16px; cursor: pointer; opacity: 0;
-  transition: opacity 0.1s, color 0.1s; padding: 2px 5px; border-radius: var(--radius-sm);
+  transition: opacity 0.1s, color 0.1s; padding: 2px 4px; border-radius: var(--radius-sm);
   line-height: 1; min-width: 24px; min-height: 24px;
 }
 .patient-card:hover .btn-delete-card,
@@ -179,7 +179,7 @@ html.tab-bar-indicators-ready html.dark .inner-tab.active {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 10px 12px 4px;
+  padding: 8px 12px 4px;
   cursor: default;
 }
 
@@ -199,7 +199,7 @@ details.todo-group summary.todo-group-header::marker {
 }
 
 details.todo-group summary.todo-group-header::before {
-  margin-right: 6px;
+  margin-right: 4px;
 }
 
 .todo-add-row,
@@ -207,7 +207,7 @@ details.todo-group summary.todo-group-header::before {
   display: grid;
   grid-template-columns: var(--todo-grid-prio) var(--todo-grid-check) minmax(0, 1fr) var(--todo-grid-actions);
   align-items: start;
-  column-gap: 10px;
+  column-gap: 8px;
   padding: 12px 12px;
   border-bottom: 1px solid var(--divider);
   border-radius: var(--radius-md);
@@ -217,7 +217,7 @@ details.todo-group summary.todo-group-header::before {
 /* Keep Media + checkbox on the first text line, not floating mid-block */
 .todo-row > .todo-prio-chip,
 .todo-add-row > .todo-prio-chip {
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .todo-add-row {
@@ -269,7 +269,7 @@ details.todo-group summary.todo-group-header::before {
   width: 100%;
   word-break: break-word;
   border: 1px solid transparent; border-radius: var(--radius-control);
-  padding: 6px 8px; font-size: 14px; font-family: inherit; line-height: 1.5;
+  padding: 4px 8px; font-size: 14px; font-family: inherit; line-height: 1.5;
   font-weight: 400; color: var(--text); background: transparent;
   cursor: text;
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, color 0.15s;
@@ -301,7 +301,7 @@ html.dark .todo-text-input:focus {
   min-width: 0;
   width: 100%;
   min-height: 38px;
-  padding: 8px 11px;
+  padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--surface);
@@ -354,7 +354,7 @@ html.dark .todo-text-input:focus {
   flex-wrap: wrap;
   align-items: center;
   gap: 2px;
-  padding: 3px;
+  padding: 4px;
   border: var(--border-hairline, 1px solid var(--border));
   border-radius: var(--radius-pill, 999px);
   background: color-mix(in oklab, var(--surface) 65%, var(--bg));
@@ -365,7 +365,7 @@ html.dark .todo-text-input:focus {
   background: transparent;
   color: var(--text-muted);
   border-radius: var(--radius-pill, 999px);
-  padding: 5px 14px;
+  padding: 4px 12px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -401,7 +401,7 @@ html.dark .todo-text-input:focus {
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   padding: 0 0 2px;
 }
@@ -417,7 +417,7 @@ html.dark .todo-text-input:focus {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .todo-due-preset-chip {
@@ -426,7 +426,7 @@ html.dark .todo-text-input:focus {
   background: color-mix(in oklab, var(--surface) 88%, var(--bg));
   color: var(--text-muted);
   min-height: 30px;
-  padding: 5px 12px;
+  padding: 4px 12px;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -519,19 +519,19 @@ html.dark .todo-text-input:focus {
   margin: 0;
   padding-left: 20px;
   padding-right: 20px;
-  padding-bottom: 18px;
+  padding-bottom: 16px;
 }
 
 .todo-due-modal-presets-zone {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
 }
 
 .todo-due-modal-presets-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin: 0 0 6px;
+  gap: 8px;
+  margin: 0 0 4px;
 }
 
 .todo-due-modal-presets-head-actions {
@@ -583,7 +583,7 @@ html.dark .todo-text-input:focus {
 .todo-due-modal-presets {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
 .todo-due-modal-presets[hidden],
@@ -625,7 +625,7 @@ html.dark .todo-text-input:focus {
   min-width: 0;
   border: none;
   background: transparent;
-  padding: 6px 12px;
+  padding: 4px 12px;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -643,7 +643,7 @@ html.dark .todo-text-input:focus {
   align-items: center;
   justify-content: center;
   width: 4.75rem;
-  padding: 0 6px;
+  padding: 0 4px;
   border-left: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
   box-sizing: border-box;
 }
@@ -651,7 +651,7 @@ html.dark .todo-text-input:focus {
 .todo-due-preset-value--custom {
   width: auto;
   min-width: 7.25rem;
-  gap: 6px;
+  gap: 4px;
   padding: 0 8px;
 }
 
@@ -743,7 +743,7 @@ html.dark .todo-text-input:focus {
 
 .todo-due-preset-edit-empty {
   margin: 0;
-  padding: 10px 12px;
+  padding: 8px 12px;
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.45;
@@ -810,9 +810,9 @@ html.dark .todo-text-input:focus {
 .todo-due-modal-remind {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   margin: 12px 0 0;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border: 1px solid transparent;
   border-radius: var(--radius-md, 10px);
   font-size: 13px;
@@ -842,7 +842,7 @@ html.dark .todo-text-input:focus {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 18px;
+  margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
   flex-wrap: wrap;
@@ -851,7 +851,7 @@ html.dark .todo-text-input:focus {
 .todo-due-modal-actions__secondary {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
 }
 
@@ -1016,7 +1016,7 @@ html.dark .card { box-shadow: var(--shadow); }
 .lab-who {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 .lab-who-name {
@@ -1060,8 +1060,8 @@ html.dark .lab-late-status { color: #d27127; }
   overflow: hidden;
   align-items: center;
   gap: 0.6em;
-  padding-bottom: 10px;
-  margin-bottom: 6px;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
   border-bottom: 1px solid var(--divider);
 }
 .lab-altered-chips[hidden] { display: none; }
@@ -1128,7 +1128,7 @@ html.dark .card-header[class*="card-header--tone"] .card-header-ghost-btn {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   transition: background 0.15s;
 }
 .card-header-ghost-btn:hover {
@@ -1226,7 +1226,7 @@ input[type="checkbox"]:focus-visible {
   border-bottom: 1px solid var(--divider);
 }
 .vital-box input { border: none; padding: calc(10px * var(--density-space)) calc(8px * var(--density-space)); font-size: calc(16px * var(--density-font)); font-weight: 700; text-align: center; width: 100%; background: var(--surface); color: var(--text); font-family: inherit; }
-.vital-box input:focus { outline: none; background: var(--surface); }
+.vital-box input:focus { background: var(--surface); }
 .vital-box input:focus::placeholder { color: transparent; opacity: 0; }
 .list-rows { display: flex; flex-direction: column; gap: calc(8px * var(--density-space)); }
 .list-row { display: flex; gap: calc(8px * var(--density-space)); align-items: center; }
@@ -1241,7 +1241,7 @@ input[type="checkbox"]:focus-visible {
   background: var(--surface); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 12%, transparent);
 }
 .list-num { font-size: 13px; font-weight: 700; color: var(--action); min-width: 22px; text-align: right; padding: 8px 0; }
-.btn-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 4px 6px; border-radius: var(--radius-sm); line-height: 1; transition: color 0.1s, background 0.1s; min-width: 28px; min-height: 28px; }
+.btn-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 4px 4px; border-radius: var(--radius-sm); line-height: 1; transition: color 0.1s, background 0.1s; min-width: 28px; min-height: 28px; }
 .btn-remove:hover { color: var(--error); background: var(--color-danger-hover-bg); }
 .btn-add-row {
   background: color-mix(in oklab, var(--surface) 70%, transparent);
@@ -1365,14 +1365,14 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
 .lab-output-header-tools {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   margin-left: auto;
   flex-shrink: 0;
 }
 .lab-history-date-picker {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 .lab-history-date-picker-label {
@@ -1388,7 +1388,7 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   font-variant-numeric: tabular-nums;
   min-width: 0;
   max-width: min(48vw, 240px);
-  padding: 0 6px;
+  padding: 0 4px;
   border: none;
   background: transparent;
   color: var(--text);
@@ -1523,7 +1523,7 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   font-weight: 500;
   text-align: left;
   width: 100%;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
@@ -1544,7 +1544,7 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   align-items: center;
   gap: 8px;
   min-height: 36px;
-  padding: 0 18px;
+  padding: 0 16px;
   border-radius: 999px;
   font-weight: 700;
 }
@@ -1565,14 +1565,14 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   width: 320px;
   max-width: min(92vw, 320px);
   padding: 8px;
-  border-radius: 18px;
+  border-radius: 16px;
   gap: 0;
 }
 .lab-bar-menu .lab-output-more-item {
   min-height: 40px;
   padding: 0 12px;
   font-size: 14px;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 .lab-bar-menu .lab-output-more-item svg {
   flex-shrink: 0;
@@ -1591,7 +1591,7 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
 }
 .lab-bar-menu-sep {
   height: 1px;
-  margin: 6px 4px;
+  margin: 4px 4px;
   background: var(--border);
 }
 .lab-bar-menu-sep[hidden] {
@@ -1659,7 +1659,7 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   color: var(--text-muted);
 }
 .lab-some-tables-modal-body {
-  padding: 14px 16px 18px;
+  padding: 12px 16px 16px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
@@ -1695,7 +1695,7 @@ html.lab-some-tables-modal-open .lab-copy-fab {
 .lab-some-tab {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-height: 36px;
   padding: 0 16px;
   border-radius: var(--radius-pill, 999px);
@@ -1715,7 +1715,7 @@ html.lab-some-tables-modal-open .lab-copy-fab {
 .lab-some-tab-count {
   min-width: 22px;
   height: 22px;
-  padding: 0 6px;
+  padding: 0 4px;
   box-sizing: border-box;
   border-radius: 999px;
   background: color-mix(in oklab, var(--error) 20%, transparent);
@@ -1730,7 +1730,7 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-size: 14px;
   color: var(--text-muted);
   cursor: pointer;
@@ -1742,8 +1742,8 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 9px 12px;
+  gap: 8px;
+  padding: 8px 12px;
   min-height: 40px;
   border-bottom: 1px solid var(--border, var(--divider));
   background: color-mix(in oklab, var(--section-header-bg, var(--bg)) 88%, var(--surface));
@@ -1895,7 +1895,7 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   color: var(--color-danger, var(--error));
   font-family: var(--font-ui, inherit);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
 }
 .lab-some-tables--modal .lab-some-ref {
@@ -1940,7 +1940,7 @@ html.dark .lab-copy-fab:hover {
   animation: btn-spin 700ms linear infinite;
   display: inline-block;
   vertical-align: middle;
-  margin-right: 6px;
+  margin-right: 4px;
   flex-shrink: 0;
 }
 
@@ -1974,7 +1974,7 @@ html.dark .lab-copy-fab:hover {
 .modal-section { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
 .modal-divider { border: none; border-top: 1px dashed var(--border); margin: 12px 0 16px; }
 .modal-section-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: none; letter-spacing: 0.01em; margin-bottom: 4px; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 /* Preferencias laboratorio: filas tipo interruptor */
 .lab-display-prefs-modal .lab-display-prefs-fields {
   display: flex;
@@ -2013,7 +2013,7 @@ html.dark .lab-copy-fab:hover {
 .lab-manual-meta-row {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.9fr);
-  gap: 10px;
+  gap: 8px;
 }
 .lab-manual-optional {
   font-weight: 400;
@@ -2023,7 +2023,7 @@ html.dark .lab-copy-fab:hover {
 .lab-manual-fields {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 8px 10px;
+  gap: 8px 8px;
 }
 .lab-manual-field {
   display: flex;
@@ -2108,7 +2108,7 @@ html.dark .lab-copy-fab:hover {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 .lab-repo-batch-section-label {
@@ -2132,14 +2132,14 @@ html.dark .lab-copy-fab:hover {
 .lab-repo-batch-dates {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 .lab-repo-batch-modal .field-group {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
 }
 .lab-repo-batch-modal .field-group label {
@@ -2167,7 +2167,7 @@ html.dark .lab-copy-fab:hover {
   flex-wrap: wrap;
   align-items: center;
   gap: 2px;
-  padding: 3px;
+  padding: 4px;
   border: 1px solid var(--border, var(--divider));
   border-radius: var(--radius-pill, 999px);
   background: color-mix(in oklab, var(--surface) 65%, var(--bg));
@@ -2177,7 +2177,7 @@ html.dark .lab-copy-fab:hover {
   background: transparent;
   color: var(--text-muted);
   border-radius: var(--radius-pill, 999px);
-  padding: 5px 12px;
+  padding: 4px 12px;
   font-size: 12px;
   font-weight: 600;
   font-family: inherit;
@@ -2230,7 +2230,7 @@ html.dark .lab-copy-fab:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 14px;
+  padding: 12px 12px;
   border-radius: 0;
   border: none;
   border-bottom: 1px solid var(--border, var(--divider));
@@ -2316,7 +2316,7 @@ html.dark .lab-copy-fab:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   font-size: 11.5px;
   line-height: 1.3;
   color: var(--text-muted);
@@ -2331,7 +2331,7 @@ html.dark .lab-copy-fab:hover {
 }
 .lab-repo-batch-row-loc::before {
   content: '\00B7';
-  margin-right: 6px;
+  margin-right: 4px;
   opacity: 0.7;
 }
 .lab-repo-batch-row-warn {
@@ -2367,10 +2367,10 @@ html.dark .lab-copy-fab:hover {
 }
 .lab-chem-skel-cell {
   background: var(--surface);
-  padding: 12px 14px;
+  padding: 12px 12px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 .lab-chem-skel-label {
   font-size: 10.5px;
@@ -2417,7 +2417,7 @@ html.dark .lab-copy-fab:hover {
   width: 100%;
   flex-shrink: 0;
   margin: 0;
-  padding: 8px 20px 10px;
+  padding: 8px 20px 8px;
   border: none;
   border-top: 1px solid var(--divider);
   border-radius: 0;
@@ -2447,7 +2447,7 @@ html.dark .lab-copy-fab:hover {
 }
 .lab-repo-batch-queue-actions {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   margin-left: auto;
   flex-shrink: 0;
 }
@@ -2474,13 +2474,13 @@ html.dark .lab-copy-fab:hover {
   background: var(--color-accent);
   color: var(--color-on-accent);
   border-radius: var(--radius-control);
-  padding: 9px 16px;
+  padding: 8px 16px;
   font-size: 12.5px;
   font-weight: 600;
   min-height: 38px;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   cursor: progress;
 }
 .lab-repo-batch-queue-spinner {
@@ -2505,7 +2505,7 @@ html.dark .lab-copy-fab:hover {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 .lab-repo-batch-queue-bar {
   height: 4px;
@@ -2615,8 +2615,8 @@ html.dark .rpc-switch-track {
   width: 22px;
   height: 22px;
   top: 50%;
-  left: 3px;
-  margin-top: -11px;
+  left: 4px;
+  margin-top: -12px;
   border-radius: 50%;
   background: var(--surface);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
@@ -2649,7 +2649,7 @@ html.dark .rpc-switch-input:checked + .rpc-switch-track .rpc-switch-thumb {
 .rpc-proc-agenda-range { font-size: 13px; color: var(--text-muted); font-weight: 600; }
 .rpc-proc-agenda-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .rpc-proc-agenda-actions button.secondary {
-  padding: 8px 14px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 40px;
+  padding: 8px 12px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 40px;
   transition: background 0.12s, border-color 0.12s;
 }
 .rpc-proc-agenda-actions button.secondary:hover:not(:disabled) { background: var(--surface); border-color: var(--action); }
@@ -2682,24 +2682,24 @@ html.dark .rpc-switch-input:checked + .rpc-switch-track .rpc-switch-thumb {
 .rpc-proc-agenda-head-spacer { width: 46px; flex-shrink: 0; border-top-left-radius: var(--radius-container); }
 .rpc-proc-agenda-head-cell { flex: 1; min-width: 0; text-align: center; box-sizing: border-box; }
 .rpc-proc-agenda-head-cell:last-child { border-top-right-radius: var(--radius-container); }
-.rpc-proc-agenda-head-cell strong { display: block; font-size: 14px; font-weight: 800; color: var(--text); margin-top: 2px; }
+.rpc-proc-agenda-head-cell strong { display: block; font-size: 14px; font-weight: 600; color: var(--text); margin-top: 2px; }
 .rpc-proc-agenda-board-body { display: flex; min-width: 640px; align-items: stretch; position: relative; }
 .rpc-proc-agenda-times-col { width: 46px; flex-shrink: 0; box-sizing: border-box; background: var(--surface); }
-.rpc-proc-agenda-time-slot { padding: 2px 6px 0 0; text-align: right; font-weight: 600; box-sizing: border-box; }
+.rpc-proc-agenda-time-slot { padding: 2px 4px 0 0; text-align: right; font-weight: 600; box-sizing: border-box; }
 .rpc-proc-agenda-day-col-wrap { flex: 1; min-width: 0; box-sizing: border-box; background: var(--bg); position: relative; }
 .rpc-proc-agenda-hour-line { box-sizing: border-box; pointer-events: none; }
 .rpc-proc-agenda-block {
-  position: absolute; left: 2px; border-radius: 10px;
-  padding: 5px 7px 6px; font-size: 11px; line-height: 1.28; overflow: hidden; cursor: pointer;
+  position: absolute; left: 2px; border-radius: 8px;
+  padding: 4px 8px 4px; font-size: 11px; line-height: 1.28; overflow: hidden; cursor: pointer;
   color: var(--text);
   z-index: 1; box-sizing: border-box;
 }
 .rpc-proc-agenda-block:hover { transform: scale(1.02); z-index: 5; }
 #appcontent-agenda .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(217, 119, 6, 0.65); box-shadow: 0 0 0 1px rgba(217,119,6,0.25) inset; }
 html.dark #appcontent-agenda .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36, 0.55); }
-.rpc-proc-agenda-block .rpc-proc-name { font-weight: 800; letter-spacing: -0.01em; }
+.rpc-proc-agenda-block .rpc-proc-name { font-weight: 600; letter-spacing: -0.01em; }
 .rpc-proc-agenda-block .rpc-proc-sub { margin-top: 2px; font-size: 10px; color: var(--text-muted); font-weight: 600; }
-.rpc-proc-agenda-block .rpc-proc-pat { margin-top: 3px; font-size: 10px; color: var(--primary); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rpc-proc-agenda-block .rpc-proc-pat { margin-top: 4px; font-size: 10px; color: var(--primary); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .toast-stack {
   position: fixed;
@@ -2717,7 +2717,7 @@ html.dark #appcontent-agenda .rpc-proc-agenda-block.rpc-proc-flag { border-color
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 8px 16px;
   font-size: calc(13px * var(--density-font));
   transform: translateY(-10px) scale(0.97);
   opacity: 0;
@@ -2755,7 +2755,7 @@ html.dark #appcontent-agenda .rpc-proc-agenda-block.rpc-proc-flag { border-color
   min-height: 24px; min-width: 24px; /* WCAG 2.5.8 target ≥24px */
   flex-shrink: 0;
   margin-left: 2px;
-  padding: 3px 7px;
+  padding: 4px 8px;
   border: none;
   border-radius: var(--radius-pill);
   background: transparent;
@@ -2782,7 +2782,7 @@ html.dark #appcontent-agenda .rpc-proc-agenda-block.rpc-proc-flag { border-color
   align-items: center;
   justify-content: center;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -2802,7 +2802,7 @@ html.dark #appcontent-agenda .rpc-proc-agenda-block.rpc-proc-flag { border-color
   font-weight: 700;
   color: var(--primary);
   margin-bottom: 12px;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--divider);
   letter-spacing: 0.02em;
 }
@@ -2823,8 +2823,8 @@ html.dark .lab-output-fecha { color: var(--color-accent-soft-text); border-botto
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin: 14px 0 8px;
-  padding-bottom: 6px;
+  margin: 12px 0 8px;
+  padding-bottom: 4px;
   border-bottom: 1px solid var(--divider);
 }
 .lab-hour-group-h:first-child {
@@ -2837,7 +2837,7 @@ html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
 #lab-output-box .lab-hour-group-h {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
   padding: 12px 0 8px;
   border-bottom: none;
@@ -2856,7 +2856,7 @@ html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
 .lab-some-tables {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 .lab-some-dept {
   border: 1px solid var(--divider);
@@ -2884,7 +2884,7 @@ html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
   text-decoration: underline;
   text-underline-offset: 3px;
   color: var(--text);
-  padding: 10px 12px 6px;
+  padding: 8px 12px 4px;
 }
 .lab-some-group--cito .lab-some-group-title {
   font-size: 13px;
@@ -2894,7 +2894,7 @@ html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
   text-align: center;
   font-size: 12px;
   color: var(--text);
-  padding: 0 12px 10px;
+  padding: 0 12px 8px;
   line-height: 1.45;
 }
 .lab-some-fluid-label {
@@ -2904,8 +2904,8 @@ html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
 .lab-some-table-toolbar {
   display: flex;
   justify-content: flex-end;
-  gap: 6px;
-  padding: 0 10px 8px;
+  gap: 4px;
+  padding: 0 8px 8px;
 }
 .lab-some-export-btn {
   display: inline-flex;
@@ -2927,7 +2927,7 @@ html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
 }
 .lab-some-table-wrap {
   overflow-x: auto;
-  padding: 0 10px 10px;
+  padding: 0 8px 8px;
   background: var(--color-elevated);
   border: var(--border-hairline);
   border-radius: var(--radius-control);
@@ -2956,7 +2956,7 @@ html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
 .lab-some-table th,
 .lab-some-table td {
   border: 1px solid var(--divider);
-  padding: 6px 8px;
+  padding: 4px 8px;
   vertical-align: top;
   text-align: left;
 }
@@ -2981,7 +2981,7 @@ html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
 }
 .lab-some-flag {
   color: var(--error);
-  font-weight: 800;
+  font-weight: 600;
   margin-right: 2px;
 }
 .lab-some-unidades,
@@ -2998,7 +2998,7 @@ html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
   font-size: 13px;
   line-height: 1.5;
   margin: 8px 0 4px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: var(--radius-md);
   border: 1px solid color-mix(in oklab, var(--warn) 45%, var(--border));
   background: color-mix(in oklab, var(--warn) 12%, var(--surface));
@@ -3015,7 +3015,7 @@ html.dark .lab-out-ascitis-alert {
   font-weight: 650;
   color: var(--color-danger);
   background: color-mix(in oklab, var(--color-danger) 10%, transparent);
-  padding: 0 3px;
+  padding: 0 4px;
   border-radius: 3px;
 }
 .section-lbl { color: var(--section-accent); font-weight: 600; letter-spacing: 0.01em; }
@@ -3026,7 +3026,7 @@ html.dark .lab-out-ascitis-alert {
    grilla 64px + 1fr del mockup. */
 .lab-row-label {
   display: inline;
-  margin-right: 10px;
+  margin-right: 8px;
 }
 .lab-row-values,
 .lab-row-value {
@@ -3045,7 +3045,7 @@ html.dark .lab-out-ascitis-alert {
      pero encabezados largos sin tab (UROCULTIVO, HEMOCULTIVO, FUNGICULTIVO) ya no
      desbordan la columna y se pegan visualmente al resto de la línea. */
   grid-template-columns: minmax(64px, max-content) 1fr;
-  gap: 10px 14px;
+  gap: 8px 12px;
   align-items: baseline;
   padding: 8px 0;
   border-top: 1px solid var(--divider);
@@ -3076,7 +3076,7 @@ html.dark #lab-output-box .out-indent {
 #lab-output-box .lab-row-values-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
+  gap: 4px 16px;
 }
 #lab-output-box .lab-row-value { display: inline-flex; align-items: baseline; }
 /* Líneas de prosa sin tab (ej. EGO) que no traen su propio .lab-row-label: ocupan las dos
@@ -3110,16 +3110,16 @@ html.dark #lab-output-box .out-indent {
 
 
 .indica-section { border: 1px solid var(--divider); border-radius: var(--radius-lg); overflow: hidden; }
-.indica-section-header { background: var(--section-header-bg); padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0.01em; border-bottom: 1px solid var(--divider); }
-.indica-section-body { padding: 12px 14px; background: var(--surface); }
-.indica-section-body textarea { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 10px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--input-fill); resize: vertical; min-height: 70px; line-height: 1.6; width: 100%; transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); }
+.indica-section-header { background: var(--section-header-bg); padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0.01em; border-bottom: 1px solid var(--divider); }
+.indica-section-body { padding: 12px 12px; background: var(--surface); }
+.indica-section-body textarea { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 8px; font-size: 16px; font-family: inherit; color: var(--text); background: var(--input-fill); resize: vertical; min-height: 70px; line-height: 1.6; width: 100%; transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); }
 .indica-section-body textarea:focus { outline: none; border-color: var(--action); background: var(--surface); box-shadow: 0 0 0 3px var(--color-focus-ring); }
 .otros-item { border:1px solid var(--border); border-radius:var(--radius-lg); padding:12px 40px 12px 12px; background:var(--bg); display:flex; flex-direction:column; gap:8px; position:relative; }
-.otros-item input { border:1px solid var(--border); border-radius:var(--radius-badge); padding:7px 10px; font-size:13px; font-family:inherit; background:var(--input-fill); font-weight:600; text-transform:uppercase; width:100%; }
+.otros-item input { border:1px solid var(--border); border-radius:var(--radius-badge); padding:8px 8px; font-size: 16px; font-family:inherit; background:var(--input-fill); font-weight:600; text-transform:uppercase; width:100%; }
 .otros-item input:focus { outline:none; border-color:var(--action); box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
-.otros-item textarea { border:1px solid var(--border); border-radius:var(--radius-badge); padding:8px 10px; font-size:13px; font-family:inherit; background:var(--input-fill); resize:vertical; min-height:60px; width:100%; }
+.otros-item textarea { border:1px solid var(--border); border-radius:var(--radius-badge); padding:8px 8px; font-size: 16px; font-family:inherit; background:var(--input-fill); resize:vertical; min-height:60px; width:100%; }
 .otros-item textarea:focus { outline:none; border-color:var(--action); box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
-.btn-remove-otro { position:absolute; top:8px; right:8px; background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:2px 6px; border-radius:4px; line-height:1; }
+.btn-remove-otro { position:absolute; top:8px; right:8px; background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:2px 4px; border-radius:4px; line-height:1; }
 .btn-remove-otro:hover { color: var(--error); background: var(--color-danger-hover-bg); }
 
 /* Vista previa — pegado masivo (quiet workbench, same family as paste-smart / batch) */
@@ -3201,7 +3201,7 @@ html.dark #lab-output-box .out-indent {
   min-height: 0;
   max-height: min(52vh, 360px);
   margin: 0;
-  padding: 12px 18px;
+  padding: 12px 16px;
 }
 .lab-bulk-preview-list {
   list-style: none;
@@ -3212,7 +3212,7 @@ html.dark #lab-output-box .out-indent {
   gap: 8px;
 }
 .lab-bulk-preview-row {
-  padding: 12px 14px;
+  padding: 12px 12px;
   border: var(--border-hairline, 1px solid var(--divider));
   border-radius: var(--radius-md);
   background: transparent;
@@ -3226,7 +3226,7 @@ html.dark #lab-output-box .out-indent {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
 }
 .lab-bulk-preview-row-text {
   min-width: 0;
@@ -3266,18 +3266,18 @@ html.dark #lab-output-box .out-indent {
 .lab-bulk-preview-status--muted { color: var(--text-muted); }
 .lab-bulk-preview-add-btn {
   white-space: nowrap;
-  padding: 5px 10px;
+  padding: 4px 8px;
   font-size: 12px;
 }
 .lab-bulk-preview-unknown-rows {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   padding-top: 8px;
   border-top: 1px dashed var(--divider);
   font-size: calc(12px * var(--density-font, 1));
   color: var(--warn);
 }
 .lab-bulk-preview-issues {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   padding-top: 8px;
   border-top: 1px dashed var(--divider);
   font-size: calc(12px * var(--density-font, 1));
@@ -3293,10 +3293,10 @@ html.dark #lab-output-box .out-indent {
   display: none;
 }
 .lab-bulk-preview-issues summary::before {
-  margin-right: 6px;
+  margin-right: 4px;
 }
 .lab-bulk-preview-issues ul {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   padding-left: 16px;
   line-height: 1.45;
 }
@@ -3309,11 +3309,11 @@ html.dark #lab-output-box .out-indent {
   justify-content: flex-end;
   gap: 8px;
   margin: 0;
-  padding: 12px 18px 16px;
+  padding: 12px 16px 16px;
   border-top: 1px solid var(--divider);
 }
 .lab-bulk-preview-rawtext {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   padding-top: 8px;
   border-top: 1px dashed var(--divider);
   font-size: calc(12px * var(--density-font, 1));
@@ -3329,13 +3329,13 @@ html.dark #lab-output-box .out-indent {
   display: none;
 }
 .lab-bulk-preview-rawtext summary::before {
-  margin-right: 6px;
+  margin-right: 4px;
 }
 .lab-bulk-preview-rawtext pre {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   max-height: 240px;
   overflow: auto;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-radius: var(--radius-badge);
   background: var(--surface-inset, rgba(0, 0, 0, 0.18));
   color: var(--text);
@@ -3360,16 +3360,16 @@ html.electron-macos-inset-bar #lab-bulk-preview-backdrop.modal-backdrop.open * {
   display: flex;
   flex-direction: column;
 }
-.lab-bulk-tour-hint-modal h3 { margin-bottom: 10px; }
+.lab-bulk-tour-hint-modal h3 { margin-bottom: 8px; }
 .lab-bulk-tour-hint-lead {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   font-size: 13px;
   color: var(--text-muted);
   line-height: 1.5;
 }
 .lab-bulk-tour-hint-sample {
-  margin: 0 0 14px;
-  padding: 10px 12px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg);
@@ -3400,7 +3400,7 @@ html.electron-macos-inset-bar #lab-bulk-tour-hint-backdrop.modal-backdrop.open *
 
 .lab-panel-loading {
   margin: 0 0 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   font-size: 13px;
   color: var(--text-muted);
   opacity: 0.72;
@@ -3422,9 +3422,9 @@ html.electron-macos-inset-bar #lab-bulk-tour-hint-backdrop.modal-backdrop.open *
 .paste-loader-card {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   min-width: 320px;
-  padding: 22px;
+  padding: 24px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
@@ -3467,7 +3467,7 @@ html.motion-sobrio .paste-loader-ring {
 .lab-search {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   height: 34px;
   padding: 0 8px 0 12px;
   border: 1px solid var(--border);
@@ -3563,7 +3563,7 @@ mark.lab-hit {
 }
 .lab-copydays-chip {
   min-height: 32px;
-  padding: 0 14px;
+  padding: 0 12px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: transparent;
@@ -3578,7 +3578,7 @@ mark.lab-hit {
 .lab-copydays-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   max-height: 276px;
   overflow-y: auto;
   flex: 0 1 auto;
@@ -3587,13 +3587,13 @@ mark.lab-hit {
   flex: none;
   min-height: 48px;
   box-sizing: border-box;
-  padding: 0 14px;
+  padding: 0 12px;
   border-radius: 12px;
   border: 0;
   background: transparent;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   cursor: pointer;
 }
 .lab-copydays-row.is-on {
@@ -3651,7 +3651,7 @@ mark.lab-hit {
   width: 100%;
   box-sizing: border-box;
   height: 96px;
-  padding: 12px 14px;
+  padding: 12px 12px;
   border-radius: 12px;
   border: 0;
   background: var(--sunken-bg);

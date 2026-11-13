@@ -102,7 +102,7 @@ html.no-blur #tour-dock .tour-dock-inner {
 
 .cloud-sync-status-chip {
   border-radius: 999px !important;
-  padding: 5px 12px !important;
+  padding: 4px 12px !important;
   border: 1px solid color-mix(in oklab, var(--text) 14%, var(--divider)) !important;
   background: color-mix(in oklab, var(--text) 6%, var(--color-elevated)) !important;
   color: var(--text) !important;

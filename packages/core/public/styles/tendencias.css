@@ -1,7 +1,7 @@
 /* Tendencias: closed-state list (toolbar, summary, group strips, rows). */
 .tend-empty[hidden], .tend-section[hidden], .tend-row[hidden] { display: none; }
 .tend-toolbar-btn {
-  font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: var(--radius-pill); cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: var(--radius-pill); cursor: pointer;
   border: 1px solid var(--border); background: var(--surface); color: var(--text);
   transition: border-color var(--dur-normal) ease, box-shadow var(--dur-normal) ease;
 }
@@ -11,9 +11,9 @@
 .tend-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
 .tend-head-spacer { flex: 1 1 0; }
 .tend-search { position: relative; display: block; width: 260px; max-width: 100%; color: var(--text-muted); }
-.tend-search svg { position: absolute; left: 14px; top: 11px; pointer-events: none; }
+.tend-search svg { position: absolute; left: 12px; top: 12px; pointer-events: none; }
 .tend-search-input {
-  box-sizing: border-box; width: 100%; height: 40px; padding: 0 14px 0 40px; border-radius: 999px;
+  box-sizing: border-box; width: 100%; height: 40px; padding: 0 12px 0 40px; border-radius: 999px;
   border: 0; background: var(--sunken-bg); color: var(--text); font: inherit; font-size: 16px;
 }
 .tend-search-input:focus-visible, .tend-seg-btn:focus-visible, .tend-pill:focus-visible,
@@ -21,7 +21,7 @@
   outline: 2px solid var(--primary); outline-offset: 2px;
 }
 .tend-seg {
-  display: flex; height: 40px; padding: 3px; box-sizing: border-box; border-radius: 999px;
+  display: flex; height: 40px; padding: 4px; box-sizing: border-box; border-radius: 999px;
   background: color-mix(in oklab, var(--text) 8%, var(--surface));
 }
 .tend-seg-btn {
@@ -39,7 +39,7 @@
 .tend-pill--accent { background: color-mix(in oklab, var(--primary) 12%, var(--surface)); border-color: transparent; }
 
 /* Summary + column header */
-.tend-summary { margin: 12px 0 10px 2px; font-size: 13.5px; color: var(--text-muted); }
+.tend-summary { margin: 12px 0 8px 2px; font-size: 13.5px; color: var(--text-muted); }
 .tend-summary-oor { color: var(--error, #d70015); font-weight: 650; }
 .tend-row, .tend-cols {
   display: grid; grid-template-columns: minmax(170px, 1.6fr) 90px 100px 110px 90px minmax(160px, 220px) 32px;
@@ -51,10 +51,10 @@
 .tend-cols > :nth-child(2), .tend-cols > :nth-child(5), .tend-row > .tend-param-value, .tend-row > .tend-row-change { text-align: right; }
 
 /* Group strip */
-.tend-section { margin-bottom: 10px; }
-.tend-section-head { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.tend-section { margin-bottom: 8px; }
+.tend-section-head { display: flex; align-items: center; gap: 8px; min-height: 44px; }
 .tend-section-toggle {
-  display: inline-flex; align-items: center; gap: 8px; padding: 0 6px 0 0; height: 32px; border: 0; background: transparent;
+  display: inline-flex; align-items: center; gap: 8px; padding: 0 4px 0 0; height: 32px; border: 0; background: transparent;
   color: var(--text); font: inherit; font-size: 15.5px; font-weight: 650; cursor: pointer; border-radius: 8px;
 }
 .tend-section-chevron { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; color: var(--text-muted); transition: transform var(--dur-fast) ease; }
@@ -64,7 +64,7 @@
 .tend-oor-pill::before { content: "· "; }
 html.dark .tend-oor-pill { color: #ff8a95; }
 .tend-section-chart-btn {
-  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 12px; border-radius: 999px; cursor: pointer;
   border: 0; background: none; color: var(--primary); font: inherit; font-size: 13px; font-weight: 600;
 }
 .tend-section-chart-btn:hover { background: color-mix(in oklab, var(--primary) 10%, var(--surface)); }
@@ -84,13 +84,13 @@ html.dark .tend-oor-pill { color: #ff8a95; }
 .tend-row:hover, .tend-row:focus-within { background: color-mix(in oklab, var(--text) 3%, var(--surface)); }
 .tend-row:active { cursor: grabbing; }
 .tend-row:has(.tend-row-open:focus-visible) { outline: 2px solid var(--primary); outline-offset: -2px; }
-.tend-row-name { display: flex; align-items: baseline; gap: 6px; min-width: 0; overflow: hidden; }
+.tend-row-name { display: flex; align-items: baseline; gap: 4px; min-width: 0; overflow: hidden; }
 .tend-param-name { position: relative; font-size: 14.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tend-unit { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; }
 .tend-param-value { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 17px; font-weight: 600; color: var(--text); }
 .tend-param-value.tend-abnormal { color: var(--error, #d70015); }
 .tend-row.is-selected .tend-param-value.tend-abnormal { color: #b3001a; }
-.tend-status { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+.tend-status { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
 .tend-status--low, .tend-status--high { color: #b3001a; background: rgba(215, 0, 21, 0.08); }
 html.dark .tend-status--low, html.dark .tend-status--high { color: #ff8a95; background: rgba(255, 90, 105, 0.14); }
 .tend-status--ok { color: #146c3e; background: rgba(26, 127, 75, 0.09); }
@@ -122,7 +122,7 @@ html.dark .tend-insight-delta--good { color: #5fd39a; }
 /* Drag ghost (appended to body) and source row */
 .tend-row.tend-row--sort-source { opacity: 0.35; }
 body > .tend-drag-hovercard {
-  border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-md); background: var(--surface); opacity: 0.96;
+  border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-md); background: var(--surface); opacity: 0.96;
 }
 
 @media (max-width: 900px) {
@@ -148,7 +148,7 @@ body > .tend-drag-hovercard {
 
 .tend-pane {
   flex: 1 1 0; min-width: 0; margin-left: 0;
-  position: sticky; top: 0; height: calc(100vh - 100px);
+  position: sticky; top: 0; height: calc(100dvh - 100px);
   opacity: 0; visibility: hidden; transform: translateX(28px);
   transition: opacity 0.16s ease-out, transform 0.3s ease-out, margin-left 0.42s var(--tend-spring), visibility 0s 0.3s;
 }
@@ -174,7 +174,7 @@ body > .tend-drag-hovercard {
 
 /* Compact list while the pane is open */
 .tend-split.is-open .tend-row, .tend-split.is-open .tend-cols {
-  grid-template-columns: minmax(0, 1fr) 84px 72px 32px; padding: 0 14px;
+  grid-template-columns: minmax(0, 1fr) 84px 72px 32px; padding: 0 12px;
 }
 .tend-split.is-open .tend-row-status, .tend-split.is-open .tend-row-range, .tend-split.is-open .tend-spark-wrap,
 .tend-split.is-open .tend-cols > :nth-child(3), .tend-split.is-open .tend-cols > :nth-child(4),
@@ -189,15 +189,15 @@ body > .tend-drag-hovercard {
 .tend-split.is-open .tend-head-spacer { display: none; }
 .tend-split.is-open .tend-section-head { justify-content: space-between; }
 .tend-row.is-selected, .tend-row.is-selected:hover, .tend-row.is-selected:focus-within {
-  background: var(--selected-bg); border-radius: 10px;
+  background: var(--selected-bg); border-radius: 8px;
 }
 
 /* Pane header (analito) */
-.tend-pane-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 22px 24px 0; flex-shrink: 0; }
+.tend-pane-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 24px 24px 0; flex-shrink: 0; }
 .tend-pane-titles { min-width: 0; }
 .tend-pane-title { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--text); }
 .tend-pane-sub { margin-top: 2px; font-size: 13.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tend-pane-head-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.tend-pane-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .tend-pane-close {
   width: 36px; height: 36px; padding: 0; border-radius: 999px; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
@@ -206,7 +206,7 @@ body > .tend-drag-hovercard {
 .tend-pane-close:hover { background: color-mix(in oklab, var(--text) 6%, var(--surface)); }
 .tend-pane-close:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .tend-pane-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 0 24px 20px; }
-.tend-detail-hero { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; margin-top: 12px; }
+.tend-detail-hero { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin-top: 12px; }
 .tend-detail-big { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 44px; font-weight: 600; line-height: 1; color: var(--text); }
 .tend-detail-big.tend-abnormal { color: var(--error, #d70015); }
 .tend-detail-unit { font-size: 15px; color: var(--text-muted); }
@@ -214,10 +214,10 @@ body > .tend-drag-hovercard {
 .tend-detail-change.tend-insight-delta--good { color: #146c3e; }
 .tend-detail-change.tend-insight-delta--bad { color: var(--error, #d70015); }
 .tend-detail-note { font-size: 13.5px; color: var(--text-muted); }
-.tend-detail-refline { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 14px; min-height: 30px; }
+.tend-detail-refline { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 30px; }
 .tend-detail-ref { font-size: 13.5px; color: var(--text-muted); }
 .tend-detail-ref b { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-weight: 600; color: var(--text); }
-.tend-pane .tend-detail-chart-row { min-height: 0; margin-top: 6px; }
+.tend-pane .tend-detail-chart-row { min-height: 0; margin-top: 4px; }
 .tend-pane .tend-detail-chart-cell { height: clamp(200px, 30vh, 260px); }
 .tend-pane .tend-detail-compare-slot { margin: 0; }
 .tend-detail-readings { margin-top: 12px; }
@@ -234,7 +234,7 @@ body > .tend-drag-hovercard {
   font: inherit; font-size: 13px; font-weight: 600; color: var(--color-accent-hover);
 }
 .tend-rd-more:hover { text-decoration: underline; }
-.tend-detail-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.tend-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .tend-detail-actions .tend-pill { border: 0; background: var(--chip-bg); }
 .tend-pane .tend-detail-events-slot { margin-top: 8px; }
 
@@ -249,9 +249,9 @@ body > .tend-drag-hovercard {
 /* Toolbar: 2 tidy rows while the pane is open (search, then segmented + pills) */
 .tend-split.is-open .tend-toolbar { gap: 8px; }
 .tend-split.is-open .tend-search { flex: 1 1 100%; }
-.tend-split.is-open .tend-toolbar { gap: 6px; }
-.tend-split.is-open .tend-seg-btn { padding: 0 9px; font-size: 12.5px; }
-.tend-split.is-open .tend-pill { padding: 0 10px; gap: 6px; font-size: 12.5px; }
+.tend-split.is-open .tend-toolbar { gap: 4px; }
+.tend-split.is-open .tend-seg-btn { padding: 0 8px; font-size: 12.5px; }
+.tend-split.is-open .tend-pill { padding: 0 8px; gap: 4px; font-size: 12.5px; }
 .tend-split.is-open .tend-ocultos-label { display: none; }
 
 /* Estudio pane */
@@ -264,28 +264,28 @@ body > .tend-drag-hovercard {
 .tend-pane .tend-group-range-sep { font-size: 13px; }
 .tend-pane .tend-group-range-row .rpc-date-field { flex: 0 0 auto; }
 .tend-pane .tend-group-range-row .rpc-date-field__trigger {
-  min-height: 34px; height: 34px; padding: 0 14px; border-radius: 999px; font-size: 13px; background: var(--surface);
+  min-height: 34px; height: 34px; padding: 0 12px; border-radius: 999px; font-size: 13px; background: var(--surface);
   border: 1px solid var(--border); max-width: 170px;
 }
 .tend-pane .tend-group-range-row .rpc-date-field__label { font-size: 13px; }
 .tend-pane .tend-group-range-clear { font-size: 13px; }
 .tend-pane .tend-group-tabs-wrap { padding: 12px 24px 0; }
-.tend-pane .tend-group-tabs { border-radius: 999px; border: 0; padding: 3px; background: color-mix(in oklab, var(--text) 8%, var(--surface)); }
+.tend-pane .tend-group-tabs { border-radius: 999px; border: 0; padding: 4px; background: color-mix(in oklab, var(--text) 8%, var(--surface)); }
 .tend-pane .tend-group-tab-pill { border-radius: 999px; }
-.tend-pane .tend-group-tab { border-radius: 999px; font-size: 13px; padding: 6px 18px; }
+.tend-pane .tend-group-tab { border-radius: 999px; font-size: 13px; padding: 4px 16px; }
 .tend-pane .tend-group-tab.active { color: var(--text); }
 .tend-pane #tend-group-panel-charts, .tend-pane #tend-group-panel-table { padding: 8px 24px 20px; overflow: auto; flex: 1 1 auto; min-height: 0; }
-.tend-group-scale-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 6px 0 12px; font-size: 13px; color: var(--text-muted); }
+.tend-group-scale-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 4px 0 12px; font-size: 13px; color: var(--text-muted); }
 .tend-group-scale-label { font-weight: 650; color: var(--text); }
 .tend-group-scale-seg { height: 34px; }
-.tend-group-scale-seg .tend-seg-btn { height: 28px; padding: 0 14px; font-size: 13px; }
+.tend-group-scale-seg .tend-seg-btn { height: 28px; padding: 0 12px; font-size: 13px; }
 .tend-group-rel-note { margin: 8px 0 0; font-size: 12.5px; color: var(--text-muted); }
-.tend-pane .tend-group-panel-card { border-radius: 14px; }
+.tend-pane .tend-group-panel-card { border-radius: 12px; }
 
 /* Legend = round checkbox chips */
-.tend-pane .tend-group-legend { gap: 8px; margin-bottom: 10px; }
+.tend-pane .tend-group-legend { gap: 8px; margin-bottom: 8px; }
 .tend-pane .tend-group-legend-item {
-  gap: 8px; height: 34px; padding: 0 12px 0 10px; border-radius: 999px; border: 1px solid var(--border);
+  gap: 8px; height: 34px; padding: 0 12px 0 8px; border-radius: 999px; border: 1px solid var(--border);
   background: var(--surface); font-size: 13px; font-weight: 600;
 }
 .tend-pane .tend-group-legend-check { width: 16px; height: 16px; margin: 0; accent-color: var(--color-accent-hover); }
@@ -294,41 +294,41 @@ body > .tend-drag-hovercard {
 .tend-pane .tend-group-legend-color::-webkit-color-swatch { border: 0; border-radius: 4px; }
 .tend-pane .tend-group-legend-drag-hint { opacity: 0; padding: 2px 0; transition: opacity var(--dur-fast) ease; }
 .tend-pane .tend-group-legend-item:hover .tend-group-legend-drag-hint { opacity: 1; }
-.tend-pane .tend-group-threshold-add-btn { height: 34px; padding: 0 14px; font-size: 13px; box-shadow: none; flex-direction: row; }
+.tend-pane .tend-group-threshold-add-btn { height: 34px; padding: 0 12px; font-size: 13px; box-shadow: none; flex-direction: row; }
 .tend-pane .tend-group-table-actions { display: flex; gap: 8px; padding-top: 12px; }
 
 /* Gráficas B: tabs on top, chart left, analyte list right, readout strip under the chart */
-.tend-chart-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.tend-chart-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; }
 .tend-chart-tab {
   height: 32px; padding: 0 16px; border-radius: 999px; border: 0; background: transparent; color: var(--text-muted);
   font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 .tend-chart-tab:hover { color: var(--text); }
 .tend-chart-tab.is-active { background: color-mix(in oklab, var(--text) 10%, var(--surface)); color: var(--text); }
-.tend-pane .tend-group-panel-card { padding: 14px 16px; }
-.tend-pane .tend-group-panel-toolbar { position: absolute; top: 10px; right: 12px; margin: 0; opacity: 1; z-index: 1; }
-.tend-pane .tend-group-family-title { font-size: 15px; margin-bottom: 10px; }
+.tend-pane .tend-group-panel-card { padding: 12px 16px; }
+.tend-pane .tend-group-panel-toolbar { position: absolute; top: 8px; right: 12px; margin: 0; opacity: 1; z-index: 1; }
+.tend-pane .tend-group-family-title { font-size: 15px; margin-bottom: 8px; }
 .tend-chart-body { display: flex; gap: 16px; align-items: flex-start; }
 .tend-chart-main { flex: 1 1 0; min-width: 0; }
 .tend-pane .tend-chart-main .tend-group-chart-wrap { height: clamp(300px, 48vh, 560px); }
 .tend-chart-readout {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-height: 34px; margin-top: 8px; padding-top: 10px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-height: 34px; margin-top: 8px; padding-top: 8px;
   border-top: 1px solid var(--border); font-size: 12px; color: var(--text);
 }
 .tend-readout-date { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--color-accent-hover); margin-right: 4px; }
 .tend-readout-chip {
-  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 999px;
   background: color-mix(in oklab, var(--text) 6%, var(--surface));
 }
 .tend-readout-chip b { font-variant-numeric: tabular-nums; font-weight: 700; }
 .tend-readout-dot { width: 8px; height: 8px; border-radius: 999px; flex: none; }
 .tend-pane .tend-chart-body > .tend-group-legend {
   flex: 0 0 300px; width: 300px; flex-direction: column; flex-wrap: nowrap; gap: 0; margin: 0;
-  border: 1px solid var(--border); border-radius: 14px; padding: 4px 6px;
+  border: 1px solid var(--border); border-radius: 12px; padding: 4px 4px;
 }
 .tend-pane .tend-chart-body .tend-group-legend-item {
   display: grid; grid-template-columns: 16px 14px minmax(0, 1fr) 56px 46px 12px; align-items: center; gap: 8px;
-  height: 40px; padding: 0 6px; border: 0; border-radius: 0; background: none; font-size: 13px; font-weight: 600;
+  height: 40px; padding: 0 4px; border: 0; border-radius: 0; background: none; font-size: 13px; font-weight: 600;
 }
 .tend-pane .tend-chart-body .tend-group-legend-item + .tend-group-legend-item { border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
 .tend-legend-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -350,7 +350,7 @@ body > .tend-drag-hovercard {
 }
 .tend-tick:checked { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
 .tend-tick::after {
-  content: ''; position: absolute; left: 5px; top: 1px; width: 4px; height: 9px; box-sizing: content-box;
+  content: ''; position: absolute; left: 4px; top: 1px; width: 4px; height: 9px; box-sizing: content-box;
   border: solid var(--color-on-accent); border-width: 0 2px 2px 0; transform: rotate(45deg); opacity: 0;
 }
 .tend-tick:checked::after { opacity: 1; animation: tend-tick-draw 0.3s ease-out; }
@@ -366,7 +366,7 @@ body > .tend-drag-hovercard {
 }
 
 /* List rows: checkbox column exists only while the pivot pane is open */
-.tend-row-tick { display: none; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 2; }
+.tend-row-tick { display: none; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); z-index: 2; }
 .tend-split.is-pivot .tend-row-tick { display: block; }
 .tend-split.is-pivot .tend-row, .tend-split.is-pivot .tend-cols { padding-left: 44px; }
 .tend-split.is-pivot .tend-row.is-ticked { background: color-mix(in oklab, var(--primary) 7%, var(--surface)); }
@@ -378,15 +378,15 @@ body > .tend-drag-hovercard {
 .tend-pane #tend-dynamic-table-title { line-height: 1.25; border-radius: 8px; padding: 0; margin: 0; cursor: text; }
 .tend-pane #tend-dynamic-table-body { padding: 12px 24px 20px; overflow: auto; flex: 1 1 auto; min-height: 0; }
 .tend-pane .tend-group-range-row .tend-head-spacer { flex: 1 1 0; }
-.tend-pane #tend-dynamic-table-range-row { margin-top: 18px; }
+.tend-pane #tend-dynamic-table-range-row { margin-top: 16px; }
 .tend-group-daymode-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--text); cursor: pointer; }
 .tend-pill--solid { background: var(--color-accent-hover); border-color: transparent; color: var(--color-on-accent); }
 .tend-pill--solid:hover { background: color-mix(in oklab, var(--color-accent-hover) 88%, #000); }
 .tend-pane .tend-group-table-actions .tend-pill { height: 38px; }
 .tend-analyte-picker-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; position: relative; }
-.tend-pane .tend-analyte-picker-add-btn { height: 34px; padding: 0 14px; font-size: 13px; }
+.tend-pane .tend-analyte-picker-add-btn { height: 34px; padding: 0 12px; font-size: 13px; }
 .tend-pivot-chip {
-  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 6px 0 14px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 4px 0 12px; border-radius: 999px;
   background: color-mix(in oklab, var(--color-accent) 14%, var(--surface)); font-size: 13px; font-weight: 600; color: var(--text);
 }
 .tend-pivot-chip-x {
@@ -397,13 +397,13 @@ body > .tend-drag-hovercard {
 .tend-pivot-chip-x:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 .tend-pivot-hint { margin: 8px 0 0; font-size: 12.5px; color: var(--text-muted); }
 .tend-pane .tend-analyte-picker-dropdown { z-index: 5; }
-.tend-pane #tend-dynamic-table-wrap .cultivos-table-wrap { margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; overflow: auto; }
+.tend-pane #tend-dynamic-table-wrap .cultivos-table-wrap { margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; overflow: auto; }
 .tend-pane .tend-group-table { border-collapse: collapse; width: 100%; }
 .tend-pane .tend-group-table thead th {
   background: color-mix(in oklab, var(--color-accent) 14%, var(--surface)); font-size: 12.5px; font-weight: 650; color: var(--text);
-  padding: 8px 10px; text-align: left; vertical-align: bottom;
+  padding: 8px 8px; text-align: left; vertical-align: bottom;
 }
-.tend-pane .tend-group-table td { padding: 8px 10px; font-size: 13.5px; border-top: 1px solid color-mix(in oklab, var(--text) 8%, transparent); }
+.tend-pane .tend-group-table td { padding: 8px 8px; font-size: 13.5px; border-top: 1px solid color-mix(in oklab, var(--text) 8%, transparent); }
 .tend-pane .tend-group-table td + td { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-weight: 600; }
 .tend-pane .tend-group-col-toggle, .tend-pane .tend-group-row-toggle { display: inline-flex; align-items: center; gap: 8px; }
 .tend-eye-toggle {
@@ -420,7 +420,7 @@ body > .tend-drag-hovercard {
 .tend-split.is-wide > #tendencias-container { display: none; }
 .tend-split.is-wide > .tend-pane { margin-left: 0; }
 .tend-pane .tend-pane-back {
-  height: 36px; padding: 0 14px; border-radius: 999px; flex-shrink: 0; cursor: pointer; font-size: 13px;
+  height: 36px; padding: 0 12px; border-radius: 999px; flex-shrink: 0; cursor: pointer; font-size: 13px;
   border: 1px solid var(--border); background: transparent; color: var(--text-muted);
 }
 .tend-pane .tend-pane-back:hover { color: var(--text); background: color-mix(in oklab, var(--text) 6%, transparent); }
@@ -429,11 +429,11 @@ body > .tend-drag-hovercard {
 .tend-esc-hint { flex: none; padding: 8px 24px 12px; text-align: right; font-size: 12px; color: var(--text-muted); }
 .tend-pane #tend-group-table-wrap .cultivos-table-wrap,
 .tend-pane #tend-dynamic-table-wrap .cultivos-table-wrap {
-  margin-top: 12px; border: 1px solid var(--border); border-radius: 14px; overflow: auto; max-height: 100%;
+  margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; overflow: auto; max-height: 100%;
 }
 .tend-pane .tend-group-table thead th { position: sticky; top: 0; z-index: 2; height: 44px; font-size: 12px; letter-spacing: .04em; color: var(--text-muted); }
 .tend-pane .tend-group-table th:not(:first-child), .tend-pane .tend-group-table td:not(:first-child) { text-align: center; }
-.tend-pane .tend-group-table td { padding: 0 10px; height: 34px; border-top: 1px solid color-mix(in oklab, var(--text) 8%, transparent); }
+.tend-pane .tend-group-table td { padding: 0 8px; height: 34px; border-top: 1px solid color-mix(in oklab, var(--text) 8%, transparent); }
 .tend-pane .tend-group-table td:first-child { font-weight: 600; }
 .tend-pane .tend-group-table td.tend-tbl-ref { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 12px; font-weight: 400; color: var(--text-muted); white-space: nowrap; }
 .tend-pane .tend-group-table td + td { font-weight: 500; font-variant-numeric: tabular-nums; }
@@ -443,14 +443,14 @@ body > .tend-drag-hovercard {
 .tend-pane .tend-group-table thead th.is-last { color: var(--primary); }
 .tend-tbl-last-tag { font-weight: 500; }
 .tend-pane .tend-group-table tr.tend-tbl-sec td {
-  height: 28px; padding-left: 18px; text-align: left; font-size: 11px; letter-spacing: .1em; font-weight: 600; text-transform: uppercase;
+  height: 28px; padding-left: 16px; text-align: left; font-size: 11px; letter-spacing: .1em; font-weight: 600; text-transform: uppercase;
   color: var(--primary); background: color-mix(in oklab, var(--primary) 7%, var(--surface));
 }
-.tend-val { display: inline-block; padding: 3px 10px; border-radius: 999px; }
+.tend-val { display: inline-block; padding: 4px 8px; border-radius: 999px; }
 .tend-val--hi { color: var(--error, #d70015); background: color-mix(in oklab, var(--error, #d70015) 13%, transparent); }
 .tend-val--lo { color: oklch(0.44 0.11 60); background: color-mix(in oklab, oklch(0.7 0.15 60) 16%, transparent); }
 html.dark .tend-val--lo { color: oklch(0.8 0.12 60); }
-.tend-tbl-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin-top: 12px; font-size: 12px; color: var(--text-muted); }
+.tend-tbl-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 12px; font-size: 12px; color: var(--text-muted); }
 .tend-tbl-lg-hi { color: var(--error, #d70015); }
 .tend-tbl-lg-lo { color: oklch(0.65 0.15 60); }
 
@@ -459,8 +459,8 @@ html.dark .tend-val--lo { color: oklch(0.8 0.12 60); }
 #tend-dynamic-tabs[data-active="charts"] .tend-group-tab-pill { transform: translateX(100%); }
 #tend-dynamic-charts-wrap .tend-dynamic-charts-section + .tend-dynamic-charts-section { margin-top: 16px; }
 .tend-pane .tend-table-empty {
-  margin-top: 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
-  padding: 40px 24px; border: 1px dashed var(--color-border-dashed, var(--border)); border-radius: 14px;
+  margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  padding: 40px 24px; border: 1px dashed var(--color-border-dashed, var(--border)); border-radius: 12px;
   color: var(--text-muted); font-size: 13px;
 }
 .tend-pane .tend-table-empty strong { color: var(--text); font-size: 14px; }

@@ -32,7 +32,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-empty {
-  padding: 24px 14px;
+  padding: 24px 12px;
 }
 
 /* Shared card shell — Rams equipment (see rams-tufte-workbench.css) */
@@ -103,7 +103,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   box-sizing: border-box;
   margin: 0;
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
@@ -115,7 +115,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0.01em;
-  padding: 0 14px;
+  padding: 0 12px;
   height: 36px;
   min-height: 36px;
   white-space: nowrap;
@@ -146,7 +146,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-btn:focus-visible {
-  outline: none;
   box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
@@ -193,7 +192,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-btn--icon {
   min-width: 44px;
   min-height: 44px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   line-height: 1;
 }
 
@@ -247,7 +246,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-clinico-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   max-width: 100%;
   padding: calc(12px * var(--density-space, 1)) calc(14px * var(--density-space, 1))
@@ -257,7 +256,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-clinico-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   max-width: 100%;
 }
@@ -290,14 +289,13 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-soporte-params-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
-  gap: 10px;
+  gap: 8px;
   align-items: start;
 }
 
 .ea-soporte-head {
   position: relative;
   min-width: 0;
-  outline: none;
 }
 
 .ea-soporte-label--hints {
@@ -334,11 +332,11 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .ea-soporte-calc-item {
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: var(--radius-sm);
   font-size: calc(12px * var(--density-font, 1));
   line-height: 1.45;
@@ -351,7 +349,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-radius: var(--radius-md);
   background: color-mix(in oklab, var(--accent) 6%, var(--surface));
   border: 1px solid color-mix(in oklab, var(--accent) 12%, var(--border));
@@ -393,7 +391,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   align-items: center;
   justify-content: space-between;
   gap: 8px 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: var(--radius-md);
   border: 1px dashed color-mix(in oklab, var(--todo-prio-media) 45%, var(--border));
   background: color-mix(in oklab, var(--todo-prio-media) 12%, var(--surface));
@@ -412,7 +410,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -420,7 +418,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   flex: 1 1 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 4px;
 }
 
@@ -441,7 +439,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-diet-option input {
-  margin-top: 3px;
+  margin-top: 4px;
   flex-shrink: 0;
 }
 
@@ -463,7 +461,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--divider);
 }
 
@@ -474,7 +472,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-clinico-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
 .ea-confirmed-badge {
@@ -495,7 +493,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   background: color-mix(in oklab, var(--todo-prio-media) 10%, var(--surface));
   border: 1px dashed color-mix(in oklab, var(--todo-prio-media) 45%, var(--border));
   border-radius: var(--radius-sm);
-  padding: 6px 8px;
+  padding: 4px 8px;
 }
 
 /* Snapshot — franja resumen bajo el formulario */
@@ -538,7 +536,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   flex-direction: column;
   min-width: 0;
   min-height: 100%;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border: 1px solid var(--divider);
   border-radius: var(--radius-sm);
   background: color-mix(in oklab, var(--surface) 94%, var(--bg));
@@ -552,7 +550,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-snapshot-zone-title {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   font-size: calc(11px * var(--density-font, 1));
   font-weight: 600;
   color: var(--text-muted);
@@ -570,7 +568,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   grid-template-columns: 2.35rem minmax(0, 1fr) auto;
   align-items: center;
   gap: 4px 8px;
-  padding: 4px 6px;
+  padding: 4px 4px;
   border-radius: var(--radius-sm);
   background: color-mix(in oklab, var(--lab-chip-bg, var(--color-accent-soft)) 50%, var(--surface));
   font-size: calc(11px * var(--density-font, 1));
@@ -586,7 +584,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-snapshot-row-reading {
   display: flex;
   align-items: baseline;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
   overflow: hidden;
 }
@@ -617,7 +615,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-snapshot-zone-stamp {
-  margin-left: 6px;
+  margin-left: 4px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
@@ -638,7 +636,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-snapshot-row--interactive:focus-visible {
-  outline: none;
   box-shadow: 0 0 0 2px var(--color-focus-ring);
 }
 
@@ -663,7 +660,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-snapshot-glu {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   align-content: flex-start;
 }
 
@@ -671,7 +668,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--success) 12%, var(--surface));
   color: var(--success);
@@ -686,7 +683,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-snapshot-io {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
-  gap: 6px 8px;
+  gap: 4px 8px;
   align-content: start;
 }
 
@@ -698,7 +695,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 5px 6px;
+  padding: 4px 4px;
   border-radius: var(--radius-sm);
   background: color-mix(in oklab, var(--lab-chip-bg, var(--color-accent-soft)) 30%, var(--surface));
 }
@@ -748,7 +745,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   box-sizing: border-box;
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   border-radius: var(--radius-sm);
-  padding: 7px 10px;
+  padding: 8px 8px;
   font: inherit;
   font-size: 16px;
   background: var(--input-fill);
@@ -757,7 +754,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-input:focus {
-  outline: none;
   border-color: color-mix(in oklab, var(--action) 45%, var(--border));
   box-shadow: 0 0 0 3px var(--color-focus-ring);
   background: var(--surface);
@@ -794,13 +790,13 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   justify-content: center;
   gap: 1px;
   min-height: 40px;
-  padding: 6px 4px;
+  padding: 4px 4px;
   line-height: 1.15;
 }
 
 .ea-vital-box .vital-label.ea-vital-label-row {
   min-height: 0;
-  padding: 4px 3px;
+  padding: 4px 4px;
 }
 
 .ea-vital-name {
@@ -820,7 +816,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-vital-input {
   border: none;
-  padding: 8px 6px;
+  padding: 8px 4px;
   min-height: 40px;
   font-size: calc(16px * var(--density-font, 1));
   font-weight: 700;
@@ -878,7 +874,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-glu-mode-switch {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -924,13 +920,13 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-bomba-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .ea-registro-modal .ea-bomba-row .ea-input {
   height: 32px;
   min-height: 32px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border: 1px solid transparent;
   border-radius: var(--radius-control, 8px);
   background: var(--input-fill);
@@ -986,7 +982,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   grid-template-columns: minmax(0, 1fr) minmax(100px, 120px) auto;
   align-items: end;
   gap: 8px;
-  padding: 10px;
+  padding: 8px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--divider);
   background: color-mix(in oklab, var(--surface) 94%, var(--bg));
@@ -1046,7 +1042,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   grid-template-columns: minmax(140px, 220px) minmax(100px, 120px) auto;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--divider);
   background: color-mix(in oklab, var(--surface) 94%, var(--bg));
@@ -1083,7 +1079,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-turno-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .ea-turno-group-head {
@@ -1137,7 +1133,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   box-sizing: border-box;
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   border-radius: var(--radius-control, 8px);
-  padding: 5px 7px;
+  padding: 4px 8px;
   font: inherit;
   font-size: calc(12.5px * var(--density-font, 1));
   background: var(--input-fill);
@@ -1145,7 +1141,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-turno-box input:focus {
-  outline: none;
   border-color: color-mix(in oklab, var(--action) 45%, var(--border));
   box-shadow: 0 0 0 3px var(--color-focus-ring);
   background: var(--surface);
@@ -1166,7 +1161,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   font-size: 10px; /* --type-wb-counter-label scale */
   font-weight: 700;
   letter-spacing: 0.02em;
-  padding: 1px 6px;
+  padding: 1px 4px;
   line-height: 1.5;
   cursor: pointer;
 }
@@ -1212,7 +1207,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-historial .ea-historial-list {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .ea-historial-list {
@@ -1221,15 +1216,15 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .ea-historial-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 8px;
+  padding: 8px 8px;
   border: 1px solid var(--divider);
   border-radius: var(--radius-sm);
   background: color-mix(in oklab, var(--surface) 94%, var(--bg));
@@ -1237,7 +1232,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-historial-actions {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -1287,7 +1282,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-turnos-table th,
 .ea-turnos-table td {
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-bottom: 1px solid var(--divider);
   text-align: left;
   vertical-align: top;
@@ -1309,7 +1304,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-turnos-foot {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   font-size: 11px;
 }
 
@@ -1428,7 +1423,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 
 .ea-vital-history-row {
@@ -1436,7 +1431,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: var(--radius-md);
   border: 1px solid var(--divider);
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
@@ -1459,7 +1454,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-vital-history-metric {
   display: flex;
   align-items: baseline;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -1483,7 +1478,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 5px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -1559,14 +1554,14 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-charts-modal-body > .ea-charts-seg-row {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .ea-charts-seg {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 3px;
+  padding: 4px;
   border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--bg) 55%, var(--surface));
   border: 1px solid var(--divider);
@@ -1597,7 +1592,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 6px 0;
+  padding: 4px 0;
   border-top: 1px solid var(--divider);
 }
 
@@ -1701,7 +1696,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-charts-legend-key {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   width: 220px;
   flex-shrink: 0;
   font-size: calc(11px * var(--density-font, 1));
@@ -1749,8 +1744,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-charts-bal-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  padding: 10px 0 4px;
+  gap: 8px;
+  padding: 8px 0 4px;
 }
 
 .ea-charts-bal-card {
@@ -1945,7 +1940,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.95em;
   font-weight: 600;
-  padding: 1px 5px;
+  padding: 1px 4px;
   border-radius: 4px;
   border: 1px solid var(--border, var(--divider));
   background: color-mix(in oklab, var(--bg) 45%, var(--surface));
@@ -1966,7 +1961,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 .ea-registro-section-label {
@@ -2022,7 +2017,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   content: '/';
   position: absolute;
   left: 50%;
-  top: 2.7rem;
+  top: 48px;
   transform: translateX(-50%);
   color: var(--text-muted);
   font-size: 1.25rem;
@@ -2094,7 +2089,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-vital-chip .vital-label:not(.ea-vital-label-row) {
   flex: 0 0 auto;
   min-height: 0;
-  padding: 4px 3px 3px;
+  padding: 4px 4px 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2108,7 +2103,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: block;
   width: 100%;
   min-height: 0;
-  padding: 3px 3px 2px;
+  padding: 4px 4px 2px;
   box-sizing: border-box;
 }
 
@@ -2127,8 +2122,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   /* El JS reubica este botón dentro del slot activo, así que ancla a esa
      casilla (position: relative) y no al stack completo. */
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 4px;
+  right: 4px;
   z-index: 6;
   appearance: none;
   width: 1.375rem;
@@ -2159,8 +2154,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-vital-chip .ea-vital-label-row .ea-vital-add-btn,
 .ea-registro-modal .ea-vital-chip .ea-vital-label-row .ea-temp-add-btn {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 4px;
+  right: 4px;
   z-index: 6;
   appearance: none;
   width: 1.375rem;
@@ -2241,7 +2236,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-registro-modal .ea-vital-value-wrap .ea-vital-input:focus {
-  outline: none;
   box-shadow: none;
   background: transparent;
 }
@@ -2265,7 +2259,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   justify-content: center;
   flex: 0 0 auto;
-  padding-bottom: 3px;
+  padding-bottom: 4px;
 }
 
 .ea-registro-modal .ea-vital-chip .ea-altered-label {
@@ -2302,12 +2296,12 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-form--registro {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .ea-registro-modal .ea-registro-section + .ea-registro-section {
   margin-top: 2px;
-  padding-top: 14px;
+  padding-top: 12px;
 }
 .ea-registro-modal .ea-registro-section .lab-pref-row-label.ea-registro-section-label {
   font-size: 12px;
@@ -2337,7 +2331,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-field--datetime .rpc-date-field__trigger.profile-input {
   min-height: 0;
   height: auto;
-  padding: 7px 10px;
+  padding: 8px 8px;
   font-size: calc(13px * var(--density-font, 1));
   border-radius: var(--radius-sm);
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
@@ -2348,13 +2342,13 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-field--datetime .rpc-time-picker__select {
   min-height: 0;
   height: auto;
-  padding: 7px 1.35rem 7px 0.5rem;
+  padding: 8px 24px 8px 0.5rem;
   font-size: calc(13px * var(--density-font, 1));
   border-radius: var(--radius-sm);
 }
 
 .ea-registro-modal .ea-glu-block {
-  gap: 6px;
+  gap: 4px;
   padding-top: 0;
 }
 
@@ -2389,9 +2383,9 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   grid-template-columns: 4.75rem minmax(0, 1fr);
   align-items: center;
   column-gap: 8px;
-  row-gap: 6px;
+  row-gap: 4px;
   min-width: 0;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-radius: var(--radius-md);
   border: 1px solid var(--divider);
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
@@ -2419,7 +2413,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-glu-row--extra .ea-glu-time-input {
   width: 100%;
   box-sizing: border-box;
-  padding: 6px 10px;
+  padding: 4px 8px;
   min-height: 34px;
   font-size: calc(14px * var(--density-font, 1));
   font-variant-numeric: tabular-nums;
@@ -2431,7 +2425,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-registro-modal .ea-glu-row--extra .ea-glu-time-input {
   margin-left: -4px;
-  padding-left: 3px;
+  padding-left: 4px;
   padding-right: 16px;
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: calc(12px * var(--density-font, 1));
@@ -2480,7 +2474,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-glu-row--standard .ea-glu-value-input:focus,
 .ea-registro-modal .ea-glu-row--extra .ea-glu-value-input:focus,
 .ea-registro-modal .ea-glu-row--extra .ea-glu-time-input:focus {
-  outline: none;
   border-color: color-mix(in oklab, var(--action) 45%, var(--border));
   box-shadow: 0 0 0 3px var(--color-focus-ring);
   background: var(--surface);
@@ -2489,14 +2482,14 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-glu-row-meta {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
 .ea-glu-altered-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   font-size: calc(12px * var(--density-font, 1));
   color: var(--text-muted);
   cursor: pointer;
@@ -2518,7 +2511,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-radius: var(--radius-sm);
   border: 1px solid color-mix(in oklab, var(--warn) 35%, var(--divider));
   background: color-mix(in oklab, var(--warn) 5%, var(--surface));
@@ -2582,7 +2575,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-input-affix .ea-input:focus {
-  outline: none;
   box-shadow: none;
 }
 
@@ -2668,7 +2660,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   justify-content: center;
   width: 100%;
   min-height: 36px;
-  padding: 6px 10px;
+  padding: 4px 8px;
   font-size: calc(14px * var(--density-font, 1));
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -2748,7 +2740,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  padding: 14px 18px 12px;
+  padding: 12px 16px 12px;
 }
 
 .ea-registro-modal-foot {
@@ -2757,7 +2749,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 18px 14px;
+  padding: 12px 16px 12px;
   border-top: 1px solid var(--border, var(--divider));
   background: var(--surface);
 }
@@ -2773,7 +2765,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-paste-hint {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   font-size: calc(12px * var(--density-font, 1));
   color: var(--text-muted);
   line-height: 1.45;
@@ -2789,7 +2781,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   min-height: 160px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 10px 12px;
+  padding: 8px 12px;
   font: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: calc(12px * var(--density-font, 1));
   line-height: 1.45;
@@ -2799,8 +2791,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-paste-preview {
-  margin: 10px 0 0;
-  padding: 8px 10px;
+  margin: 8px 0 0;
+  padding: 8px 8px;
   border-radius: var(--radius-sm);
   background: color-mix(in oklab, var(--lab-chip-bg, var(--color-accent-soft)) 40%, var(--surface));
   font-size: calc(12px * var(--density-font, 1));
@@ -2818,7 +2810,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-turnos-add {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 /* Registro modal — one screen, no scroll: vitals + glucometrías left, balance right */
@@ -2839,7 +2831,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-registro-top .ea-field--datetime {
   flex-direction: row;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   max-width: none;
 }
 
@@ -2847,12 +2839,12 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .ea-turno-pill {
   min-height: 40px;
-  padding: 0 18px;
+  padding: 0 16px;
   border: 1px solid var(--border-hairline);
   border-radius: var(--radius-pill);
   background: var(--surface);
@@ -2905,7 +2897,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   --ea-io-cols: 6.5rem repeat(3, minmax(0, 1fr)) 5.5rem;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   padding-top: 0;
   border-top: 0;
 }
@@ -2947,7 +2939,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 /* Balance: what the rows above add up to, per turn and for the day */
 .ea-io-table-row--balance {
-  padding: 6px 0;
+  padding: 4px 0;
   border-top: 1px solid var(--divider);
   border-bottom: 1px solid var(--divider);
 }
@@ -2975,7 +2967,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-io-table-row--balance .ea-balance-live {
   font-size: calc(14px * var(--density-font, 1));
-  font-weight: 800;
+  font-weight: 600;
 }
 
 /* Source and event editors: same height as the turn cells */
@@ -2983,14 +2975,14 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-io-extra-row .ea-btn--icon {
   min-height: 30px;
   height: 30px;
-  padding-top: 3px;
-  padding-bottom: 3px;
+  padding-top: 4px;
+  padding-bottom: 4px;
   font-size: calc(12.5px * var(--density-font, 1));
 }
 
 .ea-io-add.ea-btn {
   min-height: 26px;
-  padding: 2px 10px;
+  padding: 2px 8px;
   font-size: 12px;
 }
 
@@ -3014,18 +3006,18 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-registro-modal .ea-turno-box input {
-  padding-right: 34px;
+  padding-right: 32px;
 }
 
 .ea-registro-modal .ea-turno-box .ea-turno-nc-btn {
   position: absolute;
-  right: 5px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
 }
 
 .ea-registro-modal .ea-io-extra-list {
-  gap: 6px;
+  gap: 4px;
 }
 
 .ea-registro-modal .ea-registro-top .ea-field--datetime {
@@ -3054,7 +3046,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-registro-modal .ea-glu-row--standard {
   grid-template-columns: auto minmax(0, 1fr);
-  padding-right: 10px;
+  padding-right: 8px;
 }
 
 /* Registro — quieter: no card around each glucometría, NC only where you are, totals in ink */
@@ -3110,7 +3102,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-io-link:focus-visible {
-  outline: none;
   box-shadow: 0 0 0 2px var(--color-focus-ring);
   border-radius: 4px;
 }
@@ -3164,7 +3155,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-io-row-name select:hover,
 .ea-io-row-name select:focus-visible {
   color: var(--text);
-  outline: none;
 }
 
 .ea-io-remove {
@@ -3215,7 +3205,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal #ea-io-evac {
   width: 100%;
   height: 32px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border: 1px solid transparent;
   border-radius: var(--radius-control, 8px);
   background: var(--input-fill);
@@ -3237,7 +3227,7 @@ select.ea-io-link {
 .ea-registro-modal .ea-turno-box input {
   height: 32px;
   min-height: 32px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border: 1px solid transparent;
   border-radius: var(--radius-control, 8px);
   background: var(--input-fill);
@@ -3251,7 +3241,7 @@ select.ea-io-link {
 }
 
 .ea-registro-modal .ea-turno-box input {
-  padding-right: 34px;
+  padding-right: 32px;
 }
 
 .ea-registro-modal .ea-io-extra-row .ea-input:focus,
@@ -3369,7 +3359,7 @@ select.ea-io-link {
 .estado-actual-panel .ea-snapshot-row,
 .estado-actual-panel .ea-snapshot-row--altered,
 .estado-actual-panel .ea-snapshot-io > div {
-  padding: 3px 0;
+  padding: 4px 0;
   border-radius: 0;
   background: none;
 }
@@ -3381,7 +3371,7 @@ select.ea-io-link {
 }
 
 .estado-actual-panel .ea-snapshot-io {
-  gap: 6px 16px;
+  gap: 4px 16px;
 }
 
 .estado-actual-panel .ea-snapshot-io .ea-snapshot-label {
@@ -3431,7 +3421,7 @@ select.ea-io-link {
 .estado-actual-panel .ea-clinico-grid .ea-input {
   height: 32px;
   min-height: 32px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border: 1px solid transparent;
   border-radius: var(--radius-control, 8px);
   background: var(--input-fill);
@@ -3523,7 +3513,7 @@ select.ea-io-link {
 /* Antidiabéticos subgroup inside "nm": same flat rows as a category */
 
 .estado-actual-panel .ea-clinico-body .ea-field {
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -3534,7 +3524,7 @@ select.ea-io-link {
 }
 
 .estado-actual-panel .ea-estado-clinico > summary {
-  padding: 0 0 6px;
+  padding: 0 0 4px;
 }
 
 .estado-actual-panel .ea-main {
@@ -3584,7 +3574,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 .estado-actual-panel .ea-vasop-rate-input {
   width: 52px;
-  padding: 2px 6px;
+  padding: 2px 4px;
   text-align: right;
 }
 
@@ -3624,7 +3614,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   flex: 1;
   height: 6px;
   overflow: hidden;
-  border-radius: 99px;
+  border-radius: 999px;
   background: var(--color-border-strong);
 }
 
@@ -3925,7 +3915,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .estado-actual-panel .ea-med-title {
@@ -3941,7 +3931,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .estado-actual-panel .ea-med-pending-count {
-  padding: 3px 10px;
+  padding: 4px 8px;
   border: 1px solid var(--success);
   border-radius: var(--radius-pill);
   color: var(--success);
@@ -3978,7 +3968,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   grid-template-columns: 150px 1fr;
   gap: 16px;
   align-items: start;
-  padding: 14px 0;
+  padding: 12px 0;
   border-top: 1px solid var(--divider);
 }
 
@@ -4065,7 +4055,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 @media (max-width: 720px) {
   .estado-actual-panel .ea-med-row {
     grid-template-columns: 1fr;
-    gap: 6px;
+    gap: 4px;
   }
 }
 
@@ -4090,7 +4080,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .estado-actual-panel .ea-med-row {
-  padding: 10px 0;
+  padding: 8px 0;
 }
 
 .estado-actual-panel .ea-med-chip {
@@ -4138,7 +4128,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .estado-actual-panel .ea-action-bar__cluster .ea-btn {
   height: 30px;
-  padding: 0 14px;
+  padding: 0 12px;
   border-radius: var(--radius-pill);
 }
 
@@ -4155,9 +4145,9 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .estado-actual-panel .ea-top-grid > .ea-sys-grid {
   display: block;
   margin: 0;
-  padding: 6px 16px;
+  padding: 4px 16px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--surface);
   box-shadow: none;
   min-width: 0;
@@ -4169,7 +4159,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   align-items: center;
   column-gap: 12px;
   min-height: 36px;
-  padding: 3px 0;
+  padding: 4px 0;
   border: 0;
   border-top: 1px solid var(--border);
   border-radius: 0;
@@ -4197,7 +4187,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 4px 14px;
+  gap: 4px 12px;
 }
 
 .estado-actual-panel .ea-top-grid .ea-snapshot-row,
@@ -4205,7 +4195,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: inline-flex;
   flex-direction: row;
   align-items: baseline;
-  gap: 6px;
+  gap: 4px;
   min-height: 0;
   padding: 2px 0;
   background: none;
@@ -4236,7 +4226,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 14px;
+  gap: 4px 12px;
   min-width: 0;
 }
 
@@ -4244,7 +4234,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   flex: none;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .estado-actual-panel .ea-top-grid .ea-sys-fields .ea-field .ea-label {
@@ -4267,7 +4257,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .estado-actual-panel .ea-top-grid .ea-soporte-params-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
-  gap: 6px 12px;
+  gap: 4px 12px;
 }
 .estado-actual-panel .ea-top-grid .ea-soporte-params-grid .ea-input { width: 100%; }
 

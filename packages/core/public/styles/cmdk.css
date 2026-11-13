@@ -128,7 +128,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 14px 12px;
+  padding: 12px 12px;
   color: var(--text-muted);
   list-style: none;
 }
@@ -220,7 +220,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 18px 18px 14px;
+  padding: 16px 16px 12px;
   border-radius: var(--radius-lg, 12px);
   border: var(--border-hairline);
   background: var(--surface);
@@ -244,7 +244,7 @@
 .paste-smart-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   overflow: auto;
   max-height: 320px;
 }
@@ -255,7 +255,7 @@
   align-items: flex-start;
   gap: 2px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: var(--border-hairline);
   border-radius: var(--radius-md, 8px);
   background: transparent;

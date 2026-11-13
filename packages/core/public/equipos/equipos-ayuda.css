@@ -14,14 +14,14 @@
 .equipos-ayuda-steps {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .equipos-ayuda-step {
-  padding: 14px 14px 16px;
+  padding: 12px 12px 16px;
   border-radius: 12px;
   border: 1px solid var(--border-subtle, #2a323c);
   background: var(--surface-1, #1a2129);
@@ -30,8 +30,8 @@
 .equipos-ayuda-step-head {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .equipos-ayuda-step-num {
@@ -64,8 +64,8 @@
 
 .equipos-ayuda-mock {
   position: relative;
-  padding: 10px;
-  border-radius: 10px;
+  padding: 8px;
+  border-radius: 8px;
   border: 1px dashed color-mix(in srgb, var(--color-accent, #4a52e8) 35%, var(--border-subtle));
   background: color-mix(in srgb, var(--bg-base, #0f1419) 70%, transparent);
 }
@@ -92,7 +92,7 @@
 .equipos-ayuda-callout {
   display: inline-block;
   margin-top: 8px;
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: 8px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -104,8 +104,8 @@
 
 .equipos-ayuda-tip {
   margin-top: 20px;
-  padding: 12px 14px;
-  border-radius: 10px;
+  padding: 12px 12px;
+  border-radius: 8px;
   font-size: 0.8125rem;
   line-height: 1.45;
   color: var(--text-secondary, #9aa0a6);
@@ -120,13 +120,13 @@
 .equipos-ayuda-install-guides {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 4px;
 }
 
 .equipos-ayuda-install-guide {
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
   border: 1px solid var(--border-subtle, #2a323c);
   background: color-mix(in srgb, var(--bg-base, #0f1419) 55%, transparent);
 }
@@ -149,7 +149,7 @@
 
 .equipos-ayuda-install-steps {
   margin: 0;
-  padding-left: 1.15rem;
+  padding-left: 16px;
   font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--text-secondary, #9aa0a6);

@@ -47,7 +47,7 @@
 .skel-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   padding: 16px;
 }
 
@@ -70,7 +70,7 @@
 .lab-panel-skeleton {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   padding: calc(18px * var(--density-space));
   flex: 1;
   min-height: 240px;

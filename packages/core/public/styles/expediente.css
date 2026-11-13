@@ -20,7 +20,7 @@
 @container (max-width: 900px) {
   #listado-form .listado-layout { grid-template-columns: 1fr; }
 }
-#listado-form .listado-main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+#listado-form .listado-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 #listado-form .listado-side {
   display: flex;
   flex-direction: column;
@@ -32,7 +32,7 @@
 @container (max-width: 900px) {
   #listado-form .listado-side { padding-left: 0; border-left: 0; padding-top: 16px; border-top: 1px solid var(--divider); }
 }
-#listado-form .listado-group + .listado-group { padding-top: 18px; border-top: 1px solid var(--divider); }
+#listado-form .listado-group + .listado-group { padding-top: 16px; border-top: 1px solid var(--divider); }
 #listado-form .listado-group-title,
 #listado-form .listado-meta-title {
   font-size: 11px;
@@ -47,7 +47,7 @@
 #listado-form .listado-patient-line { font-size: 12.5px; font-weight: 600; color: var(--text); }
 #listado-form .listado-meta { display: flex; flex-direction: column; }
 #listado-form .listado-meta-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-#listado-form .listado-medicos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 8px; }
+#listado-form .listado-medicos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 8px; }
 #listado-form .listado-field-group { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
 #listado-form .listado-field-group--full { grid-column: 1 / -1; }
 #listado-form .listado-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding-top: 12px; border-top: 1px solid var(--divider); }
@@ -57,7 +57,7 @@
 #listado-form .listado-row .rpc-date-field__trigger.profile-input {
   height: 32px;
   min-height: 32px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border: 1px solid transparent;
   border-radius: var(--radius-control, 8px);
   background: var(--input-fill);
@@ -122,15 +122,15 @@ html.dark .listado-drag-hovercard.listado-row {
 #listado-form .listado-row { display: grid; grid-template-columns: 20px 126px 1fr 26px; gap: 8px; align-items: start; padding: 4px 0; border: 0; border-bottom: 1px solid var(--divider); transition: background var(--dur-fast) var(--ease-out); }
 #listado-form .listado-group-body .listado-row:last-child { border-bottom: 0; }
 #listado-form .listado-row .listado-num,
-#listado-form .listado-row .listado-drag-handle { font-size: 12px; font-weight: 700; color: var(--text-muted); text-align: right; padding: 7px 0; cursor: grab; user-select: none; touch-action: none; }
+#listado-form .listado-row .listado-drag-handle { font-size: 12px; font-weight: 700; color: var(--text-muted); text-align: right; padding: 8px 0; cursor: grab; user-select: none; touch-action: none; }
 #listado-form .listado-row .listado-drag-handle:active { cursor: grabbing; }
-#listado-form .listado-row textarea { border: 1px solid transparent; border-radius: var(--radius-control, 8px); padding: 6px 10px; font-size: 12.5px; font-family: inherit; background: var(--input-fill); color: var(--text); resize: none; min-height: 32px; line-height: 1.4; width: 100%; transition: border-color 0.15s; overflow: hidden; cursor: text; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
+#listado-form .listado-row textarea { border: 1px solid transparent; border-radius: var(--radius-control, 8px); padding: 4px 8px; font-size: 16px; font-family: inherit; background: var(--input-fill); color: var(--text); resize: none; min-height: 32px; line-height: 1.4; width: 100%; transition: border-color 0.15s; overflow: hidden; cursor: text; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
 #listado-form .listado-row textarea:focus { outline: none; border-color: color-mix(in oklab, var(--action) 45%, var(--border)); background: var(--surface); }
-#listado-form .listado-row .btn-remove-listado { background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 15px; cursor: pointer; padding: 4px 6px; border-radius: var(--radius-sm); line-height: 1; min-width: 26px; min-height: 26px; opacity: 0; }
+#listado-form .listado-row .btn-remove-listado { background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 15px; cursor: pointer; padding: 4px 4px; border-radius: var(--radius-sm); line-height: 1; min-width: 26px; min-height: 26px; opacity: 0; }
 #listado-form .listado-row:hover .btn-remove-listado,
 #listado-form .listado-row:focus-within .btn-remove-listado { opacity: 1; }
 #listado-form .listado-row .btn-remove-listado:hover { color: var(--error); background: var(--color-danger-hover-bg); border-color: color-mix(in oklab, var(--error) 28%, transparent); }
-#listado-form .listado-add-row { margin-top: 6px; align-self: flex-start; }
+#listado-form .listado-add-row { margin-top: 4px; align-self: flex-start; }
 #listado-form .listado-empty { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 4px 0; }
 .diagrams-wrap { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
 .lab-history-card-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -161,8 +161,8 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
 .btn-lab-history-expand { width: 100%; justify-content: center; }
 .lab-history-hint { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-muted); }
 .lab-history-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-  padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg);
 }
 /* Manejo actual — importación colapsable + tarjetas con más aire */
 .med-receta-subview {
@@ -195,7 +195,7 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
 .med-active-header-actions {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
   flex-shrink: 0;
   justify-content: flex-end;
@@ -231,7 +231,7 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
 .med-active-lead { padding-bottom: 2px; }
 .med-empty-hint {
   margin: 0;
-  padding: 14px 16px;
+  padding: 12px 16px;
   border-radius: var(--radius-lg);
   border: 1px dashed color-mix(in oklab, var(--border) 80%, var(--action));
   background: color-mix(in oklab, var(--lab-chip-bg) 55%, var(--surface));
@@ -250,7 +250,7 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
 .med-active-header-actions .wb-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 body.rpc-med-receta-paste-open {
@@ -261,7 +261,7 @@ body.rpc-med-receta-paste-open {
  * columns of hairline group cards. Amber = needs attention (Falta destino). */
 .med-receta-wrap.med-groups {
   columns: 2 320px;
-  column-gap: 18px;
+  column-gap: 16px;
 }
 .med-group {
   break-inside: avoid;
@@ -334,12 +334,12 @@ body.rpc-med-receta-paste-open {
 .med-receta-actions > .med-excl-btn { grid-column: 3; }
 .med-receta-actions > .med-restore-btn { grid-column: 1 / -1; justify-self: end; }
 /* Dense (16+ rows): name and dose on one line, 3 columns on wide screens. */
-.med-groups--dense.med-receta-wrap.med-groups { columns: 3 300px; column-gap: 14px; }
-.med-groups--dense .med-group { gap: 4px; margin-bottom: 10px; }
-.med-groups--dense .med-receta-row { min-height: 40px; padding: 3px 6px 3px 12px; }
+.med-groups--dense.med-receta-wrap.med-groups { columns: 3 300px; column-gap: 12px; }
+.med-groups--dense .med-group { gap: 4px; margin-bottom: 8px; }
+.med-groups--dense .med-receta-row { min-height: 40px; padding: 4px 4px 4px 12px; }
 .med-groups--dense .med-receta-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .med-groups--dense .med-row-dose { display: inline; margin: 0 0 0 8px; }
-.med-groups--dense .med-nota-chip { height: 26px; padding: 0 10px; }
+.med-groups--dense .med-nota-chip { height: 26px; padding: 0 8px; }
 .med-groups--dense .med-receta-actions { grid-template-columns: auto 32px 32px; }
 .med-groups--dense .med-receta-actions .wb-btn-icon { width: 32px; min-width: 32px; height: 32px; }
 .med-receta-dia,
@@ -348,7 +348,7 @@ body.rpc-med-receta-paste-open {
   align-items: center;
   height: 22px;
   margin-left: 8px;
-  padding: 0 9px;
+  padding: 0 8px;
   border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 600;
@@ -402,7 +402,7 @@ body.rpc-med-receta-paste-open {
 .med-diet-chip[hidden] { display: none; }
 .med-nota-toolbar { display: flex; flex-direction: column; gap: 12px; }
 .med-insulin-pump-alg-pill {
-  display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: var(--radius-pill);
+  display: inline-block; margin-left: 4px; padding: 1px 8px; border-radius: var(--radius-pill);
   font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
   background: var(--color-accent-soft);
   color: var(--color-accent-soft-text);
@@ -419,17 +419,17 @@ html.dark .med-insulin-pump-alg-pill {
   position: relative;
   display: inline-flex;
   align-items: stretch;
-  padding: 3px;
-  border-radius: 10px;
+  padding: 4px;
+  border-radius: 8px;
   background: color-mix(in oklab, var(--primary) 14%, var(--surface));
   border: 1px solid var(--border);
   gap: 0;
 }
 .med-output-tab-pill {
   position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
   width: calc((100% - 6px) / 2);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -475,7 +475,7 @@ html.dark .med-insulin-pump-alg-pill {
   min-width: 0;
   border: 0;
   border-radius: var(--radius-md);
-  padding: 4px 10px;
+  padding: 4px 8px;
   font-size: 12px;
   font-weight: 700;
   color: var(--text-muted);
@@ -498,17 +498,17 @@ html.dark .med-output-tab.active {
   color: var(--text);
 }
 .lab-history-meta { font-size: 13px; color: var(--text); flex: 1; min-width: 140px; }
-.lab-history-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+.lab-history-actions { display: flex; gap: 4px; flex-shrink: 0; flex-wrap: wrap; }
 .btn-lab-history {
   font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: var(--radius-md);
-  padding: 6px 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  padding: 4px 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
   min-height: 36px;
 }
 .btn-lab-history:hover { border-color: var(--action); color: var(--action); background: var(--lab-chip-bg); }
 .btn-lab-history-del { color: var(--error); border-color: rgba(220,38,38,0.35); }
 .btn-lab-history-del:hover { background: rgba(220,38,38,0.08); border-color: var(--error); }
 html.dark .btn-lab-history-del:hover { background: rgba(248,113,113,0.12); }
-.lab-history-card-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.lab-history-card-actions { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
 .lab-history-more { position: relative; }
 .lab-history-more-btn {
   list-style: none;
@@ -519,7 +519,7 @@ html.dark .btn-lab-history-del:hover { background: rgba(248,113,113,0.12); }
   line-height: 1;
   min-width: 36px;
   min-height: 36px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--surface);
@@ -542,7 +542,7 @@ html.dark .btn-lab-history-del:hover { background: rgba(248,113,113,0.12); }
   right: 0;
   z-index: 30;
   min-width: 200px;
-  padding: 6px;
+  padding: 4px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--surface);
@@ -556,7 +556,7 @@ html.dark .btn-lab-history-del:hover { background: rgba(248,113,113,0.12); }
   font-size: 12px;
   font-weight: 600;
   text-align: left;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
@@ -567,12 +567,12 @@ html.dark .btn-lab-history-del:hover { background: rgba(248,113,113,0.12); }
   background: var(--lab-chip-bg);
   color: var(--action);
 }
-.btn-lab-dedupe-sync { font-size: 12px; padding: 6px 10px; }
+.btn-lab-dedupe-sync { font-size: 12px; padding: 4px 8px; }
 .dcard {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 14px 16px;
+  padding: 12px 16px;
   flex-shrink: 0;
   position: relative;
 }
@@ -591,7 +591,7 @@ html.dark .dcard {
 }
 html.dark .dcard svg [stroke] { stroke: var(--diagram-line); }
 html.dark .dcard svg text { fill: var(--diagram-label); }
-.dcard-copy { position:absolute; top:10px; right:10px; background:none; border:1px solid var(--border); border-radius:5px; padding:4px 9px; min-height:24px; font-size:11px; font-family:inherit; color:var(--text-muted); cursor:pointer; transition:border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); white-space:nowrap; }
+.dcard-copy { position:absolute; top:8px; right:8px; background:none; border:1px solid var(--border); border-radius:5px; padding:4px 8px; min-height:24px; font-size:11px; font-family:inherit; color:var(--text-muted); cursor:pointer; transition:border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); white-space:nowrap; }
 .dcard-copy:hover { border-color:var(--action); color:var(--action); background:var(--section-header-bg); }
 .dcard-copy.copied { border-color: var(--success); color: var(--success); background: color-mix(in oklab, var(--success) 10%, var(--surface)); }
 @media (max-width: 700px) {
@@ -682,7 +682,7 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 .exp-expediente-nav .exp-datos-tab-action.wb-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   width: auto;
   min-height: 0;
   margin: 0;
@@ -717,9 +717,9 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 .exp-datos-fields {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   min-height: 100%;
-  padding: 18px 22px 22px;
+  padding: 16px 24px 24px;
   box-sizing: border-box;
 }
 
@@ -859,7 +859,7 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 .exp-datos-acc {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -1023,7 +1023,7 @@ li:focus-within > .exp-datos-list__rm {
 
 /* Banner: patient name; Equipo pill and close on the right. */
 .exp-datos-head.wb-modal-head {
-  padding: 12px 14px 12px 22px;
+  padding: 12px 12px 12px 24px;
 }
 
 .exp-datos-head .wb-modal-title {
@@ -1355,7 +1355,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 18px;
+  padding: 16px 16px;
   border: 0;
   border-radius: var(--card-radius);
   background: var(--card-bg);
@@ -1369,7 +1369,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
   justify-content: center;
   min-width: 52px;
   height: 52px;
-  padding: 0 10px;
+  padding: 0 8px;
   box-sizing: border-box;
   border-radius: 999px;
   background: color-mix(in oklab, var(--action) 15%, transparent);
@@ -1433,7 +1433,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 
 .exp-datos-tab {
   height: 32px;
-  padding: 0 14px;
+  padding: 0 12px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -1486,7 +1486,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 
 .exp-datos-pane .exp-datos-sec {
   min-width: 0;
-  padding: 10px 16px 12px;
+  padding: 8px 16px 12px;
   border: 0;
   border-radius: var(--card-radius);
   background: var(--card-bg);
@@ -1513,7 +1513,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 6px 0 2px;
+  padding: 4px 0 2px;
 }
 
 .exp-datos-list.exp-datos-list--chips li {
@@ -1532,7 +1532,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 .exp-datos-list.exp-datos-list--chips li:has(> input) {
   flex-basis: 100%;
   padding: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
 }
 
@@ -1543,7 +1543,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 
 .exp-datos-list--chips .exp-datos-line {
   flex: 0 1 auto;
-  gap: 6px;
+  gap: 4px;
   cursor: pointer;
 }
 
@@ -1552,7 +1552,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 }
 
 .exp-datos-list--chips .exp-datos-tag {
-  margin-right: -6px;
+  margin-right: -4px;
 }
 
 .exp-datos-list.exp-datos-list--chips .exp-datos-q {
@@ -1835,7 +1835,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 #cultivos-table-container .cult-site-dots {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: var(--space-4);
 }
 #cultivos-table-container .cult-site-dots {
@@ -1924,7 +1924,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
   font-style: normal;
 }
 #cultivos-table-container .cult-site .cult-org-tag {
-  padding: 2px 10px;
+  padding: 2px 8px;
   font-size: var(--fs-12);
   font-weight: var(--fw-strong);
 }
@@ -2005,7 +2005,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 #cultivos-table-container .cult-atb-item {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 4px;
   padding: 2px 0;
   border-bottom: 1px solid color-mix(in oklab, var(--text-muted) 18%, transparent);
 }
@@ -2017,7 +2017,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
   order: 3;
   --mic-c: var(--text-muted);
   min-width: 56px;
-  padding: 1px 10px;
+  padding: 1px 8px;
   border-radius: 999px;
   background: color-mix(in oklab, var(--mic-c) 14%, transparent);
   color: color-mix(in oklab, var(--mic-c) 60%, var(--text));
@@ -2054,7 +2054,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
   color: var(--color-on-accent);
 }
 #cultivos-table-container .cult-atb-mk {
-  padding: 1px 7px;
+  padding: 1px 8px;
   border-radius: 999px;
   background: color-mix(in oklab, var(--warn) 16%, var(--surface));
   color: var(--warn);
@@ -2119,7 +2119,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 }
 #cultivos-table-container .cult-atb-note {
   margin-top: var(--space-2);
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 8px;
   background: color-mix(in oklab, var(--warn) 12%, var(--surface));
   color: var(--warn);
@@ -2198,7 +2198,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
 .cult-atb-pop .cult-atb-item {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 4px;
   padding: 2px 0;
   border-bottom: 1px solid color-mix(in oklab, var(--text-muted) 18%, transparent);
 }
@@ -2210,7 +2210,7 @@ button.med-receta-dia:hover { filter: brightness(0.95); }
   --mic-c: var(--text-muted);
   order: 3;
   min-width: 56px;
-  padding: 1px 10px;
+  padding: 1px 8px;
   border-radius: 999px;
   background: color-mix(in oklab, var(--mic-c) 14%, transparent);
   color: color-mix(in oklab, var(--mic-c) 60%, var(--text));

@@ -219,12 +219,12 @@ textarea.field-shake {
 .todo-prio-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
   margin: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-  padding: 5px 10px 5px 8px;
+  padding: 4px 8px 4px 8px;
   background: color-mix(in oklab, var(--surface) 85%, var(--bg));
   cursor: pointer;
   font: inherit;

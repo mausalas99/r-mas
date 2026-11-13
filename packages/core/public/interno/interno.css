@@ -18,7 +18,7 @@
   left: -9999px;
   top: 0;
   z-index: var(--z-db-unlock);
-  padding: 10px 16px;
+  padding: 8px 16px;
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -38,9 +38,6 @@
   outline-offset: 1px;
 }
 
-.interno-app:focus {
-  outline: none;
-}
 
 .interno-app {
   max-width: 640px;
@@ -79,7 +76,7 @@
   background: transparent;
   color: var(--text-muted, #9aa5b1);
   font-size: 1.25rem;
-  padding: 0.35rem;
+  padding: 4px;
   line-height: 1;
   cursor: pointer;
 }
@@ -127,7 +124,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 4px;
 }
 
 .interno-name {
@@ -140,21 +137,21 @@
 .interno-handoff-markers {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.2rem;
+  gap: 4px;
 }
 
 .interno-detail-markers {
-  margin: 0.35rem 0 0;
+  margin: 4px 0 0;
 }
 
 .interno-detail-markers .interno-handoff-markers {
-  gap: 0.3rem;
+  gap: 4px;
 }
 
 .interno-chip {
   font-size: 0.65rem;
   font-weight: 600;
-  padding: 0.2rem 0.45rem;
+  padding: 4px 8px;
   border-radius: 999px;
   white-space: nowrap;
 }
@@ -190,9 +187,9 @@
 
 .interno-pending-tag {
   font-size: 0.625rem; /* --type-wb-counter-label scale (10px) */
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
-  padding: 0.15rem 0.4rem;
+  padding: 4px 8px;
   border-radius: 999px;
   line-height: 1.2;
 }
@@ -210,14 +207,14 @@
 .interno-vitals-metrics {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 4px;
   margin: 0.5rem 0 0.75rem;
 }
 
 .interno-vitals-metric {
   font-size: 0.68rem;
   font-weight: 600;
-  padding: 0.15rem 0.45rem;
+  padding: 4px 8px;
   border-radius: 999px;
   background: rgba(56, 132, 255, 0.12);
   color: #9ec5ff;
@@ -230,7 +227,7 @@
 }
 
 .interno-detail h2 {
-  margin: 0.75rem 0 0.35rem;
+  margin: 0.75rem 0 4px;
   font-size: 0.95rem;
 }
 
@@ -252,7 +249,7 @@
   margin: 0.5rem 0 0;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border, #2a3544);
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(0, 0, 0, 0.12);
   cursor: pointer;
   touch-action: manipulation;
@@ -299,9 +296,9 @@
   display: grid;
   grid-template-columns: 2.75rem 1fr auto;
   align-items: center;
-  gap: 0.35rem 0.5rem;
+  gap: 4px 0.5rem;
   min-height: 44px;
-  padding: 0.45rem 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border, #2a3544);
   cursor: pointer;
   touch-action: manipulation;
@@ -334,7 +331,7 @@
 .interno-estudio-main {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -357,7 +354,7 @@
 .interno-badge {
   font-size: 0.6rem;
   font-weight: 700;
-  padding: 0.12rem 0.4rem;
+  padding: 0.12rem 8px;
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -459,8 +456,8 @@
 .interno-sheet-dl > div {
   display: grid;
   grid-template-columns: 5.5rem 1fr;
-  gap: 0.35rem;
-  padding: 0.35rem 0;
+  gap: 4px;
+  padding: 4px 0;
   border-bottom: 1px solid var(--border, #2a3544);
 }
 
@@ -555,7 +552,7 @@
   display: block;
   font-size: 0.7rem;
   color: var(--text-muted, #9aa5b1);
-  margin-bottom: 0.2rem;
+  margin-bottom: 4px;
 }
 
 .interno-field input {
@@ -577,8 +574,8 @@
 .interno-glu-row {
   display: grid;
   grid-template-columns: 1fr 5rem auto;
-  gap: 0.35rem;
-  margin-bottom: 0.35rem;
+  gap: 4px;
+  margin-bottom: 4px;
 }
 
 .interno-glu-row input {
@@ -598,7 +595,7 @@
   background: none;
   color: var(--color-accent, var(--action));
   font-size: 0.85rem;
-  padding: 0.35rem 0;
+  padding: 4px 0;
   cursor: pointer;
 }
 
@@ -629,7 +626,7 @@
   transform: translateX(-50%);
   background: #1e2936;
   color: #fff;
-  padding: 0.6rem 1rem;
+  padding: 8px 1rem;
   border-radius: 8px;
   font-size: 0.85rem;
   z-index: 200;
@@ -661,7 +658,7 @@
 
 .interno-help-list {
   margin: 0.75rem 0 1rem;
-  padding-left: 1.2rem;
+  padding-left: 16px;
   color: var(--text-muted, #9aa5b1);
   font-size: 0.9rem;
   line-height: 1.45;
@@ -689,7 +686,7 @@
 .interno-host-manual .interno-field {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 4px;
   margin: 0.75rem 0;
 }
 

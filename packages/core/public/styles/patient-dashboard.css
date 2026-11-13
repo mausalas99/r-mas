@@ -99,7 +99,7 @@ body[data-sala-view]:not([data-sala-home]) .patient-dash .dash-back-cards:hover 
 
 .patient-dash .empty-hint {
   margin: 0;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border: 1px dashed var(--color-border-dashed);
   border-radius: var(--radius-control);
   background: var(--color-empty-fill);
@@ -131,7 +131,7 @@ body[data-sala-view]:not([data-sala-home]) .patient-dash .dash-back-cards:hover 
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 3px 8px;
+  padding: 4px 8px;
   font-size: 0.82em;
   font-weight: 600;
   color: var(--color-accent-soft-text);
@@ -170,7 +170,7 @@ html.dark .patient-dash .chip {
 .patient-dash .svc {
   border: 0;
   border-radius: var(--radius-pill);
-  padding: 3px 8px;
+  padding: 4px 8px;
   font-size: 11.5px;
   font-weight: 600;
   background: oklch(0.93 0.045 var(--h, 220));
@@ -196,7 +196,7 @@ html.dark .patient-dash .svc.is-on {
   background: transparent;
   color: var(--color-ink-muted);
   border-radius: var(--radius-pill);
-  padding: 3px 8px;
+  padding: 4px 8px;
   font-size: 11.5px;
   font-weight: 600;
 }
@@ -210,14 +210,14 @@ html.dark .patient-dash .svc.is-on {
   font-size: 11px;
   font-weight: 700;
   color: var(--color-ink-muted);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .patient-dash .ic-pal {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
-  margin: 0 0 14px;
+  margin: 0 0 12px;
 }
 
 .patient-dash .bento {
@@ -299,11 +299,11 @@ html.dark .patient-dash .svc.is-on {
   min-height: 5em; /* header + one row: never cut a row in half */
 }
 
-.patient-dash .bento.rest .card-b { padding: 4px 12px 6px; }
+.patient-dash .bento.rest .card-b { padding: 4px 12px 4px; }
 
 .patient-dash .card-h-count,
 .patient-dash .bento.meds-band .soap-pack .zone-more {
-  padding: 1px 7px;
+  padding: 1px 8px;
   border-radius: 999px;
   background: color-mix(in oklab, var(--color-ink) 7%, transparent);
   font: var(--type-wb-metadata);
@@ -338,9 +338,9 @@ html.dark .patient-dash .svc.is-on {
   overflow: hidden;
 }
 .patient-dash .bento.meds-band .card-b {
-  padding: 2px 10px 6px;
+  padding: 2px 8px 4px;
 }
-.patient-dash .bento.meds-band .card-h { padding: 7px 12px; }
+.patient-dash .bento.meds-band .card-h { padding: 8px 12px; }
 
 .patient-dash .card,
 .patient-dash button.card,
@@ -387,7 +387,7 @@ html.dark .patient-dash .svc.is-on {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  padding: 7px 12px;
+  padding: 8px 12px;
   font-size: var(--fs-14);
   font-weight: var(--fw-strong);
   letter-spacing: 0;
@@ -396,7 +396,7 @@ html.dark .patient-dash .svc.is-on {
 }
 
 .patient-dash .card-b {
-  padding: 10px 12px 12px;
+  padding: 8px 12px 12px;
 }
 
 .patient-dash .vitals-card,
@@ -409,7 +409,7 @@ html.dark .patient-dash .svc.is-on {
 
 .patient-dash .vitals-card .card-h,
 .patient-dash .labs-card .card-h {
-  padding: 7px 12px;
+  padding: 8px 12px;
 }
 
 .patient-dash .vitals-card .card-b {
@@ -418,7 +418,7 @@ html.dark .patient-dash .svc.is-on {
   display: flex;
   flex-direction: column;
   overflow: visible;
-  padding: 6px 12px 6px;
+  padding: 4px 12px 4px;
 }
 
 .patient-dash .bento.vitals-labs .vitals-card.vitals-card--empty {
@@ -434,7 +434,7 @@ html.dark .patient-dash .svc.is-on {
   grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
   grid-auto-rows: minmax(min-content, 1fr);
   align-content: stretch;
-  gap: 6px;
+  gap: 4px;
   flex: 1 1 auto;
   min-height: min-content;
 }
@@ -460,7 +460,7 @@ html.dark .patient-dash .svc.is-on {
   flex-direction: column;
   justify-content: center;
   gap: 1px;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--color-ink) 4%, transparent);
 }
@@ -507,7 +507,7 @@ html.dark .patient-dash .svc.is-on {
   flex: 1 1 auto;
   min-height: min-content;
   overflow: visible;
-  padding: 6px 12px 8px;
+  padding: 4px 12px 8px;
 }
 
 .patient-dash .day-draws {
@@ -560,14 +560,14 @@ html.dark .patient-dash .svc.is-on {
 .patient-dash .draw-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
-  gap: 6px;
+  gap: 4px;
 }
 
 .patient-dash .draw-cell {
   background: var(--color-danger-tint);
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-danger) 16%, transparent);
   border-radius: var(--radius-control);
-  padding: 5px 10px;
+  padding: 4px 8px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -644,7 +644,7 @@ html.dark .patient-dash .draw-value.abn {
   font-weight: 650;
   letter-spacing: 0.08em;
   color: var(--color-ink-muted);
-  padding: 2px 0 3px;
+  padding: 2px 0 4px;
   break-after: avoid;
   break-inside: avoid;
 }
@@ -675,8 +675,8 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap] em {
   display: flex;
   align-items: baseline;
   justify-content: flex-start;
-  gap: 10px;
-  padding: 2px 0 3px;
+  gap: 8px;
+  padding: 2px 0 4px;
   max-width: 100%;
   break-inside: avoid;
 }
@@ -713,7 +713,7 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap] em {
 }
 
 .patient-dash .rows li {
-  padding: 5px 0;
+  padding: 4px 0;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -729,8 +729,8 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap] em {
 .patient-dash .rows li.is-overdue {
   background: var(--color-danger-tint);
   border-radius: var(--radius-row-btn);
-  padding: 3px 6px;
-  margin: -3px -6px;
+  padding: 4px 4px;
+  margin: -4px -4px;
 }
 
 .patient-dash .rows li.is-overdue .due-tag {
@@ -738,7 +738,7 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap] em {
   font: 700 10px/1.3 var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin-right: 6px;
+  margin-right: 4px;
 }
 
 .patient-dash .due { color: var(--color-danger); font-weight: 600; }
@@ -836,14 +836,14 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap] em {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 8px;
+  gap: 4px 8px;
 }
 .ic-cf {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   height: 34px;
-  padding: 0 14px;
+  padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: var(--surface);
@@ -881,7 +881,7 @@ html.dark .patient-dash .bento.meds-band .soap-pack .z[data-soap] em {
 .ic-cf select.ic-consult-input,
 .ic-cf .ic-cf-svc {
   appearance: none;
-  padding-right: 18px;
+  padding-right: 16px;
   background: no-repeat right center / 12px
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23717176' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E");
 }
@@ -917,13 +917,13 @@ html.dark .ic-cf--svc.is-picked::before {
   display: flex;
   flex: 0 0 auto;
   flex-wrap: wrap;
-  gap: 6px 14px;
+  gap: 4px 12px;
 }
 
 .patient-dash .ctx-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -935,7 +935,7 @@ html.dark .ic-cf--svc.is-picked::before {
 }
 
 .patient-dash .ctx-pill {
-  padding: 3px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: var(--color-elevated);
   font: 500 12.5px/1.4 var(--font-ui);
@@ -959,7 +959,7 @@ html.dark .ic-cf--svc.is-picked::before {
 
 /* Positive cultures under today's labs: one tile each, same grid as lab cells. */
 .patient-dash .cultivos {
-  margin-top: 10px;
+  margin-top: 8px;
   min-width: 0;
 }
 
@@ -977,7 +977,7 @@ html.dark .ic-cf--svc.is-picked::before {
 .patient-dash .cult-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: 4px;
 }
 
 .patient-dash .cultivos-h .cult-pending-chip {
@@ -999,7 +999,7 @@ html.dark .ic-cf--svc.is-picked::before {
   gap: 2px;
   min-width: 0;
   max-width: 100%;
-  padding: 5px 10px;
+  padding: 4px 8px;
   border: 0;
   border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--color-ink) 5%, transparent);
@@ -1062,7 +1062,7 @@ html.dark .ic-cf--svc.is-picked::before {
   left: 0;
   width: max-content;
   max-width: min(420px, 70vw);
-  padding: 8px 10px;
+  padding: 8px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--color-elevated);
@@ -1094,7 +1094,7 @@ html.dark .ic-cf--svc.is-picked::before {
 .patient-dash .cult-pop-row {
   display: grid;
   grid-template-columns: 3.2em 1fr;
-  gap: 6px;
+  gap: 4px;
   font: 500 12.5px/1.45 var(--font-ui);
 }
 
@@ -1115,7 +1115,7 @@ html.dark .ic-cf--svc.is-picked::before {
 .patient-dash .vitals-card .card-h {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .patient-dash .vitals-card .card-h-meta {
   margin-left: auto;
@@ -1123,7 +1123,7 @@ html.dark .ic-cf--svc.is-picked::before {
 .patient-dash .vitals-full-btn {
   flex: none;
   min-height: 0;
-  padding: 3px 12px;
+  padding: 4px 12px;
   font-size: 11px;
   border-radius: var(--radius-pill);
 }
@@ -1174,7 +1174,7 @@ html.dark .ic-cf--svc.is-picked::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   color: var(--color-ink-muted);
 }
 .patient-dash .glu-bar i {
@@ -1190,7 +1190,7 @@ html.dark .ic-cf--svc.is-picked::before {
 .patient-dash .bal-tiles { display: flex; gap: 8px; }
 .patient-dash .bal-tiles > div {
   flex: 1 1 0;
-  padding: 6px 12px;
+  padding: 4px 12px;
   border-radius: 12px;
   background: color-mix(in oklab, var(--color-ink) 4%, transparent);
 }

@@ -17,9 +17,9 @@
 }
 /* Cuando vive en un modal centrado, deja que el modal controle el scroll. */
 #profile-modal .profile-body { max-height: none; overflow: visible; padding: 0; }
-.settings-theme-row { display: flex; gap: 6px; }
+.settings-theme-row { display: flex; gap: 4px; }
 .settings-theme-btn {
-  flex: 1; margin: 0 !important; font-size: 11px; padding: 6px 4px;
+  flex: 1; margin: 0 !important; font-size: 11px; padding: 4px 4px;
   background: var(--lab-chip-bg); color: var(--action); border: 1px solid transparent;
   border-radius: 5px; font-family: inherit; font-weight: 600; cursor: pointer;
 }
@@ -43,7 +43,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  padding: 3px;
+  padding: 4px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--divider);
   background: color-mix(in oklab, var(--color-surface) 94%, transparent);
@@ -294,13 +294,13 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
 .settings-dropdown-head-links {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   margin-left: auto;
   margin-right: 4px;
 }
 .settings-head-link {
   margin: 0;
-  padding: 5px 12px;
+  padding: 4px 12px;
   min-height: 28px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
@@ -346,7 +346,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
 }
 .settings-search-icon {
   position: absolute;
-  left: 11px;
+  left: 12px;
   color: var(--text-muted);
   pointer-events: none;
 }
@@ -383,7 +383,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 10px 8px;
+  padding: 8px 8px;
   border-right: 1px solid var(--border);
   background: color-mix(in oklab, var(--surface) 94%, var(--bg));
   overflow: hidden;
@@ -391,7 +391,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
 .settings-nav-item {
   width: 100%;
   margin: 0;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border: none;
   border-radius: var(--radius-badge);
   background: transparent;
@@ -451,7 +451,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   background: var(--surface);
 }
@@ -463,7 +463,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
 .settings-form-row {
   display: grid;
   grid-template-columns: minmax(88px, 108px) minmax(0, 1fr);
-  gap: 6px 10px;
+  gap: 4px 8px;
   align-items: center;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
@@ -489,7 +489,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
 }
 .settings-form-foot {
   margin: 0;
-  padding: 10px 16px 12px;
+  padding: 8px 16px 12px;
   font-size: 10px;
   line-height: 1.4;
   color: var(--text-muted);
@@ -525,14 +525,14 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   background: var(--surface);
 }
 .settings-card-stack__foot {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   padding: 0 var(--settings-copy-inset, 16px) 12px;
   border-top: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
 }
@@ -546,9 +546,9 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
 .settings-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px 14px;
+  gap: 8px 12px;
   align-items: center;
-  padding: 13px var(--settings-copy-inset, 16px);
+  padding: 12px var(--settings-copy-inset, 16px);
   border-bottom: none;
 }
 .settings-card:last-child,
@@ -567,7 +567,7 @@ html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-mo
   letter-spacing: 0.01em;
 }
 .settings-card__desc {
-  margin: 3px 0 0;
+  margin: 4px 0 0;
   font-size: 11px;
   line-height: 1.4;
   color: var(--text-muted);
@@ -622,7 +622,7 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
   outline-offset: 2px;
 }
 .settings-section-label {
-  margin: 12px 0 6px;
+  margin: 12px 0 4px;
   padding: 0;
   font-size: var(--fs-14);
   font-weight: var(--fw-strong);
@@ -644,7 +644,7 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px 18px 20px;
+  padding: 16px 16px 20px;
   max-height: none;
   opacity: 1;
   overflow: visible;
@@ -667,7 +667,7 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
 .settings-dropdown-modal #settings-downgrade-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   border: none;
@@ -726,7 +726,7 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
   align-items: center;
   gap: 12px;
   margin: 0;
-  padding: 10px 12px 10px 16px;
+  padding: 8px 12px 8px 16px;
   border: none;
   border-radius: var(--radius-container);
   background: var(--color-accent-soft);
@@ -766,7 +766,7 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
   max-width: min(200px, 44vw);
   min-height: 32px;
   height: 32px;
-  padding: 5px 26px 5px 10px;
+  padding: 4px 24px 4px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-field);
   background-color: var(--surface);
@@ -797,14 +797,14 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
   box-shadow: 0 0 0 2px color-mix(in oklab, var(--action) 18%, transparent);
 }
 .settings-dropdown-modal .settings-sync-help-link .wb-btn {
-  margin-left: 6px;
+  margin-left: 4px;
   display: inline-flex;
   vertical-align: middle;
 }
 .lan-connection-hero {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   padding: 2px 0 4px;
 }
 .lan-connection-hero__status {
@@ -827,7 +827,7 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 10px 12px;
+  gap: 8px 12px;
 }
 .lan-connection-hero__pin-main {
   min-width: 0;
@@ -849,14 +849,14 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
 .lan-connection-hero__pin-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 .lan-alert-strip {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 8px 12px;
   border-radius: var(--radius-field);
   background: var(--color-warn-surface);
   border: 1px solid var(--color-warn-border);
@@ -891,12 +891,12 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
 .lan-panel-group--admin .rpc-disclosure,
 .lan-panel-group--admin .settings-card-stack,
 .lan-panel-group--admin .equipos-qr-compact-card {
-  border-radius: 10px;
+  border-radius: 8px;
 }
 .lan-panel-group--admin .cloud-sync-diagnostics-panel > .rpc-disclosure__summary,
 .lan-panel-group--admin .lan-hub-interno-details > .lan-settings-card-summary {
   min-height: 44px;
-  padding: 10px 32px 10px 14px;
+  padding: 8px 32px 8px 12px;
 }
 .lan-settings-card-summary {
   display: grid !important;
@@ -928,7 +928,7 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
   align-items: center;
   column-gap: 8px;
   row-gap: 2px;
-  padding: 12px 32px 12px 14px;
+  padding: 12px 32px 12px 12px;
 }
 .lan-panel-group--grid .rpc-disclosure__summary--stacked .lan-connect-card-title {
   grid-column: 1;
@@ -949,12 +949,12 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
 }
 .lan-panel-group--grid .lan-invite-collapsible-summary {
   min-height: 44px;
-  padding: 12px 32px 12px 14px;
+  padding: 12px 32px 12px 12px;
   font-size: 12px;
   font-weight: 700;
 }
 .lan-hub-team-card {
-  padding: 12px 14px;
+  padding: 12px 12px;
 }
 .lan-hub-team-card .lan-connect-card-title {
   margin: 0;
@@ -1027,12 +1027,12 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
 .settings-accordion-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .settings-dropdown-modal .settings-acc-compact {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 @media (min-width: 560px) {
   .settings-dropdown-modal .settings-acc-compact {
@@ -1066,7 +1066,7 @@ input[type="checkbox"].settings-card__toggle:focus-visible {
 .settings-data-sync-compare {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: 8px;
 }
 @media (min-width: 560px) {
   .settings-data-sync-compare {
@@ -1120,8 +1120,8 @@ body.connection-dropdown-open {
 .connection-dropdown-modal-head {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 16px 18px;
+  gap: 4px;
+  padding: 16px 16px;
   border-bottom: 1px solid var(--divider);
   flex-shrink: 0;
   background: var(--color-elevated, var(--surface));
@@ -1132,7 +1132,7 @@ body.connection-dropdown-open {
   align-items: center;
   gap: 2px;
   margin: 0;
-  padding: 6px 8px 6px 2px;
+  padding: 4px 8px 4px 2px;
   border: none;
   border-radius: var(--radius-control);
   background: transparent;
@@ -1171,7 +1171,7 @@ body.connection-dropdown-open {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 14px 14px 18px;
+  padding: 12px 12px 16px;
   background: var(--color-elevated, var(--surface));
 }
 .connection-dropdown-head {
@@ -1225,12 +1225,12 @@ body.connection-dropdown-open {
 .lan-disconnect-banner-pref {
   font-size: 10px;
   line-height: 1.35;
-  gap: 6px;
+  gap: 4px;
 }
 .lan-connection-panel-root {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   max-width: 100%;
 }
@@ -1275,7 +1275,7 @@ body.connection-dropdown-open {
 .lan-connection-stack .rpc-disclosure > .lan-settings-card-summary {
   position: relative;
   min-height: 44px;
-  padding: 9px 32px 9px 12px;
+  padding: 8px 32px 8px 12px;
   border-bottom: none;
   cursor: pointer;
   list-style: none;
@@ -1293,7 +1293,7 @@ body.connection-dropdown-open {
 .lan-connection-stack .lan-settings-card-summary::after {
   position: absolute;
   top: 50%;
-  right: 14px;
+  right: 12px;
   margin-top: -4px;
 }
 .lan-connection-stack .rpc-disclosure__summary--stacked .lan-connect-card-title,
@@ -1323,10 +1323,10 @@ body.connection-dropdown-open {
   border-bottom: none;
 }
 .lan-connection-stack .lan-hub-team-card {
-  padding: 9px 12px;
+  padding: 8px 12px;
 }
 .lan-connection-stack .lan-shift-pin-client-card {
-  padding: 10px 12px 12px;
+  padding: 8px 12px 12px;
 }
 .lan-connection-stack--admin {
   margin-top: 0;
@@ -1357,11 +1357,11 @@ body.connection-dropdown-open {
 }
 .connection-dropdown-modal .lan-pin-meta {
   font-size: 11px;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 .connection-dropdown-modal .lan-alert-strip {
   margin: 0;
-  padding: 9px 12px;
+  padding: 8px 12px;
   font-size: 11px;
 }
 .connection-dropdown-modal .lan-alert-strip strong {
@@ -1462,7 +1462,7 @@ body.connection-dropdown-open {
   flex-direction: column;
   gap: 0;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   background: var(--surface);
 }
@@ -1483,7 +1483,7 @@ body.connection-dropdown-open {
   border-bottom: none;
 }
 .lan-panel-group--list .lan-hub-team-card {
-  padding: 11px 14px;
+  padding: 12px 12px;
   background: transparent;
 }
 .lan-panel-group--list .rpc-disclosure > summary,
@@ -1491,7 +1491,7 @@ body.connection-dropdown-open {
 .lan-panel-group--list .rpc-disclosure > .lan-settings-card-summary {
   position: relative;
   min-height: 38px;
-  padding: 7px 30px 7px 12px;
+  padding: 8px 32px 8px 12px;
   border-bottom: none;
 }
 .lan-panel-group--list .lan-invite-collapsible-summary {
@@ -1512,7 +1512,7 @@ body.connection-dropdown-open {
 .lan-panel-group--list .lan-settings-card-summary::after {
   position: absolute;
   top: 50%;
-  right: 14px;
+  right: 12px;
   margin-top: -0.22em;
   grid-column: unset;
   grid-row: unset;
@@ -1534,7 +1534,7 @@ body.connection-dropdown-open {
 .lan-panel-group--grid .lan-panel-group__body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px;
+  gap: 8px;
   align-items: start;
 }
 .lan-panel-group__body > .lan-connect-other-mac--prominent,
@@ -1553,7 +1553,7 @@ body.connection-dropdown-open {
   .lan-connect-other-mac--prominent .lan-connect-other-mac-body {
     display: grid;
     grid-template-columns: 1fr minmax(168px, 220px);
-    gap: 10px 12px;
+    gap: 8px 12px;
     align-items: end;
   }
   .lan-connect-other-mac--prominent .lan-connect-other-mac-body > .lan-connect-card-hint {
@@ -1582,7 +1582,7 @@ body.connection-dropdown-open {
 }
 .lan-disconnect-banner-pref input { flex-shrink: 0; margin-top: 2px; }
 .lan-known-sessions-card {
-  padding: 10px 12px 12px;
+  padding: 8px 12px 12px;
 }
 .lan-known-sessions-title {
   font-size: 11px;
@@ -1595,7 +1595,7 @@ body.connection-dropdown-open {
 .lan-known-sessions-list {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 6px;
+  gap: 4px;
 }
 @media (min-width: 560px) {
   .lan-known-sessions-list {
@@ -1631,7 +1631,7 @@ body.connection-dropdown-open {
 .lan-connection-panel-root .lan-rooms-panel ~ .lan-rooms-panel { display: none !important; }
 .lan-connect-card {
   border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface);
-  padding: 10px 10px 12px; display: flex; flex-direction: column; gap: 8px;
+  padding: 8px 8px 12px; display: flex; flex-direction: column; gap: 8px;
   box-shadow: none;
 }
 .lan-connect-card-title {
@@ -1644,7 +1644,7 @@ body.connection-dropdown-open {
 
 /* R+ Lista de espera — compact ⇄ teaser + wide modal panel */
 .equipos-qr-compact-card {
-  padding: 12px 14px;
+  padding: 12px 12px;
 }
 .equipos-qr-compact-card .equipos-qr-compact-host {
   padding: 0;
@@ -1731,7 +1731,7 @@ body.connection-dropdown-open {
   display: flex;
   gap: 8px;
   align-items: center;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
@@ -1790,7 +1790,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 18px;
+  padding: 16px 16px;
   min-height: 56px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--divider);
@@ -1818,14 +1818,14 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   max-height: calc(min(88dvh, calc(var(--app-height) - 48px)) - 56px);
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 16px 18px 18px;
+  gap: 12px;
+  padding: 16px 16px 16px;
 }
 
 .equipos-lista-panel-body .equipos-cloud-setup {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -1852,12 +1852,12 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .equipos-lista-panel-body .equipos-cloud-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
-  padding: 2px 8px 2px 6px;
+  padding: 2px 8px 2px 4px;
   border-radius: var(--radius-pill);
   border: 1px solid color-mix(in oklab, var(--success) 32%, var(--border));
   background: color-mix(in oklab, var(--success) 10%, transparent);
@@ -1901,7 +1901,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .equipos-lista-panel-body .equipos-cloud-fields {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 8px 10px;
+  gap: 8px 8px;
   align-items: end;
 }
 @media (max-width: 640px) {
@@ -1918,7 +1918,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   width: 100%;
   box-sizing: border-box;
   min-height: 38px;
-  padding: 8px 10px;
+  padding: 8px 8px;
   font-size: 12px;
   color: var(--text);
   background: var(--input-fill, var(--surface));
@@ -1943,14 +1943,14 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .equipos-lista-panel-body .equipos-qr-resident {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   padding-top: 4px;
   border-top: 1px solid var(--border);
 }
 .equipos-lista-panel-body .equipos-qr-resident-grid {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 14px 16px;
+  gap: 12px 16px;
   align-items: start;
 }
 @media (max-width: 560px) {
@@ -1977,13 +1977,13 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .equipos-lista-panel-body .equipos-qr-resident-side {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 .equipos-lista-panel-body .equipos-qr-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 .equipos-lista-panel-body .equipos-qr-actions--row .wb-btn {
   flex: 0 1 auto;
@@ -1995,7 +1995,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .equipos-lista-panel-body .equipos-qr-url-box {
   margin: 0;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-radius: var(--radius-control);
   border: 1px solid var(--border);
   background: var(--input-fill, var(--surface));
@@ -2009,7 +2009,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .equipos-lista-panel-body .equipos-qr-lan-notice {
   margin: 0;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-radius: var(--radius-control);
   border: 1px solid color-mix(in oklab, var(--warning, #b45309) 28%, var(--border));
   background: color-mix(in oklab, var(--warning, #b45309) 8%, var(--surface));
@@ -2035,7 +2035,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .equipos-lista-panel-body .equipos-queue-board-host .equipos-board-mode {
   font-size: 11px;
@@ -2053,7 +2053,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .equipos-lista-panel-body .equipos-queue-board-host .equipos-desktop-row {
   margin: 8px 0;
-  padding: 10px;
+  padding: 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   animation: fade-in var(--dur-fast) var(--ease-out);
@@ -2065,12 +2065,12 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .equipos-lista-panel-body .equipos-queue-board-host .equipos-board-admin-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
+  gap: 4px;
+  margin-top: 8px;
 }
 .equipos-history-host {
-  margin-top: 10px;
-  padding: 10px;
+  margin-top: 8px;
+  padding: 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
@@ -2098,7 +2098,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .equipos-history-table th,
 .equipos-history-table td {
-  padding: 6px 8px;
+  padding: 4px 8px;
   text-align: left;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
@@ -2118,12 +2118,12 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 
 .lan-host-patients-list {
-  list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px;
+  list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px;
   max-height: 240px; overflow-y: auto;
 }
 .lan-host-patients-row {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
-  padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-badge); background: var(--surface);
+  padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius-badge); background: var(--surface);
 }
 .lan-host-patients-row-main {
   display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1;
@@ -2136,7 +2136,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-patients-badge {
   display: inline-block; font-size: 10px; /* --type-wb-counter-label scale */ font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.04em; padding: 1px 5px; border-radius: 4px; margin-right: 4px;
+  letter-spacing: 0.04em; padding: 1px 4px; border-radius: 4px; margin-right: 4px;
   background: var(--lab-chip-bg); color: var(--text-muted);
 }
 .lan-host-patients-badge--ghost {
@@ -2151,7 +2151,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-patients-preview-row {
   display: flex; flex-direction: column; gap: 1px;
-  padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-badge); background: var(--surface);
+  padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius-badge); background: var(--surface);
 }
 .lan-host-patients-preview-more {
   font-size: 10px; color: var(--text-muted); padding: 2px 4px;
@@ -2160,8 +2160,8 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   z-index: calc(var(--z-modal-nested) + 1);
 }
 .lan-host-census-backdrop .lan-host-census-modal {
-  width: min(960px, 96vw); max-height: 88vh; padding: 20px 22px;
-  display: flex; flex-direction: column; gap: 10px;
+  width: min(960px, 96vw); max-height: 88vh; padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 8px;
 }
 .lan-host-census-header {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
@@ -2176,20 +2176,20 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   flex-shrink: 0; min-width: 32px; padding: 4px 8px;
 }
 .lan-host-census-toolbar {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
 }
 .lan-host-census-search {
   flex: 1 1 220px; min-width: 0;
-  font-size: 12px; padding: 7px 10px; border-radius: var(--radius-badge);
+  font-size: 12px; padding: 8px 8px; border-radius: var(--radius-badge);
   border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
 }
 .lan-host-census-filter {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 4px;
   font-size: 11px; color: var(--text-muted); white-space: nowrap;
 }
 .lan-host-census-filter-team {
   flex: 0 1 200px; min-width: 140px;
-  font-size: 11px; padding: 6px 8px; border-radius: var(--radius-badge);
+  font-size: 11px; padding: 4px 8px; border-radius: var(--radius-badge);
   border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
 }
 .lan-host-census-badge--archived {
@@ -2208,7 +2208,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-census-table th,
 .lan-host-census-table td {
-  padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border);
+  padding: 8px 8px; text-align: left; border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
 .lan-host-census-table th {
@@ -2226,7 +2226,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-host-census-badge {
   display: inline-block; font-size: 10px; /* --type-wb-counter-label scale */ font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.04em; padding: 1px 5px; border-radius: 4px;
+  letter-spacing: 0.04em; padding: 1px 4px; border-radius: 4px;
   background: var(--lab-chip-bg); color: var(--text-muted);
 }
 .lan-host-census-badge--ghost {
@@ -2240,7 +2240,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   margin-top: 0; flex-shrink: 0;
 }
 .connection-dropdown-modal .lan-hub-status-card {
-  padding: 8px 10px !important;
+  padding: 8px 8px !important;
   min-height: 0;
 }
 .connection-dropdown-modal .lan-hub-status-card .lan-connect-card-hint {
@@ -2262,17 +2262,17 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .connection-dropdown-modal .lan-shift-pin-card {
   gap: 4px;
-  padding: 8px 10px !important;
+  padding: 8px 8px !important;
 }
 .connection-dropdown-modal .lan-shift-pin-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 8px;
+  gap: 4px 8px;
 }
 .connection-dropdown-modal .lan-shift-pin-display {
   margin: 0;
@@ -2336,11 +2336,11 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 }
 .lan-connect-actions-row .wb-btn { flex: 1; min-width: 140px; }
 .lan-role-tabs {
-  display: flex; gap: 6px; margin-bottom: 6px; padding: 5px;
-  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  display: flex; gap: 4px; margin-bottom: 4px; padding: 4px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
 }
 .lan-role-tab {
-  flex: 1; border: none; border-radius: var(--radius-control); padding: 9px 8px;
+  flex: 1; border: none; border-radius: var(--radius-control); padding: 8px 8px;
   font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
   background: transparent; color: var(--text-muted); line-height: 1.25;
 }
@@ -2360,7 +2360,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .btn-settings-help-primary {
   border: none;
   border-radius: var(--radius-control);
-  padding: 10px 12px;
+  padding: 8px 12px;
   font-size: 13px;
   font-weight: 700;
   font-family: inherit;
@@ -2373,7 +2373,7 @@ html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.ope
 .btn-settings-help-secondary {
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
-  padding: 9px 12px;
+  padding: 8px 12px;
   font-size: 12px;
   font-weight: 700;
   font-family: inherit;
@@ -2441,15 +2441,15 @@ details.settings-accordion:not([open]) > .settings-acc-body {
   overflow: visible;
 }
 .settings-clinical-sync-mode {
-  margin: 0 0 14px;
-  padding: 12px 14px;
+  margin: 0 0 12px;
+  padding: 12px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface-elevated, var(--surface));
 }
 
 .settings-clinical-sync-mode-lead {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
 }
 
 .settings-acc-hint {
@@ -2476,7 +2476,7 @@ details.settings-accordion:not([open]) > .settings-acc-body {
 .settings-acc-danger-label {
   margin: calc(10px * var(--density-space)) 0 2px;
   font-size: calc(11px * var(--density-font));
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--error);
 }
@@ -2496,7 +2496,7 @@ details.settings-accordion:not([open]) > .settings-acc-body {
 }
 .settings-acc-inline-help.is-visible { display: block; }
 .settings-preimport-box {
-  padding: 10px;
+  padding: 8px;
   border-radius: var(--radius-control);
   border: 1px solid rgba(37, 99, 235, 0.35);
   background: var(--lab-chip-bg);
@@ -2519,14 +2519,14 @@ html.high-contrast .settings-accordion > summary { border-bottom: none; }
 html.high-contrast .settings-accordion[open] > summary { border-bottom: 2px solid var(--border); }
 .profile-field-label {
   color: var(--text-muted); font-size: 12px; font-weight: 600;
-  text-transform: none; letter-spacing: 0.01em; margin-bottom: 3px;
+  text-transform: none; letter-spacing: 0.01em; margin-bottom: 4px;
 }
 .profile-input {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   border-radius: var(--radius-control);
-  padding: 10px 12px;
+  padding: 8px 12px;
   color: var(--text);
   font-size: 12px;
   font-family: inherit;
@@ -2576,7 +2576,7 @@ select.profile-input.profile-select {
 .profile-row {
   display: grid;
   grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
-  gap: 10px 32px;
+  gap: 8px 32px;
   padding: calc(14px * var(--density-space, 1)) 0;
 }
 .profile-row[hidden] { display: none; }
@@ -2595,20 +2595,20 @@ select.profile-input.profile-select {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 14px;
+  gap: 12px;
 }
-.profile-row-body.profile-grid-2 { display: grid; align-items: start; gap: 14px 16px; }
+.profile-row-body.profile-grid-2 { display: grid; align-items: start; gap: 12px 16px; }
 .profile-row-body .profile-field { margin: 0; width: 100%; }
 .profile-row-body .profile-actions { margin: 0; }
 .profile-row-body.profile-grid-5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: start; gap: 12px; }
 .profile-row-body--inline { flex-direction: row; flex-wrap: wrap; gap: 12px 20px; }
 .profile-row-body--inline .profile-field { flex: 1 1 14rem; width: auto; }
 .profile-row-body--inline .profile-field--mode { flex: 0 0 auto; }
-.profile-row-body--inline .profile-field-label { display: block; margin-bottom: 6px; }
+.profile-row-body--inline .profile-field-label { display: block; margin-bottom: 4px; }
 .profile-field--full { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; }
 .profile-field--full .profile-hint--field { margin: 0; }
 .profile-hint {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   font-size: calc(11px * var(--density-font, 1));
   line-height: 1.4;
   color: var(--text-muted);
@@ -2619,7 +2619,7 @@ select.profile-input.profile-select {
 .profile-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px 14px;
+  gap: 8px 12px;
 }
 .profile-hint--field {
   margin: 4px 0 0;
@@ -2642,7 +2642,7 @@ select.profile-input.profile-select {
   box-sizing: border-box;
   height: 40px; /* same as .profile-input, so the switch lines up with the field beside it */
   gap: 2px;
-  padding: 3px;
+  padding: 4px;
   border: var(--border-hairline);
   border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--surface) 92%, var(--bg));
@@ -2678,15 +2678,15 @@ select.profile-input.profile-select {
 .formats-defaults-editor {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .formats-defaults-editor-banner {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px 14px;
-  padding: 10px 12px;
+  gap: 8px 12px;
+  padding: 8px 12px;
   border-radius: var(--radius-control);
   border: 1px solid var(--action);
   background: color-mix(in srgb, var(--action) 12%, transparent);
@@ -2722,7 +2722,7 @@ select.profile-input.profile-select {
   bottom: 0;
   z-index: 4;
   margin-top: 12px;
-  padding: 12px 0 6px;
+  padding: 12px 0 4px;
   border-top: 1px solid var(--border);
   background: var(--color-elevated);
 }
@@ -2743,11 +2743,11 @@ select.profile-input.profile-select {
   backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 18px 20px 16px;
+  gap: 8px;
+  padding: 16px 20px 16px;
 }
 .templates-modal-lead {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   font-size: 12px;
   line-height: 1.45;
   color: var(--text-muted);
@@ -2763,7 +2763,7 @@ select.profile-input.profile-select {
 .templates-modal-editor {
   overflow-y: auto;
   max-height: min(68vh, 640px);
-  padding-right: 6px;
+  padding-right: 4px;
 }
 .templates-modal-preview-pane {
   display: flex;
@@ -2776,7 +2776,7 @@ select.profile-input.profile-select {
 }
 .templates-preview-pane-title {
   margin: 0;
-  padding: 10px 12px;
+  padding: 8px 12px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -2788,10 +2788,10 @@ select.profile-input.profile-select {
 .templates-preview-scroll {
   overflow-y: auto;
   max-height: min(64vh, 600px);
-  padding: 10px 12px 14px;
+  padding: 8px 12px 12px;
 }
 .templates-preview-section-label {
-  margin: 8px 0 6px;
+  margin: 8px 0 4px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -2799,7 +2799,7 @@ select.profile-input.profile-select {
 }
 .templates-preview-section-label:first-child { margin-top: 0; }
 .templates-modal-group {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px dashed color-mix(in oklab, var(--border) 70%, transparent);
 }
@@ -2811,10 +2811,10 @@ select.profile-input.profile-select {
   letter-spacing: 0.02em;
   color: var(--text-muted);
 }
-.templates-modal-field { margin-bottom: 10px; }
+.templates-modal-field { margin-bottom: 8px; }
 .templates-modal-field:last-child { margin-bottom: 0; }
 .tmpl-preview-card .card-header { padding: 8px 12px; min-height: 0; }
-.tmpl-preview-card .card-body { padding: 10px 12px; }
+.tmpl-preview-card .card-body { padding: 8px 12px; }
 .templates-modal-actions { flex-shrink: 0; margin-top: 4px; }
 
 @media (max-width: 860px) {
@@ -2840,7 +2840,7 @@ select.profile-input.profile-select {
   color: var(--text);
 }
 .connection-dropdown-modal .lan-hub-status-card {
-  padding: 8px 10px !important;
+  padding: 8px 8px !important;
 }
 .connection-dropdown-modal .lan-hub-status-card .lan-connect-card-hint {
   margin-top: 2px;
@@ -2849,7 +2849,7 @@ select.profile-input.profile-select {
 }
 .connection-dropdown-modal .lan-hub-status-line {
   font-size: 12px;
-  gap: 6px;
+  gap: 4px;
 }
 
 .lan-hub-status-dot {
@@ -2887,7 +2887,7 @@ select.profile-input.profile-select {
   flex-wrap: wrap;
   font-size: 11px;
   color: var(--text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   cursor: default;
 }
 
@@ -2908,7 +2908,7 @@ select.profile-input.profile-select {
 .lan-hub-rotation-card,
 .lan-hub-team-create-card,
 .lan-hub-entrega-card {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .lan-hub-team-name {
@@ -2948,7 +2948,7 @@ select.profile-input.profile-select {
 .settings-nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-height: 38px;
   font-size: 13px;
 }
@@ -2981,7 +2981,7 @@ select.profile-input.profile-select {
   padding: 20px 24px 24px;
 }
 .settings-panel-title {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -2990,9 +2990,9 @@ select.profile-input.profile-select {
 .settings-status-card {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 16px;
-  padding: 16px 18px;
+  padding: 16px 16px;
   border: var(--border-hairline);
   border-radius: var(--radius-container, 16px);
   background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
@@ -3008,7 +3008,7 @@ select.profile-input.profile-select {
 .settings-status-icon::after {
   content: '';
   position: absolute;
-  inset: 12px 11px 14px 12px;
+  inset: 12px 12px 12px 12px;
   border-left: 2.5px solid var(--color-accent);
   border-bottom: 2.5px solid var(--color-accent);
   transform: rotate(-45deg);
@@ -3024,7 +3024,7 @@ select.profile-input.profile-select {
   justify-content: center;
   border: 0;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--color-livesync-degraded, #b45309);
   transform: none;
 }
@@ -3054,7 +3054,7 @@ select.profile-input.profile-select {
   gap: 8px;
 }
 .settings-tools {
-  margin-top: 14px;
+  margin-top: 12px;
   border: var(--border-hairline);
   border-radius: var(--radius-md);
 }
@@ -3062,7 +3062,7 @@ select.profile-input.profile-select {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 12px 14px;
+  padding: 12px 12px;
   cursor: pointer;
   list-style: none;
 }
@@ -3081,7 +3081,7 @@ select.profile-input.profile-select {
   transform: rotate(90deg);
 }
 .settings-tools > .settings-card-stack {
-  margin: 0 10px 10px;
+  margin: 0 8px 8px;
 }
 .settings-danger-backup {
   margin-top: 12px;
@@ -3090,7 +3090,7 @@ select.profile-input.profile-select {
 .settings-seg {
   display: inline-flex;
   gap: 2px;
-  padding: 3px;
+  padding: 4px;
   border: var(--border-hairline);
   border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--text) 4%, transparent);
@@ -3107,7 +3107,7 @@ select.profile-input.profile-select {
   display: inline-flex;
   align-items: center;
   height: 30px;
-  padding: 0 14px;
+  padding: 0 12px;
   border-radius: var(--radius-pill);
   font-size: 12.5px;
   font-weight: 600;
@@ -3124,7 +3124,7 @@ select.profile-input.profile-select {
 /* Mi perfil: its own window. Two columns of form + live preview, sized to fit without scrolling. */
 #profile-modal .profile-modal--perfil {
   width: min(1180px, calc(100vw - 28px));
-  max-height: min(900px, calc(var(--app-height, 100vh) - 32px));
+  max-height: min(900px, calc(var(--app-height, 100dvh) - 32px));
   /* A long form: solid surface, so muted labels keep AA contrast over the dimmed app. */
   background: var(--color-elevated);
 }
@@ -3153,7 +3153,7 @@ select.profile-input.profile-select {
 .settings-perfil-col {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 [data-profile-mode][hidden] {
@@ -3223,7 +3223,7 @@ select.profile-input.profile-select {
 .settings-perfil-form .settings-perfil-id {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 0 var(--space-1);
 }
 .settings-perfil-avatar {
@@ -3262,7 +3262,7 @@ select.profile-input.profile-select {
 .settings-perfil-doctor {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   max-width: 100%;
 }
 .settings-perfil-doctor .profile-input {
@@ -3358,7 +3358,7 @@ select.profile-input.profile-select {
 }
 .settings-perfil-chip {
   height: 34px;
-  padding: 0 14px;
+  padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   background: transparent;
@@ -3440,7 +3440,7 @@ select.profile-input.profile-select {
 }
 .settings-perfil-sala [data-perfil-sala-hint] {
   margin: 0 0 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
   background: var(--color-accent-soft);
   color: var(--color-accent-soft-text);
@@ -3450,7 +3450,7 @@ select.profile-input.profile-select {
 .settings-perfil-account {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 .settings-perfil-account .settings-card__action {
   display: flex;
