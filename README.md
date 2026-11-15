@@ -51,9 +51,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.5.5](https://github.com/mausalas99/r-mas/releases/tag/v8.5.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.5.6](https://github.com/mausalas99/r-mas/releases/tag/v8.5.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.5.6 (estable — release 8.5.6)
+
+- **Censo:** la orina (EGO) aparece en los labs de 3 días.
+- **Labs:** se descartan los reportes duplicados del mismo día.
+- **Equipos:** admin y R4 ven todos los equipos activos.
+- **Diseño:** textos pequeños en 16 px, espaciado de 4 px y sin emojis.
+
+Notas: `docs/RELEASE_NOTES_8.5.6.txt`.
 
 ## R+ 8.5.5 (estable — release 8.5.5)
 

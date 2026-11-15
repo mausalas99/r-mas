@@ -4,35 +4,27 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_855 = [
+var RELEASE_NOTES_856 = [
   {
-    title: 'Labs de 3 días',
-    body: 'El censo PDF y la tabla de Guardia muestran los <strong>labs de 3 días</strong>.',
+    title: 'Orina en labs de 3 días',
+    body: 'El <strong>EGO</strong> aparece en los labs de 3 días del censo.',
   },
   {
-    title: 'Negativo y positivo',
-    body: 'Los resultados <strong>NEGATIVO</strong>, <strong>POSITIVO</strong> y <strong>TRAZAS</strong> se ven tal cual, no como «---».',
+    title: 'Sin reportes duplicados',
+    body: 'Si un lab llega dos veces el mismo día, <strong>se cuenta una sola vez</strong>.',
   },
   {
-    title: 'Medicamentos propuestos',
-    body: 'En Estado actual confirmas o descartas <strong>un medicamento a la vez</strong>. Los demás siguen pendientes.',
+    title: 'Equipos para admin y R4',
+    body: 'Admin y R4 ven <strong>todos los equipos activos</strong>.',
   },
   {
-    title: 'Datos en Excel',
-    body: 'En Respaldos, <strong>Datos para análisis</strong> crea un Excel con una hoja por tipo de dato.',
-  },
-  {
-    title: 'Cajas que avanzan solas',
-    body: 'Cuarto, cama y registro pasan a la siguiente caja al completar el valor.',
-  },
-  {
-    title: 'Pacientes en una línea',
-    body: 'En el tablero del paciente, las zonas marcadas muestran solo su primera línea.',
+    title: 'Texto más legible',
+    body: 'Buscadores y controles pequeños usan <strong>16 px</strong>. Se quitaron los emojis de Guardia, Entrega y labs.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_855;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_856;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.5.5': RELEASE_NOTES_855,
+  '8.5.6': RELEASE_NOTES_856,
 };

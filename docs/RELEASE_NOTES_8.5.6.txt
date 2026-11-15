@@ -1,0 +1,27 @@
+R+ 8.5.6 (estable — release 8.5.6)
+======================================
+
+Fecha: 2026-11-15
+
+## Resumen
+
+Los labs de 3 días muestran la orina (EGO). Admin y R4 ven todos los equipos activos. Los textos pequeños pasan a 16 px y se quitan los emojis.
+
+## Nuevo / mejorado
+
+- **Nuevo (Censo):** la orina (EGO) aparece en los labs de 3 días.
+- **Corrección (Labs):** los reportes duplicados del mismo día se descartan antes de agrupar.
+- **Cambio (Equipos):** admin y R4 ven todos los equipos activos.
+- **Cambio (Pacientes):** la lista larga de pacientes se desplaza completa.
+- **Cambio (Diseño):** buscadores y controles pequeños en 16 px, espaciado en cuadrícula de 4 px, sin emojis en Guardia, Entrega y labs.
+- **Cambio (Textos):** mayúsculas y minúsculas en español en Nube y rótulos clínicos.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.5.6-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.5.6-Mac-Intel.dmg`
+- Windows: `Instalar-R+-8.5.6-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
