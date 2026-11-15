@@ -134,6 +134,11 @@ export function getSetTrendValueForSeries(set, sectionKey, fieldKey) {
   return parseTrendNumeric(pb[sectionKey][fieldKey]);
 }
 
+export function serieNumFromLabSet(set, sec, fk) {
+  var v = getSetTrendValueForSeries(set, sec, fk);
+  return v != null && isFinite(v) ? v : null;
+}
+
 /** Sets cronológicos ascendentes con al menos un valor en fieldKeys. */
 export function columnSetsForFields(historyAsc, sectionKey, fieldKeys) {
   var seen = Object.create(null);

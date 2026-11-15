@@ -9,8 +9,8 @@ import {
   tableLegendLabelForSpec,
 } from './tend-group-table-render.mjs';
 import { renderGroupCharts, destroyGroupCharts } from './tend-group-charts-render.mjs';
-import { sortLabHistoryChronological } from './tend-core.mjs';
-import { refillGasoExtendedSlot, serieNumFromLabSet } from './tend-group-gaso-slot.mjs';
+import { sortLabHistoryChronological, serieNumFromLabSet } from './tend-core.mjs';
+import { refillGasoExtendedSlot } from './tend-group-gaso-slot.mjs';
 import {
   ensureGasoExtendedDialog,
   closeGasoExtendedBackdrop,

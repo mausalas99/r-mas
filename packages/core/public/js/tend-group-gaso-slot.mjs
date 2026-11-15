@@ -1,11 +1,6 @@
-import { getSetTrendValueForSeries } from './tend-core.mjs';
+import { serieNumFromLabSet } from './tend-core.mjs';
 import { evaluateGasoExtended } from './gaso-extended.mjs';
 import { drawGasoEmpty, clearGasoSlot } from './features/tend-group-charts-view.jsx';
-
-export function serieNumFromLabSet(set, sec, fk) {
-  var v = getSetTrendValueForSeries(set, sec, fk);
-  return v != null && isFinite(v) ? v : null;
-}
 
 export function fmtGasoNum(n, unit) {
   if (n == null || !isFinite(n)) return '—';

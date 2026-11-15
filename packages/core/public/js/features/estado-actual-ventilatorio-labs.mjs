@@ -1,8 +1,7 @@
 /**
  * Gasometría del expediente para cálculos ventilatorios en Estado Actual.
  */
-import { sortLabHistoryChronological } from '../tend-core.mjs';
-import { serieNumFromLabSet } from '../tend-group-gaso-slot.mjs';
+import { sortLabHistoryChronological, serieNumFromLabSet } from '../tend-core.mjs';
 import { resLabsHasGasometria } from '../lab-history-format.mjs';
 import { buildLabSetDateLineForNota } from '../lab-history-format.mjs';
 
