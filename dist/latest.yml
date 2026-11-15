@@ -1,26 +1,22 @@
-version: 8.5.5
+version: 8.5.6
 files:
-  - url: R+-8.5.5-x64.exe
-    sha512: 6gsIxXGJmpKg0M90k7limank7AjUUQTqeJJZwxGMgA9ilUO5aJuRLn2n969S7jDStSBOMPECANFpxLkpOkVcaQ==
-    size: 139026335
-path: R+-8.5.5-x64.exe
-sha512: 6gsIxXGJmpKg0M90k7limank7AjUUQTqeJJZwxGMgA9ilUO5aJuRLn2n969S7jDStSBOMPECANFpxLkpOkVcaQ==
-releaseDate: '2026-11-12T14:04:02.000Z'
+  - url: R+-8.5.6-x64.exe
+    sha512: 69UeM+7RhYLv9mbggAVA4DWk4j+lWMiiNeqa2FkEu4VCngX0Ly6O9ixjVit6Byih1N1yTQQS7YeefwJvncjMog==
+    size: 139277325
+path: R+-8.5.6-x64.exe
+sha512: 69UeM+7RhYLv9mbggAVA4DWk4j+lWMiiNeqa2FkEu4VCngX0Ly6O9ixjVit6Byih1N1yTQQS7YeefwJvncjMog==
+releaseDate: '2026-11-15T20:32:59.000Z'
 releaseNotes: |
-  Añade los labs de 3 días al censo PDF y a la tabla de Guardia. Muestra NEGATIVO, POSITIVO y TRAZAS en vez de «---». En Estado actual confirmas o descartas un medicamento propuesto a la vez. Hay más cambios de diseño en Estado actual.
+  Los labs de 3 días muestran la orina (EGO). Admin y R4 ven todos los equipos activos. Los textos pequeños pasan a 16 px y se quitan los emojis.
   
-  Nuevo (Censo): labs de 3 días en el PDF del censo y en la tabla de Guardia.
+  Nuevo (Censo): la orina (EGO) aparece en los labs de 3 días.
   
-  Corrección (Labs): los valores NEGATIVO, POSITIVO y TRAZAS se leen y muestran bien.
+  Corrección (Labs): los reportes duplicados del mismo día se descartan antes de agrupar.
   
-  Nuevo (Estado actual): confirmar o descartar un medicamento propuesto, uno a la vez.
+  Cambio (Equipos): admin y R4 ven todos los equipos activos.
   
-  Cambio (Estado actual): rediseño visual de paneles y registro por pasos.
+  Cambio (Pacientes): la lista larga de pacientes se desplaza completa.
   
-  Cambio (Tablero paciente): las zonas marcadas muestran solo su primera línea.
+  Cambio (Diseño): buscadores y controles pequeños en 16 px, espaciado en cuadrícula de 4 px, sin emojis en Guardia, Entrega y labs.
   
-  Nuevo (Respaldos): «Datos para análisis» exporta los datos de los pacientes a Excel, una hoja por tipo.
-  
-  Cambio (Formularios): cuarto, cama y registro avanzan solos al completar el valor.
-  
-  Cambio (Registro manual): cada paso avanza solo al terminar de escribir. Un interruptor vuelve a la vista anterior.
+  Cambio (Textos): mayúsculas y minúsculas en español en Nube y rótulos clínicos.

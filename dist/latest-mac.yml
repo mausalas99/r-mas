@@ -1,35 +1,31 @@
-version: 8.5.5
+version: 8.5.6
 files:
-  - url: R+-8.5.5-autoupdate-mac-arm64.zip
-    sha512: otDeN6wne7rL+1uEUsBD/Lf4BLPztzSxgHkMrqB6Bt/rObbhp+R9q8oX5E8BtPSeI+3A8qVp8umsX2nTkAhKQg==
-    size: 155960371
-  - url: R+-8.5.5-arm64.dmg
-    sha512: fg5JkV8Wz2/uOMooEVJ26St1Pe63pC9SDAv+VDbo7xsrsagv5kBLOPu5MTdKvvWVpYuVi+t1nDrLFOiEtJF0Aw==
-    size: 156661900
-  - url: R+-8.5.5-autoupdate-mac-x64.zip
-    sha512: xs7TdNO2t6XNCvHc5fwsHLbh1bP6oiZAd8YWZ/PMjHm2kvQaTVWA4RTpZLkGbCXPA+A4hwgPzxljCnMNgp5evg==
-    size: 162631820
-  - url: R+-8.5.5-x64.dmg
-    sha512: rRCMQLU4krZiajSLFCR2Rfiu5DCZXjWhleuAwiPnETBnvB+trO/ASYqtUTXdnYifZg8RuhT1v6DnAvxA1weyyQ==
-    size: 163317549
-path: R+-8.5.5-autoupdate-mac-arm64.zip
-sha512: otDeN6wne7rL+1uEUsBD/Lf4BLPztzSxgHkMrqB6Bt/rObbhp+R9q8oX5E8BtPSeI+3A8qVp8umsX2nTkAhKQg==
-releaseDate: '2026-11-12T14:04:02.000Z'
+  - url: R+-8.5.6-autoupdate-mac-arm64.zip
+    sha512: oyXhXUFJp2Ttoz0GJK6hcfGH1v3obAfb+ClV6VWLt2yWRXGDO3YGbhxkY4XAhzRhk6v5Lve9hkt43Fk3lHl4cA==
+    size: 156297690
+  - url: R+-8.5.6-arm64.dmg
+    sha512: uURO+hqMiQE3Zwy/GwlvN+cGy7mNn+P3zvcj/UoZnl+cvycgou3B4X88G+hQtFDUo6y4lBgnxyCPuc2T00OUjw==
+    size: 156987476
+  - url: R+-8.5.6-autoupdate-mac-x64.zip
+    sha512: W17qGxlD/D+JP/jgQKuZ5nQro/SaTzKa9dQhIyI83nU0+zHC2pKqbJKnGQIdFg0at4y+sZ/lOmgNMjNckEEnMQ==
+    size: 162969116
+  - url: R+-8.5.6-x64.dmg
+    sha512: LEEyhyoyAJo3UmJ1gGNEVaFhoHgSePZgTqqFnMKCZYeIRh7LVE8V5s/Gh1faUnNinyt734cz8CRmgwLN1K5aNw==
+    size: 163639541
+path: R+-8.5.6-autoupdate-mac-arm64.zip
+sha512: oyXhXUFJp2Ttoz0GJK6hcfGH1v3obAfb+ClV6VWLt2yWRXGDO3YGbhxkY4XAhzRhk6v5Lve9hkt43Fk3lHl4cA==
+releaseDate: '2026-11-15T20:32:59.000Z'
 releaseNotes: |
-  Añade los labs de 3 días al censo PDF y a la tabla de Guardia. Muestra NEGATIVO, POSITIVO y TRAZAS en vez de «---». En Estado actual confirmas o descartas un medicamento propuesto a la vez. Hay más cambios de diseño en Estado actual.
+  Los labs de 3 días muestran la orina (EGO). Admin y R4 ven todos los equipos activos. Los textos pequeños pasan a 16 px y se quitan los emojis.
   
-  Nuevo (Censo): labs de 3 días en el PDF del censo y en la tabla de Guardia.
+  Nuevo (Censo): la orina (EGO) aparece en los labs de 3 días.
   
-  Corrección (Labs): los valores NEGATIVO, POSITIVO y TRAZAS se leen y muestran bien.
+  Corrección (Labs): los reportes duplicados del mismo día se descartan antes de agrupar.
   
-  Nuevo (Estado actual): confirmar o descartar un medicamento propuesto, uno a la vez.
+  Cambio (Equipos): admin y R4 ven todos los equipos activos.
   
-  Cambio (Estado actual): rediseño visual de paneles y registro por pasos.
+  Cambio (Pacientes): la lista larga de pacientes se desplaza completa.
   
-  Cambio (Tablero paciente): las zonas marcadas muestran solo su primera línea.
+  Cambio (Diseño): buscadores y controles pequeños en 16 px, espaciado en cuadrícula de 4 px, sin emojis en Guardia, Entrega y labs.
   
-  Nuevo (Respaldos): «Datos para análisis» exporta los datos de los pacientes a Excel, una hoja por tipo.
-  
-  Cambio (Formularios): cuarto, cama y registro avanzan solos al completar el valor.
-  
-  Cambio (Registro manual): cada paso avanza solo al terminar de escribir. Un interruptor vuelve a la vista anterior.
+  Cambio (Textos): mayúsculas y minúsculas en español en Nube y rótulos clínicos.
