@@ -246,14 +246,6 @@ export function parseLipasa_(texto, priorRefs) {
   return 'LIPASA\tLip ' + Lip;
 }
 
-function pairTokenScore_(val) {
-  var s = String(val == null ? '' : val);
-  var score = s.length;
-  if (s.indexOf('*') >= 0) score += 5;
-  if (/\d/.test(s)) score += 2;
-  return score;
-}
-
 function ingestTabPairBody_(body, into) {
   var tokens = String(body || '')
     .trim()
@@ -272,9 +264,8 @@ function ingestTabPairBody_(body, into) {
       continue;
     }
     var key = String(label).replace(/:$/, '');
-    var score = pairTokenScore_(next);
-    var prev = into[key];
-    if (!prev || score > prev.score) into[key] = { val: next, score: score };
+    // Rows arrive oldest first: the newest value of an analyte wins, flagged or not.
+    into[key] = { val: next };
     i += 2;
   }
 }

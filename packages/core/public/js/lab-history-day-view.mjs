@@ -97,7 +97,13 @@ function mergeClusterSourceText(sets) {
 function mergeClusterResLabs(sets) {
   var merged = [];
   var tipo = 'labs';
-  (sets || []).forEach(function (set) {
+  // Oldest first, hour-less first of all: the merge lets the newest value of an analyte win.
+  var ordered = (sets || []).slice().sort(function (a, b) {
+    var ma = labTimestampMsFromFechaHora(a && a.fecha, a && a.hora);
+    var mb = labTimestampMsFromFechaHora(b && b.fecha, b && b.hora);
+    return (ma == null ? -Infinity : ma) - (mb == null ? -Infinity : mb) || 0;
+  });
+  ordered.forEach(function (set) {
     var rows = (set && set.resLabs) || [];
     if (!rows.length) return;
     if (!merged.length) tipo = primaryTipoForLabSet(rows) || 'labs';
@@ -179,26 +185,50 @@ function newestMs(sets) {
   return best;
 }
 
+/** A row with the exact same text in two tomas of one day is one result: keep it in the earliest toma only. */
+function dropRepeatedRowsInLaterGroups_(groups) {
+  var seen = Object.create(null);
+  groups
+    .slice()
+    .sort(function (a, b) {
+      return newestMs(a.sets) - newestMs(b.sets);
+    })
+    .forEach(function (g) {
+      var own = Object.create(null);
+      g.resLabs = (g.resLabs || []).filter(function (row) {
+        var k = String(row).split('\n')[0].toLowerCase().replace(/[^a-z0-9.]/g, '');
+        if (k && seen[k]) return false;
+        own[k] = true;
+        return true;
+      });
+      Object.keys(own).forEach(function (row) {
+        seen[row] = true;
+      });
+    });
+}
+
 /**
  * @param {object[]} sets one calendar day's history sets
  * @returns {Array<{ hora: string, tipoLabel: string, sets: object[], resLabs: string[], sourceText: string, bhExtras: object, refsBySection: object }>}
  */
-/** Same day + same rows = same report. Drops repeats (and hour-less copies) before clustering. */
+/** Same day + same rows = same report. Drops repeats, and hour-less copies whose rows all sit in a timed report of that day. */
 function dedupeSameDaySets_(list) {
-  var sameKey = function (set) {
-    return dayKeyFromLabSet(set) + '\x01' + set.resLabs.join('\n');
-  };
-  var hasHora = Object.create(null);
+  var timedRows = Object.create(null);
   list.forEach(function (set) {
-    if (horaKey(set)) hasHora[sameKey(set)] = true;
+    if (!horaKey(set)) return;
+    var day = timedRows[dayKeyFromLabSet(set)] || (timedRows[dayKeyFromLabSet(set)] = Object.create(null));
+    set.resLabs.forEach(function (row) {
+      day[row] = true;
+    });
   });
   var seen = Object.create(null);
   return list.filter(function (set) {
-    var k = sameKey(set);
     var h = horaKey(set);
-    if (!h && hasHora[k]) return false;
-    if (seen[k + '\x01' + h]) return false;
-    seen[k + '\x01' + h] = true;
+    var day = timedRows[dayKeyFromLabSet(set)];
+    if (!h && day && set.resLabs.every(function (row) { return day[row]; })) return false;
+    var k = dayKeyFromLabSet(set) + '\x01' + set.resLabs.join('\n') + '\x01' + h;
+    if (seen[k]) return false;
+    seen[k] = true;
     return true;
   });
 }
@@ -219,8 +249,9 @@ export function clusterDayLabSets(sets) {
     function (set) {
       return labTimestampMsFromFechaHora(set.fecha, set.hora);
     },
+    // Only a gasometría-only report glues to the nearest labs: a full report that also has GASES is its own toma.
     function (set) {
-      return resLabsHasGasometria(set.resLabs);
+      return primaryTipoForLabSet(set.resLabs) === 'gaso';
     }
   );
   var used = new Set();
@@ -246,6 +277,7 @@ export function clusterDayLabSets(sets) {
   });
   backfillGasoAnionGapAcrossDay_(groups, list);
   reconcileSingletonSectionsAcrossDay_(groups);
+  dropRepeatedRowsInLaterGroups_(groups);
   groups.sort(function (a, b) {
     return newestMs(b.sets) - newestMs(a.sets);
   });

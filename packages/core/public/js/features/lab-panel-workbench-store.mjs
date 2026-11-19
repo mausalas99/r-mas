@@ -26,7 +26,8 @@ import { autoConsolidateLabHistoryForPatient } from './lab-panel-history-dedupe.
 
 function resolveLabHistoryFechaNorm(fecha) {
   var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || '').trim();
-  if (fechaNorm) return fechaNorm;
+  // Only a real date or «Anterior» is a day key: anything else (a lab row pasted as fecha) falls to today.
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(fechaNorm) || fechaNorm === 'Anterior') return fechaNorm;
   var nd = new Date();
   return (
     String(nd.getDate()).padStart(2, '0') +

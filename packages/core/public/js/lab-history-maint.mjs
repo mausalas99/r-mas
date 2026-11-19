@@ -14,7 +14,7 @@ export { isLabSectionHeaderLine, isCultivoBlockStartLine, splitResLabsByTipo } f
 import { findExactDuplicateLabGroups, findNormalizedSourceDuplicateGroups, findConflictingSameDateTimeGroups, areLabSetsEquivalent } from './lab-history-auto-store-core.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, sortLabHistoryChronological } from './tend-core.mjs';
 import { extractParsedValues, buildParsedBySectionFromResLabs } from './features/diagrams.mjs';
-import { inferFechaLabSetFromId } from './lab-set-date.mjs';
+import { inferFechaLabSetFromId, formatDMYDate } from './lab-set-date.mjs';
 import { normalizeLabHistoryPatientSets } from './storage.js';
 import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 import { maintRt } from './lab-history-runtime.mjs';
@@ -286,6 +286,15 @@ export function runLabHistoryPostSaveMaintenance() {
     var sets = getLabHistory()[pid];
     if (!Array.isArray(sets) || !sets.length) return;
     sets.forEach(function (set) {
+      // Repair: fecha must be dd/mm/yyyy or «Anterior». Old imports saved a lab row there.
+      if (!/^\d{2}\/\d{2}\/\d{4}$/.test(set.fecha) && set.fecha !== 'Anterior') {
+        var fixed = inferFechaLabSetFromId(set) || (set.updatedAt ? formatDMYDate(new Date(set.updatedAt)) : '');
+        if (fixed) {
+          set.fecha = fixed;
+          changed = true;
+          bumpLabHistoryRevision(pid);
+        }
+      }
       if (!set.resLabs || !set.resLabs.length) return;
       var priorRefs = collectPriorRefsFromHistory(
         sortLabHistoryChronological(sets).filter(function (s) {
@@ -427,7 +436,7 @@ function migrateLabHistory() {
         var migratedRecentLabs = resLabsFromNoteLines(recentLines);
         sets.push({
           id: 'migrated-recent',
-          fecha: normalizeFechaLabHistory(recentLines[0] || getNotes()[p.id].fecha || ''),
+          fecha: normalizeFechaLabHistory(getNotes()[p.id].fecha || ''),
           hora: getNotes()[p.id].hora || '',
           resLabs: migratedRecentLabs,
           parsed: extractParsedValues(migratedRecentLabs),
