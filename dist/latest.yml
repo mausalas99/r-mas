@@ -1,22 +1,22 @@
-version: 8.5.6
+version: 8.5.7
 files:
-  - url: R+-8.5.6-x64.exe
-    sha512: 69UeM+7RhYLv9mbggAVA4DWk4j+lWMiiNeqa2FkEu4VCngX0Ly6O9ixjVit6Byih1N1yTQQS7YeefwJvncjMog==
-    size: 139277325
-path: R+-8.5.6-x64.exe
-sha512: 69UeM+7RhYLv9mbggAVA4DWk4j+lWMiiNeqa2FkEu4VCngX0Ly6O9ixjVit6Byih1N1yTQQS7YeefwJvncjMog==
-releaseDate: '2026-11-15T20:32:59.000Z'
+  - url: R+-8.5.7-x64.exe
+    sha512: AeYg8BqKLQtlO091FGbr9kRam4PQ5f0SrVuX6hupAlrwO1N/SBGgiqeqxgXtQTI4XZ14cy62dlY08DgLRmhRbg==
+    size: 139290672
+path: R+-8.5.7-x64.exe
+sha512: AeYg8BqKLQtlO091FGbr9kRam4PQ5f0SrVuX6hupAlrwO1N/SBGgiqeqxgXtQTI4XZ14cy62dlY08DgLRmhRbg==
+releaseDate: '2026-11-19T17:29:08.000Z'
 releaseNotes: |
-  Los labs de 3 días muestran la orina (EGO). Admin y R4 ven todos los equipos activos. Los textos pequeños pasan a 16 px y se quitan los emojis.
+  Estado actual suma opciones de exploración neurológica. Los labs del día ya no se repiten ni se mezclan. Los avisos y textos quedan sin símbolos de relleno.
   
-  Nuevo (Censo): la orina (EGO) aparece en los labs de 3 días.
+  Nuevo (Estado actual): la tarjeta Neurológico tiene nivel de alerta, Glasgow, RASS y Focalización (sin/con datos y hallazgo).
   
-  Corrección (Labs): los reportes duplicados del mismo día se descartan antes de agrupar.
+  Nuevo (Estado actual): Esferas pasa a botones Tiempo, Lugar y Persona. La línea N: nombra las esferas donde hay desorientación.
   
-  Cambio (Equipos): admin y R4 ven todos los equipos activos.
+  Corrección (Labs): un reporte con gases ya no se pega al reporte más cercano. Solo lo hace uno de gasometría sola.
   
-  Cambio (Pacientes): la lista larga de pacientes se desplaza completa.
+  Corrección (Labs): en la vista por día se quitan las copias sin hora y los renglones repetidos entre tomas. El valor más nuevo gana al unir ESC, QS y PFHs.
   
-  Cambio (Diseño): buscadores y controles pequeños en 16 px, espaciado en cuadrícula de 4 px, sin emojis en Guardia, Entrega y labs.
+  Corrección (Labs): la fecha guardada es una fecha real o «Anterior». Se reparan los sets guardados con un renglón de lab como fecha.
   
-  Cambio (Textos): mayúsculas y minúsculas en español en Nube y rótulos clínicos.
+  Cambio (Textos): avisos y rótulos sin marcas ✓ ni guiones largos.
