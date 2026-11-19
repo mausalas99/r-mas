@@ -3,6 +3,7 @@
  * Props only (built by buildEstadoClinicoProps in estado-actual-panel-clinico.mjs): no data imports.
  */
 import { EaSnapshotSection } from './estado-actual-panel-snapshot-view.jsx';
+import { NEURO_ALERTA, NEURO_ESFERAS } from './estado-actual-panel-constants.mjs';
 
 // Same text the old string builders wrote with escAttr/escHtml: empty for null, undefined, '' and 0.
 const txt = (v) => String(v || '');
@@ -139,6 +140,22 @@ function SoporteHead({ p }) {
   );
 }
 
+/** Round toggle buttons over a hidden `data-ea-ec` input; the click is wired in estado-actual-panel-clinico.mjs. */
+function Pills({ k, value, options, multi }) {
+  const isOn = (val) => (multi ? value.includes(val) : value === val);
+  return (
+    <span class="ea-pills" role="group" data-ea-multi={multi ? '1' : null}>
+      <input type="hidden" data-ea-ec={k} value={value} />
+      {options.map(([val, label]) => (
+        <button type="button" class={'ea-pill' + (isOn(val) ? ' is-on' : '')} data-ea-pill={val} aria-pressed={isOn(val) ? 'true' : 'false'}>{label}</button>
+      ))}
+    </span>
+  );
+}
+
+// Old records only have the number of esferas; 3 means oriented in all.
+const orientOf = (ec) => ec.orient || (String(ec.esferas) === '3' ? 'TLP' : '');
+
 function VitalsRow({ p }) {
   const tier = p.soporteTier;
   const num = p.num;
@@ -147,14 +164,30 @@ function VitalsRow({ p }) {
       <div class="ea-sys-card ea-sys-card--neuro">
         <h4 class="ea-sys-title">Neurológico</h4>
         <div class="ea-sys-fields">
+          <Pills k="alerta" value={NEURO_ALERTA.includes(p.ec.alerta) ? p.ec.alerta : 'ALERTA'} options={NEURO_ALERTA.map((v) => [v, v[0] + v.slice(1).toLowerCase()])} />
           <label class="ea-field">
             <span class="ea-label">FOUR</span>
             <input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value={num.four} />
           </label>
           <label class="ea-field">
-            <span class="ea-label">Esferas</span>
-            <input type="number" class="ea-input" data-ea-ec="esferas" min="0" step="1" value={num.esferas} />
+            <span class="ea-label">Glasgow</span>
+            <input type="number" class="ea-input" data-ea-ec="glasgow" min="3" max="15" step="1" value={num.glasgow} />
           </label>
+          <span class="ea-field">
+            <span class="ea-label">Orientado en</span>
+            <Pills k="orient" value={orientOf(p.ec)} options={NEURO_ESFERAS} multi />
+          </span>
+          <label class="ea-field">
+            <span class="ea-label">RASS</span>
+            <input type="number" class="ea-input" data-ea-ec="rass" min="-5" max="4" step="1" value={num.rass} />
+          </label>
+        </div>
+      </div>
+      <div class="ea-sys-card ea-sys-card--focal">
+        <h4 class="ea-sys-title">Focalización</h4>
+        <div class="ea-sys-fields">
+          <Pills k="focal" value={p.ec.focal === 'con' ? 'con' : ''} options={[['', 'Sin datos'], ['con', 'Con datos']]} />
+          <input type="text" class="ea-input ea-input--focal" data-ea-ec="focalTxt" aria-label="Hallazgo de focalización" placeholder="Hallazgo" hidden={p.ec.focal !== 'con'} value={txt(p.ec.focalTxt)} />
         </div>
       </div>
       <div class="ea-sys-card ea-sys-card--soporte">

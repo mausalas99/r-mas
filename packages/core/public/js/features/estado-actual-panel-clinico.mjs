@@ -306,6 +306,33 @@ function wireEstadoClinicoInteractions(mount, patient) {
     if (tag === 'SELECT') el.addEventListener('change', handler);
     else el.addEventListener('input', handler);
   });
+  mount.querySelectorAll('[data-ea-pill]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var group = btn.parentNode;
+      var hid = group.querySelector('[data-ea-ec]');
+      var val = btn.getAttribute('data-ea-pill');
+      var multi = group.hasAttribute('data-ea-multi');
+      if (multi) {
+        // keep the letters in pill order; '-' means none
+        var cur = hid.value.indexOf(val) >= 0 ? hid.value.replace(val, '') : hid.value + val;
+        hid.value = Array.prototype.filter.call(group.querySelectorAll('[data-ea-pill]'), function (b) {
+          return cur.indexOf(b.getAttribute('data-ea-pill')) >= 0;
+        }).map(function (b) { return b.getAttribute('data-ea-pill'); }).join('') || '-';
+      } else {
+        hid.value = val;
+      }
+      group.querySelectorAll('[data-ea-pill]').forEach(function (b) {
+        var on = multi ? hid.value.indexOf(b.getAttribute('data-ea-pill')) >= 0 : b === btn;
+        b.classList.toggle('is-on', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      if (hid.getAttribute('data-ea-ec') === 'focal') {
+        var txt = mount.querySelector('[data-ea-ec="focalTxt"]');
+        if (txt) txt.hidden = hid.value !== 'con';
+      }
+      applyEstadoClinicoFieldChange(hid, patient);
+    });
+  });
   var soporteSel = mount.querySelector('[data-ea-ec="soporte"]');
   if (soporteSel && 'value' in soporteSel) {
     syncSoporteParamsVisibility(mount, soporteSel.value);

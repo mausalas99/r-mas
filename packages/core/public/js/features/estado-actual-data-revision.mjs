@@ -25,6 +25,12 @@ function appendEstadoClinicoRevision(parts, ec, pend, conf) {
   parts.push(
     String(ec.four || ''),
     String(ec.esferas || ''),
+    String(ec.orient || ''),
+    String(ec.alerta || ''),
+    String(ec.glasgow || ''),
+    String(ec.rass || ''),
+    String(ec.focal || ''),
+    String(ec.focalTxt || ''),
     String(ec.soporte || ''),
     String(ec.dieta || ''),
     String(ec.kcalKg || ''),

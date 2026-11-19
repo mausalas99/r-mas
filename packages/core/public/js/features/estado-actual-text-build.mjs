@@ -1,6 +1,7 @@
 /**
  * Pure SOAP line builders for Estado Actual text.
  */
+import { NEURO_ALERTA, NEURO_ESFERAS } from './estado-actual-panel-constants.mjs';
 import { resolveDietWeightKg, computeDietKcalTotal, isDietaSuplemento } from './estado-actual-data.mjs';
 import { formatNmDietClause } from './estado-actual-diet-text.mjs';
 import { formatInsulinRescatesClause } from './estado-actual-glu-rescue.mjs';
@@ -19,6 +20,26 @@ import {
 
 /** Máximo de antigüedad del pico febril para documentarlo en SOAP. */
 export const TEMP_PICO_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000;
+
+/** Focalización clause for the N: line (`ec.focal` is 'con' or empty; `ec.focalTxt` is the finding). */
+export function neuroFocalClause(ec) {
+  if (ec.focal !== 'con') return 'SIN DATOS DE FOCALIZACIÓN';
+  const txt = String(ec.focalTxt || '').trim().toUpperCase();
+  return txt ? 'FOCALIZACIÓN: ' + txt : 'CON DATOS DE FOCALIZACIÓN';
+}
+
+/**
+ * Orientación clause. `ec.orient` holds the letters of the esferas the patient is oriented in ('-' = none);
+ * unset keeps the old free number in `ec.esferas`.
+ */
+export function neuroOrientClause(ec) {
+  const o = ec.orient;
+  if (!o) return 'ORIENTADO EN ' + num(ec.esferas) + ' ESFERAS';
+  const names = (on) => NEURO_ESFERAS.filter(([c]) => o.includes(c) === on).map(([, n]) => n.toUpperCase()).join(' Y ');
+  if (o.includes('T') && o.includes('L') && o.includes('P')) return 'ORIENTADO EN 3 ESFERAS';
+  if (o === '-') return 'DESORIENTADO EN 3 ESFERAS';
+  return 'ORIENTADO EN ' + names(true) + ', DESORIENTADO EN ' + names(false);
+}
 
 /**
  * @param {unknown} v
@@ -341,9 +362,15 @@ export function assembleSoapLines(ec, v, soporte, hiTemp, nmClause, opts) {
     b('N:') +
       ' FOUR ' +
       num(ec.four) +
-      '/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN ' +
-      num(ec.esferas) +
-      ' ESFERAS, ALERTA' +
+      '/16 PUNTOS' +
+      (ec.glasgow ? ', GLASGOW ' + ec.glasgow : '') +
+      (ec.rass ? ', RASS ' + ec.rass : '') +
+      ', ' +
+      neuroFocalClause(ec) +
+      ', ' +
+      neuroOrientClause(ec) +
+      ', ' +
+      (NEURO_ALERTA.indexOf(ec.alerta) >= 0 ? ec.alerta : 'ALERTA') +
       (nMeds ? ' || ' + nMeds : ''),
     b('V:') +
       ' FR ' +

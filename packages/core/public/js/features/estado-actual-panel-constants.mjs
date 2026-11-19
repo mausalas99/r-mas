@@ -23,6 +23,12 @@ export const VITAL_UNITS = {
   sat: '%',
 };
 
+/** Nivel de alerta values stored in `ec.alerta`; empty means ALERTA. */
+export const NEURO_ALERTA = ['ALERTA', 'SOMNOLIENTO', 'ESTUPOROSO', 'COMA'];
+
+/** Esferas: letter stored in `ec.orient` when the patient is oriented in it, and its label. */
+export const NEURO_ESFERAS = [['T', 'Tiempo'], ['L', 'Lugar'], ['P', 'Persona']];
+
 /** @type {readonly string[]} */
 export const SOPORTE_OPTIONS = [
   'Aire ambiente',

@@ -11,7 +11,7 @@ import {
 
 /** Estado clínico fields that go in number inputs (non-numeric legacy strings are dropped). */
 var NUMERIC_EC_KEYS = [
-  'four', 'esferas', 'soporteLitros', 'soporteFlujoLmin', 'vmPeep', 'vmPsoporte', 'vmVt', 'vmFlujo', 'vmPmeseta', 'soporteFio2',
+  'four', 'glasgow', 'rass', 'soporteLitros', 'soporteFlujoLmin', 'vmPeep', 'vmPsoporte', 'vmVt', 'vmFlujo', 'vmPmeseta', 'soporteFio2',
 ];
 
 /**
