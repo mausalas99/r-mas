@@ -271,7 +271,7 @@ export function copiarDiagrama(svgStr, vw, vh, title, btn) {
         navigator.clipboard
           .write([new ClipboardItem({ "image/png": pngBlob })])
           .then(function () {
-            btn.textContent = "Copiado ✓";
+            btn.textContent = "Copiado";
             btn.classList.add("copied");
             setTimeout(function () {
               btn.textContent = "Copiar";

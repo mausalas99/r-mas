@@ -99,7 +99,7 @@ async function showRegistroTunnelConfirm(labPatient, studyCount, onConfirm, batc
 
 function toastPatientAdmitted(silent) {
   if (silent) return;
-  rt.showToast('Paciente agregado al censo — completa ubicación', 'success');
+  rt.showToast('Paciente agregado al censo. Completa ubicación', 'success');
 }
 
 /**

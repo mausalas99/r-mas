@@ -88,7 +88,7 @@ function wireLabDedupeModal(backdrop, onConfirm) {
       el.value = getNotes()[rt.getActiveId()].estudios || '';
     }
     rt.addAuditEntry('lab-history-dedupe', 'ok', removedTotal, Object.keys(mapByPatient).length + ' pacientes');
-    rt.showToast('Eliminadas ' + removedTotal + ' entrada' + (removedTotal === 1 ? '' : 's') + ' ✓', 'success');
+    rt.showToast('Eliminadas ' + removedTotal + ' entrada' + (removedTotal === 1 ? '' : 's'), 'success');
   };
 }
 

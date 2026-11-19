@@ -125,7 +125,7 @@ function bulkStoreSummaryParts(storeSummary) {
 export function showBulkLabPasteSummaryToast(multi, storeSummary, processable, blocks, quickOut, displayResult) {
   if (multi) {
     var parts = bulkStoreSummaryParts(storeSummary);
-    rt.showToast(parts.length ? parts.join(' · ') + ' ✓' : 'Laboratorio procesado ✓', 'success');
+    rt.showToast(parts.length ? parts.join(' · ') : 'Laboratorio procesado', 'success');
     return;
   }
   if (
@@ -138,7 +138,7 @@ export function showBulkLabPasteSummaryToast(multi, storeSummary, processable, b
     return;
   }
   if (processable.length === 1 && storeSummary.storedSets === 0 && storeSummary.mergedSets) {
-    rt.showToast('Labs actualizados en el mismo horario ✓', 'success');
+    rt.showToast('Labs actualizados en el mismo horario', 'success');
     return;
   }
   if (
@@ -148,7 +148,7 @@ export function showBulkLabPasteSummaryToast(multi, storeSummary, processable, b
     quickOut &&
     displayResult
   ) {
-    rt.showToast('Laboratorio formateado · salida rápida ✓', 'success');
+    rt.showToast('Laboratorio formateado · salida rápida', 'success');
   }
 }
 

@@ -44,7 +44,7 @@ function runFinalizeWithFreshBlocks(text) {
         (admit.created.length === 1 ? '' : 's') +
         ' agregado' +
         (admit.created.length === 1 ? '' : 's') +
-        ' al censo — completa ubicación',
+        ' al censo. Completa ubicación',
       'success'
     );
   }

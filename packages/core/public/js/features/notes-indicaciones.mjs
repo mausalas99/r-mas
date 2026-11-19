@@ -147,7 +147,7 @@ async function syncNoteDxFromCenso() {
   touchDoc(note);
   persistClinicalState();
   renderNoteForm();
-  rt.showToast('Diagnósticos del censo en la nota ✓', 'success');
+  rt.showToast('Diagnósticos del censo en la nota', 'success');
 }
 
 function updateTx(i, val) { var l = noteList('tratamiento'); if (!l) return; l[i]=val; touchDoc(getNotes()[aid()]); persistClinicalState(); }

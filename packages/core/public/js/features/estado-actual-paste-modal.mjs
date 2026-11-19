@@ -86,7 +86,7 @@ export function confirmEstadoActualPaste() {
   closeEstadoActualPasteModal();
   if (typeof rt.applyParsed === 'function') {
     rt.applyParsed(parsed, { fromNestedPaste: true });
-    rt.showToast('Datos aplicados — revisa y registra', 'success');
+    rt.showToast('Datos aplicados. Revisa y registra', 'success');
   }
 }
 

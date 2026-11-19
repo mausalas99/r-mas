@@ -251,7 +251,7 @@ export function openLabRepoBatchModal(patients) {
   }
   requestSilentUpdateCheck();
   if (batchBusy) {
-    rt.showToast('Ya hay una actualización en curso — mira la cola en la barra lateral', 'info');
+    rt.showToast('Ya hay una actualización en curso. Mira la cola en la barra lateral', 'info');
     return;
   }
 

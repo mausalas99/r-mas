@@ -842,7 +842,7 @@ function renderPanelFamilyCard(fam, ctx) {
       }
       var title = resolvePanelTitle(ctx.state.patientId, ctx.sectionKey, fam);
       copyChartPng(chart, title, visibleDatasetsForChart(chart), function (ok) {
-        if (ctx.deps.showToast) ctx.deps.showToast(ok ? 'Gráfica copiada ✓' : 'No se pudo copiar la gráfica', ok ? 'success' : 'error');
+        if (ctx.deps.showToast) ctx.deps.showToast(ok ? 'Gráfica copiada' : 'No se pudo copiar la gráfica', ok ? 'success' : 'error');
       });
     };
   } catch (chartErr) {

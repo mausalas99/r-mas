@@ -193,7 +193,7 @@ export function confirmLabManualEntry() {
   }
 
   closeLabManualEntryModal();
-  rt.showToast('Lab externo guardado · ' + sectionKey + ' ✓', 'success');
+  rt.showToast('Lab externo guardado · ' + sectionKey, 'success');
 }
 
 export var windowHandlers = {

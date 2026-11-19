@@ -502,7 +502,7 @@ export function copiarMedicamentosAlPortapapeles() {
   }
   navigator.clipboard.writeText(text).then(
     function () {
-      medToast("Medicamentos copiados al portapapeles ✓", "success");
+      medToast("Medicamentos copiados al portapapeles", "success");
     },
     function () {
       medToast("Error al copiar al portapapeles", "error");

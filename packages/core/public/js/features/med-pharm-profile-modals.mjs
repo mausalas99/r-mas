@@ -219,7 +219,7 @@ export function openMedPharmFullModal() {
   var sub = document.getElementById('med-pharm-modal-full-sub');
   if (!body) return;
   if (title) {
-    title.textContent = 'Calendario farmacoterapéutico — ' + window.label;
+    title.textContent = 'Calendario farmacoterapéutico: ' + window.label;
   }
   if (sub) {
     var filtLabel = mp.listFilter === 'TODOS' ? 'Todos los medicamentos' : 'Filtro: ' + mp.listFilter;

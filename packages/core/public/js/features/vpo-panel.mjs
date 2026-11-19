@@ -174,7 +174,7 @@ function wireVpoImportActions(mount, state, patientId) {
   mount.querySelector('[data-vpo-action="tomar-dx"]')?.addEventListener('click', function () {
     var note = getNotes()[patientId] || {};
     if (state.diagnosticosTouched && (state.diagnosticosList || []).some(function (d) { return String(d).trim(); })) {
-      toast('Diagnósticos ya editados — no se sobrescriben', 'error');
+      toast('Diagnósticos ya editados. No se sobrescriben', 'error');
       return;
     }
     if (!importDiagnosticosFromNota(state, note.diagnosticos || [])) {

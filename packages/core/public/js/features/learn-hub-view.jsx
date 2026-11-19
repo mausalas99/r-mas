@@ -36,7 +36,7 @@ function ModuleRow(r) {
     <div class={cardCls}>
       <div class="learn-hub-module-row">
         <button type="button" class="learn-hub-module-hit" data-learn-chapter={chapterId} data-learn-branch={branch}
-          title={`${label} — ${statusLabel(r)}`}>
+          title={`${label}: ${statusLabel(r)}`}>
           <span class="learn-hub-module-mark" aria-hidden="true">{completed ? '✓' : moduleIndex != null ? String(moduleIndex) : ''}</span>
           <span class="learn-hub-module-main">
             <span class="learn-hub-module-title">{label}</span>
@@ -80,7 +80,7 @@ function QuickRouteCard({ quick }) {
   return (
     <div class="learn-hub-module-card learn-hub-module-card--cta">
       <button type="button" class="learn-hub-module-hit" data-learn-chapter={quick.chapterId} data-learn-branch="quick-route"
-        title="Ruta rápida — mapa, alta, labs y turno">
+        title="Ruta rápida: mapa, alta, labs y turno">
         <span class="learn-hub-module-mark" aria-hidden="true">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h7l-1 8 9-12h-7z" /></svg>
         </span>

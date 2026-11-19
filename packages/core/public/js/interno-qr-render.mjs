@@ -73,7 +73,7 @@ export async function copyInternoQrImage(url, showToast) {
 
     if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      toast('QR copiado en alta resolución — listo para imprimir', 'success');
+      toast('QR copiado en alta resolución. Listo para imprimir', 'success');
       return;
     }
 

@@ -178,7 +178,7 @@ export function registrarEstadoActualMedicion() {
   if (getEaPanelRuntime().invalidateInnerTabRenderCache) getEaPanelRuntime().invalidateInnerTabRenderCache('estadoActual');
   if (typeof window.closeEstadoActualRegistroModal === 'function') window.closeEstadoActualRegistroModal();
   eaPanelBridge.renderEstadoActualPanel({ syncHeavy: true, dataOnly: true });
-  getEaPanelRuntime().showToast(editId ? 'Medición actualizada ✓' : 'Medición registrada ✓', 'success');
+  getEaPanelRuntime().showToast(editId ? 'Medición actualizada' : 'Medición registrada', 'success');
   if (typeof getEaPanelRuntime().onMedicionRegistered === 'function') getEaPanelRuntime().onMedicionRegistered();
 }
 
@@ -278,7 +278,7 @@ export function estadoActualGuardar() {
     return;
   }
   persistEstadoActualTexto(patient, text);
-  getEaPanelRuntime().showToast('Estado Actual guardado ✓', 'success');
+  getEaPanelRuntime().showToast('Estado Actual guardado', 'success');
 }
 
 export async function estadoActualGuardarCopiar() {
@@ -295,7 +295,7 @@ export async function estadoActualGuardarCopiar() {
   var copyPayload = estadoActualTextToClipboardPayload(getEstadoActualTextForPatient(patient, { bold: true }));
   var ok = await getEaPanelRuntime().copyToClipboardSafe(copyPayload.text, copyPayload.html);
   getEaPanelRuntime().showToast(
-    ok ? 'Estado Actual guardado y copiado ✓' : 'Guardado, pero no se pudo copiar',
+    ok ? 'Estado Actual guardado y copiado' : 'Guardado, pero no se pudo copiar',
     ok ? 'success' : 'error'
   );
 }
@@ -365,7 +365,7 @@ function commitEstadoActualToNote(patient, replaceEvolucion) {
   if (typeof getEaPanelRuntime().renderNoteForm === 'function') {
     getEaPanelRuntime().renderNoteForm();
   }
-  getEaPanelRuntime().showToast('Estado actual enviado a la nota ✓', 'success');
+  getEaPanelRuntime().showToast('Estado actual enviado a la nota', 'success');
 }
 
 export function estadoActualEnviarANota() {
@@ -464,7 +464,7 @@ export async function copiarEstadoActualTexto() {
   }
   var payload = estadoActualTextToClipboardPayload(text);
   var ok = await getEaPanelRuntime().copyToClipboardSafe(payload.text, payload.html);
-  getEaPanelRuntime().showToast(ok ? 'Texto copiado al portapapeles ✓' : 'No se pudo copiar', ok ? 'success' : 'error');
+  getEaPanelRuntime().showToast(ok ? 'Texto copiado al portapapeles' : 'No se pudo copiar', ok ? 'success' : 'error');
 }
 
 /**
@@ -491,7 +491,7 @@ export async function copiarEaIndicacionesClipboard() {
   });
   var ok = await getEaPanelRuntime().copyToClipboardSafe(text);
   getEaPanelRuntime().showToast(
-    ok ? 'Indicaciones copiadas al portapapeles ✓' : 'No se pudo copiar',
+    ok ? 'Indicaciones copiadas al portapapeles' : 'No se pudo copiar',
     ok ? 'success' : 'error'
   );
 }

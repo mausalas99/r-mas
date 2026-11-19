@@ -146,7 +146,7 @@ async function changeIdleLockPin() {
   }
   var setup = await promptForIdleLockPinSetup('change');
   if (setup.ok) {
-    rt.showToast('PIN actualizado ✓', 'success');
+    rt.showToast('PIN actualizado', 'success');
     restartIdleLockTimer();
   }
 }

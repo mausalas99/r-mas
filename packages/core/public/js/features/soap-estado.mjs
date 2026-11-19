@@ -251,7 +251,7 @@ export async function estadoActualOnlyGuardar() {
   };
   persistClinicalState();
   renderEstadoActualBar();
-  rt.showToast("Estado Actual guardado ✓", "success");
+  rt.showToast("Estado Actual guardado", "success");
   closeSOAPModal();
 }
 
@@ -282,7 +282,7 @@ export async function estadoActualSaveAndCopy() {
   renderEstadoActualBar();
   var ok = await copyToClipboardSafe(stripEaReviewFlags(text));
   rt.showToast(
-    ok ? "Estado Actual guardado y copiado ✓" : "Guardado, pero no se pudo copiar",
+    ok ? "Estado Actual guardado y copiado" : "Guardado, pero no se pudo copiar",
     ok ? "success" : "error"
   );
   closeSOAPModal();
@@ -510,7 +510,7 @@ export function insertSOAPText() {
   var el = document.querySelector('#note-form textarea[data-oninput-args*=\'"evolucion"\']');
   if (el) el.value = text;
   closeSOAPModal();
-  rt.showToast("Plantilla insertada ✓", "success");
+  rt.showToast("Plantilla insertada", "success");
 }
 
 /** Task 9 — chrome del botón compacto Estado Actual */

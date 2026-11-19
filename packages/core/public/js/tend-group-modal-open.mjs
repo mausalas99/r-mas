@@ -236,7 +236,7 @@ export function copyTendGroupTablePng(deps, state, opts) {
   var title = editedTitle || fallbackTitle;
   copyTableModelAsPng(state.tableModel, title, function (ok) {
     if (deps.showToast) {
-      deps.showToast(ok ? 'Tabla copiada como imagen ✓' : 'No se pudo copiar la imagen', ok ? 'success' : 'error');
+      deps.showToast(ok ? 'Tabla copiada como imagen' : 'No se pudo copiar la imagen', ok ? 'success' : 'error');
     }
   });
 }

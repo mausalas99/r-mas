@@ -173,7 +173,7 @@ async function exportRecoverCensusRangeJson() {
       'R-plus-recuperacion-censo-' + formatDateSlug(new Date()) + '.json'
     );
     rt.showToast(
-      'Exportados ' + (res.count || 0) + ' paciente(s) — importa con Importar rango…',
+      'Exportados ' + (res.count || 0) + ' paciente(s). Importa con Importar rango…',
       'success'
     );
   } catch {

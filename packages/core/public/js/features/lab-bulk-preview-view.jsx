@@ -69,7 +69,7 @@ function ConflictReports({ block }) {
         {conflicts.map((r) => (
           <li>
             <span class="lab-bulk-preview-issue-label">{r.expediente ? 'Exp. ' + r.expediente : 'Reporte'}</span>
-            {' no coincide con ' + (block.patientName || 'el paciente') + ' (' + (block.primaryExpediente || '') + ') — posible otro ingreso u otro paciente'}
+            {' no coincide con ' + (block.patientName || 'el paciente') + ' (' + (block.primaryExpediente || '') + '), posible otro ingreso u otro paciente'}
           </li>
         ))}
       </ul>

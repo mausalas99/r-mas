@@ -101,7 +101,7 @@ async function copiarLabsAlPortapapeles() {
   var payload = labLinesToClipboardPayload(buildLabLines());
   var ok = await rt.copyToClipboardSafe(payload.text, payload.html);
   rt.showToast(
-    ok ? 'Labs copiados al portapapeles ✓' : 'Error al copiar al portapapeles',
+    ok ? 'Labs copiados al portapapeles' : 'Error al copiar al portapapeles',
     ok ? 'success' : 'error'
   );
 }
@@ -272,7 +272,7 @@ function insertLabsAsRecent(_lines) {
   var el = document.querySelector('#note-form textarea[data-oninput-args*=\'"estudios"\']');
   if (el) el.value = getNotes()[rt.getActiveId()].estudios;
   rt.onboardingAdvanceAfterSend();
-  rt.showToast('Labs enviados a la nota ✓', 'success');
+  rt.showToast('Labs enviados a la nota', 'success');
   rt.setMedTabAttention(true);
   rt.switchInnerTab('notas');
 }
@@ -298,7 +298,7 @@ function insertLabsAsAnteriorThenRecent(_newLines) {
   var el = document.querySelector('#note-form textarea[data-oninput-args*=\'"estudios"\']');
   if (el) el.value = getNotes()[rt.getActiveId()].estudios;
   rt.onboardingAdvanceAfterSend();
-  rt.showToast('Fecha anterior guardada + nuevos labs agregados ✓', 'success');
+  rt.showToast('Fecha anterior guardada + nuevos labs agregados', 'success');
   rt.setMedTabAttention(true);
   rt.switchInnerTab('notas');
 }
@@ -336,7 +336,7 @@ async function showLabConflictModal(newLines, existingDate) {
     var el = document.querySelector('#note-form textarea[data-oninput-args*=\'"estudios"\']');
     if (el) el.value = getNotes()[rt.getActiveId()].estudios;
     rt.onboardingAdvanceAfterSend();
-    rt.showToast('Fecha reciente reemplazada ✓', 'success');
+    rt.showToast('Fecha reciente reemplazada', 'success');
     rt.setMedTabAttention(true);
     rt.switchInnerTab('notas');
   };

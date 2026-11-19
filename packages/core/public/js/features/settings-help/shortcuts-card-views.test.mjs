@@ -22,9 +22,9 @@ test('guardia v7 card equals the old markup', () => {
     '<h3 class="clinical-onboarding-title">Novedades de guardia</h3>' +
     '<p class="guardia-v7-upgrade-progress" aria-live="polite">Progreso: <strong>2/5</strong> capítulos (40%)</p>' +
     '<div class="guardia-v7-upgrade-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40"><span class="guardia-v7-upgrade-meter-fill" style="width:40%"></span></div>' +
-    '<ul class="guardia-v7-upgrade-bullets"><li><strong>Modo Guardia</strong> — tablero de turno, franja Nube/sala/equipo y alcance por rango.</li>' +
-    '<li><strong>Modo Entrega</strong> — handoff, roster, pendientes y cierre de turno.</li>' +
-    '<li><strong>R+ Cloud y rotación</strong> — sala Nube, Mi rotación, herencia de pacientes y enlace móvil.</li></ul>' +
+    '<ul class="guardia-v7-upgrade-bullets"><li><strong>Modo Guardia</strong>: tablero de turno, franja Nube/sala/equipo y alcance por rango.</li>' +
+    '<li><strong>Modo Entrega</strong>: handoff, roster, pendientes y cierre de turno.</li>' +
+    '<li><strong>R+ Cloud y rotación</strong>: sala Nube, Mi rotación, herencia de pacientes y enlace móvil.</li></ul>' +
     '<div class="modal-actions guardia-v7-upgrade-actions"><button type="button" class="wb-btn wb-btn-primary wb-btn-lg" id="guardia-v7-upgrade-start">Continuar guía de guardia</button>' +
     '<button type="button" class="wb-btn wb-btn-secondary" id="guardia-v7-upgrade-later">Ver después</button></div>', 'card');
 });

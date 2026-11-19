@@ -64,5 +64,5 @@ export function insertLabTourSecondPatientExample() {
   if (!ta) return;
   ta.value = getDemoTourLabPaste();
   closeLabBulkTourHintModal();
-  rt.showToast('Ejemplo de laboratorio insertado ✓', 'success');
+  rt.showToast('Ejemplo de laboratorio insertado', 'success');
 }

@@ -25,10 +25,10 @@ async function syncTeamsBeforeTeamStep() {
       return;
     }
     const status = document.getElementById('clinical-onboard-team-status');
-    if (status) status.textContent = 'Listo — abre Mi rotación para unirte o crear equipo.';
+    if (status) status.textContent = 'Listo. Abre Mi rotación para unirte o crear equipo.';
   } catch {
     const status = document.getElementById('clinical-onboard-team-status');
-    if (status) status.textContent = 'Listo — abre Mi rotación para unirte o crear equipo.';
+    if (status) status.textContent = 'Listo. Abre Mi rotación para unirte o crear equipo.';
   }
 }
 

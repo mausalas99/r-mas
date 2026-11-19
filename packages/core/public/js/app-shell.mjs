@@ -152,7 +152,7 @@ function chooseOutputDir() {
   window.electronAPI.selectOutputDir().then(function (dir) {
     if (!dir) return;
     saveOutputDirSelection(dir);
-    showToast('Carpeta actualizada ✓', 'success');
+    showToast('Carpeta actualizada', 'success');
   });
 }
 
@@ -183,7 +183,7 @@ function onLabPortalUrlBlur() {
   if (v) settings.labPortalUrl = v;
   else delete settings.labPortalUrl;
   writeRpcSettings(settings);
-  if (v) showToast('Dirección del portal guardada ✓', 'success');
+  if (v) showToast('Dirección del portal guardada', 'success');
 }
 
 function onMedicoTemplateBlur() {

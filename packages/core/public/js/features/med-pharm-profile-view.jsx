@@ -50,7 +50,7 @@ function SummaryRow({ r, onDays }) {
           <div class="med-pharm-name-row">
             <div class="med-pharm-name" title={r.name}>{r.name}</div>
             {r.regimens > 0 && (
-              <span class="med-pharm-regimen-badge" title={r.regimens + ' regímenes — ver en Días'}>{r.regimens + ' tomas'}</span>
+              <span class="med-pharm-regimen-badge" title={r.regimens + ' regímenes, ver en Días'}>{r.regimens + ' tomas'}</span>
             )}
           </div>
         </div>

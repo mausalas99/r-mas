@@ -508,7 +508,7 @@ function handleProductivityModShortcut(e, k) {
     }
     rt.persistClinicalState();
     rt.addAuditEntry('quick-save', 'ok', 1, String(rt.getActiveId()));
-    rt.showToast('Estado guardado ✓', 'success');
+    rt.showToast('Estado guardado', 'success');
     return true;
   }
   return false;

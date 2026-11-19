@@ -89,7 +89,7 @@ export function LanProfileStage({ title, leadKind, username, name, rank, sala, n
               <label for="onboard-username">Usuario *</label>
               <input id="onboard-username" type="text" class="profile-input" placeholder="ej. drmendoza" value={username} required autocomplete="off" spellcheck="false" />
               <p class="clinical-teams-hint">
-                <strong>Usuario (@usuario)</strong> — identificador único en minúsculas, sin espacios ni tildes: apellido + inicio del nombre, p. ej. <code>drmendoza</code> o <code>garcia</code>. No escribas «Dr. …» aquí.
+                <strong>Usuario (@usuario)</strong>: identificador único en minúsculas, sin espacios ni tildes: apellido + inicio del nombre, p. ej. <code>drmendoza</code> o <code>garcia</code>. No escribas «Dr. …» aquí.
               </p>
             </div>
           </fieldset>
@@ -99,7 +99,7 @@ export function LanProfileStage({ title, leadKind, username, name, rank, sala, n
               <label for="onboard-clinical-name">Nombre en guardia *</label>
               <input id="onboard-clinical-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza" value={name} required autocomplete="name" />
               <p class="clinical-teams-hint">
-                <strong>Nombre en guardia</strong> — cómo te ven en el censo y las entregas: p. ej. <code>Dr. Mendoza</code> o <code>R1 García</code>.
+                <strong>Nombre en guardia</strong>: cómo te ven en el censo y las entregas: p. ej. <code>Dr. Mendoza</code> o <code>R1 García</code>.
               </p>
             </div>
           </fieldset>

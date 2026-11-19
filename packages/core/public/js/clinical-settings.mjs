@@ -41,12 +41,12 @@ export const CLINICAL_LAN_PROFILE_GATE_LEAD_HTML =
   'no copies el nombre en guardia en el campo de usuario.';
 
 export const CLINICAL_LAN_USERNAME_HINT_HTML =
-  '<strong>Usuario (@usuario)</strong> — identificador único en minúsculas, sin espacios ni tildes: ' +
+  '<strong>Usuario (@usuario)</strong>: identificador único en minúsculas, sin espacios ni tildes: ' +
   'apellido + inicio del nombre, p. ej. <code>drmendoza</code> o <code>garcia</code>. ' +
   'No escribas «Dr. …» aquí.';
 
 export const CLINICAL_LAN_DISPLAY_NAME_HINT_HTML =
-  '<strong>Nombre en guardia</strong> — cómo te ven en el censo y las entregas: ' +
+  '<strong>Nombre en guardia</strong>: cómo te ven en el censo y las entregas: ' +
   'p. ej. <code>Dr. Mendoza</code> o <code>R1 García</code>.';
 
 /** Device uses SQLCipher only — no LAN LiveSync, Mi rotación, or @usuario in sala. */

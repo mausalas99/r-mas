@@ -196,7 +196,7 @@ export function cultivoRefreshOutcomeMessage(outcome) {
     return { toast: 'Actualizar cultivos solo en la app de escritorio', type: 'warn' };
   }
   if (o.reason === 'no-registro') {
-    return { toast: 'Paciente sin registro — no se puede consultar el repositorio', type: 'error' };
+    return { toast: 'Paciente sin registro. No se puede consultar el repositorio', type: 'error' };
   }
   if (o.reason === 'no-fecha' || o.reason === 'bad-range') {
     return { toast: 'Sin fecha de cultivo para consultar', type: 'error' };
@@ -213,5 +213,5 @@ export function cultivoRefreshOutcomeMessage(outcome) {
   if (o.kind === 'error' || o.kind === 'throw' || !o.ok) {
     return { toast: 'Error al consultar el repositorio', type: 'error' };
   }
-  return { toast: 'Labs actualizados — revisa si ya salió el antibiograma', type: 'ok' };
+  return { toast: 'Labs actualizados. Revisa si ya salió el antibiograma', type: 'ok' };
 }

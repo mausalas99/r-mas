@@ -118,7 +118,7 @@ export function saveDefaultFormatsFromEditor() {
   applyDraftToSettings(st);
   writeRpcSettings(st);
   loadSettings();
-  getProfileRuntime().showToast("Formatos guardados ✓", "success");
+  getProfileRuntime().showToast("Formatos guardados", "success");
 }
 
 export function exitFormatsEditor() {

@@ -685,7 +685,7 @@ function finalizeReprocessedLabSet_(set, repro, setId) {
   rt.refreshTendenciasOrCultivosPanel();
   replayLabHistorySet(setId);
   rt.addAuditEntry('lab-history-reprocess', 'ok', 1, String(setId));
-  rt.showToast('Estudio reprocesado desde resultados ✓', 'success');
+  rt.showToast('Estudio reprocesado desde resultados', 'success');
 }
 
 function reprocessLabHistorySet(setId) {

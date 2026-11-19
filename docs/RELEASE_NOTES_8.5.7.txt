@@ -1,0 +1,27 @@
+R+ 8.5.7 (estable — release 8.5.7)
+======================================
+
+Fecha: 2026-11-19
+
+## Resumen
+
+Estado actual suma opciones de exploración neurológica. Los labs del día ya no se repiten ni se mezclan. Los avisos y textos quedan sin símbolos de relleno.
+
+## Nuevo / mejorado
+
+- **Nuevo (Estado actual):** la tarjeta Neurológico tiene nivel de alerta, Glasgow, RASS y Focalización (sin/con datos y hallazgo).
+- **Nuevo (Estado actual):** Esferas pasa a botones Tiempo, Lugar y Persona. La línea N: nombra las esferas donde hay desorientación.
+- **Corrección (Labs):** un reporte con gases ya no se pega al reporte más cercano. Solo lo hace uno de gasometría sola.
+- **Corrección (Labs):** en la vista por día se quitan las copias sin hora y los renglones repetidos entre tomas. El valor más nuevo gana al unir ESC, QS y PFHs.
+- **Corrección (Labs):** la fecha guardada es una fecha real o «Anterior». Se reparan los sets guardados con un renglón de lab como fecha.
+- **Cambio (Textos):** avisos y rótulos sin marcas ✓ ni guiones largos.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.5.7-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.5.7-Mac-Intel.dmg`
+- Windows: `Instalar-R+-8.5.7-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

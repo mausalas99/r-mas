@@ -10,14 +10,14 @@ import { render } from 'preact';
 const UsernameHint = () => (
   <>
     <strong>Usuario (@usuario)</strong>
-    {' — identificador único en minúsculas, sin espacios ni tildes: apellido + inicio del nombre, p. ej. '}
+    {': identificador único en minúsculas, sin espacios ni tildes: apellido + inicio del nombre, p. ej. '}
     <code>drmendoza</code>{' o '}<code>garcia</code>{'. No escribas «Dr. …» aquí.'}
   </>
 );
 const DisplayNameHint = () => (
   <>
     <strong>Nombre en guardia</strong>
-    {' — cómo te ven en el censo y las entregas: p. ej. '}
+    {': cómo te ven en el censo y las entregas: p. ej. '}
     <code>Dr. Mendoza</code>{' o '}<code>R1 García</code>{'.'}
   </>
 );

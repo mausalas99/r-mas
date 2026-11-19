@@ -69,7 +69,7 @@ export function wireSomeTableExportButtons(container, onToast, lookup) {
         exportSomeDeptCopy(dept, format, label || (dept && dept.label) || '', function (ok) {
           if (typeof onToast === 'function') {
             onToast(
-              ok ? 'Sección copiada ✓' : 'No se pudo copiar la sección',
+              ok ? 'Sección copiada' : 'No se pudo copiar la sección',
               ok ? 'success' : 'error'
             );
           }
@@ -85,7 +85,7 @@ export function wireSomeTableExportButtons(container, onToast, lookup) {
       exportSomeGroupCopy(group, format, label, function (ok) {
         if (typeof onToast === 'function') {
           onToast(
-            ok ? 'Tabla copiada ✓' : 'No se pudo copiar la tabla',
+            ok ? 'Tabla copiada' : 'No se pudo copiar la tabla',
             ok ? 'success' : 'error'
           );
         }

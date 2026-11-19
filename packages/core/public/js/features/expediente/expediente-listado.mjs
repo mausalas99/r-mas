@@ -216,7 +216,7 @@ function removeProblemaUI(seccion, id) {
 }
 async function copyListadoProblemasAiPrompt() {
   var ok = await rt.copyToClipboardSafe(LISTADO_PROBLEMAS_AI_PROMPT);
-  rt.showToast(ok ? 'Prompt copiado al portapapeles ✓' : 'No se pudo copiar el prompt', ok ? 'success' : 'error');
+  rt.showToast(ok ? 'Prompt copiado al portapapeles' : 'No se pudo copiar el prompt', ok ? 'success' : 'error');
 }
 function selectOutputDir() {
   if (!window.electronAPI || !window.electronAPI.selectOutputDir) return Promise.resolve(undefined);

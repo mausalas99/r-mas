@@ -4,27 +4,27 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_856 = [
+var RELEASE_NOTES_857 = [
   {
-    title: 'Orina en labs de 3 días',
-    body: 'El <strong>EGO</strong> aparece en los labs de 3 días del censo.',
+    title: 'Neurológico más completo',
+    body: 'Estado actual suma <strong>alerta, Glasgow, RASS y focalización</strong> en la tarjeta Neurológico.',
   },
   {
-    title: 'Sin reportes duplicados',
-    body: 'Si un lab llega dos veces el mismo día, <strong>se cuenta una sola vez</strong>.',
+    title: 'Esferas por botón',
+    body: 'Elige <strong>Tiempo, Lugar y Persona</strong>. La línea N: nombra lo que falla.',
   },
   {
-    title: 'Equipos para admin y R4',
-    body: 'Admin y R4 ven <strong>todos los equipos activos</strong>.',
+    title: 'Labs del día sin repetidos',
+    body: 'Un reporte con gases <strong>ya no se mezcla</strong> con otro. Se quitan copias y renglones repetidos.',
   },
   {
-    title: 'Texto más legible',
-    body: 'Buscadores y controles pequeños usan <strong>16 px</strong>. Se quitaron los emojis de Guardia, Entrega y labs.',
+    title: 'Fechas de labs reparadas',
+    body: 'Los sets guardados con una fecha dañada <strong>se corrigen solos</strong>.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_856;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_857;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.5.6': RELEASE_NOTES_856,
+  '8.5.7': RELEASE_NOTES_857,
 };

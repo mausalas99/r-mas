@@ -56,7 +56,7 @@ export function copiarMedEgresoModalTexto() {
     return;
   }
   copyToClipboardSafe(text).then(function (ok) {
-    medToast(ok ? 'Medicamentos copiados al portapapeles ✓' : 'Error al copiar al portapapeles', ok ? 'success' : 'error');
+    medToast(ok ? 'Medicamentos copiados al portapapeles' : 'Error al copiar al portapapeles', ok ? 'success' : 'error');
   });
 }
 

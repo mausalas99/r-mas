@@ -128,7 +128,7 @@ export function TeamStep({ who, cloudSala, skipCloudSync }) {
           </> : <li>En <strong>Mi rotación</strong> explora equipos de tu sala o pide código a tu R2.</li>}
         </ul>
       </>}>
-      <p class="clinical-onboarding-status" id="clinical-onboard-team-status">{skipCloudSync ? 'Listo — abre Mi rotación para unirte o crear equipo.' : 'Buscando equipos en tu sala…'}</p>
+      <p class="clinical-onboarding-status" id="clinical-onboard-team-status">{skipCloudSync ? 'Listo. Abre Mi rotación para unirte o crear equipo.' : 'Buscando equipos en tu sala…'}</p>
       <div class="clinical-onboard-team-actions">
         <button type="button" class="wb-btn wb-btn-primary wb-btn-lg" data-team-onboard-open="">Abrir Mi rotación</button>
       </div>

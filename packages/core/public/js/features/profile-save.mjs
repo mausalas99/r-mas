@@ -52,7 +52,7 @@ export function saveSettings(opts) {
   var invalidate = resolveGlobalFn("invalidateInnerTabRenderCache");
   if (invalidate) invalidate();
   if (getProfileRuntime().getActiveId()) renderNotaEvolucionPrimaryTab();
-  if (!opts?.silent) getProfileRuntime().showToast("Perfil guardado ✓", "success");
+  if (!opts?.silent) getProfileRuntime().showToast("Perfil guardado", "success");
 }
 
 export function saveQuickOutputFormat(format) {

@@ -24,7 +24,7 @@ function toastConsolidateResult_(deps, patientId, mergedCount) {
     if (typeof deps.addAuditEntry === 'function') {
       deps.addAuditEntry('lab-history-consolidate', 'ok', mergedCount, String(patientId));
     }
-    show('Fusionados ' + mergedCount + ' conjunto(s) ✓', 'success');
+    show('Fusionados ' + mergedCount + ' conjunto(s)', 'success');
     return;
   }
   show('No había conjuntos para fusionar con la selección actual', 'success');

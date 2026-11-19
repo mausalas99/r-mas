@@ -134,7 +134,7 @@ function wireBatchCopyModal(backdrop, loaded) {
     var ok = await rt.copyToClipboardSafe(payload.text, payload.html);
     rt.showToast(
       ok
-        ? 'Copiados ' + keys.length + ' día' + (keys.length === 1 ? '' : 's') + ' al portapapeles ✓'
+        ? 'Copiados ' + keys.length + ' día' + (keys.length === 1 ? '' : 's') + ' al portapapeles'
         : 'Error al copiar al portapapeles',
       ok ? 'success' : 'error'
     );

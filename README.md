@@ -51,9 +51,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.5.6](https://github.com/mausalas99/r-mas/releases/tag/v8.5.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.5.7](https://github.com/mausalas99/r-mas/releases/tag/v8.5.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.5.7 (estable — release 8.5.7)
+
+- **Estado actual:** exploración neurológica con alerta, Glasgow, RASS, focalización y esferas.
+- **Labs:** la vista por día ya no repite ni mezcla reportes.
+- **Textos:** avisos más limpios, sin ✓.
+
+Notas: `docs/RELEASE_NOTES_8.5.7.txt`.
 
 ## R+ 8.5.6 (estable — release 8.5.6)
 

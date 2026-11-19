@@ -9,7 +9,7 @@ import { render } from 'preact';
 const CHEM_CELLS = ['K', 'Cr', 'BUN', 'Hb'];
 
 function RowMeta({ row }) {
-  if (!row.hasRegistro) return <span class="lab-repo-batch-row-warn">Sin registro — se omite</span>;
+  if (!row.hasRegistro) return <span class="lab-repo-batch-row-warn">Sin registro, se omite</span>;
   return (
     <>
       <span class="lab-repo-batch-row-reg">{'Reg. ' + row.registro}</span>
