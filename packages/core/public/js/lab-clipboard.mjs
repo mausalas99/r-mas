@@ -9,6 +9,22 @@ function escLabHtml_(s) {
     .replace(/>/g, '&gt;');
 }
 
+var LAB_PREFS_KEY_ = 'rpc-lab-output-prefs-v1';
+/** Calculated tokens (eTFG, cCa, BUN/CR, RetC, AG, cAG) with their value. */
+var LAB_CALC_RE_ = /\b(?:eTFG|cCa|BUN\/CR|RetC|cAG|AG)\s+\S+(?:\s+\((?:arregenerativa|regenerativa)\))?/g;
+
+/** Copied text leaves out the calculated values unless «Copiar cálculos» is on. */
+export function stripLabCalcLines(lines) {
+  try {
+    if (JSON.parse(localStorage.getItem(LAB_PREFS_KEY_) || '{}').copyCalcs) return lines;
+  } catch {
+    // no prefs: default is to strip
+  }
+  return lines.map(function (line) {
+    return line.replace(LAB_CALC_RE_, '').replace(/ {2,}/g, ' ').trim();
+  });
+}
+
 /**
  * @param {string[]} lines
  * @returns {{ text: string, html: string }}

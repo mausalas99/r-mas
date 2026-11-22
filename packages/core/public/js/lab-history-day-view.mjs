@@ -233,6 +233,86 @@ function dedupeSameDaySets_(list) {
   });
 }
 
+/** One group never spans more than this, even when tomas chain 2 h apart. */
+var MAX_GROUP_SPAN_MS = 3 * 60 * 60 * 1000;
+
+/** Hour-less sets get their own group, and a timed group is cut once it spans over 3 h. */
+function splitUntimedAndLongSpan_(clusters) {
+  var out = [];
+  clusters.forEach(function (cluster) {
+    var timed = [];
+    var untimed = [];
+    cluster.forEach(function (set) {
+      var ms = labTimestampMsFromFechaHora(set.fecha, set.hora);
+      if (ms == null) untimed.push(set);
+      else timed.push({ set: set, ms: ms });
+    });
+    timed.sort(function (a, b) {
+      return a.ms - b.ms;
+    });
+    var part = [];
+    var start = 0;
+    timed.forEach(function (e) {
+      if (part.length && e.ms - start > MAX_GROUP_SPAN_MS) {
+        out.push(part);
+        part = [];
+      }
+      if (!part.length) start = e.ms;
+      part.push(e.set);
+    });
+    if (part.length) out.push(part);
+    if (untimed.length) out.push(untimed);
+  });
+  return out;
+}
+
+var PRIOR_SECTIONS_ = { BH: 1, QS: 1, ESC: 1, PFHS: 1, LIPASA: 1 };
+var PRIOR_NUM_RE_ = /^[<>]?-?\d+(?:\.\d+)?\*?$/;
+
+/** «SEC|label» → value, for the number fields of one set's BH/QS/ESC/PFHs rows. */
+function setFieldValues_(set) {
+  var out = Object.create(null);
+  ((set && set.resLabs) || []).forEach(function (row) {
+    var m = String(row).match(/^([A-Za-z0-9]+)[\t:]\s*([\s\S]*)$/);
+    if (!m || !PRIOR_SECTIONS_[m[1].toUpperCase()]) return;
+    var toks = m[2].split(/\s+/).filter(Boolean);
+    for (var i = 0; i < toks.length; i++) {
+      if (toks[i + 1] !== undefined && !PRIOR_NUM_RE_.test(toks[i]) && PRIOR_NUM_RE_.test(toks[i + 1])) {
+        out[m[1].toUpperCase() + '|' + toks[i]] = toks[i + 1].replace(/\*$/, '');
+        i++;
+      }
+    }
+  });
+  return out;
+}
+
+/** In a group of several draws: for each field the newest value changed, the latest older value that differs. */
+function priorByKeyForSets_(sets) {
+  var prior = Object.create(null);
+  if (!sets || sets.length < 2) return prior;
+  var ordered = sets.slice().sort(function (a, b) {
+    var ma = labTimestampMsFromFechaHora(a.fecha, a.hora);
+    var mb = labTimestampMsFromFechaHora(b.fecha, b.hora);
+    return (ma == null ? -Infinity : ma) - (mb == null ? -Infinity : mb) || 0;
+  });
+  var vals = ordered.map(setFieldValues_);
+  var final = Object.create(null);
+  vals.forEach(function (v) {
+    Object.keys(v).forEach(function (k) {
+      final[k] = v[k];
+    });
+  });
+  Object.keys(final).forEach(function (k) {
+    for (var i = vals.length - 1; i >= 0; i--) {
+      if (vals[i][k] != null && vals[i][k] !== final[k]) {
+        prior[k] = vals[i][k];
+        return;
+      }
+    }
+  });
+  return prior;
+}
+
 export function clusterDayLabSets(sets) {
   var list = dedupeSameDaySets_(
     (sets || []).filter(function (set) {
@@ -264,7 +344,7 @@ export function clusterDayLabSets(sets) {
     return !used.has(set);
   });
   if (leftover.length) clusters.push(leftover);
-  var groups = clusters.map(function (cluster) {
+  var groups = splitUntimedAndLongSpan_(clusters).map(function (cluster) {
     return {
       hora: clusterHoraLabel(cluster),
       tipoLabel: clusterTipoLabel(cluster),
@@ -273,6 +353,7 @@ export function clusterDayLabSets(sets) {
       sourceText: mergeClusterSourceText(cluster),
       bhExtras: mergeClusterBhExtras(cluster),
       refsBySection: mergeClusterRefs(cluster),
+      priorByKey: priorByKeyForSets_(cluster),
     };
   });
   backfillGasoAnionGapAcrossDay_(groups, list);

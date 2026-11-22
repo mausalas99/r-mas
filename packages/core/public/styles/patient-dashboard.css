@@ -1017,36 +1017,35 @@ html.dark .ic-cf--svc.is-picked::before {
   outline-offset: 2px;
 }
 
-.patient-dash .cult-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
-  white-space: nowrap;
-}
-
-.patient-dash .cult-sitio,
+/* Board D3 (2026-11-19): germ on top, then chips for site · date, ATB state and R / I / S counts. */
 .patient-dash .cult-org {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
 }
 
-.patient-dash .cult-sitio {
-  font: var(--type-wb-section-label);
-  text-transform: none;
-  letter-spacing: 0;
+.patient-dash .cult-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.patient-dash .cult-chip {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-ink) 8%, transparent);
+  font: 600 11px/1.5 var(--font-ui);
   color: var(--color-ink-muted);
+  white-space: nowrap;
 }
 
-.patient-dash .cult-org { font-weight: 600; }
-
-.patient-dash .cult-date {
-  flex-shrink: 0;
-  font: var(--type-wb-mono);
-  color: var(--color-ink-muted);
-}
+.patient-dash .cult-chip.is-pending { color: var(--color-danger); }
+.patient-dash .cult-chip.atb-k.is-r,
+.patient-dash .cult-chip.atb-k.is-esbl { background: color-mix(in oklab, var(--color-danger) 14%, transparent); }
+.patient-dash .cult-chip.atb-k.is-i { background: color-mix(in oklab, var(--color-warn) 14%, transparent); }
+.patient-dash .cult-chip.atb-k.is-s { background: color-mix(in oklab, var(--color-success) 14%, transparent); }
 
 /* Antibiogram on hover / focus: R, I, ESBL, S rows. */
 /* Stays open 300ms after the pointer leaves, so a small slip does not close it. */
@@ -1104,11 +1103,16 @@ html.dark .ic-cf--svc.is-picked::before {
 .patient-dash .atb-k.is-i { color: var(--color-warn); }
 .patient-dash .atb-k.is-s { color: var(--color-success); }
 
-.patient-dash .cult em {
-  flex-shrink: 0;
-  font: 600 11px/1.4 var(--font-ui);
-  font-style: normal;
-  color: var(--color-danger);
+/* The card sits in the bottom-right corner: open the antibiogram up and to the left so it is not cut. */
+.patient-dash .cultivos-card .cult-pop {
+  top: auto;
+  bottom: calc(100% + 6px);
+  left: auto;
+  right: 0;
+}
+
+.patient-dash .cultivos-card .cult-pop::before {
+  inset: auto 0 -8px;
 }
 
 /* Nav redesign: vitals tiles are quick inputs; «Registro completo» opens the side panel. */

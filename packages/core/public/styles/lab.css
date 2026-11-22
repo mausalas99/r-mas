@@ -2992,6 +2992,48 @@ html.dark .lab-hour-group-h { border-bottom-color: rgba(148, 163, 184, 0.28); }
 
 .out-line   { font-family: var(--font-mono); line-height: 1.9; white-space: pre-wrap; font-size: 13px; }
 .out-indent { font-family: var(--font-mono); line-height: 1.9; padding-left: 2rem; white-space: pre-wrap; font-size: 13px; }
+
+/* Cultures in the day's labs (board B, 2026-11-19): germ header, antibiogram table, one-row negatives. */
+.cult-card { margin: 14px 0 6px; font-family: var(--font-ui); }
+.cult-card--plain { font-family: inherit; }
+.cult-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  padding-bottom: 8px; border-bottom: 2px solid var(--color-accent);
+}
+.cult-germ { font-size: 19px; font-style: italic; font-weight: 600; }
+.cult-tag {
+  padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  background: color-mix(in oklab, var(--color-danger) 14%, transparent); color: var(--color-danger);
+}
+.cult-meta { font-size: 13px; color: var(--color-ink-muted); }
+.cult-count { margin-left: auto; font: 600 14px var(--font-mono); }
+.cult-abx-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); column-gap: 28px;
+}
+.cult-abx-row {
+  display: flex; align-items: center; gap: 10px; padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cult-abx-k {
+  flex: none; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+  border-radius: 5px; font-size: 11px; font-weight: 700;
+}
+.cult-abx-row--s .cult-abx-k { background: color-mix(in oklab, var(--color-success) 14%, transparent); color: var(--color-success); }
+.cult-abx-row--i .cult-abx-k { background: color-mix(in oklab, var(--color-warn) 14%, transparent); color: var(--color-warn); }
+.cult-abx-row--r .cult-abx-k { background: color-mix(in oklab, var(--color-danger) 14%, transparent); color: var(--color-danger); }
+.cult-abx-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.cult-abx-mic { font: 500 12px var(--font-mono); color: var(--color-ink-muted); }
+.cult-section { display: flex; align-items: baseline; gap: 14px; padding: 22px 0 8px; border-top: 1px solid var(--border); }
+.cult-section h2 { margin: 0; font-size: 13px; letter-spacing: .14em; font-weight: 600; color: var(--color-ink-muted); }
+.cult-section-count { font-size: 12px; color: var(--color-ink-muted); }
+.cult-abx-legend { padding-top: 6px; font-size: 12px; color: var(--color-ink-muted); }
+.cult-neg {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.cult-neg-name { font-size: 15px; font-weight: 600; }
+.cult-neg-state { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--color-success); }
+.cult-neg-state::before { content: '\2713\00a0'; }
 .lab-out-citoquim-interp,
 .lab-out-ascitis-alert {
   font-family: var(--font-sans, inherit);
@@ -3679,3 +3721,6 @@ mark.lab-hit {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Same-day draws in one group: «8.1 → 7.6». Old value in text color, arrow in accent. */
+#lab-output-box .lab-prior-arrow { color: var(--color-accent); margin: 0 1px; }

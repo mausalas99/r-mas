@@ -364,6 +364,7 @@ function wireLabBarMenu_() {
       'lab-menu-pref-bh': prefs.showBhExtendedLine,
       'lab-menu-pref-gaso': !prefs.hideGasoAdvInterp,
       'lab-menu-pref-quick': prefs.quickLabOutput,
+      'lab-menu-pref-calcs': prefs.copyCalcs,
     };
     Object.keys(state).forEach(function (id) {
       var cb = document.getElementById(id);

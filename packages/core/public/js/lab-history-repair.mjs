@@ -1,6 +1,7 @@
 /** Reparación ligera de historial de labs sin comparar JSON completo por paciente. */
 
 import { normalizeLabHistoryPatientSets, isMeaningfulLabHistorySet } from './storage.js';
+import { isValidLabFecha } from './lab-set-date.mjs';
 
 export function patientLabHistoryNeedsRepair(raw) {
   if (raw == null) return false;
@@ -12,6 +13,7 @@ export function patientLabHistoryNeedsRepair(raw) {
     if (!set || typeof set !== 'object') return true;
     var id = set.id != null ? String(set.id).trim() : '';
     if (!id) return true;
+    if (!isValidLabFecha(set.fecha)) return true;
     if (usedIds.indexOf(id) !== -1) return true;
     usedIds.push(id);
   }

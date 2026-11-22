@@ -362,8 +362,13 @@ function Cultivos({ labs }) {
           var fecha = String(c.fecha || '').replace(/\/\d{4}$/, '');
           return (
             <button type="button" class={'cult' + (c.atbPendiente ? ' is-pending' : '')} data-dash-action="cultivos">
-              <span class="cult-row"><b class="cult-sitio">{c.sitio}</b><span class="cult-date">{fecha + (c.preliminar ? ' · prelim.' : '')}</span></span>
-              <span class="cult-row"><i class="cult-org">{c.organismo}</i>{c.atbPendiente ? <em>ATB pendiente</em> : null}</span>
+              <i class="cult-org">{c.organismo}</i>
+              <span class="cult-chips">
+                <span class="cult-chip">{c.sitio + ' · ' + fecha}</span>
+                {c.preliminar ? <span class="cult-chip">Preliminar</span> : null}
+                {c.atbPendiente ? <span class="cult-chip is-pending">ATB pendiente</span> : null}
+                {(Array.isArray(c.atb) ? c.atb : []).map((g) => <span class={'cult-chip atb-k is-' + String(g.k).toLocaleLowerCase('es')}>{g.k + ' ' + String(g.drugs).split(',').filter(Boolean).length}</span>)}
+              </span>
               <AtbPop c={c} />
             </button>
           );

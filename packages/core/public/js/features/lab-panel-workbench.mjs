@@ -6,7 +6,7 @@ import {
   unknownLabRowsWarning,
 } from '../lab-bulk-paste.mjs';
 import { sortLabHistoryChronological, normalizeFechaLabHistory } from '../tend-core.mjs';
-import { labLinesToClipboardPayload } from '../lab-clipboard.mjs';
+import { labLinesToClipboardPayload, stripLabCalcLines } from '../lab-clipboard.mjs';
 import { getPatients, getNotes, persistClinicalState } from '../app-state.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
@@ -98,7 +98,7 @@ async function copiarLabsAlPortapapeles() {
   if (!activeLab || !activeLab.resLabs || !activeLab.resLabs.length) {
     rt.showToast('No hay resultados procesados', 'error'); return;
   }
-  var payload = labLinesToClipboardPayload(buildLabLines());
+  var payload = labLinesToClipboardPayload(stripLabCalcLines(buildLabLines()));
   var ok = await rt.copyToClipboardSafe(payload.text, payload.html);
   rt.showToast(
     ok ? 'Labs copiados al portapapeles' : 'Error al copiar al portapapeles',
@@ -143,7 +143,7 @@ function buildLabLines() {
     dayGroups.forEach(function(group) {
       var hora = String(group.hora || '').trim();
       var tipo = String(group.tipoLabel || '').trim();
-      lines.push([hora, tipo].filter(Boolean).join(' · ') || 'Envío');
+      lines.push([hora, tipo === 'Labs' ? '' : tipo].filter(Boolean).join(' · ') || 'Envío');
       var bhExtDone = false;
       (group.resLabs || []).forEach(function(entry) {
         if (prefs.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(entry)) return;

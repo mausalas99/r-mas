@@ -1,3 +1,5 @@
+import { isValidLabFecha, repairedLabFecha } from '../lab-set-date.mjs';
+
 export function isMeaningfulLabHistorySet(set) {
   if (!set || typeof set !== 'object') return false;
   if (set.id === 'migrated-anterior' || set.id === 'migrated-recent') return true;
@@ -63,6 +65,7 @@ export function normalizeLabHistoryPatientSets(value) {
       }
     }
     ensureLabSetId(copy, index, used);
+    if (typeof copy === 'object' && !isValidLabFecha(copy.fecha)) copy.fecha = repairedLabFecha(copy);
     out.push(copy);
   });
   return out;

@@ -3,7 +3,6 @@ import { getLabHistory } from '../../app-state.mjs';
 import { parseFechaLabToMs, normalizeFechaLabHistory } from '../../tend-core.mjs';
 import {
   renderEntryNodes,
-  buildAtbRisSummaryNodes,
   extractSensCrudasForGermFromSource,
   formatCultivoCondensedForCopy,
   isParsedCultivoHeaderLine,
@@ -11,6 +10,7 @@ import {
 } from '../../labs.js';
 import { hn } from '../../labs-display.mjs';
 import { insertSpaceAfterCultivoKeyword_ } from '../../labs-cultivo-scan.mjs';
+import { buildAtbTableNodes } from '../../labs-cultivo-atb.mjs';
 import {
   findCultivoChunkInSet,
   classifyCultureTipoKeyFromHeaderLine,
@@ -186,7 +186,99 @@ function isResLabChunkPureCultivo(text) {
   });
 }
 
-/** Nodes (one div per output line) the lab output draws for a cultivo chunk. */
+function negativeLabel_(germ) {
+  var d = String(germ).match(/DESPUES DE (\d+) DIAS/i);
+  return d ? 'Negativo a ' + d[1] + ' días' : sentenceCase_(germ);
+}
+
+function sentenceCase_(s) {
+  var l = String(s || '').trim().toLowerCase();
+  return l.charAt(0).toUpperCase() + l.slice(1);
+}
+
+/**
+ * Cabecera de un cultivo para el día: "UROCULTIVO POR MICCION 13/11: ESCHERICHIA COLI · BLEE" →
+ * germen grande, tipo y fecha en gris, cuenta a la derecha. Un cultivo negativo es una sola fila.
+ * Devuelve null si la línea no tiene la forma esperada (se dibuja como texto plano).
+ */
+function buildCultivoHeadNode_(headLine, cuenta) {
+  var m = String(headLine || '').match(/^(.*?)\s+(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?):\s*(.+)$/);
+  if (!m) return null;
+  var tipo = m[1];
+  var fecha = m[2];
+  var tags = m[3].split(/\s*·\s*/);
+  var germ = tags.shift();
+  if (/NEGATIV/i.test(germ)) {
+    var paren = (tipo.match(/\(([^)]*)\)/) || [])[1];
+    var name = tipo.replace(/\s*\([^)]*\)/, '');
+    return hn('div', { class: 'cult-neg' }, [
+      hn('span', { class: 'cult-neg-name' }, [sentenceCase_(name)]),
+      hn('span', { class: 'cult-meta' }, [(paren ? sentenceCase_(paren) + ' · ' : '') + fecha]),
+      hn('span', { class: 'cult-neg-state' }, [negativeLabel_(germ)]),
+    ]);
+  }
+  var kids = [hn('span', { class: 'cult-germ' }, [sentenceCase_(germ)])];
+  tags.forEach(function (t) {
+    kids.push(hn('span', { class: 'cult-tag' }, [t]));
+  });
+  kids.push(hn('span', { class: 'cult-meta' }, [sentenceCase_(tipo).replace(/^(\S+) (por .*)$/, '$1 · $2') + ' · ' + fecha]));
+  if (cuenta) kids.push(hn('span', { class: 'cult-count' }, [cuenta]));
+  return hn('div', { class: 'cult-head' }, kids);
+}
+
+/** Resumen "ATB R: A, B | S: C, D" sin CMI: una fila por antibiótico, mismo lenguaje que la tabla. */
+function atbSummaryNodes_(line) {
+  var rows = [];
+  var n = { r: 0, i: 0, s: 0 };
+  var re = /(ESBL|R|I|S):\s*([^|\n]+)/g;
+  var m;
+  while ((m = re.exec(line))) {
+    var k = m[1] === 'ESBL' ? 'r' : m[1].toLowerCase();
+    m[2].replace(/\s*\+\d+\s*$/, '').split(/\s*,\s*/).filter(Boolean).forEach(function (name) {
+      n[k]++;
+      rows.push(
+        hn('div', { class: 'cult-abx-row cult-abx-row--' + k }, [
+          hn('span', { class: 'cult-abx-k' }, [k.toUpperCase()]),
+          hn('span', { class: 'cult-abx-name' }, [name]),
+        ])
+      );
+    });
+  }
+  if (!rows.length) return null;
+  var tally = ['r', 'i', 's']
+    .filter(function (k) {
+      return n[k];
+    })
+    .map(function (k) {
+      return n[k] + ' ' + { r: 'resistentes', i: 'indeterminados', s: 'sensibles' }[k];
+    })
+    .join(' · ');
+  return hn('div', { class: 'cult-abx lab-out-atb' }, [
+    hn('div', { class: 'cult-abx-grid' }, rows),
+    hn('div', { class: 'cult-abx-legend' }, [tally]),
+  ]);
+}
+
+function cultivoBodyLine_(body, lineRaw, sens, cuentaInHead) {
+  var t = String(lineRaw || '').trim();
+  if (!t || (cuentaInHead && /^Cuenta:/i.test(t))) return;
+  // Membrete SOME colapsado (no es ATB ni cuenta).
+  if (/^USER\b/i.test(t)) return;
+  if (/\bLabo\s*-?\d+/i.test(t) && /\b(Campo|Feme)\b|\bLabo\s*-?\d+\*?\s+[A-Z]{2,6}\s+\d+/i.test(t)) return;
+  var atb = null;
+  if (/^ATB\b/i.test(t)) {
+    atb = sens && sens.length ? hn('div', { class: 'cult-abx lab-out-atb' }, buildAtbTableNodes(sens)) : atbSummaryNodes_(t);
+  }
+  if (atb) {
+    body.push(atb);
+    return;
+  }
+  renderEntryNodes(lineRaw).forEach(function (nodes, idx) {
+    body.push(hn('div', { class: idx === 0 ? 'out-line' : 'out-indent' }, nodes));
+  });
+}
+
+/** Nodes the lab output draws for a cultivo chunk: one card per germ (see design board B). */
 function buildCultivoOutputNodes(text, sourceText) {
   var raw = String(text || '');
   var chunks = raw
@@ -201,20 +293,17 @@ function buildCultivoOutputNodes(text, sourceText) {
     if (lines.length) lines[0] = insertSpaceAfterCultivoKeyword_(lines[0]);
     var germQuery = germQueryFromCultivoChunkHead(lines[0] || '');
     var sens = sourceText ? extractSensCrudasForGermFromSource(sourceText, germQuery) : null;
-    lines.forEach(function (lineRaw) {
-      var t = String(lineRaw || '').trim();
-      if (!t) return;
-      // Membrete SOME colapsado (no es ATB ni cuenta).
-      if (/^USER\b/i.test(t)) return;
-      if (/\bLabo\s*-?\d+/i.test(t) && /\b(Campo|Feme)\b|\bLabo\s*-?\d+\*?\s+[A-Z]{2,6}\s+\d+/i.test(t)) return;
-      if (/^ATB\b/i.test(t) && sens && sens.length) {
-        parts.push(hn('div', { class: 'out-line cultivos-atb-chips lab-out-atb' }, buildAtbRisSummaryNodes(sens)));
-        return;
-      }
-      renderEntryNodes(lineRaw).forEach(function (nodes, idx) {
-        parts.push(hn('div', { class: idx === 0 ? 'out-line' : 'out-indent' }, nodes));
-      });
+    var cuentaLine = lines.filter(function (l) {
+      return /^Cuenta:/i.test(l.trim());
+    })[0];
+    var cuenta = cuentaLine ? cuentaLine.trim().replace(/^Cuenta:\s*/i, '') : '';
+    var head = buildCultivoHeadNode_(lines[0], cuenta);
+    var body = [];
+    lines.forEach(function (lineRaw, li) {
+      if (head && li === 0) return;
+      cultivoBodyLine_(body, lineRaw, sens, head && cuenta);
     });
+    parts.push(hn('div', { class: head ? 'cult-card' : 'cult-card cult-card--plain' }, head ? [head].concat(body) : body));
   });
   return parts;
 }

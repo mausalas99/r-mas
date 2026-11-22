@@ -141,10 +141,37 @@ for (const [name, make] of Object.entries(SENS_CASES)) {
 }
 
 for (const [name, [text, source]] of Object.entries(CULTIVO_CHUNKS)) {
-  test(`cultivo output chunk ${name}: drawn HTML equals the old fragments`, () => {
-    assert.equal(norm(m.drawn(m.buildCultivoOutputNodes(text, source))), norm(OLD.fragments[name]));
+  test(`cultivo output chunk ${name}: one card per germ, escaped`, () => {
+    const html = m.drawn(m.buildCultivoOutputNodes(text, source));
+    assert.equal((html.match(/class="cult-card/g) || []).length, text.split(/\n\n+/).length);
+    assert.ok(!html.includes('<i>'), 'germ text is escaped');
   });
 }
+
+test('cultivo output chunk: germ head, count in the head, antibiogram rows from the source', () => {
+  const [text, source] = CULTIVO_CHUNKS.withAtb;
+  const html = m.drawn(m.buildCultivoOutputNodes(text, source));
+  assert.ok(html.includes('<span class="cult-germ">Pseudomonas aeruginosa</span>'));
+  assert.ok(html.includes('<span class="cult-count">50,000 UFC/mL</span>'));
+  assert.ok(html.includes('cult-abx-row'));
+  assert.ok(!html.includes('Cuenta:'));
+  assert.ok(!m.drawn(m.buildCultivoOutputNodes(CULTIVO_CHUNKS.noSource[0], '')).includes('cult-abx-mic'));
+});
+
+test('cultivo output chunk: a negative culture is one row', () => {
+  const html = m.drawn(m.buildCultivoOutputNodes('HEMOCULTIVO (MIEMBRO SUPERIOR DERECHO) 13/11: CULTIVO NEGATIVO DESPUES DE 5 DIAS DE INCUBACION', ''));
+  assert.ok(html.includes('<span class="cult-neg-name">Hemocultivo</span>'));
+  assert.ok(html.includes('Miembro superior derecho · 13/11'));
+  assert.ok(html.includes('Negativo a 5 días'));
+});
+
+test('cultivo output chunk: ATB summary without source becomes one row per group', () => {
+  const html = m.drawn(m.buildCultivoOutputNodes('UROCULTIVO POR MICCION 13/11: ENTEROCOCCUS FAECALIS\nATB R: AMP | S: AMIK, GENT\nCuenta: +100,000 UFC/ML', ''));
+  assert.ok(html.includes('<span class="cult-abx-name">AMIK</span>'));
+  assert.ok(html.includes('cult-abx-row--r'));
+  assert.ok(html.includes('2 sensibles'));
+  assert.ok(html.includes('<span class="cult-count">+100,000 UFC/ML</span>'));
+});
 
 for (const [name, c] of Object.entries(CELL_ROWS)) {
   test(`cultivos antibiogram cell ${name}: drawn HTML equals the old cell`, () => {

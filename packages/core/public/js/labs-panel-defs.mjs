@@ -211,9 +211,9 @@ export const LAB_EXTENDED_PANEL_DEFS = [
   {
     sectionKey: 'VIRAL',
     mode: 'qual',
-    gates: [/\bVDRL\b/i, /RPR\b/i, /TOXOPLASMA/i, /\bCMV\b/i, /\bEBV\b/i, /RUBEOLA/i, /HERPES/i],
+    gates: [/\bV\.?D\.?R\.?L\b/i, /RPR\b/i, /TOXOPLASMA/i, /\bCMV\b/i, /\bEBV\b/i, /RUBEOLA/i, /HERPES/i],
     fields: [
-      { key: 'VDRL', patterns: [/\bVDRL\b/i, /\bRPR\b/i] },
+      { key: 'VDRL', patterns: [/\bV\.?D\.?R\.?L\b/i, /\bRPR\b/i] },
       { key: 'ToxoIgM', patterns: [/IGM\s+TOXOPLASMA/i, /TOXOPLASMA\s+IGM/i, /ANTICUERPOS\s+IGM\s+TOXOPLASMA/i] },
       { key: 'ToxoIgG', patterns: [/IGG\s+TOXOPLASMA/i, /TOXOPLASMA\s+IGG/i] },
       { key: 'CMVIgM', patterns: [/CMV\s+IGM/i, /IGM\s+CITOMEGALOVIRUS/i] },

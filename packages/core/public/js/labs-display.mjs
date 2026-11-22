@@ -152,7 +152,7 @@ export function renderToken(tok, trendInfo) {
  * Líneas "estructuradas" (clave numérica, ej. BH/QS/ESC) envuelven cada valor en
  * `.lab-row-value` para el gap tipo chip; líneas de prosa (ej. Frotis) no.
  */
-export function renderEntryNodes(text, trendLookup) {
+export function renderEntryNodes(text, trendLookup, priorLookup) {
   text = flattenBhHemOnlyVisible(normalizeGasometryInterpretationLine_(text));
   var sectionKey = trendLookup ? entryTrendSectionKey_(text) : '';
   var isBhFamily = sectionKey === 'BH';
@@ -182,7 +182,9 @@ export function renderEntryNodes(text, trendLookup) {
                   : labelByValueIdx[ti];
                 trendInfo = trendLookup(sectionKey, fieldKey);
               }
-              return [hn('span', { class: 'lab-row-value' }, renderTokenNodes(tok, trendInfo))];
+              var prior = priorLookup && labelByValueIdx[ti] ? priorLookup(entryTrendSectionKey_(text), labelByValueIdx[ti]) : null;
+              var priorNodes = prior ? [hn('span', { class: 'lab-prior-value', title: 'Valor de la toma previa' }, [prior]), ' ', hn('span', { class: 'lab-prior-arrow', 'aria-hidden': 'true' }, ['→']), ' '] : [];
+              return [hn('span', { class: 'lab-row-value' }, priorNodes.concat(renderTokenNodes(tok, trendInfo)))];
             })
             .filter(Boolean)
         );
@@ -219,6 +221,6 @@ export function renderEntryNodes(text, trendLookup) {
 }
 
 /** Same lines as renderEntryNodes, as HTML strings (censo preview, tests). */
-export function renderEntry(text, trendLookup) {
-  return renderEntryNodes(text, trendLookup).map(nodesToHtml);
+export function renderEntry(text, trendLookup, priorLookup) {
+  return renderEntryNodes(text, trendLookup, priorLookup).map(nodesToHtml);
 }

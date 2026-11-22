@@ -4,27 +4,27 @@
  * not an archive, it exists to be overwritten wholesale on every bump.
  */
 
-var RELEASE_NOTES_857 = [
+var RELEASE_NOTES_858 = [
   {
-    title: 'Neurológico más completo',
-    body: 'Estado actual suma <strong>alerta, Glasgow, RASS y focalización</strong> en la tarjeta Neurológico.',
+    title: 'Toma previa a la vista',
+    body: 'Cada lab muestra <strong>el valor anterior</strong> antes de la flecha.',
   },
   {
-    title: 'Esferas por botón',
-    body: 'Elige <strong>Tiempo, Lugar y Persona</strong>. La línea N: nombra lo que falla.',
+    title: 'Copiar cálculos',
+    body: 'Nuevo interruptor para incluir <strong>eTFG, cCa, BUN/CR, RetC y AG</strong> al copiar. Viene apagado.',
   },
   {
-    title: 'Labs del día sin repetidos',
-    body: 'Un reporte con gases <strong>ya no se mezcla</strong> con otro. Se quitan copias y renglones repetidos.',
+    title: 'Cultivos en tarjetas',
+    body: 'Sitio, fecha, estado y <strong>antibióticos</strong> en etiquetas, en Labs y en Resumen.',
   },
   {
-    title: 'Fechas de labs reparadas',
-    body: 'Los sets guardados con una fecha dañada <strong>se corrigen solos</strong>.',
+    title: 'Cultivos mejor leídos',
+    body: 'El reporte pegado <strong>se interpreta mejor</strong>. ATB y Cuenta quedan en su tarjeta.',
   },
 ];
 
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_857;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_858;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
-  '8.5.7': RELEASE_NOTES_857,
+  '8.5.8': RELEASE_NOTES_858,
 };

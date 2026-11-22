@@ -19,3 +19,14 @@ export function inferFechaLabSetFromId(set) {
   if (id.length === 10) ms *= 1000;
   return formatDMYDate(new Date(ms));
 }
+
+/** A stored fecha reads as a date («05/11/2026», «5/11», «Nov 5 2026») or is «Anterior». Old imports saved a lab row there. */
+export function isValidLabFecha(fecha) {
+  var t = String(fecha || '').trim();
+  return !t || t === 'Anterior' || /^\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?$/.test(t) || /^[A-Za-z]{3}\w*\s+\d{1,2}\s+\d{4}$/.test(t);
+}
+
+/** Good fecha for a set whose fecha is bad: from its id, then updatedAt, else «Anterior». */
+export function repairedLabFecha(set) {
+  return inferFechaLabSetFromId(set) || (set.updatedAt ? formatDMYDate(new Date(set.updatedAt)) : '') || 'Anterior';
+}

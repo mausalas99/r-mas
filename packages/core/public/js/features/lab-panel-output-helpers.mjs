@@ -6,6 +6,7 @@ import {
 import { parseSomeTablesFromSources } from '../labs-some-table.mjs';
 import { normalizeFechaLabHistory, parseFechaLabToMs } from '../tend-core.mjs';
 import { sortResLabsByClinicalOrder } from '../labs-section-order.mjs';
+import { isCultivoBlockStartLine } from '../cultivo-block-core.mjs';
 import {
   getActivePatientLabHistory,
   labSetIdForHistory,
@@ -83,11 +84,46 @@ function appendCitoquimInterpretacionChunk(box, text, rt) {
   box.appendChild(alertDiv);
 }
 
-function appendCultivoChunk(box, text, src, rt) {
+function isCultivoRow_(text) {
+  var t = String(text).trim();
+  return /^(Cultivos$|ATB\b|Cuenta:)/i.test(t) || isCultivoBlockStartLine(t);
+}
+
+/** ATB y Cuenta llegan como filas sueltas tras la cabecera: van dentro de su tarjeta. */
+function appendCultivoRow_(box, cultTexts, text, src, rt) {
+  var t = String(text).trim();
+  if (/^Cultivos$/i.test(t)) {
+    var h = document.createElement('div');
+    h.className = 'cult-section';
+    h.innerHTML = '<h2>CULTIVOS</h2><span class="cult-section-count"></span>';
+    box.appendChild(h);
+    return;
+  }
+  var prev = cultTexts.length ? cultTexts[cultTexts.length - 1] : null;
+  if (prev && box.lastChild === prev.wrap && /^(ATB\b|Cuenta:)/i.test(t)) {
+    prev.text += '\n' + text;
+    prev.wrap.replaceWith((prev.wrap = cultivoWrap_(prev.text, src, rt)));
+    return;
+  }
+  var w = cultivoWrap_(text, src, rt);
+  box.appendChild(w);
+  cultTexts.push({ text: text, wrap: w });
+}
+
+function fillCultivoCount_(box) {
+  var count = box.querySelector('.cult-section-count');
+  if (!count) return;
+  var wraps = box.querySelectorAll('.lab-out-cultivo-chunk');
+  var neg = box.querySelectorAll('.lab-out-cultivo-chunk .cult-neg').length;
+  var pos = wraps.length - neg;
+  count.textContent = pos + (pos === 1 ? ' positivo' : ' positivos') + ' · ' + neg + (neg === 1 ? ' negativo' : ' negativos');
+}
+
+function cultivoWrap_(text, src, rt) {
   var wrap = document.createElement('div');
   wrap.className = 'lab-out-cultivo-chunk';
   nodesView.drawNodes(wrap, rt.buildCultivoOutputNodes(text, src));
-  box.appendChild(wrap);
+  return wrap;
 }
 
 function isCitoquimicoTipoLine_(text) {
@@ -187,8 +223,8 @@ function appendLabLineRemoveControl_(div, text) {
   div.appendChild(zone);
 }
 
-function appendStandardResLabChunk(box, text, trendLookup) {
-  renderEntryNodes(text, trendLookup).forEach(function (nodes, idx) {
+function appendStandardResLabChunk(box, text, trendLookup, priorLookup) {
+  renderEntryNodes(text, trendLookup, priorLookup).forEach(function (nodes, idx) {
     var div = document.createElement('div');
     div.className = idx === 0 || isLabSectionHeaderNodes(nodes) ? 'out-line' : 'out-indent';
     nodesView.drawNodes(div, nodes);
@@ -259,7 +295,20 @@ export function appendResLabChunksToBox(box, resLabs, src, result, labDisp, rt, 
         parsedBySection: rt.buildParsedBySectionFromResLabs(resLabs, result && result.bhExtras),
       };
   var trendLookup = buildLabOutputTrendLookup_(currentSet);
+  var priorByKey = group && group.priorByKey;
+  var priorLookup = priorByKey
+    ? function (sec, label) {
+        return priorByKey[String(sec).toUpperCase() + '|' + label] || null;
+      }
+    : null;
+  // Los cultivos van al final del día, bajo un encabezado con su conteo (tablero B).
+  var rest = [];
+  var cult = [];
   sortResLabsByClinicalOrder(resLabs || []).forEach(function (text) {
+    (isCultivoRow_(text) ? cult : rest).push(text);
+  });
+  var cultTexts = [];
+  rest.concat(cult).forEach(function (text) {
     if (labDisp.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(text)) return;
     if (
       (rt.isCitoquimInterpretacionResLabChunk && rt.isCitoquimInterpretacionResLabChunk(text)) ||
@@ -268,13 +317,14 @@ export function appendResLabChunksToBox(box, resLabs, src, result, labDisp, rt, 
       appendCitoquimInterpretacionChunk(box, text, rt);
       return;
     }
-    if (rt.isResLabChunkPureCultivo(text)) {
-      appendCultivoChunk(box, text, src, rt);
+    if (isCultivoRow_(text)) {
+      appendCultivoRow_(box, cultTexts, text, src, rt);
       return;
     }
-    appendStandardResLabChunk(box, text, trendLookup);
+    appendStandardResLabChunk(box, text, trendLookup, priorLookup);
     appendBhExtendedLines(box, text, result, labDisp, rt);
   });
+  fillCultivoCount_(box);
 }
 
 export function syncLabOutputHistoryAfterRender(opts, result, rt) {

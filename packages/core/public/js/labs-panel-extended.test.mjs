@@ -245,3 +245,8 @@ test('parseExtendedLabPanels_ honors overlay store patch', () => {
     clearLabPanelOverlayForTests();
   }
 });
+
+test('parseExtendedLabPanels_ VDRL "V.D.R.L." positivo con dilución', () => {
+  var t = 'SEROLOGIA\nV.D.R.L.\nEstudio\t\tResultado\tUnidades\tValor de Referencia\nV.D.R.L.\t\n*\nPOSITIVO DILUCIÓN 1:8\nNEGATIVO\nOBSERVACIONES\t\n*\n';
+  assert.match(lineFor('VIRAL', parseExtendedLabPanels_(t)), /\bVDRL pos\* 1:8/);
+});

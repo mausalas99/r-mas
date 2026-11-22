@@ -51,9 +51,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.5.7](https://github.com/mausalas99/r-mas/releases/tag/v8.5.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.5.8](https://github.com/mausalas99/r-mas/releases/tag/v8.5.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 8.5.8 (estable — release 8.5.8)
+
+- **Labs:** valor de la toma previa junto a cada resultado.
+- **Labs:** interruptor «Copiar cálculos» para el texto copiado.
+- **Cultivos:** tarjetas con ATB en Labs y Resumen.
+
+Notas: `docs/RELEASE_NOTES_8.5.8.txt`.
 
 ## R+ 8.5.7 (estable — release 8.5.7)
 

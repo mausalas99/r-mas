@@ -236,6 +236,42 @@ export function buildAtbRisSummaryNodes(sensCrudas, ext) {
   ];
 }
 
+/** Antibiograma del día (Labs): una fila por antibiótico, de R a S, con la CMI a la derecha. */
+export function buildAtbTableNodes(sensCrudas) {
+  if (!sensCrudas || !sensCrudas.length) return [];
+  var buckets = { r: [], i: [], s: [] };
+  sensCrudas.forEach(function (s) {
+    buckets[classifyAtbInterp(s.interp)].push(s);
+  });
+  var rows = [];
+  ['r', 'i', 's'].forEach(function (k) {
+    sortSensByGradeInBucket(buckets[k], k === 's' ? 's' : k).forEach(function (s) {
+      var m = String(s.med || '').trim().toLowerCase();
+      var mic = String(s.mic || '').trim().replace(/<=/g, '≤').replace(/>=/g, '≥');
+      rows.push(
+        hn('div', { class: 'cult-abx-row cult-abx-row--' + k }, [
+          hn('span', { class: 'cult-abx-k', 'aria-label': { r: 'Resistente', i: 'Indeterminado', s: 'Sensible' }[k] }, [k.toUpperCase()]),
+          hn('span', { class: 'cult-abx-name' }, [m.charAt(0).toUpperCase() + m.slice(1)]),
+          mic && hn('span', { class: 'cult-abx-mic' }, [mic]),
+        ])
+      );
+    });
+  });
+  var n = { r: buckets.r.length, i: buckets.i.length, s: buckets.s.length };
+  var tally = ['r', 'i', 's']
+    .filter(function (k) {
+      return n[k];
+    })
+    .map(function (k) {
+      return n[k] + ' ' + { r: 'resistentes', i: 'indeterminados', s: 'sensibles' }[k];
+    })
+    .join(' · ');
+  return [
+    hn('div', { class: 'cult-abx-grid' }, rows),
+    hn('div', { class: 'cult-abx-legend' }, [tally + ' · CMI en mg/L']),
+  ];
+}
+
 export function buildAtbRisSummaryHtml(sensCrudas, ext) {
   return nodesToHtml(buildAtbRisSummaryNodes(sensCrudas, ext));
 }

@@ -95,6 +95,7 @@ function qualDupTitleDecision_(t, j, i, sco, qual) {
 function readQualFromFollowLines_(lineas, i) {
   var sco = null;
   var qual = '';
+  var dil = null;
   for (var j = i + 1; j < Math.min(i + 12, lineas.length); j++) {
     var t = String(lineas[j] || '').replace(/\*/g, '').trim();
     if (isQualFollowNoiseLine_(t)) continue;
@@ -106,13 +107,14 @@ function readQualFromFollowLines_(lineas, i) {
       sco = mNum[1];
       continue;
     }
-    var mQ = t.match(/^(NEGATIVO|POSITIVO|INDETERMINADO)$/i);
+    var mQ = t.match(/^(NEGATIVO|POSITIVO|INDETERMINADO)(?:\s+DILUCI[OÓ]N\s+(\d+:\d+))?$/i);
     if (mQ) {
       qual = mQ[1].toUpperCase();
+      dil = mQ[2] || null;
       break;
     }
   }
-  return qual ? { sco: sco, qual: qual } : null;
+  return qual ? { sco: sco, qual: qual, dil: dil } : null;
 }
 
 function extractQualField_(lineas, patterns) {
@@ -138,6 +140,7 @@ export function parseQualPanel_(def, texto) {
     if (!q) continue;
     var token = f.key + ' ' + q;
     if (res.sco != null) token += ' (' + formatQualSco_(res.sco) + ')';
+    if (res.dil) token += ' ' + res.dil;
     parts.push(token);
   }
   if (!parts.length) return '';

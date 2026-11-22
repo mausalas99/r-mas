@@ -14,6 +14,7 @@ function getLabOutputPrefs() {
       showBhExtendedLine: !!o.showBhExtendedLine,
       hideGasoAdvInterp: !!o.hideGasoAdvInterp,
       quickLabOutput: !!o.quickLabOutput,
+      copyCalcs: !!o.copyCalcs,
     };
     if (isAbgAnalysisHidden()) prefs.hideGasoAdvInterp = true;
     return prefs;
@@ -22,6 +23,7 @@ function getLabOutputPrefs() {
       showBhExtendedLine: false,
       hideGasoAdvInterp: isAbgAnalysisHidden(),
       quickLabOutput: false,
+      copyCalcs: false,
     };
   }
 }
@@ -41,6 +43,7 @@ function setLabOutputPrefs(partial) {
   if (partial.showBhExtendedLine != null) cur.showBhExtendedLine = !!partial.showBhExtendedLine;
   if (partial.hideGasoAdvInterp != null) cur.hideGasoAdvInterp = !!partial.hideGasoAdvInterp;
   if (partial.quickLabOutput != null) cur.quickLabOutput = !!partial.quickLabOutput;
+  if (partial.copyCalcs != null) cur.copyCalcs = !!partial.copyCalcs;
   try {
     localStorage.setItem(LAB_OUTPUT_PREFS_KEY, JSON.stringify(cur));
   } catch (e) { console.warn('[tendencias-lab-prefs] failed to write ' + LAB_OUTPUT_PREFS_KEY, e); }
@@ -99,6 +102,11 @@ function openLabDisplayPrefsModal() {
   var cbBh = document.getElementById('lab-pref-bh-extended');
   var cbGaso = document.getElementById('lab-pref-gaso-extended');
   var cbQuick = document.getElementById('lab-pref-quick-output');
+  var cbCalcs = document.getElementById('lab-pref-copy-calcs');
+  if (cbCalcs) {
+    cbCalcs.checked = p.copyCalcs;
+    _syncLabPrefSwitchAria(cbCalcs);
+  }
   if (cbBh) {
     cbBh.checked = p.showBhExtendedLine;
     _syncLabPrefSwitchAria(cbBh);
@@ -126,7 +134,7 @@ function onLabDisplayPrefsChanged(ev) {
   // Switches in the Labs bar menu mirror into the modal's checkboxes, which stay the one source read below.
   var src = ev && ev.target && ev.target.id;
   if (src && src.indexOf('lab-menu-pref-') === 0) {
-    [['lab-menu-pref-bh', 'lab-pref-bh-extended'], ['lab-menu-pref-gaso', 'lab-pref-gaso-extended'], ['lab-menu-pref-quick', 'lab-pref-quick-output']].forEach(function (pair) {
+    [['lab-menu-pref-bh', 'lab-pref-bh-extended'], ['lab-menu-pref-gaso', 'lab-pref-gaso-extended'], ['lab-menu-pref-quick', 'lab-pref-quick-output'], ['lab-menu-pref-calcs', 'lab-pref-copy-calcs']].forEach(function (pair) {
       var from = document.getElementById(pair[0]);
       var to = document.getElementById(pair[1]);
       if (from && to) to.checked = from.checked;
@@ -135,11 +143,14 @@ function onLabDisplayPrefsChanged(ev) {
   var cbBh = document.getElementById('lab-pref-bh-extended');
   var cbGaso = document.getElementById('lab-pref-gaso-extended');
   var cbQuick = document.getElementById('lab-pref-quick-output');
+  var cbCalcs = document.getElementById('lab-pref-copy-calcs');
   setLabOutputPrefs({
     showBhExtendedLine: cbBh ? cbBh.checked : false,
     hideGasoAdvInterp: isAbgAnalysisHidden() ? true : cbGaso ? !cbGaso.checked : false,
     quickLabOutput: cbQuick ? cbQuick.checked : false,
+    copyCalcs: cbCalcs ? cbCalcs.checked : false,
   });
+  _syncLabPrefSwitchAria(cbCalcs);
   _syncLabPrefSwitchAria(cbBh);
   _syncLabPrefSwitchAria(cbGaso);
   _syncLabPrefSwitchAria(cbQuick);

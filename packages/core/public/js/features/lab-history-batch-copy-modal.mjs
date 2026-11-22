@@ -3,7 +3,7 @@ import {
   buildEstudiosCopyLinesFromLabSets,
   groupLabHistoryByDay,
 } from '../lab-history-set.mjs';
-import { labLinesToClipboardPayload } from '../lab-clipboard.mjs';
+import { labLinesToClipboardPayload, stripLabCalcLines } from '../lab-clipboard.mjs';
 
 /** @type {{
  *   getActiveId(): string|null,
@@ -85,7 +85,7 @@ function syncBatchCopyActions(backdrop, ordered) {
   }
   ta.placeholder = '';
   ta.value = labLinesToClipboardPayload(
-    buildEstudiosCopyLinesFromLabSets(ordered, { onlyDayKeys: keys })
+    stripLabCalcLines(buildEstudiosCopyLinesFromLabSets(ordered, { onlyDayKeys: keys }))
   ).text;
 }
 
@@ -125,7 +125,7 @@ function wireBatchCopyModal(backdrop, loaded) {
       return;
     }
     var payload = labLinesToClipboardPayload(
-      buildEstudiosCopyLinesFromLabSets(loaded.ordered, { onlyDayKeys: keys })
+      stripLabCalcLines(buildEstudiosCopyLinesFromLabSets(loaded.ordered, { onlyDayKeys: keys }))
     );
     if (!payload.text.trim()) {
       rt.showToast('No hay texto para copiar en los días elegidos', 'error');

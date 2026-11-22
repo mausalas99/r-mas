@@ -39,7 +39,8 @@ function collectBhCompactFields_(rows) {
   (rows || []).forEach(function (row) {
     var cells = parseBhTrendValuesFromResLab(flattenBhHemOnlyVisible(row));
     BH_COMPACT_MERGE_ORDER_.concat(BH_IMMATURE_MERGE_ORDER_).forEach(function (fk) {
-      if (byField[fk] || !cells[fk]) return;
+      // Rows arrive oldest first: the newest value of an analyte wins, like QS/ESC.
+      if (!cells[fk]) return;
       byField[fk] = cells[fk];
     });
   });

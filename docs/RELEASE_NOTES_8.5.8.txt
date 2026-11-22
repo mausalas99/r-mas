@@ -1,0 +1,27 @@
+R+ 8.5.8 (estable — release 8.5.8)
+======================================
+
+Fecha: 2026-11-22
+
+## Resumen
+
+Los labs muestran el valor de la toma previa. Los cultivos se ven en tarjetas con sus antibióticos. Puedes elegir si el texto copiado lleva los cálculos.
+
+## Nuevo / mejorado
+
+- **Nuevo (Labs):** cada valor muestra el de la toma previa antes de la flecha.
+- **Nuevo (Labs):** el interruptor «Copiar cálculos» pone o quita eTFG, cCa, BUN/CR, RetC y AG del texto copiado. Viene apagado.
+- **Mejorado (Labs):** los cultivos van al final del día bajo un encabezado con el conteo de positivos y negativos. ATB y Cuenta quedan dentro de su tarjeta.
+- **Mejorado (Resumen):** los cultivos muestran sitio, fecha, estado y antibióticos como etiquetas.
+- **Corrección (Labs):** se lee mejor el reporte de cultivos pegado.
+- **Corrección (Labs):** se reparan más fechas dañadas en sets guardados.
+
+## Instalación
+
+El bloque **Descargar** al inicio de las notas en GitHub tiene los tres instaladores con nombres legibles.
+
+- Mac Apple Silicon (M1–M4): `R+-8.5.8-Mac-Apple-Silicon.dmg`
+- Mac Intel: `R+-8.5.8-Mac-Intel.dmg`
+- Windows: `Instalar-R+-8.5.8-Windows.exe`
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

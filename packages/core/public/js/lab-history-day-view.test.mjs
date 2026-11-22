@@ -59,3 +59,29 @@ test('a full morning report with gases and a later ESC-only report stay two toma
   assert.equal(groups.length, 2);
   assert.ok(groups.find((g) => g.hora === '17:28').resLabs[0].includes('K 4.3'));
 });
+
+test('a later BH inside the window joins the group: new values win, same values are not repeated', () => {
+  const am = { id: 'a', fecha: '21/11/2026', hora: '03:34', resLabs: ['BH\tHb 8.1 Hto 25 Leu 10.2', 'QS\tGlu 97 Cr 1.1'], sourceText: 'a' };
+  const bh = { id: 'b', fecha: '21/11/2026', hora: '03:50', resLabs: ['BH\tHb 7.6 Hto 25 Leu 10.2'], sourceText: 'b' };
+  const groups = clusterDayLabSets([am, bh]);
+  assert.equal(groups.length, 1);
+  const rows = groups[0].resLabs;
+  assert.equal(rows.length, 2);
+  assert.match(rows[0], /Hb 7\.6/);
+  assert.equal((rows[0].match(/Hto/g) || []).length, 1);
+});
+
+test('a chain of tomas 90 min apart is cut at 3 h, and hour-less sets sit apart', () => {
+  const at = (hora, row) => ({ id: hora, fecha: '21/11/2026', hora, resLabs: [row], sourceText: hora });
+  const chain = ['04:00', '05:30', '07:00', '08:30', '10:00'].map((h, i) => at(h, `QS: Glu ${90 + i}`));
+  assert.ok(clusterDayLabSets(chain).length >= 2);
+  const groups = clusterDayLabSets([at('04:00', 'QS: Glu 90'), at('', 'ESC: Na 140')]);
+  assert.equal(groups.length, 2);
+});
+
+test('a merged group remembers the older value of each changed field only', () => {
+  const am = { id: 'a', fecha: '21/11/2026', hora: '03:34', resLabs: ['BH\tHb 8.1* Hto 25 Leu 10.2', 'QS\tGlu 97 Cr 1.1'], sourceText: 'a' };
+  const bh = { id: 'b', fecha: '21/11/2026', hora: '03:50', resLabs: ['BH\tHb 7.6* Hto 25 Leu 10.2'], sourceText: 'b' };
+  const [g] = clusterDayLabSets([am, bh]);
+  assert.deepEqual({ ...g.priorByKey }, { 'BH|Hb': '8.1' });
+});
