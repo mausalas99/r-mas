@@ -1,22 +1,22 @@
-version: 8.5.7
+version: 8.5.8
 files:
-  - url: R+-8.5.7-x64.exe
-    sha512: AeYg8BqKLQtlO091FGbr9kRam4PQ5f0SrVuX6hupAlrwO1N/SBGgiqeqxgXtQTI4XZ14cy62dlY08DgLRmhRbg==
-    size: 139290672
-path: R+-8.5.7-x64.exe
-sha512: AeYg8BqKLQtlO091FGbr9kRam4PQ5f0SrVuX6hupAlrwO1N/SBGgiqeqxgXtQTI4XZ14cy62dlY08DgLRmhRbg==
-releaseDate: '2026-11-19T17:29:08.000Z'
+  - url: R+-8.5.8-x64.exe
+    sha512: qgXXz6wCXTvj0ixAY979FVT9Lq8g4M8XIFC3flVx0ebJtGCjCq0XQ8K7gWd9zlop3yPQORz+m5Z02Bq3LzS6OQ==
+    size: 139295152
+path: R+-8.5.8-x64.exe
+sha512: qgXXz6wCXTvj0ixAY979FVT9Lq8g4M8XIFC3flVx0ebJtGCjCq0XQ8K7gWd9zlop3yPQORz+m5Z02Bq3LzS6OQ==
+releaseDate: '2026-11-22T20:02:03.000Z'
 releaseNotes: |
-  Estado actual suma opciones de exploración neurológica. Los labs del día ya no se repiten ni se mezclan. Los avisos y textos quedan sin símbolos de relleno.
+  Los labs muestran el valor de la toma previa. Los cultivos se ven en tarjetas con sus antibióticos. Puedes elegir si el texto copiado lleva los cálculos.
   
-  Nuevo (Estado actual): la tarjeta Neurológico tiene nivel de alerta, Glasgow, RASS y Focalización (sin/con datos y hallazgo).
+  Nuevo (Labs): cada valor muestra el de la toma previa antes de la flecha.
   
-  Nuevo (Estado actual): Esferas pasa a botones Tiempo, Lugar y Persona. La línea N: nombra las esferas donde hay desorientación.
+  Nuevo (Labs): el interruptor «Copiar cálculos» pone o quita eTFG, cCa, BUN/CR, RetC y AG del texto copiado. Viene apagado.
   
-  Corrección (Labs): un reporte con gases ya no se pega al reporte más cercano. Solo lo hace uno de gasometría sola.
+  Mejorado (Labs): los cultivos van al final del día bajo un encabezado con el conteo de positivos y negativos. ATB y Cuenta quedan dentro de su tarjeta.
   
-  Corrección (Labs): en la vista por día se quitan las copias sin hora y los renglones repetidos entre tomas. El valor más nuevo gana al unir ESC, QS y PFHs.
+  Mejorado (Resumen): los cultivos muestran sitio, fecha, estado y antibióticos como etiquetas.
   
-  Corrección (Labs): la fecha guardada es una fecha real o «Anterior». Se reparan los sets guardados con un renglón de lab como fecha.
+  Corrección (Labs): se lee mejor el reporte de cultivos pegado.
   
-  Cambio (Textos): avisos y rótulos sin marcas ✓ ni guiones largos.
+  Corrección (Labs): se reparan más fechas dañadas en sets guardados.
